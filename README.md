@@ -1,7 +1,6 @@
 ![VegBank](http://vegbank.org/vegbank/images/vegbank_logo69x100trans.gif)
 ![VegBank](http://vegbank.org/vegbank/images/vegbank_caps170x40outline.jpg)
 
-# VegBank
 The [VegBank](http://vegbank.org) data system provides a community managed data portal for vegetation data, particularly plots, plant taxonomy, and communities.  It is a product of the Ecological Society of America (ESA) Vegetation Panel, and is affiliated with the National Vegetation Classification (USNVC).
 
 VegBank provides a common storage system and web portal for accessing:
