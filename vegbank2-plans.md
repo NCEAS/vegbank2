@@ -38,7 +38,7 @@ This phase creates an upgraded postgres database using the current VegBank data 
 
 ### Phase II: New Web UI: Core Features (27 weeks unbuffered)
 
-Phase II will focus on design of a new web application based on core, modern HTML and Jacascript models that presents the core features of the current VegBank application, inlcuding the ability to search for plot, plant, and community data, and to display details of these on the site.  It will inlcude the current data cart model to select multiple plots and download them at once, user management pages for account creation and authentication, and a simple page to upload the VegBank XML format to load new plots.  At the end of this phase, a modern and maintainable version of VegBank (but with with fewer features than the original) will have been deployed, replacing the original application.
+Phase II will focus on design of a new web application based on core, modern HTML and Javascript models that presents the core features of the current VegBank application, inlcuding the ability to search for plot, plant, and community data, and to display details of these on the site.  It will inlcude the current data cart model to select multiple plots and download them at once, user management pages for account creation and authentication, and a simple page to upload the VegBank XML format to load new plots.  At the end of this phase, a modern and maintainable version of VegBank (but with with fewer features than the original) will have been deployed, replacing the original application.
 
 | Task# | Description                                                | Weeks |
 |-------|------------------------------------------------------------|-------|
@@ -115,3 +115,23 @@ Longer term maintenance and operation requires a small but steady infusion of fu
    - At NCEAS, hardware would now be on a virtual private cloud, rather than dedicated hardware, and so the annual fee is appropriate
 - Systems admin (2 weeks per year): security, OS patches, Virtual machine management, hardware upgrades
 - Routine software maintenance (4 weeks per year): browser compatibility fixes, version upgrades for Java and other software, security bug fixes
+
+# Alternative trajectory
+
+- Call notes from 2019-04-23
+- R API for querying iNaturalist
+- R versus curl
+- Note the BIEN group developed an rBIEN package
+    - http://bien.nceas.ucsb.edu/bien/tools/rbien/
+    - https://github.com/bmaitner/RBIEN/blob/master/tutorials/RBIEN_tutorial.Rmd
+- Simplify data model for plots
+- TurboVeg: can run desktop version
+    - Missing tree stem data
+    - Only use one strata system
+    - Only use one classification approach
+- Similar initiatives: SPlot,
+- Proposal
+    - Simplify the data model
+    - Create a REST interface
+    - Create an R package
+    - Web interface?
