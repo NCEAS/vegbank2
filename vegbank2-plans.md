@@ -2,9 +2,13 @@
 
 ![VegBank](http://vegbank.org/vegbank/images/vegbank_caps170x40outline.jpg)
 
-## Redesign Goals
+# VegBank Redesign
 
-The objectives of this project are to 1) provide an efficient means of inducting vegetation community data from California and Nationally into VegBank in the future, 2) Induct all existing California vegetation community data as identified by CDFW into VegBank, and 3) review extant data in VegBank and update the community assignments and plant taxonomy to be consistent with current standards.
+The objectives of this project are to:
+
+1) Vegbank Improvements: provide an efficient means of inducting vegetation community data from California and Nationally into VegBank in the future
+2) Load California Data: Induct all existing California vegetation community data as identified by CDFW into VegBank
+3) Update vocabularies: review extant data in VegBank and update the community assignments and plant taxonomy to be consistent with current standards.
 
 The redesign will serve several goals, primarily to improve maintainability and secondarily to add critical new features to support the objectives above.  For maintainability, we plan to modernize the VegBank technology components, remove obsolete frameworks, and better modularize the system so that the web-based client is independent of the backend data store. This separation of the user interface from the data storage systems will make it easier in the future to upgrade the web interface as standards change without refactoring the storage subsystems.  In addition, we propose several new features that can help make VegBank a critical part of the infrastructure for California and national vegetation science.
 
@@ -20,17 +24,18 @@ Currently, the total project development effort is estimated at 162 person weeks
 - Project lead at NCEAS (Jones)
 - NVC liasion / vegetation science consultant (Lee?)
 
-## Development Phases
+## Objective 1: VegBank Software Improvements
 
-This proposal structures work in five phases each of which builds upon the previous. Some work, such as the Phase II user interface work, can start and be accomplished in parallel with previous phases.
+This proposal structures work in five task phases, each of which builds upon the previous. Some work, such as the Task 2 user interface work, can start and be accomplished in parallel with previous task phases.
 
-- VegBank Storage Service and API
-- VegBank Web UI: Core Features
-- VegBank R client
-- VegBank Web UI: Ancillary Features
-- VegBank: New features
+- Task 1.1: VegBank Storage Service and API
+- Task 1.2: VegBank Web UI: Core Features
+- Task 1.3: VegBank R client
+- Task 1.4: VegBank Web UI: Ancillary Features
+- Task 1.5: VegBank: New features
+- Task 1.6: Maintenance and operations
 
-### Phase I: Design planning and Storage Service and API
+### Task 1.1: Design planning and Storage Service and API
 
 This phase creates an upgraded postgres database using the current VegBank data model, and deploys it on an updated operating system, and with a newly designed REST API that provides a service access layer to both download and upload all data within the system.  To the extent possible, this storage service will implement an API that is compatible with the [DataONE REST API](https://purl.dataone.org/architecture/apis/MN_APIs.html), to enable VegBank to become a member of the larger DataONE federation of data repositories. At the end of Phase I, the core VegBank data store will be a standalone service that can be directly accessed by both the Phase II web application and other client tools, such as commmand line browsers such as `curl` and scripting languages such as `R` and `python`.  This system should be smaller and more maintainable than any web application that relies on it, and will be designed for maintainability.
 
@@ -54,7 +59,7 @@ This phase creates an upgraded postgres database using the current VegBank data 
 
 TOTAL: 63 person weeks
 
-### Phase II: New Web UI: Core Features
+### Task 1.2: New Web UI: Core Features
 
 Phase II will focus on design of a new web application based on core, modern HTML and Javascript models that presents the core features of the current VegBank application, inlcuding the ability to search for plot, plant, and community data, and to display details of these on the site.  It will inlcude the current data cart model to select multiple plots and download them at once, user management pages for account creation and authentication, and a simple page to upload the VegBank XML format to load new plots.  At the end of this phase, a modern and maintainable version of VegBank (but with with fewer features than the original) will have been deployed, replacing the original application.
 
@@ -78,7 +83,7 @@ Phase II will focus on design of a new web application based on core, modern HTM
 
 TOTAL: 42 person weeks
 
-### Phase III: New R client `vegbank` package
+### Task 1.3: New R client `vegbank` package
 
 In this phase, we design a new `vegbank` R package as a convenient means to download, create, and upload data to and from the VegBank API. This replaces the current `vegbranch` access database, in favor of the more common use of R in this discipline. The package will support a local copy of a subset of the vegbank data, creating new plot, community, and plant records locally; verification of the validity of these new records; and data upload of these new records to the VegBank API.
 
@@ -101,7 +106,7 @@ In this phase, we design a new `vegbank` R package as a convenient means to down
 
 TOTAL: 38 person weeks
 
-### Phase IV: New Web UI: Ancillary Features
+### Task 1.4: New Web UI: Ancillary Features
 
 Phase IV will focus on completion of useful features which are helpful in the current VegBank application, particularly to advanced users.  These include advanced searching and filtering of plot data, the ability to display vegetation plots on a map, the ability to view other ancillary data from the database, and the ability to manually annotate plots to associate them with new communities and plant concepts. This phase includes the migration of information about VegBank as a project, documentation about the data model, and administrative forms for managing the system and users.  When complete, a full replacement of the current VegBank system will have been designed and deployed, minus a few features that were deemed unnecessary (see table below).
 
@@ -120,7 +125,7 @@ Phase IV will focus on completion of useful features which are helpful in the cu
 
 TOTAL: 5 person weeks
 
-### Phase V: Additional Features
+### Task 1.5: Additional Features
 
 Phase V introduces new features that are not currently part of VegBank.  Each of these could be implemented independently, and some are underspecified and so do not yet have time estimates.  Features include the addition of DOIs as a mechanism to improve citation of VegBank data, the ability to periodically import plant community data from USNVC, and the ability for VegBank to be accessible as a DataONE member to increase discoverability of VegBank holdings.
 
@@ -156,7 +161,7 @@ The following features of the current VegBank application were deemed to not be 
 | XX    | Community Loading                                          | 2     |       |
 | XX    | Data Export (part of data download #8)                     | 3     |       |
 
-## Maintenance and operation
+### Task 1.6: Maintenance and operations
 
 Longer term maintenance and operation requires a small but steady infusion of funds to upgrade hardware, provide power and cooling, and handle routine systems administration.  These costs can be broken down as:
 
@@ -167,27 +172,58 @@ Longer term maintenance and operation requires a small but steady infusion of fu
 - Systems admin (2 weeks per year): security, OS patches, Virtual machine management, hardware upgrades
 - Routine software maintenance (4 weeks per year): browser compatibility fixes, version upgrades for Java and other software, security bug fixes
 
-# Alternative trajectory
+## Objective 2: California vegetation data processing
 
-- Call notes from 2019-04-23
-- R API for querying iNaturalist
-- R versus curl
-- Note the BIEN group developed an rBIEN package
-    - https://bien.nceas.ucsb.edu/bien/tools/rbien/
-    - https://github.com/bmaitner/RBIEN/blob/master/tutorials/RBIEN_tutorial.Rmd
-- Simplify data model for plots
-- TurboVeg: can run desktop version
-    - Missing tree stem data
-    - Only use one strata system
-    - Only use one classification approach
-- Similar initiatives: SPlot,
-- Proposal
-    - Simplify the data model
-    - Create a REST interface
-    - Create an R package
-    - Web interface?
+### Task 2.1: Transform California vegetation data to new VegBank model
 
-# Call Notes 2023-09-27
+- Needs scope estimate
+
+### Task 2.2: Create a workflow (in R or another language) to automate this transformation
+
+- Needs scope estimate
+
+### Task 2.3: Upload current California data to VegBank (using new R package or REST API)
+
+- Needs scope estimate
+
+## Objective 3: Update taxonomies and classifications
+
+### Task 3.1: Load new USDA plant taxonomies
+
+- Helps test the taxonomy loading functions
+- Needs scope estimate
+
+### Task 3.2: Load new USNVC Classifications
+
+- Helps test the classification loading functions
+- Needs scope estimate
+
+### Task 3.3: Map legacy data in BegBank to new vocabularies
+
+- May not be a high priority
+- Needs scope estimate
+
+# Project scoping calls
+
+## Call notes 2023-10-06
+
+- Bob: need web feature to annotate plot classifications
+  - also need batch update of community reassignments (and maybe not a web feature for it at all)
+- Mike: who is the target audience for the client software?
+  - Heritage programs
+  - Grad students
+- General discussion of suitability of R client
+  - general agreement that it is the best approach
+- Matt: big question is the over-the-wire data representation
+- Rosie: can we have a GIS-enabled API for doing spatial queries in e.g., ArcGIS online?
+- add staff time for documentation effort -- tutorials for R client in particular, from a veg science perspective
+  - maybe Patrick McIntyre to help with this effort?
+- Discussion of transformation steps to get data into standard format
+  - Mike Lee: people should upload their raw data and tranformation scripts (store in DataONE?)
+- Este -- the map UI would be useful in Phase 4
+- TODO: add data scientist/analyst(s) and MLee to budget
+
+## Call Notes 2023-09-27
 
 - Rochelle says they have an existing data model in CA
 - Timeline
@@ -214,3 +250,25 @@ Longer term maintenance and operation requires a small but steady infusion of fu
         - SPlot group with 2 million plots
         - BIEN - veg plot data 
         - Maybe hold a meeting
+
+## Call notes from 2019-04-23
+
+Alternative trajectory
+
+- R API for querying iNaturalist
+- R versus curl
+- Note the BIEN group developed an rBIEN package
+    - https://bien.nceas.ucsb.edu/bien/tools/rbien/
+    - https://github.com/bmaitner/RBIEN/blob/master/tutorials/RBIEN_tutorial.Rmd
+- Simplify data model for plots
+- TurboVeg: can run desktop version
+    - Missing tree stem data
+    - Only use one strata system
+    - Only use one classification approach
+- Similar initiatives: SPlot,
+- Proposal
+    - Simplify the data model
+    - Create a REST interface
+    - Create an R package
+    - Web interface?
+
