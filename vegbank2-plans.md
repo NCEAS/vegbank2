@@ -135,3 +135,32 @@ Longer term maintenance and operation requires a small but steady infusion of fu
     - Create a REST interface
     - Create an R package
     - Web interface?
+
+# Call Notes 2023-09-27
+
+- Rochelle says they have an existing data model in CA
+- Timeline
+    - Keep language in contract broad and flexible
+    - Hard deadline of Feb 1 to get all paperwork done at Cal Wildlife
+    - Start with general framework
+    - Don't frame it as an IT development project
+    - Can push start date to March 2024 or April, money expires in March 2026
+    - Mid Oct
+        - Need scope of work,
+    - Deliverables
+        - Project management - Matt & NCEAS
+        - Data cleaning, loading, and migration - Data Scientist @ NCEAS
+            - Migrate data into Vegbank
+        - Software development - Developer @ NCEAS
+        - R Package for veg data validation (but is that the wrong approach for the audience)
+        - QC
+        - One deliverable
+    - Bob - can work on intro
+    - Rochelle -- they can give their feedback based on their data
+    - Bob - work with other groups about veg data and how they handle that
+        - GBIF and Alexis
+        - European Veg Archive
+        - SPlot group with 2 million plots
+        - BIEN - veg plot data 
+        - Maybe hold a meeting
+    
