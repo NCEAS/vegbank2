@@ -8,6 +8,18 @@ The objectives of this project are to 1) provide an efficient means of inducting
 
 The redesign will serve several goals, primarily to improve maintainability and secondarily to add critical new features to support the objectives above.  For maintainability, we plan to modernize the VegBank technology components, remove obsolete frameworks, and better modularize the system so that the web-based client is independent of the backend data store. This separation of the user interface from the data storage systems will make it easier in the future to upgrade the web interface as standards change without refactoring the storage subsystems.  In addition, we propose several new features that can help make VegBank a critical part of the infrastructure for California and national vegetation science.
 
+## Personnel estimate
+
+The below task breakdown represents an extremely rough personnel estimate. Actual work would be conducted on a level-of-effort basis, meaning that we will fund and deploy a certain level of effort, and will work through the prioritized set of tasks as best as we can. Some contingency has been built in (40%), but significant delays or complicaitons from the historical code could cause time delays.
+
+Currently, the total project development effort is estimated at 162 person weeks for software development. This does not include data cleaning and loading of specific datasets, which will need to be estimated as well. The budget I shared has budgeted 208 weeks of software development FTE over 2 years. Personnel in this estimate would include the following roles:
+
+- Software developers at NCEAS (TBD)
+- Systems administrator at NCEAS (Outin)
+- Project coordinator at NCEAS (TBD)
+- Project lead at NCEAS (Jones)
+- NVC liasion / vegetation science consultant (Lee?)
+
 ## Development Phases
 
 This proposal structures work in five phases each of which builds upon the previous. Some work, such as the Phase II user interface work, can start and be accomplished in parallel with previous phases.
@@ -38,7 +50,9 @@ This phase creates an upgraded postgres database using the current VegBank data 
 | 10    | Automate build and deploy process                          | 2     |       |
 | 11    | Deploy REST Service (upgrade postgres, web servers, etc)   | 1     |       |
 | 12    | Supervision and coordination (one week each for Jones, Lee, and the developer) | 3 |       |
-| xx    | Contingency time                                           | 10    |       |
+| xx    | Contingency time                                           | 18    |       |
+
+TOTAL: 63 person weeks
 
 ### Phase II: New Web UI: Core Features
 
@@ -47,7 +61,7 @@ Phase II will focus on design of a new web application based on core, modern HTM
 | Task# | Description                                                | Weeks | Notes |
 |-------|------------------------------------------------------------|-------|-------|
 | 13    | HTML5/JS frontend - Design iterations                      | 4     |       |
-| 14    | Query implementation - Plots                               | 1     |       |
+| 14    | Query implementation - Plots                               | 2     |       |
 | 15    | Data views implementation - Plots                          | 2     |       |
 | 16    | Data views implementation - Plants                         | 2     |       |
 | 17    | Data views implementation - Community                      | 2     |       |
@@ -60,7 +74,9 @@ Phase II will focus on design of a new web application based on core, modern HTM
 | 23    | ~~User Certification request form  (is user certification still needed - we have never turned anyone down?)~~ | 2     | Proposal: Remove      |
 | 24    | Deploy VegBank 2 (VegBank 1 decomissioned)                 | 2     |       |
 | 25    | Supervision and coordination (one week each for Jones, Lee, and the developer) | 3 |       |
-| xx    | Contingency time                                           | 10    |       |
+| xx    | Contingency time                                           | 12    |       |
+
+TOTAL: 42 person weeks
 
 ### Phase III: New R client `vegbank` package
 
@@ -74,14 +90,16 @@ In this phase, we design a new `vegbank` R package as a convenient means to down
 | xx    | Data download implementation - Plots                       | 2     |       |
 | xx    | Data download implementation - Plants                      | 2     |       |
 | xx    | Data download implementation - Community                   | 2     |       |
-| xx    | Query function - local plot subsetting                     | 1     |       |
-| xx    | Design and code local data insertion functions             | 4     |       |
-| xx    | Design and code local data verification functions          | 4     |       |
-| xx    | Design and code data upload functions                      | 4     |       |
-| xx    | Design and code submission review and approval functions   | 4     |       |
+| xx    | Query function - local plot subsetting                     | 2     |       |
+| xx    | Design and code local data insertion functions             | 2     |       |
+| xx    | Design and code local data verification functions          | 2     |       |
+| xx    | Design and code data upload functions                      | 2     |       |
+| xx    | Design and code submission review and approval functions   | 2     |       |
 | xx    | Code review and publish `vegbank` R package                | 2     |       |
 | xx    | Supervision and coordination (one week each for Jones and the developer) | 2 |       |
 | xx    | Contingency time                                           | 10    |       |
+
+TOTAL: 38 person weeks
 
 ### Phase IV: New Web UI: Ancillary Features
 
@@ -100,23 +118,27 @@ Phase IV will focus on completion of useful features which are helpful in the cu
 | 34    | **Admin forms and pages**                                  | 2     |       |
 | xx    | Contingency time                                           | 1     |       |
 
+TOTAL: 5 person weeks
+
 ### Phase V: Additional Features
 
 Phase V introduces new features that are not currently part of VegBank.  Each of these could be implemented independently, and some are underspecified and so do not yet have time estimates.  Features include the addition of DOIs as a mechanism to improve citation of VegBank data, the ability to periodically import plant community data from USNVC, and the ability for VegBank to be accessible as a DataONE member to increase discoverability of VegBank holdings.
 
 | Task# | Description                                                | Weeks | Notes |
 |-------|------------------------------------------------------------|-------|-------|
-| 35    | New feature: DOI assignment                                | 3     |       |
+| 35    | New feature: DOI assignment                                | 2     |       |
 | 36    | New feature: Automate import of community concepts from usnvc.org, deal with duplication |  4  |       |
 | 37    | DataONE member node                                        | 4     |       |
 | 38    | Security analysis and code review                          | 2     |       |
 | 39    | ~~New feature: Changes to data model (unspecified)~~       | ?     |       |
 | 40    | ~~New feature: Quick view of community type (unspecified)~~| ?     |       |
-| 41    | Data usage and citation reports, integrate with DataONE    | ?     |       |
+| 41    | Data usage and citation reports, integrate with DataONE    | 2     |       |
 | 42    | ~~Import / Export of data using the VegX schema or variant~~| ?     |       |
 | 43    | ~~Schema and UI modifications for compatibility with BIEN~~| ?     |       |
 | 44    | ~~Import / Export of data from TurboVeg format or app~~    | ?     |       |
-| xx    | Contingency time                                           | 1     |       |
+| xx    | Contingency time                                           | 4     |       |
+
+TOTAL: 14 person weeks
 
 ### Dropped Features
 
