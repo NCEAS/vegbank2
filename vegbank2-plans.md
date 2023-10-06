@@ -199,7 +199,7 @@ Longer term maintenance and operation requires a small but steady infusion of fu
 - Helps test the classification loading functions
 - Needs scope estimate
 
-### Task 3.3: Map legacy data in BegBank to new vocabularies
+### Task 3.3: Map legacy data in VegBank to new vocabularies
 
 - May not be a high priority
 - Needs scope estimate
