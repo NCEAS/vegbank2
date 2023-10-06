@@ -14,7 +14,7 @@ The redesign will serve several goals, primarily to improve maintainability and 
 
 ## Personnel estimate
 
-The below task breakdown represents an extremely rough personnel estimate. Actual work would be conducted on a level-of-effort basis, meaning that we will fund and deploy a certain level of effort, and will work through the prioritized set of tasks as best as we can. Some contingency has been built in (40%), but significant delays or complicaitons from the historical code could cause time delays.
+The below task breakdown represents an extremely rough personnel estimate. Actual work would be conducted on a level-of-effort basis, meaning that we will fund and deploy a certain level of effort, and will work through the prioritized set of tasks as best as we can. Some contingency has been built in (40%), but significant delays or complications from the historical code could cause time delays.
 
 Currently, the total project development effort is estimated at 162 person weeks for software development. This does not include data cleaning and loading of specific datasets, which will need to be estimated as well. The budget I shared has budgeted 208 weeks of software development FTE over 2 years. Personnel in this estimate would include the following roles:
 
@@ -23,6 +23,7 @@ Currently, the total project development effort is estimated at 162 person weeks
 - Project coordinator at NCEAS (TBD)
 - Project lead at NCEAS (Jones)
 - NVC liasion / vegetation science consultant (Lee?)
+- Data Science analyst at NCEAS (TBD)
 
 ## Objective 1: VegBank Software Improvements
 
