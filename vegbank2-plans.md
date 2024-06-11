@@ -47,18 +47,15 @@ This phase creates an upgraded postgres database using the current VegBank data 
 | 2     | REST API - Design iterations                               | 2     |       |
 | xx    | REST API - Design over-the-wire data representation        | 4     |       |
 | 3     | REST API - Code and Test                                   | 8     |       |
-| 4     | ~~Data Loading via XML (plants, plots, communities, etc.)~~    | 4     | Proposal: Remove XML format      |
-| 5     | ~~Optimize existing loading process - speed, memory (fix loading bugs to allow large number of plots; optimize keyword indexing)~~ | 4     | Proposal: Remove XML format      |
 | 6     | Design and code new data loading format and loading process for efficiency | 16|       |
-| 7     | ~~Design and implement VegBranch changes for new load changes (M Lee) (only needed if 6, and done in parallel)~~ | 3     |       |
 | 8     | New build system (maven)                                   | 2     |       |
 | 9     | New testing suite/CI                                       | 2     |       |
 | 10    | Automate build and deploy process                          | 2     |       |
 | 11    | Deploy REST Service (upgrade postgres, web servers, etc)   | 1     |       |
 | 12    | Supervision and coordination (one week each for Jones, Lee, and the developer) | 3 |       |
-| xx    | Contingency time                                           | 18    |       |
+| xx    | Contingency time                                           | 16    |       |
 
-TOTAL: 63 person weeks
+TOTAL: 64 person weeks
 
 ### Task 1.2: New Web UI: Core Features
 
@@ -69,7 +66,7 @@ Phase II will focus on design of a new web application based on core, modern HTM
 | 13    | HTML5/JS frontend - Design iterations                      | 4     |       |
 | 14    | Query implementation - Plots                               | 2     |       |
 | 15    | Data views implementation - Plots                          | 2     |       |
-| 16    | Data views implementation - Plants                         | 2     |       |
+| 16    | Data views implementation - Plants                         | 2     |       |   Task 16-19 lower priority
 | 17    | Data views implementation - Community                      | 2     |       |
 | 18    | Query implementation - Plants                              | 1     |       |
 | 19    | Query implementation - Community                           | 1     |       |
@@ -80,9 +77,9 @@ Phase II will focus on design of a new web application based on core, modern HTM
 | 23    | ~~User Certification request form  (is user certification still needed - we have never turned anyone down?)~~ | 2     | Proposal: Remove      |
 | 24    | Deploy VegBank 2 (VegBank 1 decomissioned)                 | 2     |       |
 | 25    | Supervision and coordination (one week each for Jones, Lee, and the developer) | 3 |       |
-| xx    | Contingency time                                           | 12    |       |
+| xx    | Contingency time                                           | 10    |       |
 
-TOTAL: 42 person weeks
+TOTAL: 40 person weeks
 
 ### Task 1.3: New R client `vegbank` package
 
@@ -91,7 +88,7 @@ In this phase, we design a new `vegbank` R package as a convenient means to down
 | Task# | Description                                                | Weeks | Notes |
 |-------|------------------------------------------------------------|-------|-------|
 | xx    | R Client - Design iterations                               | 4     |       |
-| xx    | Data model in R                                            | 2     |       |
+| xx    | Data model in R                                            | 4     |       |
 | xx    | Design and code authentication API                         | 2     |       |
 | xx    | Data download implementation - Plots                       | 2     |       |
 | xx    | Data download implementation - Plants                      | 2     |       |
@@ -105,7 +102,7 @@ In this phase, we design a new `vegbank` R package as a convenient means to down
 | xx    | Supervision and coordination (one week each for Jones and the developer) | 2 |       |
 | xx    | Contingency time                                           | 10    |       |
 
-TOTAL: 38 person weeks
+TOTAL: 40 person weeks
 
 ### Task 1.4: New Web UI: Ancillary Features
 
@@ -113,14 +110,7 @@ Phase IV will focus on completion of useful features which are helpful in the cu
 
 | Task# | Description                                                | Weeks | Notes |
 |-------|------------------------------------------------------------|-------|-------|
-| 26    | ~~Query implementation - Advanced Plots~~                  | 2     |       |
-| 27    | ~~Map UI for mapping plots (from query and dataset)~~      | 1     |       |
-| 28    | ~~View Uploaded Plots (another type of plot query)~~       | 1     |       |
-| 29    | ~~Edit uploaded plot precision and embargo date (Consider supporting modification of multiple plots at once) (mlee is the only one who probably uses this)~~| 1  |       |
-| 30    | ~~Supplemental data queries (People, stratum, cover, projects, references, supplemental search)~~ | 4 |       |
-| 31    | ~~Plot Annotation -- mapping plots to new communities or plant concepts~~ |  2  |       |
 | 32    | **Historical webpage migration to the new system: history, ERD, general information** |  2    |       |
-| 33    | ~~Data dictionary querying and display (reads tables in the database)~~ |   2   |       |
 | 34    | **Admin forms and pages**                                  | 2     |       |
 | xx    | Contingency time                                           | 1     |       |
 
@@ -136,75 +126,49 @@ Phase V introduces new features that are not currently part of VegBank.  Each of
 | 36    | New feature: Automate import of community concepts from usnvc.org, deal with duplication |  4  |       |
 | 37    | DataONE member node                                        | 4     |       |
 | 38    | Security analysis and code review                          | 2     |       |
-| 39    | ~~New feature: Changes to data model (unspecified)~~       | ?     |       |
-| 40    | ~~New feature: Quick view of community type (unspecified)~~| ?     |       |
 | 41    | Data usage and citation reports, integrate with DataONE    | 2     |       |
-| 42    | ~~Import / Export of data using the VegX schema or variant~~| ?     |       |
-| 43    | ~~Schema and UI modifications for compatibility with BIEN~~| ?     |       |
-| 44    | ~~Import / Export of data from TurboVeg format or app~~    | ?     |       |
 | xx    | Contingency time                                           | 4     |       |
 
 TOTAL: 14 person weeks
 
-### Dropped Features
-
-The following features of the current VegBank application were deemed to not be useful, or no longer relevant, and so the plan is to drop these from the application and not reimplement them.
-
-| Task# | Description                                                | Weeks | Notes |
-|-------|------------------------------------------------------------|-------|-------|
-| XX    | Supplemental data creation forms (party, stratum, cover, reference) | ? |       |
-| XX    | Dataset queries (from link at top of page; map datasets, constancy table, find plots plant, and find plots with community)   | ?     |       |
-| XX    | Plot Loading -- Rectification                              | 1     |       |
-| XX    | Plot Loading -- VegBranch                                  | 2     |       |
-| XX    | Plot Loading -- CSV                                        | 1     |       |
-| XX    | Plot Loading -- Other                                      | 2     |       |
-| XX    | Plant Loading                                              | 2     |       |
-| XX    | Community Loading                                          | 2     |       |
-| XX    | Data Export (part of data download #8)                     | 3     |       |
-
-### Task 1.6: Maintenance and operations
-
-Longer term maintenance and operation requires a small but steady infusion of funds to upgrade hardware, provide power and cooling, and handle routine systems administration.  These costs can be broken down as:
-
-- Hardware $4500 every 3 years, assuming the hardware requirements are roughly constant
-   - Last upgraded in 2010
-   - Simplest to amortize this as roughly $1500 per year, which will both pay for hardware and any maintenance agreements.
-   - At NCEAS, hardware would now be on a virtual private cloud, rather than dedicated hardware, and so the annual fee is appropriate
-- Systems admin (2 weeks per year): security, OS patches, Virtual machine management, hardware upgrades
-- Routine software maintenance (4 weeks per year): browser compatibility fixes, version upgrades for Java and other software, security bug fixes
-
 ## Objective 2: California vegetation data processing
 
-### Task 2.1: Transform California vegetation data to new VegBank model
+### Task 2.1: Create a workflow (in R or another language) to automate CDFW transformation
 
-- Needs scope estimate
+- 26 weeks
 
-### Task 2.2: Create a workflow (in R or another language) to automate this transformation
+### Task 2.2: Transform California vegetation data to new VegBank model
 
-- Needs scope estimate
+- 20 weeks
 
 ### Task 2.3: Upload current California data to VegBank (using new R package or REST API)
 
-- Needs scope estimate
+- 8 weeks
 
 ## Objective 3: Update taxonomies and classifications
 
 ### Task 3.1: Load new USDA plant taxonomies
 
 - Helps test the taxonomy loading functions
-- Needs scope estimate
+- 2 week
 
 ### Task 3.2: Load new USNVC Classifications
 
 - Helps test the classification loading functions
-- Needs scope estimate
+- 2 week
 
-### Task 3.3: Map legacy data in VegBank to new vocabularies
+Contingency: 20 weeks
 
-- May not be a high priority
-- Needs scope estimate
+TOTAL: 78 person weeks
 
 # Project scoping calls
+
+## Call notes 2023-11-03
+
+- Reviewed task and deliverable list, made several decisions on priorities as indicated in the table above
+- Discussed need to budget revisions
+- Discussed challenges with estimating data transformations for CDFW data loading
+- TODO: MBJ to send revised budget and scope of work
 
 ## Call notes 2023-10-06
 
