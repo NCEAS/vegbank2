@@ -21,22 +21,22 @@ VegBank was originally designed and implemented in the early 2000's using server
 
 ### Task 1: Project Planning and Reporting
 
-- 1.a Project start-up meeting
-- 1.b Detailed plan and timeline
-- 1.c Establish regular, monthly meetings with CDFW
-- 1.d Progress Reports (Quarterly, January 30, April 30, July 30, October 30)
-- 1.e Draft and Final Progress Report
+- D-1.1 Project start-up meeting
+- D-1.2 Detailed plan and timeline
+- D-1.3 Establish regular, monthly meetings with CDFW
+- D-1.4 Progress Reports (Quarterly, January 30, April 30, July 30, October 30)
+- D-1.5 Draft and Final Progress Report
     - Draft Report: prior to end of the contract term (01/05/2026)
     - Final Progress Report: Due prior to end of contract term (02/01/2026)
 
 ### Task 2: Improvements to VegBank Data Storage Design
 
-- 2.a Refactored data model and design plans
-- 2.b Deployed and refactored, open-source VegBank
-- 2.c Publish an open-source R package for VegBank
+- D-2.1 Refactored data model and design plans
+- D-2.2 Deployed and refactored, open-source VegBank
+- D-2.3 Publish an open-source R package for VegBank
 
 ### Task 3: California Vegetation Data Upload into VegBank
 
-- 3.a Create tool for inducting California vegetation data
-- 3.b Induct California vegetation survey data into VegBank
+- D-3.1 Create tool for inducting California vegetation data
+- D-3.2 Induct California vegetation survey data into VegBank
 
