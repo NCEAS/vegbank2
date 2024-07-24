@@ -16246,7 +16246,7 @@ conditions may change between resampling events.
         <formShow name="Summary" linkToPK="true">1292</formShow>
       </attForms>
       <update>1.0.3</update>
-      <updateSQLFile>throwAways\alterTaxObsDenormRenameSciNameToFull.sql</updateSQLFile>
+      <updateSQLFile>throwAways/alterTaxObsDenormRenameSciNameToFull.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>1743</attID>
@@ -16347,7 +16347,7 @@ conditions may change between resampling events.
         <formShow name="Summary" linkToPK="true">1297</formShow>
       </attForms>
       <update>1.0.3</update>
-      <updateSQLFile>throwAways\alterTaxObsDenormRenameSciNameToFull.sql</updateSQLFile>
+      <updateSQLFile>throwAways/alterTaxObsDenormRenameSciNameToFull.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>1758</attID>
@@ -20095,7 +20095,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>unique ID</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2451</attID>
@@ -20111,7 +20111,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>date and time stat was recorded</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2454</attID>
@@ -20127,7 +20127,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>not implemented.  Group of stats name.</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2457</attID>
@@ -20143,7 +20143,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>not implemented.  Name of stat.</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2460</attID>
@@ -20159,7 +20159,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>Name of table that this stat applies to.</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2463</attID>
@@ -20175,7 +20175,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>Minimum PK of the table</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2466</attID>
@@ -20191,7 +20191,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>Maximum PK of the table</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
     <attribute>
       <attID>2469</attID>
@@ -20207,7 +20207,7 @@ conditions may change between resampling events.
       <attNotes>n/a</attNotes>
       <attDefinition>Count of records in the table</attDefinition>
       <update>1.0.4</update>
-      <updateSQLFile>throwAways\createTable_dba_stats.sql</updateSQLFile>
+      <updateSQLFile>throwAways/createTable_dba_stats.sql</updateSQLFile>
     </attribute>
   </entity>
   <entity>
