@@ -1,0 +1,1 @@
+create table dba_dbstatstime (stat_ID serial, statDate timestamp with time zone, statPkg integer, statName text, statTable varchar (100), minPK integer, maxPK integer, countRecs integer, primary key (stat_ID));
