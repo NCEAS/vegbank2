@@ -36,4 +36,9 @@ Missing SQL Files that were declared in 'db_model_vegbank' and cannot be found:
 
 ## The remaining migrations
 
-The other migration sqls were obtained by following the 'build.xml' structure.
+The other migration sqls (Steps 1 to 8) were obtained by following the 'build.xml' structure in the [Vegbank repo](https://github.com/NCEAS/vegbank/).
+
+
+## Other Notes/Comments
+
+When reviewing Vegbank's 'db_model_vegbank.xml', there appears to be specific update versions to attributes for vegbank changes 1.0.*, which leads me to believe we can safely omit the respective `vegbank-changes-1.0.*.sql` files.
