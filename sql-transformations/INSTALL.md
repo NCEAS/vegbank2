@@ -32,6 +32,7 @@ CREATE TABLE dba_preassignacccode
   
 );  
 ```
+- 
 
 And has been amended to:
 
@@ -94,6 +95,16 @@ To find all the different updates, you can perform the following:
 
 When reviewing Vegbank's 'db_model_vegbank.xml', there appears to be specific update versions to attributes for vegbank changes 1.0.*, which leads me to believe we can safely omit the respective `vegbank-changes-1.0.*.sql` files.
 
-## The remaining migrations
+## Step 2: The remaining migrations
 
 The other migration sqls (Steps 1 to 8) were obtained by following the 'build.xml' structure in the [Vegbank repo](https://github.com/NCEAS/vegbank/).
+
+## Step 3: Populating the Data Dictionary
+
+To help devs better understand the database's structure, we then need to populate the data dictionary.
+
+Run the following to create the relevant 'populate-datadictionary.sql' sql file.
+
+```sh
+./getvegbanksql_datadictionary.sh
+```
