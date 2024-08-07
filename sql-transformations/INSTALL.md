@@ -99,6 +99,8 @@ When reviewing Vegbank's 'db_model_vegbank.xml', there appears to be specific up
 
 The other migration sqls (Steps 1 to 8) were obtained by following the 'build.xml' structure in the [Vegbank repo](https://github.com/NCEAS/vegbank/).
 
+Note - the migration files have been renamed for consistency. There also exists SQL code within these files that cause a flyway migration failure - so these files have been amended accordingly (ex. DROP VIEW -> DROP VIEW IF EXISTS)
+
 ## Step 3: Populating the Data Dictionary
 
 To help devs better understand the database's structure, we then need to populate the data dictionary.
