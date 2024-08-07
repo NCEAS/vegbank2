@@ -108,7 +108,3 @@ Run the following to create the relevant 'populate-datadictionary.sql' sql file.
 ```sh
 ./getvegbanksql_datadictionary.sh
 ```
-
-## Step 4: Verify that the DB matches the model XML
-
-// TODO - Sort dbVerify
