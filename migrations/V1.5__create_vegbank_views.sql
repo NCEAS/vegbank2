@@ -11,7 +11,7 @@ CREATE VIEW view_party_public AS
     ;
 
 
-drop view view_busRule_plotsizeshape;
+DROP VIEW IF EXISTS view_busRule_plotsizeshape;
 CREATE VIEW view_busRule_plotsizeshape AS 
 
   SELECT (project_id), (select projectName from project where project.project_ID=observation.projecT_ID) as projectName, 
@@ -20,17 +20,17 @@ CREATE VIEW view_busRule_plotsizeshape AS
    where ((area is null) and (shape is null or (((shape)<>'Plotless') and (upper(shape) not like 'RELEV%')))) group by project_ID;
    
    
-DROP view view_busRule_duplStratumType;
+DROP VIEW IF EXISTS view_busRule_duplStratumType;
    CREATE VIEW view_busRule_duplStratumType AS 
     SELECT count(1), stratummethod_id, stratumindex FROM stratumType GROUP BY stratummethod_id, stratumindex HAVING count(1) > 1;
     
-DROP view view_busRule_duplcovercode;
+DROP VIEW IF EXISTS view_busRule_duplcovercode;
    CREATE VIEW view_busRule_duplcovercode AS 
     SELECT count(1), covermethod_id, covercode FROM coverIndex GROUP BY covermethod_id, covercode HAVING count(1) > 1;
 
 -- EMBARGO views    
-drop view view_emb_embargo_complete;
-drop view view_emb_embargo_currentfullonly;
+DROP VIEW IF EXISTS view_emb_embargo_complete;
+DROP VIEW IF EXISTS view_emb_embargo_currentfullonly;
 
 CREATE VIEW view_emb_embargo_currentfullonly AS
   SELECT * FROM embargo WHERE (((defaultStatus)=6) AND ((embargoStart)<Now()) AND ((embargoStop)>Now()));
@@ -213,79 +213,79 @@ CREATE view view_csv_taxonimportance AS
  
  
  -- the following views create "standard" names for plantconcepts, based on usages of preferred party and classsystems: 
- DROP VIEW view_std_plantnames_code;
+ DROP VIEW IF EXISTS view_std_plantnames_code;
  CREATE VIEW view_std_plantnames_code AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Code' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.511.USDANRCSPLANTS2') AND usagestop IS NULL;
     
- DROP VIEW view_std_plantnames_sciname;
+ DROP VIEW IF EXISTS view_std_plantnames_sciname;
  CREATE VIEW view_std_plantnames_sciname AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Scientific' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.511.USDANRCSPLANTS2') AND usagestop IS NULL;
     
- DROP VIEW view_std_plantnames_scinamenoauth;
+ DROP VIEW IF EXISTS view_std_plantnames_scinamenoauth;
  CREATE VIEW view_std_plantnames_scinamenoauth AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Scientific without authors' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.511.USDANRCSPLANTS2') AND usagestop IS NULL;
     
- DROP VIEW view_std_plantnames_common;
+ DROP VIEW IF EXISTS view_std_plantnames_common;
  CREATE VIEW view_std_plantnames_common AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'English Common' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.511.USDANRCSPLANTS2') AND usagestop IS NULL;
     
  --the following views are same as above, but not party specific, to catch "other concepts":   
- DROP VIEW view_all_plantnames_code;
+ DROP VIEW IF EXISTS view_all_plantnames_code;
  CREATE VIEW view_all_plantnames_code AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Code' ;
     
- DROP VIEW view_all_plantnames_sciname;
+ DROP VIEW IF EXISTS view_all_plantnames_sciname;
  CREATE VIEW view_all_plantnames_sciname AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Scientific' ;
     
- DROP VIEW view_all_plantnames_scinamenoauth;
+ DROP VIEW IF EXISTS view_all_plantnames_scinamenoauth;
  CREATE VIEW view_all_plantnames_scinamenoauth AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'Scientific without authors' ;
     
- DROP VIEW view_all_plantnames_common;
+ DROP VIEW IF EXISTS view_all_plantnames_common;
  CREATE VIEW view_all_plantnames_common AS
     SELECT plantconcept_id, plantname FROM plantusage WHERE classsystem = 'English Common' ;
  
 
  -- the following views create "standard" names for commconcepts, based on usages of preferred party and classsystems: 
- DROP VIEW view_std_commnames_code;
+ DROP VIEW IF EXISTS view_std_commnames_code;
  CREATE VIEW view_std_commnames_code AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Code' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.512.NATURESERVE') AND usagestop IS NULL;
     
- DROP VIEW view_std_commnames_sciname;
+ DROP VIEW IF EXISTS view_std_commnames_sciname;
  CREATE VIEW view_std_commnames_sciname AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Scientific' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.512.NATURESERVE') AND usagestop IS NULL;
     
- DROP VIEW view_std_commnames_translated;
+ DROP VIEW IF EXISTS view_std_commnames_translated;
  CREATE VIEW view_std_commnames_translated AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Translated' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.512.NATURESERVE') AND usagestop IS NULL;
     
- DROP VIEW view_std_commnames_common;
+ DROP VIEW IF EXISTS view_std_commnames_common;
  CREATE VIEW view_std_commnames_common AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Common' AND party_id = 
     (SELECT party_id FROM party WHERE accessioncode='VB.Py.512.NATURESERVE') AND usagestop IS NULL;
     
  
- DROP VIEW view_all_commnames_code;
+ DROP VIEW IF EXISTS view_all_commnames_code;
  CREATE VIEW view_all_commnames_code AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Code' ;
     
- DROP VIEW view_all_commnames_sciname;
+ DROP VIEW IF EXISTS view_all_commnames_sciname;
  CREATE VIEW view_all_commnames_sciname AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Scientific' ;
     
- DROP VIEW view_all_commnames_translated;
+ DROP VIEW IF EXISTS view_all_commnames_translated;
  CREATE VIEW view_all_commnames_translated AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Translated' ;
     
- DROP VIEW view_all_commnames_common;
+ DROP VIEW IF EXISTS view_all_commnames_common;
  CREATE VIEW view_all_commnames_common AS
     SELECT commconcept_id, commname FROM commusage WHERE classsystem = 'Common' ;
  
@@ -324,27 +324,27 @@ CREATE VIEW view_observation_transl AS
 -- CREATE VIEW view_taxonobs_distinctid_curr AS SELECT observation_id, int_currplantconcept_id as plantconcept_id, max(cover) as maxplantcover FROM view_notEmb_taxonObservation as taxonobservation,     taxonimportance where taxonimportance.taxonobservation_id=taxonobservation.taxonobservation_id GROUP BY plantconcept_id,observation_id;
 
 -- this view needed in the event there are no taxonimportance records for a taxonobservation.
--- drop view view_taxonobs_withmaxcover;
+-- DROP VIEW IF EXISTS view_taxonobs_withmaxcover;
 CREATE VIEW view_taxonobs_withmaxcover AS
   SELECT taxonobservation.*, 
     (select max(cover) from taxonimportance where taxonimportance.taxonobservation_ID=taxonobservation.taxonobservation_ID) as maxcover 
   FROM view_notEmb_taxonObservation as taxonobservation;
 
---   drop view view_taxonobs_distinctid_curr;
+--   DROP VIEW IF EXISTS view_taxonobs_distinctid_curr;
 CREATE VIEW view_taxonobs_distinctid_curr AS
   SELECT userdataset_id, observation_id, int_currplantconcept_id as plantconcept_id, max(maxcover) as maxplantcover
     FROM view_taxonobs_withmaxcover as taxonobservation, userdatasetitem 
     WHERE observation_id =  itemrecord  AND itemtable='observation' 
     GROUP BY plantconcept_id,userdataset_id,observation_id;
   
--- drop view view_taxonobs_distinctid_curr_counts;  
+-- DROP VIEW IF EXISTS view_taxonobs_distinctid_curr_counts;  
 CREATE VIEW  view_taxonobs_distinctid_curr_counts AS 
   SELECT userdataset_id, plantconcept_id, count(1) AS countObs,  avg(maxplantcover) AS avgcovernoround, 
   min(maxplantcover) AS mincovernoround, max(maxplantcover) AS maxcovernoround
   FROM view_taxonobs_distinctid_curr
   GROUP BY userdataset_id, plantconcept_id;  
   
--- drop view view_taxonobs_distinctid_curr_counts_plants;
+-- DROP VIEW IF EXISTS view_taxonobs_distinctid_curr_counts_plants;
 CREATE VIEW view_taxonobs_distinctid_curr_counts_plants AS
      SELECT view_taxonobs_distinctid_curr_counts.*,  round(CAST (view_taxonobs_distinctid_curr_counts.avgcovernoround as numeric),3) AS avgcover,
      round(CAST (view_taxonobs_distinctid_curr_counts.mincovernoround as numeric),3) AS mincover,
@@ -352,7 +352,7 @@ CREATE VIEW view_taxonobs_distinctid_curr_counts_plants AS
      temptbl_std_plantnames.plantname, temptbl_std_plantnames.sciname, temptbl_std_plantnames.scinamenoauth,
      temptbl_std_plantnames.code,temptbl_std_plantnames.common FROM temptbl_std_plantnames, view_taxonobs_distinctid_curr_counts 
      WHERE view_taxonobs_distinctid_curr_counts.plantconcept_ID=temptbl_std_plantnames.plantconcept_ID;
---DROP VIEW view_plotall_withembargo;
+--DROP VIEW IF EXISTS view_plotall_withembargo;
 CREATE VIEW view_plotall_withembargo
 AS SELECT plot.*, embargo_id, embargoreason,defaultstatus,embargostart,embargostop, (defaultstatus + CASE WHEN embargostop<now() then 100 ELSE 0 END) AS embstatusinclexpired from plot
 LEFT JOIN embargo on plot.plot_id = embargo.plot_ID;
