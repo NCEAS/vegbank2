@@ -2395,8 +2395,9 @@ CREATE TABLE dba_datamodelversion
     versionImplemented  timestamp with time zone  DEFAULT now()
   
 );    
-    
-      INSERT INTO dba_datamodelversion (versionText) values ('1.0.5');
+-- DOU DISABLE:
+-- THIS IS ALREADY DECLARED IN THE DUMP FILE
+-- INSERT INTO dba_datamodelversion (versionText) values ('1.0.5');
     
     
 ----------------------------------------------------------------------------

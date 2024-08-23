@@ -9,7 +9,7 @@
 DELETE FROM dba_cookie;
 DELETE FROM dba_cookieLabels;
 
-insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, description, sortorder)  values ( 'table_stemsize','hide','observation_comprehensive',3062,'show table of stem sizes on this view',1) ;
+-- Dou Disable: insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, description, sortorder)  values ( 'table_stemsize','hide','observation_comprehensive',3062,'show table of stem sizes on this view',1) ;
 insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, description, sortorder)  values ( 'table_stemsize','show','observation_taxa',3062,'show table of stem sizes on this view' ,3) ;
 insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, description, sortorder)  values ( 'graphic_stemsize','show','observation_comprehensive',3062,'show graphic of stem sizes on this view' ,4) ;
 insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, description, sortorder)  values ( 'graphic_stemsize','show','observation_taxa',3062,'show graphic of stem sizes on this view',6 ) ;
@@ -41,7 +41,7 @@ insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, sorto
 -- mapping
 insert into dba_cookie ( cookieName ,  defaultvalue,  viewname, examplePK, sortorder,startGroup)  values ( 'mapping_icons_not_colored','hide','global',0,25,true ) ;
 
-insert into dba_cookieLabels ( viewOrCookie , description) values ('graphic_stemsize','A graphical representation of tree stems, using DBH size');
+-- Dou Disable: insert into dba_cookieLabels ( viewOrCookie , description) values ('graphic_stemsize','A graphical representation of tree stems, using DBH size');
 insert into dba_cookieLabels ( viewOrCookie , description) values ('table_stemsize','A tabular overview of stems for each taxon');
 insert into dba_cookieLabels ( viewOrCookie , description) values ('observation_comprehensive','The Comprehensive Plot View');
 insert into dba_cookieLabels ( viewOrCookie , description) values ('observation_taxa','View of plot(s) showing plants only');
@@ -73,7 +73,7 @@ insert into dba_cookieLabels (viewOrCookie , description) values ('mapping_icons
 
 DELETE FROM  dba_confidentialityStatus ;
 
-insert into dba_confidentialityStatus (confidentialityStatus,confidentialityText,confidentialityShortText) values (0,'exact location','exact');
+-- Dou Disable: insert into dba_confidentialityStatus (confidentialityStatus,confidentialityText,confidentialityShortText) values (0,'exact location','exact');
 insert into dba_confidentialityStatus (confidentialityStatus,confidentialityText,confidentialityShortText) values (1,'1 km radius (nearest 0.01 degree)','1 km');
 insert into dba_confidentialityStatus (confidentialityStatus,confidentialityText,confidentialityShortText) values (2,'10 km radius (nearest 0.1 degree)','10 km');
 insert into dba_confidentialityStatus (confidentialityStatus,confidentialityText,confidentialityShortText) values (3,'100 km radius (nearest degree)','100 km');
@@ -101,10 +101,10 @@ INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject 
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Unknown','NotSpecifiedorUnknown','VB.AR.47.NOTSPECIFIEDUNK','2','2','2','2' WHERE (select count(1) from aux_role where accessionCode='VB.AR.47.NOTSPECIFIEDUNK')=0;
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Passiveobserver',null,'VB.AR.48.PASSIVEOBSERVER',null,'2',null,null WHERE (select count(1) from aux_role where accessionCode='VB.AR.48.PASSIVEOBSERVER')=0;
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Plotcontributor',null,'VB.AR.50.PLOTCONTRIBUTOR',null,null,'2',null WHERE (select count(1) from aux_role where accessionCode='VB.AR.50.PLOTCONTRIBUTOR')=0;
-INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Publicationauthor',null,'VB.AR.51.PUBLICATIONAUTH',null,null,'2','2' WHERE (select count(1) from aux_role where accessionCode='VB.AR.51.PUBLICATIONAUTH')=0;
+-- Dou Disable:  INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Publicationauthor',null,'VB.AR.51.PUBLICATIONAUTH',null,null,'2','2' WHERE (select count(1) from aux_role where accessionCode='VB.AR.51.PUBLICATIONAUTH')=0;
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Researchadvisor',null,'VB.AR.53.RESEARCHADVISOR','2','2',null,'2' WHERE (select count(1) from aux_role where accessionCode='VB.AR.53.RESEARCHADVISOR')=0;
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Systemmanager',null,'VB.AR.54.SYSTEMMANAGER',null,null,null,null WHERE (select count(1) from aux_role where accessionCode='VB.AR.54.SYSTEMMANAGER')=0;
 INSERT INTO aux_role ( rolecode , roledescription , accessioncode , roleproject , roleobservation , roletaxonint , roleclassint ) SELECT 'Taxonomist',null,'VB.AR.55.TAXONOMIST',null,'2',null,null WHERE (select count(1) from aux_role where accessionCode='VB.AR.55.TAXONOMIST')=0;
 
 -- only adds data if there is currently none in this table.
- insert into dba_onerow (dba_onerow_id) select (1) where (select count(1) from dba_onerow)=0;
+-- Dou Disable: insert into dba_onerow (dba_onerow_id) select (1) where (select count(1) from dba_onerow)=0;
