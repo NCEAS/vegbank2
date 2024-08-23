@@ -49,6 +49,10 @@ That's it! In summary, set-up your configuration file, name your migration files
     ```
     docker run --name vegbank -e POSTGRES_PASSWORD=vegbank -e POSTGRES_DB=vegbank -e POSTGRES_USER=vegbank -e PGDATA=/tmp/postgresql/data -e POSTGRES_HOST_AUTH_METHOD=password -p 5432:5432 -d postgres:16
     ```
+    - To access this instance locally, you can connect like such:
+    ```
+    psql -h localhost -p 5432 -U vegbank -d vegbank
+    ```
 
 ## Additional Info
 
