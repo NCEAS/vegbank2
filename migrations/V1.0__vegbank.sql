@@ -2602,3 +2602,16 @@ CREATE TABLE dba_dataCache
     data10 varchar (255)
   
 );
+
+-- DOU: Add Missing Tables
+
+CREATE TABLE temp_ks_commconcept_acccodelist (
+    accessioncode character varying(255)
+);
+
+CREATE SEQUENCE dba_preassignacccode_dba_requestnumber_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
