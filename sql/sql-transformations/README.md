@@ -1,6 +1,6 @@
 # VegBank PostGres Migration Notes (How the migration files were generated)
 
-This README document outlines the process taken to generate the Vegbank schema from scratch to reproduce the migration files found in `/migrations`, along with the modifications made to get everything in sync.
+This README document outlines the process taken to generate the Vegbank schema from scratch to reproduce the migration files found in `/migrations`, along with the modifications made to get everything in sync. This document is meant to provide context, not the concrete steps to set-up postgres from scratch and migrate to the latest version.
 
 ## Step 1: V1.0__vegbank.sql
 
