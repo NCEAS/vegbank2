@@ -4,8 +4,7 @@ This README document outlines the process taken to generate the Vegbank schema f
 
 ## Step 1: V1.0__vegbank.sql
 
-This first migration SQL produced - it contains all the tables/relations needed for a data-only insert. It also
-includes the alter table commands to apply foreign key constraints. These constraints will cause issues with loading data, so those commands have been moved to a new migration file `V1.12__add_constraints.sql`. which is to be applied after the data has been copied after migrating to `V1.11__populate_datadictionary`.
+This first migration SQL produced - it contains all the tables/relations needed for a data-only insert. It also includes the alter table commands to apply foreign key constraints. These constraints will cause issues with loading data, so those commands have been moved to a new migration file `V1.12__add_constraints.sql`. which is to be applied after the data has been copied after migrating to `V1.11__populate_datadictionary`.
 
 To generate this initial file, run the following bash script in 'sql-transformations':
 ```sh

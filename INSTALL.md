@@ -67,6 +67,8 @@ If you don't have a dump file, you can get one by asking a sys admin for `vegban
 postgres@vegbank:~/dumps$ pg_dump -d vegbank --data-only -f vegbank_dataonly_[YYMMDD].sq
 ```
 
+**NOTE:** If any exceptions occur with `COPY` commands in the data insertion process, the entire table the command is trying to add into the database will not be executed. Exceptions must be resolved in order for the table's data to be loaded (all or nothing).
+
 Step 6:
 
 Finish the migration:
