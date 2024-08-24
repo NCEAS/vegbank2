@@ -1,3 +1,5 @@
+-- NOTE 20240824
+-- This migrations file has been disabled as the data-only dump file will populate these config tables
 
 -- ------------------------------------------------------------------------------------------
 -- ---- THIS FILE ASSUMES THAT THE MODEL HAS BEEN COMPLETELY BUILT 
