@@ -878,6 +878,3 @@ ALTER TABLE  userRecordOwner
     
      --CREATE ANY NAMED SEQUENCES:
      --
-     
-      
- CREATE SEQUENCE dba_preassignacccode_dba_requestnumber_seq ;
