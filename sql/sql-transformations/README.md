@@ -1,11 +1,13 @@
-# VegBank PostGres Migration Notes
+# VegBank PostGres Migration Notes (How the migration files were generated)
 
-This install document outlines how to generate the Vegbank schema from scratch to reproduce the migration files found in `/migrations`
+This README document outlines the process taken to generate the Vegbank schema from scratch to reproduce the migration files found in `/migrations`, along with the modifications made to get everything in sync.
 
-## Step 1: 0_vegbank.sql
+## Step 1: V1.0__vegbank.sql
 
-This is the first migration sql file to create the relations.
-Run the following bash script in 'sql-transformations':
+This first migration SQL produced - it contains all the tables/relations needed for a data-only insert. It also
+includes the alter table commands to apply foreign key constraints. These constraints will cause issues with loading data, so those commands have been moved to a new migration file `V1.12__add_constraints.sql`. which is to be applied after the data has been copied after migrating to `V1.11__populate_datadictionary`.
+
+To generate this initial file, run the following bash script in 'sql-transformations':
 ```sh
 ./getvegbanksql.sh
 ```
@@ -97,9 +99,13 @@ When reviewing Vegbank's 'db_model_vegbank.xml', there appears to be specific up
 
 ## Step 2: The remaining migrations
 
-The other migration sqls (Steps 1 to 8) were obtained by following the 'build.xml' structure in the [Vegbank repo](https://github.com/NCEAS/vegbank/).
+The other migration sqls were obtained by following the 'build.xml' structure in the [Vegbank repo](https://github.com/NCEAS/vegbank/). These files have also been named for consistency to follow `flyway` best practices.
 
-Note - the migration files have been renamed for consistency. There also exists SQL code within these files that cause a flyway migration failure - so these files have been amended accordingly (ex. DROP VIEW -> DROP VIEW IF EXISTS)
+Notes:
+- There also exists SQL code within these files that cause a flyway migration failure - so these files have been amended accordingly (ex. DROP VIEW -> DROP VIEW IF EXISTS), namely in V1.3, V1.4, V1.5
+- I also added an additional migration file (V1.8) to drop views before creating them again to ensure consistency
+- In V1.6, all commands were disabled as the config tables were already being populated through the data-only dump file.
+- During the testing process, an additional table was also added to V1.0 which was necessary (missing): `temp_ks_commconcept_acccodelist`
 
 ## Step 3: Populating the Data Dictionary
 
@@ -110,3 +116,9 @@ Run the following to create the relevant 'populate-datadictionary.sql' sql file.
 ```sh
 ./getvegbanksql_datadictionary.sh
 ```
+
+## Step 4: Applying constraints
+
+In order to load a data-only postgres dump file, we need to remove the foreign key constraints. This is why the constraints SQL was extracted from `V1.0__vegbank.sql` and moved to its own migration file `V1.12__add_constraints.sql`, which is to be applied AFTER the data-only dump file has been loaded.
+
+This also means that when setting up postgres, and applying migrations, the target should first be V1.11, then the data dump, then the V1.12 execution.

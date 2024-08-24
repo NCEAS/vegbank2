@@ -3,7 +3,7 @@
 # Define the input and output file names
 INPUT_XML="db_model_vegbank.xml"
 STYLESHEET_XSL="VegBankModel2SQL.xsl"
-OUTPUT_SQL="vegbank.sql"
+OUTPUT_SQL="V1.0__vegbank.sql"
 
 # Confirm input XML file exists
 if [ ! -f "$INPUT_XML" ]; then
