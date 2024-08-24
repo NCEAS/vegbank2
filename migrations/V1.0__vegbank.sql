@@ -989,7 +989,7 @@ CREATE TABLE observation
     successionalStatus text, 
     numberOfTaxa Integer, 
     basalArea Float, 
-    hydrologicRegime varchar (50), 
+    hydrologicRegime varchar (255), 
     soilMoistureRegime varchar (30), 
     soilDrainage varchar (30), 
     waterSalinity varchar (30), 
