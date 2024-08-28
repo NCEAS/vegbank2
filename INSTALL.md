@@ -65,9 +65,36 @@ If you don't have a dump file, you can get one by asking a sys admin for `vegban
 
 ```
 postgres@vegbank:~/dumps$ pg_dump -d vegbank --data-only -f vegbank_dataonly_[YYMMDD].sq
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   observation
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   party
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   plot
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   referenceparty
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   revision
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+pg_dump: NOTICE: there are circular foreign-key constraints on this table:
+pg_dump:   soiltaxon
+pg_dump: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
+pg_dump: Consider using a full dump instead of a --data-only dump to avoid this problem.
+postgres@vegbank:~/dumps$
 ```
 
-**NOTE:** If any exceptions occur with `COPY` commands in the data insertion process, the entire table the command is trying to add into the database will not be executed. Exceptions must be resolved in order for the table's data to be loaded (all or nothing).
+**NOTE 1:** You can see that the output above generated from creating the dump file displays warnings, no problem. The migration files can handle these issues.
+
+**NOTE 2:** If any exceptions occur with `COPY` commands in the data insertion process, the entire table the command is trying to add into the database will not be executed. Exceptions must be resolved in order for the table's data to be loaded (all or nothing).
 
 Step 6:
 
