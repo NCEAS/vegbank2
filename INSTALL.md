@@ -1,16 +1,14 @@
 # Introduction
 
-This install document describes how to restore the Vegbank database from a data-only dump file. 
+This install document describes how to restore the Vegbank database from a data-only dump file to either a local Postgres instance or a Docker container.
 
-# Local Development Installation (Postgres 10.23, MacOS M2)
+## Local Postgres Development (Postgres 10.23, MacOS M2)
 
-// TODO: Automate as much of this process as possible with a bash script
-
-Requirements:
+**Requirements:**
 - Postgres.app with PostgreSQL 10 – 15 (Universal/Intel)
- - https://postgresapp.com/downloads_legacy.html
+  - https://postgresapp.com/downloads_legacy.html
 - Flyway CLI
- - https://documentation.red-gate.com/fd/command-line-184127404.html
+  - https://documentation.red-gate.com/fd/command-line-184127404.html
 
 Step 1:
 
@@ -32,7 +30,7 @@ GRANT ALL PRIVILEGES ON DATABASE vegbank TO vegbank;
 
 Step 3:
 
-Take the `flyway.conf` file and move it into your local flyway `conf` installation. Ensure that the contents match the location of the `/migrations` folder found in the directory where this `vegbank2` repo exists. For example:
+Take the `flyway.conf` file in this repo and move it into your local flyway `conf` installation. Ensure that the contents match the location of the `/migrations` folder found in the directory where this `vegbank2` repo exists. For example:
 
 ```
 // ex. /Users/doumok/Code/flyway-10.17.0/conf/flyway.conf
@@ -453,4 +451,390 @@ Migrating schema "public" to version "1.12 - add constraints"
 Successfully applied 1 migration to schema "public", now at version v1.12 (execution time 00:14.342s)
 
 You are not signed in to Flyway, to sign in please run auth
+```
+
+## Postgres Docker Development (Postgres12, 16)
+
+This process is also applicable to Postgres12 and 16, starting from 10.23 is not necessary.
+
+**Requirements:**
+- Docker
+   - https://docs.docker.com/engine/install/
+- Flyway CLI
+  - https://documentation.red-gate.com/fd/command-line-184127404.html
+
+**Step 1: Install Docker and Launch a Postgres Instance**
+
+After installing Docker, run the following command to launch a postgres container:
+
+```sh
+docker run --name vegbank -e POSTGRES_PASSWORD=vegbank -e POSTGRES_DB=vegbank -e POSTGRES_USER=vegbank -e PGDATA=/tmp/postgresql/data -e POSTGRES_HOST_AUTH_METHOD=password -p 5432:5432 -d postgres:16
+```
+ - You are asking Docker to run a postgres database called `vegbank`, with password `vegbank` and user `vegbank`
+ - You are providing a location for where postgres files are to exist within the container
+ - This container is now listening on port 5432
+ - We are selecting `postgres:16` or Postgres V16, you may also select `postgres:12` if you prefer
+
+**Step 2: Apply SQL files to Postgres via Flyway migrations**
+
+Migrate `flyway` to v1.11. See the above section (Step 3, `Local Development (Postgres 10.23, MacOS M2)`) to work with `flyway` if you haven't already set it up.
+
+```sh
+flyway -target=1.11 migrate
+```
+ - Specifically migrate to migrations version 1.11, this is everything the vegbank db needs without constraints applied
+
+**Step 3: Restore the vegbank data via a data-only dump (backup) file**
+
+Load data only dump file. See above section to obtain data-only dump file if you do not have it.
+
+```sh
+psql -h localhost -p 5432 -U vegbank -d vegbank -f /Users/doumok/Code/testing/vegbank_dataonly_20240814.sql > /Users/doumok/Code/testing/vegbank2_psql_output_pg16_20240830.txt 2>&1
+```
+ - To assist with debugging, I have chosen here to redirect the output from the psql commands to a text file. If you delete this line, then the output will print to your terminal.
+
+**Step 4: Finish the vegbank database restoration process by applying constraints**
+
+Finish the migration by applying the constraints. This will apply the last migration V1.12
+
+```sh
+flyway migrate
+```
+
+Example Output for Reference:
+
+```sh
+doumok@Dou-NCEAS-MBP14 ~ % docker run --name vegbank -e POSTGRES_PASSWORD=vegbank -e POSTGRES_DB=vegbank -e POSTGRES_USER=vegbank -e PGDATA=/tmp/postgresql/data -e POSTGRES_HOST_AUTH_METHOD=password -p 5432:5432 -d postgres:16
+4a95526c841a7cb302975cc7e92ed121f57f8e5c8b7b7937e55782b7f84bb80d
+doumok@Dou-NCEAS-MBP14 ~ % flyway -target=1.11 migrate
+A more recent version of Flyway is available. Find out more about Flyway 10.17.2 at https://rd.gt/3rXiSlV
+
+Flyway Community Edition 10.17.0 by Redgate
+
+See release notes here: https://rd.gt/416ObMi
+Database: jdbc:postgresql://localhost:5432/vegbank (PostgreSQL 16.3)
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 13 migrations (execution time 00:00.069s)
+Creating Schema History table "public"."flyway_schema_history" ...
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1.0 - vegbank"
+Migrating schema "public" to version "1.1 - create aggregrates"
+Migrating schema "public" to version "1.2 - create extras"
+Migrating schema "public" to version "1.3 - create indices"
+DB: index "plantusage_plantname_x" does not exist, skipping
+DB: index "plantusage_plantname_id_x" does not exist, skipping
+DB: index "plantusage_plantconcept_id_x" does not exist, skipping
+DB: index "plantusage_classsystem_x" does not exist, skipping
+DB: index "plantusage_party_id_x" does not exist, skipping
+DB: index "plantusage_plantstatus_id_x" does not exist, skipping
+DB: index "plantname_plantname_x" does not exist, skipping
+DB: index "plantname_reference_id_x" does not exist, skipping
+DB: index "plantconcept_plantname_id_x" does not exist, skipping
+DB: index "plantconcept_reference_id_x" does not exist, skipping
+DB: index "plantconcept_dobscount_x" does not exist, skipping
+DB: index "plantstatus_plantlevel_x" does not exist, skipping
+DB: index "plantstatus_plantconcept_id_x" does not exist, skipping
+DB: index "plantstatus_reference_id_x" does not exist, skipping
+DB: index "plantstatus_plantparent_id_x" does not exist, skipping
+DB: index "plantstatus_party_id_x" does not exist, skipping
+DB: index "userregionalexp_usercertification_id_x" does not exist, skipping
+DB: index "userdatasetitem_userdataset_id_x" does not exist, skipping
+DB: index "userdataset_usr_id_x" does not exist, skipping
+DB: index "usernotify_usr_id_x" does not exist, skipping
+DB: index "embargo_plot_id_x" does not exist, skipping
+DB: index "userpermission_embargo_id_x" does not exist, skipping
+DB: index "userpermission_usr_id_x" does not exist, skipping
+DB: index "userquery_usr_id_x" does not exist, skipping
+DB: index "userpreference_usr_id_x" does not exist, skipping
+DB: index "userrecordowner_usr_id_x" does not exist, skipping
+DB: index "usr_party_id_x" does not exist, skipping
+DB: index "covermethod_reference_id_x" does not exist, skipping
+DB: index "stratummethod_reference_id_x" does not exist, skipping
+DB: index "usercertification_usr_id_x" does not exist, skipping
+DB: index "stratum_observation_id_x" does not exist, skipping
+DB: index "stratum_stratumtype_id_x" does not exist, skipping
+DB: index "stratum_stratummethod_id_x" does not exist, skipping
+DB: index "stemlocation_stemcount_id_x" does not exist, skipping
+DB: index "observation_previousobs_id_x" does not exist, skipping
+DB: index "observation_plot_id_x" does not exist, skipping
+DB: index "observation_project_id_x" does not exist, skipping
+DB: index "observation_covermethod_id_x" does not exist, skipping
+DB: index "observation_stratummethod_id_x" does not exist, skipping
+DB: index "observation_soiltaxon_id_x" does not exist, skipping
+DB: index "taxonobservation_observation_id_x" does not exist, skipping
+DB: index "taxonobservation_reference_id_x" does not exist, skipping
+DB: index "reference_referencejournal_id_x" does not exist, skipping
+DB: index "taxoninterpretation_taxonobservation_id_x" does not exist, skipping
+DB: index "taxoninterpretation_stemlocation_id_x" does not exist, skipping
+DB: index "taxoninterpretation_plantconcept_id_x" does not exist, skipping
+DB: index "taxoninterpretation_plantname_id_x" does not exist, skipping
+DB: index "taxoninterpretation_party_id_x" does not exist, skipping
+DB: index "taxoninterpretation_role_id_x" does not exist, skipping
+DB: index "taxoninterpretation_reference_id_x" does not exist, skipping
+DB: index "taxoninterpretation_collector_id_x" does not exist, skipping
+DB: index "taxoninterpretation_museum_id_x" does not exist, skipping
+DB: index "taxonalt_taxoninterpretation_id_x" does not exist, skipping
+DB: index "taxonalt_plantconcept_id_x" does not exist, skipping
+DB: index "telephone_party_id_x" does not exist, skipping
+DB: index "plot_reference_id_x" does not exist, skipping
+DB: index "plot_parent_id_x" does not exist, skipping
+DB: index "party_currentname_id_x" does not exist, skipping
+DB: index "place_plot_id_x" does not exist, skipping
+DB: index "place_namedplace_id_x" does not exist, skipping
+DB: index "namedplace_reference_id_x" does not exist, skipping
+DB: index "projectcontributor_project_id_x" does not exist, skipping
+DB: index "projectcontributor_party_id_x" does not exist, skipping
+DB: index "projectcontributor_role_id_x" does not exist, skipping
+DB: index "revision_previousrevision_id_x" does not exist, skipping
+DB: index "soilobs_observation_id_x" does not exist, skipping
+DB: index "soiltaxon_soilparent_id_x" does not exist, skipping
+DB: index "stemcount_taxonimportance_id_x" does not exist, skipping
+DB: index "stratumtype_stratummethod_id_x" does not exist, skipping
+DB: index "taxonimportance_taxonobservation_id_x" does not exist, skipping
+DB: index "taxonimportance_stratum_id_x" does not exist, skipping
+DB: index "observationcontributor_observation_id_x" does not exist, skipping
+DB: index "observationcontributor_party_id_x" does not exist, skipping
+DB: index "observationcontributor_role_id_x" does not exist, skipping
+DB: index "observationsynonym_synonymobservation_id_x" does not exist, skipping
+DB: index "observationsynonym_primaryobservation_id_x" does not exist, skipping
+DB: index "observationsynonym_party_id_x" does not exist, skipping
+DB: index "observationsynonym_role_id_x" does not exist, skipping
+DB: index "partymember_parentparty_id_x" does not exist, skipping
+DB: index "partymember_childparty_id_x" does not exist, skipping
+DB: index "partymember_role_id_x" does not exist, skipping
+DB: index "referenceparty_currentparty_id_x" does not exist, skipping
+DB: index "classcontributor_commclass_id_x" does not exist, skipping
+DB: index "classcontributor_party_id_x" does not exist, skipping
+DB: index "classcontributor_role_id_x" does not exist, skipping
+DB: index "commclass_observation_id_x" does not exist, skipping
+DB: index "commclass_classpublication_id_x" does not exist, skipping
+DB: index "commconcept_commname_id_x" does not exist, skipping
+DB: index "commconcept_reference_id_x" does not exist, skipping
+DB: index "commconcept_dobscount_x" does not exist, skipping
+DB: index "comminterpretation_commclass_id_x" does not exist, skipping
+DB: index "comminterpretation_commconcept_id_x" does not exist, skipping
+DB: index "comminterpretation_commauthority_id_x" does not exist, skipping
+DB: index "coverindex_covermethod_id_x" does not exist, skipping
+DB: index "definedvalue_userdefined_id_x" does not exist, skipping
+DB: index "disturbanceobs_observation_id_x" does not exist, skipping
+DB: index "graphic_observation_id_x" does not exist, skipping
+DB: index "note_notelink_id_x" does not exist, skipping
+DB: index "note_party_id_x" does not exist, skipping
+DB: index "note_role_id_x" does not exist, skipping
+DB: index "plantlineage_childplantstatus_id_x" does not exist, skipping
+DB: index "plantlineage_parentplantstatus_id_x" does not exist, skipping
+DB: index "address_party_id_x" does not exist, skipping
+DB: index "address_organization_id_x" does not exist, skipping
+DB: index "referencealtident_reference_id_x" does not exist, skipping
+DB: index "referencecontributor_reference_id_x" does not exist, skipping
+DB: index "referencecontributor_referenceparty_id_x" does not exist, skipping
+DB: index "commcorrelation_commstatus_id_x" does not exist, skipping
+DB: index "commcorrelation_commconcept_id_x" does not exist, skipping
+DB: index "commlineage_parentcommstatus_id_x" does not exist, skipping
+DB: index "commlineage_childcommstatus_id_x" does not exist, skipping
+DB: index "commname_reference_id_x" does not exist, skipping
+DB: index "commusage_commname_id_x" does not exist, skipping
+DB: index "commusage_commconcept_id_x" does not exist, skipping
+DB: index "commusage_party_id_x" does not exist, skipping
+DB: index "commusage_commstatus_id_x" does not exist, skipping
+DB: index "commusage_commname_x" does not exist, skipping
+DB: index "commusage_classsystem_x" does not exist, skipping
+DB: index "commstatus_commconcept_id_x" does not exist, skipping
+DB: index "commstatus_reference_id_x" does not exist, skipping
+DB: index "commstatus_commparent_id_x" does not exist, skipping
+DB: index "commstatus_party_id_x" does not exist, skipping
+DB: index "commstatus_commlevel_x" does not exist, skipping
+DB: index "plantcorrelation_plantstatus_id_x" does not exist, skipping
+DB: index "plantcorrelation_plantconcept_id_x" does not exist, skipping
+DB: index "keywords_table_id_entity_key" does not exist, skipping
+DB: index "emb_classcontributor_idx" does not exist, skipping
+DB: index "emb_commclass_idx" does not exist, skipping
+DB: index "emb_comminterpretation_idx" does not exist, skipping
+DB: index "emb_disturbanceobs_idx" does not exist, skipping
+DB: index "emb_observation_idx" does not exist, skipping
+DB: index "emb_plot_idx" does not exist, skipping
+DB: index "emb_soilobs_idx" does not exist, skipping
+DB: index "emb_stemcount_idx" does not exist, skipping
+DB: index "emb_stemlocation_idx" does not exist, skipping
+DB: index "emb_taxonalt_idx" does not exist, skipping
+DB: index "emb_taxonimportance_idx" does not exist, skipping
+DB: index "emb_taxoninterpretation_idx" does not exist, skipping
+DB: index "emb_taxonobservation_idx" does not exist, skipping
+DB: index "taxonobservation_int_origplantconcept_id_x" does not exist, skipping
+DB: index "taxonobservation_int_currplantconcept_id_x" does not exist, skipping
+DB: index "userdatasetitem_accessioncode_index" does not exist, skipping
+DB: index "userdatasetitem2_accessioncode_index" does not exist, skipping
+DB: index "reference_accessioncode_index" does not exist, skipping
+DB: index "referenceparty_accessioncode_index" does not exist, skipping
+DB: index "referencejournal_accessioncode_index" does not exist, skipping
+DB: index "commclass_accessioncode_index" does not exist, skipping
+DB: index "covermethod_accessioncode_index" does not exist, skipping
+DB: index "namedplace_accessioncode_index" does not exist, skipping
+DB: index "observation_accessioncode_index" does not exist, skipping
+DB: index "party_accessioncode_index" does not exist, skipping
+DB: index "plot_accessioncode_index" does not exist, skipping
+DB: index "project_accessioncode_index" does not exist, skipping
+DB: index "soiltaxon_accessioncode_index" does not exist, skipping
+DB: index "stratummethod_accessioncode_index" does not exist, skipping
+DB: index "taxonobservation_accessioncode_index" does not exist, skipping
+DB: index "userdefined_accessioncode_index" does not exist, skipping
+DB: index "userdataset_accessioncode_index" does not exist, skipping
+DB: index "userquery_accessioncode_index" does not exist, skipping
+DB: index "commconcept_accessioncode_index" does not exist, skipping
+DB: index "plantconcept_accessioncode_index" does not exist, skipping
+DB: index "aux_role_accessioncode_index" does not exist, skipping
+DB: index "taxoninterpretation_accessioncode_index" does not exist, skipping
+DB: index "observationsynonym_accessioncode_index" does not exist, skipping
+DB: index "note_accessioncode_index" does not exist, skipping
+DB: index "graphic_accessioncode_index" does not exist, skipping
+DB: index "plantstatus_accessioncode_index" does not exist, skipping
+DB: index "commstatus_accessioncode_index" does not exist, skipping
+Migrating schema "public" to version "1.4 - drop vegbank views"
+DB: view "view_busrule_plotsizeshape" does not exist, skipping
+DB: view "view_busrule_duplstratumtype" does not exist, skipping
+DB: view "view_busrule_duplcovercode" does not exist, skipping
+DB: view "view_emb_embargo_complete" does not exist, skipping
+DB: view "view_emb_embargo_currentfullonly" does not exist, skipping
+DB: view "view_export_classcontributor" does not exist, skipping
+DB: view "view_export_commclass" does not exist, skipping
+DB: view "view_export_comminterpretation" does not exist, skipping
+DB: view "view_export_disturbanceobs" does not exist, skipping
+DB: view "view_export_observation" does not exist, skipping
+DB: view "view_export_observationcontributor" does not exist, skipping
+DB: view "view_export_plot" does not exist, skipping
+DB: view "view_export_plot_pre" does not exist, skipping
+DB: view "view_export_soilobs" does not exist, skipping
+DB: view "view_export_stemcount" does not exist, skipping
+DB: view "view_export_stemlocation" does not exist, skipping
+DB: view "view_export_taxonalt" does not exist, skipping
+DB: view "view_export_taxonimportance" does not exist, skipping
+DB: view "view_export_taxoninterpretation" does not exist, skipping
+DB: view "view_export_taxonobservation" does not exist, skipping
+DB: view "view_dbafielddesc_notimpl" does not exist, skipping
+DB: view "view_plotall_withembargo" does not exist, skipping
+DB: view "view_taxonobs_distinctid_curr_counts_plants" does not exist, skipping
+DB: view "view_taxonobs_distinctid_curr_counts" does not exist, skipping
+DB: view "view_taxonobs_distinctid_curr" does not exist, skipping
+DB: view "view_taxonobs_withmaxcover" does not exist, skipping
+DB: view "view_csv_taxonimportance" does not exist, skipping
+DB: view "view_csv_taxonimportance_pre" does not exist, skipping
+DB: view "view_browseparty_all_count_combined" does not exist, skipping
+DB: view "view_browseparty_classcontrib_count" does not exist, skipping
+DB: view "view_browseparty_obscontrib_count" does not exist, skipping
+DB: view "view_browseparty_projectcontrib_count" does not exist, skipping
+DB: view "view_browseparty_all_count" does not exist, skipping
+DB: view "view_browseparty_all" does not exist, skipping
+DB: view "view_browseparty_obscontrib" does not exist, skipping
+DB: view "view_browseparty_classcontrib" does not exist, skipping
+DB: view "view_browseparty_projectcontrib" does not exist, skipping
+DB: view "view_comminterp_more" does not exist, skipping
+DB: view "view_taxoninterp_more" does not exist, skipping
+DB: view "view_observation_transl" does not exist, skipping
+DB: view "view_notemb_classcontributor" does not exist, skipping
+DB: view "view_notemb_comminterpretation" does not exist, skipping
+DB: view "view_notemb_commclass" does not exist, skipping
+DB: view "view_notemb_disturbanceobs" does not exist, skipping
+DB: view "view_notemb_soilobs" does not exist, skipping
+DB: view "view_notemb_stemcount" does not exist, skipping
+DB: view "view_notemb_stemlocation" does not exist, skipping
+DB: view "view_notemb_taxonalt" does not exist, skipping
+DB: view "view_notemb_taxonimportance" does not exist, skipping
+DB: view "view_notemb_taxoninterpretation" does not exist, skipping
+DB: view "view_notemb_taxonobservation" does not exist, skipping
+DB: view "view_notemb_observation" does not exist, skipping
+DB: view "view_notemb_observationcontributor" does not exist, skipping
+DB: view "view_notemb_plot" does not exist, skipping
+DB: view "view_plantconcept_transl" does not exist, skipping
+DB: view "view_commconcept_transl" does not exist, skipping
+DB: view "view_reference_transl" does not exist, skipping
+DB: view "view_party_transl" does not exist, skipping
+DB: view "view_party_public" does not exist, skipping
+DB: view "view_keywprojplaces" does not exist, skipping
+DB: view "view_kwhelper_projcontrib" does not exist, skipping
+DB: view "view_kwhelper_refparty" does not exist, skipping
+DB: view "view_kwhelper_refjournal" does not exist, skipping
+DB: view "view_all_commnames_code" does not exist, skipping
+DB: view "view_all_commnames_sciname" does not exist, skipping
+DB: view "view_all_commnames_translated" does not exist, skipping
+DB: view "view_all_commnames_common" does not exist, skipping
+DB: view "view_std_commnames_code" does not exist, skipping
+DB: view "view_std_commnames_sciname" does not exist, skipping
+DB: view "view_std_commnames_translated" does not exist, skipping
+DB: view "view_std_commnames_common" does not exist, skipping
+DB: view "view_all_plantnames_code" does not exist, skipping
+DB: view "view_all_plantnames_common" does not exist, skipping
+DB: view "view_all_plantnames_sciname" does not exist, skipping
+DB: view "view_all_plantnames_scinamenoauth" does not exist, skipping
+DB: view "view_std_plantnames_code" does not exist, skipping
+DB: view "view_std_plantnames_common" does not exist, skipping
+DB: view "view_std_plantnames_sciname" does not exist, skipping
+DB: view "view_std_plantnames_scinamenoauth" does not exist, skipping
+Migrating schema "public" to version "1.5 - create vegbank views"
+DB: view "view_busrule_plotsizeshape" does not exist, skipping
+DB: view "view_busrule_duplstratumtype" does not exist, skipping
+DB: view "view_busrule_duplcovercode" does not exist, skipping
+DB: view "view_emb_embargo_complete" does not exist, skipping
+DB: view "view_emb_embargo_currentfullonly" does not exist, skipping
+DB: view "view_std_plantnames_code" does not exist, skipping
+DB: view "view_std_plantnames_sciname" does not exist, skipping
+DB: view "view_std_plantnames_scinamenoauth" does not exist, skipping
+DB: view "view_std_plantnames_common" does not exist, skipping
+DB: view "view_all_plantnames_code" does not exist, skipping
+DB: view "view_all_plantnames_sciname" does not exist, skipping
+DB: view "view_all_plantnames_scinamenoauth" does not exist, skipping
+DB: view "view_all_plantnames_common" does not exist, skipping
+DB: view "view_std_commnames_code" does not exist, skipping
+DB: view "view_std_commnames_sciname" does not exist, skipping
+DB: view "view_std_commnames_translated" does not exist, skipping
+DB: view "view_std_commnames_common" does not exist, skipping
+DB: view "view_all_commnames_code" does not exist, skipping
+DB: view "view_all_commnames_sciname" does not exist, skipping
+DB: view "view_all_commnames_translated" does not exist, skipping
+DB: view "view_all_commnames_common" does not exist, skipping
+Migrating schema "public" to version "1.6 - vegbank populate configtables"
+Migrating schema "public" to version "1.7 - create temp tbls"
+Migrating schema "public" to version "1.8 - drop vegbank views"
+Migrating schema "public" to version "1.9 - create vegbank views"
+DB: view "view_busrule_plotsizeshape" does not exist, skipping
+DB: view "view_busrule_duplstratumtype" does not exist, skipping
+DB: view "view_busrule_duplcovercode" does not exist, skipping
+DB: view "view_emb_embargo_complete" does not exist, skipping
+DB: view "view_emb_embargo_currentfullonly" does not exist, skipping
+DB: view "view_std_plantnames_code" does not exist, skipping
+DB: view "view_std_plantnames_sciname" does not exist, skipping
+DB: view "view_std_plantnames_scinamenoauth" does not exist, skipping
+DB: view "view_std_plantnames_common" does not exist, skipping
+DB: view "view_all_plantnames_code" does not exist, skipping
+DB: view "view_all_plantnames_sciname" does not exist, skipping
+DB: view "view_all_plantnames_scinamenoauth" does not exist, skipping
+DB: view "view_all_plantnames_common" does not exist, skipping
+DB: view "view_std_commnames_code" does not exist, skipping
+DB: view "view_std_commnames_sciname" does not exist, skipping
+DB: view "view_std_commnames_translated" does not exist, skipping
+DB: view "view_std_commnames_common" does not exist, skipping
+DB: view "view_all_commnames_code" does not exist, skipping
+DB: view "view_all_commnames_sciname" does not exist, skipping
+DB: view "view_all_commnames_translated" does not exist, skipping
+DB: view "view_all_commnames_common" does not exist, skipping
+Migrating schema "public" to version "1.10 - create admin user"
+Migrating schema "public" to version "1.11 - populate datadictionary"
+Successfully applied 12 migrations to schema "public", now at version v1.11 (execution time 00:01.146s)
+
+You are not signed in to Flyway, to sign in please run auth
+doumok@Dou-NCEAS-MBP14 ~ % psql -h localhost -p 5432 -U vegbank -d vegbank -f /Users/doumok/Code/testing/vegbank_dataonly_20240814.sql > /Users/doumok/Code/testing/vegbank2_psql_output_pg16_20240830.txt 2>&1
+Password for user vegbank:
+doumok@Dou-NCEAS-MBP14 ~ % flyway migrate
+A more recent version of Flyway is available. Find out more about Flyway 10.17.2 at https://rd.gt/3rXiSlV
+
+Flyway Community Edition 10.17.0 by Redgate
+
+See release notes here: https://rd.gt/416ObMi
+Database: jdbc:postgresql://localhost:5432/vegbank (PostgreSQL 16.3)
+Successfully validated 13 migrations (execution time 00:00.096s)
+Current version of schema "public": 1.11
+Migrating schema "public" to version "1.12 - add constraints"
+Successfully applied 1 migration to schema "public", now at version v1.12 (execution time 00:09.733s)
+
+You are not signed in to Flyway, to sign in please run auth
+doumok@Dou-NCEAS-MBP14 ~ %
 ```
