@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "vegbank"
+version = "2.0.0-alpha1"
+description = "VegBank database and data access service"
+authors = [
+    "Robert Shelton (shelton@nceas.ucsb.edu)",
+    "Dou Mok (mok@nceas.ucsb.edu)",
+    "Jim Regetz (regetz@nceas.ucsb.edu)",
+    "Matthew B. Jones (jones@nceas.ucsb.edu)"
+    ]
+license = "Apache2"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+poetry = ">=1.8.3"
+pytest = ">=8.3.3"
+pylint = ">=3.2.7"
+black = ">=24.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
