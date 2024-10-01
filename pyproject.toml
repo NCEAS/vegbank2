@@ -3,10 +3,10 @@ name = "vegbank"
 version = "2.0.0-alpha1"
 description = "VegBank database and data access service"
 authors = [
-    "Robert Shelton (shelton@nceas.ucsb.edu)",
-    "Dou Mok (mok@nceas.ucsb.edu)",
-    "Jim Regetz (regetz@nceas.ucsb.edu)",
-    "Matthew B. Jones (jones@nceas.ucsb.edu)"
+    "Robert Shelton <shelton@nceas.ucsb.edu>",
+    "Dou Mok <mok@nceas.ucsb.edu>",
+    "Jim Regetz <regetz@nceas.ucsb.edu>",
+    "Matthew B. Jones <jones@nceas.ucsb.edu>"
     ]
 license = "Apache2"
 readme = "README.md"
