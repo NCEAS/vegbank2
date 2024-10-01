@@ -8,7 +8,7 @@
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/NCEAS/vegbank2)
 - [**Submit Bugs and feature requests**](https://github.com/NCEAS/vegbank2/issues)
-- Contact us: support@dataone.org
+- Contact us: help@vegbank.org
 
 The [VegBank](http://vegbank.org) data system provides a community managed data portal for vegetation data, particularly plots, plant taxonomy, and communities.  It is a product of the Ecological Society of America (ESA) Vegetation Panel, and is affiliated with the National Vegetation Classification (USNVC).
 

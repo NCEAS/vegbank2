@@ -15,12 +15,12 @@
 We welcome all types of contributions, including bug fixes, feature enhancements,
 bug reports, documentation, graphics, and many others.  You might consider contributing by:
 
-- Report a bug or request a new feature in our [issue tracker](https://github.com/DataONEorg/REPONAME/issues)
+- Report a bug or request a new feature in our [issue tracker](https://github.com/NCEAS/vegbank2/issues)
 - Fix a bug and contribute the code with a Pull Request
 - Write or edit some documentation
 - Sharing helpful tips or FAQ-type answers to users or future contributors
-- Create screenshots or tutorials of features of MetacatUI
-- Answer questions on DataONE Discussions
+- Create screenshots or tutorials of features
+- Answer questions on discussion boards and mailing lists
 - ...
 
 This is an open source project, and we welcome full
@@ -34,8 +34,8 @@ We use the pull-request model for contributions. See [GitHub's help on pull-requ
 
 In short:
 
-- add an [issue](https://github.com/DataONEorg/REPONAME/issues) describing your planned changes, or add a comment to an existing issue;
-- on GitHub, fork the [repository](https://github.com/DataONEorg/REPONAME)
+- add an [issue](https://github.com/NCEAS/vegbank2/issues) describing your planned changes, or add a comment to an existing issue;
+- on GitHub, fork the [repository](https://github.com/NCEAS/vegbank2)
 - on your computer, clone your forked copy of the repository
 - base your work on the `develop` branch and commit your changes
 - push your branch to your forked repository, and submit a pull-request
@@ -45,7 +45,7 @@ In short:
 
 ## 🚀 Development Workflow
 
-Development is managed through the git repository at https://github.com/DataONEorg/REPONAME.  The repository is organized into several branches, each with a specific purpose.  
+Development is managed through the git repository at https://github.com/NCEAS/vegbank2.  The repository is organized into several branches, each with a specific purpose.  
 
 **main**. The `main` branch represents the stable branch that is constantly maintained with the current release.  It should generally be safe to install and use the `main` branch the same way as binary releases. The version number in all configuration files and the README on the `main` branch follows [semantic versioning](https://semver.org/) and should always be set to the current stable release, for example `2.8.5`.
 
@@ -113,7 +113,7 @@ the full set of tests on a clean checkout of the `develop` branch.
 the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will 
 reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to 
 start work on the next release.
-3. Releases can be downloaded from the [GitHub releases page](https://github.com/DataONEorg/REPONAME/releases).
+3. Releases can be downloaded from the [GitHub releases page](https://github.com/NCEAS/vegbank2/releases).
 
 ## 🔬 Testing
 
