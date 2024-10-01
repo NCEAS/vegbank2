@@ -67,6 +67,10 @@ To run tests, navigate to the root directory and run `poetry run pytest`. If the
 take a longer time to run (e.g., relating to the storage of large files) - mark them as `slow` and to execute all tests, run
 `pytest --run-slow`.
 
+The GitHub repository has also been configured to run a [continuous integration build](https://github.com/NCEAS/vegbank2/actions) which executes the `poetry run pytest` command in the standard poetry-maintained virtual environment. To test the action run locally, you can install the `act` commandline client (e.g., `brew install act`) and then execute the actions from the local commandline. This depends on a local docker instance being configured, and the first run will take longer as the initial docker images are pulled. Thereafter, checking the action build before pushing commits can be run, for example, for the mac with:
+
+- `act --container-architecture linux/amd64`
+
 ## Usage Example
 
 ```py
