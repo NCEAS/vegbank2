@@ -1,0 +1,1 @@
+alter table observation add column hasObservationSynonym boolean;

@@ -1,0 +1,504 @@
+This is the output that was produced when loading the data dump file to a vegbank database targeted at:
+flyway -target=1.11 migrate
+
+-------
+
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+COPY 4024
+COPY 621
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:4706: ERROR:  duplicate key value violates unique constraint "aux_role_pkey"
+DETAIL:  Key (role_id)=(16) already exists.
+CONTEXT:  COPY aux_role, line 1
+COPY 220
+COPY 470
+COPY 31
+COPY 115277
+COPY 261
+COPY 34610
+COPY 21
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:271284: ERROR:  value too long for type character varying(30)
+CONTEXT:  COPY observation, line 147, column hydrologicregime: "non-tidal - intermittently flooded"
+COPY 102425
+COPY 48584
+COPY 123701
+COPY 38961
+COPY 39041
+COPY 34377
+COPY 102951
+COPY 0
+COPY 146761
+COPY 398
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:908579: ERROR:  duplicate key value violates unique constraint "dba_confidentialitystatus_pkey"
+DETAIL:  Key (confidentialitystatus)=(0) already exists.
+CONTEXT:  COPY dba_confidentialitystatus, line 1
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:908606: ERROR:  duplicate key value violates unique constraint "dba_cookie_pkey"
+DETAIL:  Key (cookie_id)=(18) already exists.
+CONTEXT:  COPY dba_cookie, line 1
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:908633: ERROR:  duplicate key value violates unique constraint "dba_cookielabels_pkey"
+DETAIL:  Key (cookielabel_id)=(18) already exists.
+CONTEXT:  COPY dba_cookielabels, line 1
+COPY 9
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:908659: ERROR:  duplicate key value violates unique constraint "dba_datamodelversion_pkey"
+DETAIL:  Key (dba_datamodelversion_id)=(1) already exists.
+CONTEXT:  COPY dba_datamodelversion, line 1
+COPY 2658
+COPY 594
+COPY 866
+psql:/Users/doumok/Code/testing/vegbank_dataonly_20240814.sql:912810: ERROR:  duplicate key value violates unique constraint "dba_onerow_pkey"
+DETAIL:  Key (dba_onerow_id)=(1) already exists.
+CONTEXT:  COPY dba_onerow, line 1
+COPY 2233737
+COPY 55
+COPY 114063
+COPY 35
+COPY 49566
+COPY 37531
+COPY 1502
+COPY 0
+COPY 410177
+COPY 44949
+COPY 64563
+COPY 64722
+COPY 0
+COPY 0
+COPY 165021
+COPY 3814
+COPY 0
+COPY 234827
+COPY 450175
+COPY 293172
+COPY 273779
+COPY 131380
+COPY 0
+COPY 931997
+COPY 191
+COPY 0
+COPY 152
+COPY 206
+COPY 39607
+COPY 66900
+COPY 204
+COPY 347097
+COPY 1884790
+COPY 3604899
+COPY 600241
+COPY 8371
+COPY 2526264
+COPY 768
+COPY 404
+COPY 125
+COPY 24099
+COPY 293137
+COPY 1033
+COPY 106
+COPY 578
+COPY 1372162
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+ setval 
+--------
+  83465
+(1 row)
+
+ setval 
+--------
+     55
+(1 row)
+
+ setval 
+--------
+  53019
+(1 row)
+
+ setval 
+--------
+ 167422
+(1 row)
+
+ setval 
+--------
+  53849
+(1 row)
+
+ setval 
+--------
+  34406
+(1 row)
+
+ setval 
+--------
+ 114107
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+ 176530
+(1 row)
+
+ setval 
+--------
+  53806
+(1 row)
+
+ setval 
+--------
+ 178678
+(1 row)
+
+ setval 
+--------
+   9864
+(1 row)
+
+ setval 
+--------
+   1634
+(1 row)
+
+ setval 
+--------
+     36
+(1 row)
+
+ setval 
+--------
+     36
+(1 row)
+
+ setval 
+--------
+      9
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+   2658
+(1 row)
+
+ setval 
+--------
+   1782
+(1 row)
+
+ setval 
+--------
+   2596
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval  
+---------
+ 2233737
+(1 row)
+
+ setval 
+--------
+   1248
+(1 row)
+
+ setval 
+--------
+    165
+(1 row)
+
+ setval 
+--------
+  49566
+(1 row)
+
+ setval 
+--------
+  42135
+(1 row)
+
+ setval 
+--------
+   1509
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+  64627
+(1 row)
+
+ setval 
+--------
+ 126301
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+ 206488
+(1 row)
+
+ setval 
+--------
+ 195158
+(1 row)
+
+ setval 
+--------
+   4639
+(1 row)
+
+ setval 
+--------
+ 199633
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+ 250506
+(1 row)
+
+ setval 
+--------
+ 402424
+(1 row)
+
+ setval 
+--------
+ 131381
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+ 462227
+(1 row)
+
+ setval 
+--------
+ 275371
+(1 row)
+
+ setval 
+--------
+ 933732
+(1 row)
+
+ setval 
+--------
+ 208747
+(1 row)
+
+ setval 
+--------
+  11129
+(1 row)
+
+ setval 
+--------
+   6854
+(1 row)
+
+ setval 
+--------
+  87577
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+  14610
+(1 row)
+
+ setval 
+--------
+    222
+(1 row)
+
+ setval 
+--------
+  14561
+(1 row)
+
+ setval 
+--------
+ 153910
+(1 row)
+
+ setval 
+--------
+  68564
+(1 row)
+
+ setval 
+--------
+  35998
+(1 row)
+
+ setval  
+---------
+ 1174914
+(1 row)
+
+ setval 
+--------
+  35929
+(1 row)
+
+ setval 
+--------
+ 756060
+(1 row)
+
+ setval 
+--------
+   2084
+(1 row)
+
+ setval 
+--------
+ 218064
+(1 row)
+
+ setval 
+--------
+   1008
+(1 row)
+
+ setval  
+---------
+ 6320366
+(1 row)
+
+ setval  
+---------
+ 3764529
+(1 row)
+
+ setval  
+---------
+ 3527277
+(1 row)
+
+ setval 
+--------
+  10181
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+    131
+(1 row)
+
+ setval 
+--------
+ 203673
+(1 row)
+
+  setval  
+----------
+ 30705768
+(1 row)
+
+ setval 
+--------
+  20307
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+ setval 
+--------
+   1185
+(1 row)
+
