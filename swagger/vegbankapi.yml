@@ -1,0 +1,1405 @@
+openapi: '3.0.3'
+info:
+  title: VegBankAPI
+  version: '1.0'
+servers:
+  - url: https://api.server.test/v1
+paths:
+  /vegbank/plots:
+    get: 
+      summary: get list of plots by accession codes
+      parameters: 
+        - in: path
+          name: accessionCodes
+          schema: 
+            type: array
+            items: 
+              type: string
+          required: true
+      responses:
+        "200":
+          description: "found"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items:
+                  $ref: "#/components/schemas/plot"
+  /vegbank/upload:
+    post: 
+      summary: upload full data set
+      requestBody:
+        content: 
+          multipart/form-data:
+            schema:
+              type: object
+              $ref: "#/components/schemas/upload"
+      responses: 
+        "200":
+          description: "added successfully"
+
+
+components:
+  schemas:
+    #compound objects not found in database, used for API calls only. 
+    upload: 
+      type: object
+      properties:
+        # this should be a new project for this call. 
+        project: 
+          type: object
+          $ref: "#/components/schemas/projectObservationCollection"
+        # List of new plots associated with this project. 
+        plots: 
+          type: array
+          items: 
+            $ref: "#/components/schemas/plot" 
+    
+    #ties a project to a list of observations. For the purposes of the call this is for, it is assumed that this is a new project being added
+    # along with its associated observations. 
+    projectObservationCollection:
+      type: object
+      properties:
+        project: 
+          type: object 
+          $ref: "#/components/schemas/project"
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/observation"
+
+
+    plot:
+      type: object
+      properties: 
+        authorPlotCode: 
+          type: string
+          maxLength: 30
+          description: "Author's Plot number/code, or the original plot number if taken from literature."
+          example: "TODO"
+        referenceID: 
+          type: integer
+          description: "Link to the source reference from which this plot record was taken"
+          example: "TODO"
+        parent_ID:
+          type: integer
+          description: "Link to the parent plot when plot is nested within another plot."
+          example: "TODO"
+        realLatitude:
+          type: number
+          format: float
+          description: "Latitude of the plot origin in degrees and decimals, datum =WGS84"
+          example: 45.67
+        realLongitude:
+          type: number
+          format: float
+          description: "Longitude of the plot origin in degrees and decimals, datum = WGS84"
+          example: -123.45
+        locationAccuracy:
+          type: number
+          format: float
+          description: "Estimated accuracy of the location of the plot. Plot origin has a 95% or greater probability of being within this many meters of the reported location."
+          example: "TODO"
+        confidentialityStatus:
+          type: integer
+          description: "Are the data to be considered confidential? 0=no, 1= 1km radius, 2=10km radius, 3=100km radius, 4=location embargo, 5=public embargo on all plot data, 6=full embargo on all plot data. This applies also to region."
+          example: "exact location"
+        confidentialityReason: 
+          type: string
+          maxLength: 200
+          description: "The reason for confidentiality. This field should not be open to public view. Reasons might include specific rare species, ownership, prepublication embargo, or many other reason"
+          example: "TODO"
+        latitude: 
+          type: number
+          format: float
+          description: "Latitude of the plot origin in degrees and decimals, datum =WGS84, fuzzing applied"
+          example: "TODO"
+        longitude: 
+          type: number
+          format: float
+          description: "Longitude of the plot origin in degrees and decimals, datum = WGS84, fuzzing applied"
+          example: "TODO"
+        authorE:
+          type: string
+          maxLength: 20
+          description: "Original E-W coordinate as recorded by the author"
+          example: "TODO"
+        authorN:
+          type: string
+          maxLength: 20
+          description: "Original N-S coordinate as recorded by the author"
+          example: "TODO"
+        authorZone:
+          type: string
+          maxLength: 20
+          description: "Original UTM zone reported by the author"
+          example: "TODO"
+        authorDatum:
+          type: string
+          maxLength: 20
+          description: "Original datum reported by the author"
+          example: "TODO"
+        authorLocation:
+          type: string
+          maxLength: 200
+          description: "Original location as described by author (e.g. Town-Range-Section)"
+          example: "TODO"
+        locationNarrative:
+          type: string
+          description: "Text description that provides information useful for plot relocation."
+          example: "TODO"
+        azimuth:
+          type: number
+          format: float
+          description: "This element stores the azimuth of the x-axis used to describe the relative coordinate system for plot shape (dsgpoly) and other spatial information about the plot. Typically the azimuth is parallel to the long axis of the plot (in the case of a rectangle)."
+          example: "TODO"
+        dsgpoly:
+          type: string
+          description: "This field is a text string containing the points circumscribing a plot area. These points are anticipated to have been collected using tapes, GPS, or calculated from the plot shape and area. Points are X-Y coordinates in m relative to plot origin."
+          example: "TODO"
+        shape:
+          type: string
+          maxLength: 50
+          description: "Shape of the plot area."
+          example: "TODO"
+        area:
+          type: number
+          format: float
+          description: "Total area of the plot in m2. If many subplots, this area includes the subplots and the interstitial space. RESERVED VALUE: -1 is used to indicate that the plot had no boundaries."
+          example: "TODO"
+        standSize:
+          type: string
+          maxLength: 50
+          description: "The extent of this community occurrence in relation to the plot size: very extensive (>1000x plot), extensive (>100x plot), large (10-100x plot), small (3-10x plot), very small (1-3x plot)."
+          example: "TODO"
+        placementMethod:
+          type: string
+          maxLength: 50
+          description: "Brief description of strategy for determining plot placement within the stand."
+          example: "TODO"
+        permanence:
+          type: boolean
+          description: "Is the plot monumented so as to assure permanence? If so, this should be described in the layoutNarrative"
+          example: "TODO"
+        layoutNarrative:
+          type: string
+          description: "Text description of and the rationale for the layout of the plot."
+          example: "TODO"
+        elevation:
+          type: number
+          format: float
+          description: "The elevation of the plot origin in meters above sea level."
+          example: "TODO"
+        elevationAccuracy:
+          type: number
+          format: float
+          description: "The accuracy of the elevation in meters."
+          example: "TODO"
+        elevationRange:
+          type: number
+          format: float
+          description: "Meters of difference in elevations of the high and low points in the plot."
+          example: "TODO"
+        slopeAspect:
+          type: number
+          format: float
+          description: "Representative azimuth of slope gradient (0-360 degrees); if too flat to determine = -1; if too irregular to determine = -2."
+          example: "TODO"
+        minSlopeAspect:
+          type: number
+          format: float
+          description: "Minimum azimuth of slope gradient (0-360 degrees), counterclockwise from representative azimuth."
+          example: "TODO"
+        maxSlopeAspect:
+          type: number
+          format: float
+          description: "Maximum azimuth of slope gradient (0-360 degrees), clockwise from representative azimuth"
+          example: "TODO"
+        slopeGradient:
+          type: number
+          format: float
+          description: "Representative inclination of slope in degrees; if too irregular to determine, = -1."
+          example: "TODO"
+        minSlopeGradient:
+          type: number
+          format: float
+          description: "Minimum inclination of slope in degrees."
+          example: "TODO"
+        maxSlopeGradient:
+          type: number
+          format: float
+          description: "Maximum inclination of slope in degrees."
+          example: "TODO"
+        topoPosition:
+          type: string
+          maxLength: 90
+          description: "Position of the plot on land surface (e.g., Summit, shoulder, upper slope, middle slope, lower slope, toeslope, no slope, channel bed, dune swale, pond)."
+          example: "TODO"
+        landform:
+          type: string
+          maxLength: 90
+          description: "A recognizable physical feature on the surface of the earth, often including consideration of the natural cause of its formation."
+          example: "TODO"
+        surficialDeposits:
+          type: string
+          maxLength: 90
+          description: "Surficial deposits represent the parent material that are the geologic or organic precursors to the soil. They may either have been deposited by geologic (wind, ice, gravity or water) or biologic (organic) activity, or formed in place more-or-less directly from rocks and minerals below."
+          example: "TODO"
+        rockType:
+          type: string
+          maxLength: 90
+          description: "RockType values conform to the lithic types in the FGDC Soil Geographic Data Standards, September 1997. http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF (pages 56-59)."
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+        notesPublic:
+          type: boolean
+          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        notesMgt:
+          type: boolean
+          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        revisions:
+          type: boolean
+          description: "TRUE indicates that revisions exist in vegPlot.Revision"
+          example: "TODO"
+    observation:
+        properties: #There is an additional field listed on the vegbank data dictionary, "Number of Taxa," need to verify how this is calculated (taxon observations with matching observation ID?)
+          observation_ID:
+            type: string
+            description: "Database generated identifier assigned to each unique plot observation."
+            example: "TODO"
+          previousobs_ID:
+            type: integer
+            description: "Link to data from the previous observation of this plot."
+            example: "TODO"
+          plot_ID:
+            type: integer
+            description: "Link to data and metadata that do not change between observations and which are stored in the plot table."
+            example: "TODO"
+          project_ID:
+            type: integer
+            description: "Link between an observation and the project within which the observation was made"
+            example: "TODO"
+          authorObsCode:
+            type: string
+            maxLength: 30
+            description: "This is the code or name that the author uses to identify this plot observation event. Where a plot has only one observation, this will often equal plot.authorPlotCode."
+            example: "TODO"
+          obsStartDate:
+            type: string
+            format: date
+            description: "The date of the observation, or the first day if the observation spanned more than one day."
+            example: "TODO"
+          obsEndDate:
+            type: string
+            format: date
+            description: "If the observation event spanned more than a single day, this is the last day on which observations were made."
+            example: "TODO"
+          dateAccuracy:
+            type: string
+            maxLength: 30
+            description: "Estimated accuracy of the observation date."
+            example: "TODO"
+          dateEntered:
+            type: string
+            format: date
+            description: "Date that the observation was added to VegBank"
+            example: "TODO"
+          covermethod_ID: #possible this should just connect to the cover method table instead of returning the ID. Once I build the coverMethod schema I'll connect that up here if necessary. RS 8/14
+            type: integer
+            description: "Link to the scale used to estimate taxon cover. The database stores estimated cover to the nearest percent, but the conversion details are recovered by reference to the specific scale employed."
+            example: "TODO"
+          coverDispersion:
+            type: integer
+            description: "Were cover values for the total taxon list collected from one contiguous area or dispersed subplots?"
+            example: "TODO"
+          autoTaxonCover:
+            type: boolean
+            description: "TRUE indicates that taxonObservation.taxonCover was automatically calculated from the values of all stratumObservation.taxonStratumCover"
+            example: "TODO"
+          stratummethod_ID:
+            type: integer
+            description: "Link to the definitions of strata used in recording taxon-specific values of cover."
+            example: "TODO"
+          methodNarrative:
+            type: string
+            description: "Additional metadata helpful for understanding how the data were collected during the observation event."
+            example: "TODO"
+          taxonObservationArea:
+            type: number
+            format: float
+            description: "the total surface area (in m^2) used for cover estimates and for which a complete species list is provided. If subplots were used, this would be the total area of the subplots without interstitial space. RESERVED VALUE: -1 is used to indicate the complete list of species had no known boundaries."
+            example: "TODO"
+          stemSizeLimite:
+            type: number
+            format: float
+            description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count (stemCount)."
+            example: "TODO"
+          stemObservationArea:
+            type: number
+            format: float
+            description: "the total surface area (in m^2) observed for recording woody stem data. RESERVED VALUE: -1 means no known area."
+            example: "TODO"
+          stemSampleMethod:
+            type: string
+            maxLength: 30
+            description: "The method used to obtain basal area or tree stem data (e.g., full census, point quarter, random pairs, Bitterlich, other)."
+            example: "TODO"
+          originalData:
+            type: string
+            description: "Location where the hard data reside and any access instructions."
+            example: "TODO"
+          effortLevel:
+            type: string
+            maxLength: 30
+            description: "This is the effort spent making the observations as estimated by the party that submitted the data (e.g., Very thorough, Average, Hurried description)."
+            example: "TODO"
+          plotValidationLevel:
+            type: integer
+            description: "Quality of plot as determined by an automated filter system, including values such as (1) sufficient for determining type occurrence, (2) sufficient for inclusion in a classification revision, and (3) fully compliant with recommendations."
+            example: "TODO"
+          floristicQuality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of floristic quality by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low)."
+            example: "TODO"
+          bryophyteQuality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of the taxonomic quality of the bryophyte data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+            example: "TODO"
+          lichenQuality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of the taxonomic quality of the lichen data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+            example: "TODO"
+          observationNarrative:
+            type: string
+            description: "Additional unstructured observations useful for understanding the ecological attributes and significance of the plot observations."
+            example: "TODO"
+          landscapeNarrative:
+            type: string
+            description: "Unstructured observations on the landscape context of the observed plot."
+            example: "TODO"
+          homogeneity:
+            type: string
+            maxLength: 30
+            description: "How homogeneous was the community (e.g., homogeneous, compositional trend across plot, conspicuous inclusions, irregular mosaic or pattern)."
+            example: "TODO"
+          phenologicAspect:
+            type: string
+            maxLength: 30
+            description: "Season expression of the community (e.g., typical growing season, vernal, aestival, wet, autumnal, winter, dry, irregular ephemerals present)."
+            example: "TODO"
+          representativeness:
+            type: string
+            maxLength: 255
+            description: "How representative was the plot of the stand?"
+            example: "TODO"
+          standMaturity:
+            type: string
+            maxLength: 50
+            description: "How mature is the stand. Could be young, mature but even-aged, old-growth, etc."
+            example: "TODO"
+          successionalStatus:
+            type: string
+            description: "Description of the assumed successional status of the plot. This description is of necessity highly subjective."
+            example: "TODO"
+          basalArea:
+            type: number
+            format: float
+            description: "Total basal area of woody stems (in m²/ha). 0 should be used to indicate that plots have no stems."
+            example: "TODO"
+          hydrologicRegime:
+            type: string
+            maxLength: 30
+            description: "What is the hydrologic regime, which is a reflection of frequency and duration of flooding? List is taken from Cowardin et al. 1979, 1985."
+            example: "TODO"
+          soilMoistureRegime:
+            type: string
+            maxLength: 30
+            description: "How moist was the soil at the sampling event?"
+            example: "TODO"
+          soilDrainage:
+            type: string
+            maxLength: 30
+            description: "Identifies the natural drainage conditions of the soil and refers to the frequency and duration of wet periods. The soil drainage classes are defined in terms of (1) actual moisture content (in excess of field moisture capacity) and (2) the extent of the period during which excess water is present in the plant-root zone. Soil drainage class categories conform to the FGDC Soil Geographic Data Standards, September 1997. (http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF.) Definitions are derived from Grossman et al. (1998) and Sims et al. (1997)."
+            example: "TODO"
+          waterSalinity:
+            type: string
+            maxLength: 30
+            description: "How saline is the water, if a flooded community?"
+            example: "TODO"
+          waterDepth:
+            type: number
+            format: float
+            description: "For aquatic or marine vegetation, what was the water depth in m."
+            example: "TODO"
+          shoreDistance:
+            type: number
+            format: float
+            description: "For aquatic or marine vegetation, what was the closest distance to shore in m."
+            example: "TODO"
+          soilDepth:
+            type: number
+            format: float
+            description: "Median depth to bedrock or permafrost in m (usually from averaging multiple probe readings)."
+            example: "TODO"
+          organicDepth:
+            type: number
+            format: float
+            description: "Depth of the surficial organic layer, where present, in centimeters."
+            example: "TODO"
+          soiltaxon_ID: #This may link up to soil taxon table after I've made that schema. RS 8/14/2024
+            type: integer
+            description: "Foreign key into table of soil taxa within the USDA classification hierarchy, including Order, Suborder, Greatgroup, Subgroup, Family and Series."
+            example: "TODO"
+          soilTaxonSrc:
+            type: string
+            maxLength: 200
+            description: "How was the soil taxon determined (e.g., field observation, map, other sources)?"
+            example: "TODO"
+          percentBedRock:
+            type: number
+            format: float
+            description: "Percent of surface that is exposed bedrock."
+            example: "TODO"
+          percentRockGravel:
+            type: number
+            format: float
+            description: "Percent of surface that is exposed rock and gravel."
+            example: "TODO"
+          percentWood:
+            type: number
+            format: float
+            description: "Percent of surface that is wood."
+            example: "TODO"
+          percentLitter:
+            type: number
+            format: float
+            description: "Percent of surface that is litter."
+            example: "TODO"
+          percentBareSoil:
+            type: number
+            format: float
+            description: "Percent of surface that is bare soil."
+            example: "TODO"
+          percentWater:
+            type: number
+            format: float
+            description: "Percent of surface that is water."
+            example: "TODO"
+          percentOther:
+            type: number
+            format: float
+            description: "Percent of surface that belong to an additional itemized category"
+            example: "TODO"
+          nameOther:
+            type: string
+            maxLength: 30
+            description: "Name of additional itemized ground cover category (e.g., beer cans)."
+            example: "TODO"
+          treeHt:
+            type: number
+            format: float
+            description: "Height of the tree layer in m."
+            example: "TODO"
+          shrubHt:
+            type: number
+            format: float
+            description: "Height of the shrub layer in m."
+            example: "TODO"
+          fieldHt:
+            type: number
+            format: float
+            description: "Height of the field layer in m."
+            example: "TODO"
+          nonvascularHt:
+            type: number
+            format: float
+            description: "Height of the nonvascular layer in m."
+            example: "TODO"
+          submergedHt:
+            type: number
+            format: float
+            description: "Height of the submerged layer in m."
+            example: "TODO"
+          treeCover:
+            type: number
+            format: float
+            description: "Total cover of the tree layer in percent. Includes tall trees (single-stemmed woody plants, generally more than 5 m in height or greater at maturity under optimal growing conditions). Very tall shrubs with tree-like form may also be included here, as may other life forms, such as lianas and epiphytes."
+            example: "TODO"
+          shrubCover:
+            type: number
+            format: float
+            description: "Total cover of the shrub layer in percent. Includes shrubs (multiple-stemmed woody plants, generally less than 5 m in height at maturity under optimal growing conditions) and shorter trees (saplings). As with the tree stratum, other life forms present in this stratum may also be included (however, herbaceous life forms should be excluded, as their stems often die back annually and do not have as consistent a height as woody life forms). Where dwarf-shrubs (i.e. shrubs shorter than 0.5 m) form a distinct stratum (either as part of a series of strata, as in a forest, or as the top stratum of more open vegetation, such as tundra or xeric shrublands), they should be treated as a low version of the shrub stratum (or short shrub substratum). In many vegetation types, dwarf-shrubs may simply occur as one life form component of the herb stratum."
+            example: "TODO"
+          fieldCover:
+            type: number
+            format: float
+            description: "Total cover of the field layer in percent. Also referred to as Herb stratum. Includes herbs (plants without woody stems and often dying back annually), often in association with low creeping semi-shrubs, dwarf-shrubs, vines, and non-woody brambles (such as raspberries), as well as tree or shrub seedlings."
+            example: "TODO"
+          nonvascularCover:
+            type: number
+            format: float
+            description: "Total cover of the nonvascular layer in percent. Also referred to as moss, bryoid, or ground stratum. Defined entirely by mosses, lichens, liverworts, and alga. Ground-creeping vines, prostrate shrubs and herbs should be treated in the herb stratum. Where herbs are entirely absent, it is still possible to recognize this stratum if other very low woody or semi-woody life forms are present."
+            example: "TODO"
+          floatingCover:
+            type: number
+            format: float
+            description: "Total cover of the floating layer in percent. Includes rooted or drifting plants that float on the water surface (e.g., duckweed, water-lily)."
+            example: "TODO"
+          submergedCover:
+            type: number
+            format: float
+            description: "Total cover of the submerged layer in percent. Includes rooted or drifting plants that by-and-large remain submerged in the water column or on the aquatic bottom (e.g., pondweed). The focus is on the overall strata arrangement of these aquatic plants. Note that emergent plants life forms in a wetland should be placed in above water strata (e.g., cattail or sedges would be placed in the herb stratum, whereas the duckweed would be in the floating aquatic stratum)."
+            example: "TODO"
+          dominantStratum:
+            type: string
+            maxLength: 40
+            description: "Which of the six standard strata is dominant?"
+            example: "TODO"
+          growthform1Type:
+            type: string
+            maxLength: 40
+            description: "The predominant growth form?"
+            example: "TODO"
+          growthform2Type:
+            type: string
+            maxLength: 40
+            description: "The second-most predominant growthform?"
+            example: "TODO"
+          growthform3Type:
+            type: string
+            maxLength: 40
+            description: "The third-most predominant growthform"
+            example: "TODO"
+          growthform1Cover:
+            type: number
+            format: float
+            description: "Total cover of the predominant growthform?"
+            example: "TODO"
+          growthform2Cover:
+            type: number
+            format: float
+            description: "Total cover of the second-most predominant growthform?"
+            example: "TODO"
+          growthform3Cover:
+            type: number
+            format: float
+            description: "Total cover of the third-most predominant growthform?"
+            example: "TODO"
+          totalCover:
+            type: number
+            format: float
+            description: "The total cover, in percent, of all vegetation on the plot."
+            example: "TODO"
+          accessionCode:
+            type: string
+            maxLength: 100
+            description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+            example: "TODO"
+          notesPublic:
+            type: boolean
+            description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+            example: "TODO"
+          notesMgt:
+            type: boolean
+            description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+            example: "TODO"
+          revisions:
+            type: boolean
+            description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
+            example: "TODO"
+    taxonInterpretation:
+      type: object
+      properties: 
+        taxonInterpretation_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique interpretation of a taxon."
+          example: "TODO"
+        taxonobservation_ID:
+          type: integer
+          description: "Link to a particular taxon observation"
+          example: "TODO"
+        stemLocation_ID:
+          type: integer
+          description: "StemLocation record of a particular stem that is to be interpreted by this taxonInterpretation record."
+          example: "TODO"
+        plantconcept_ID:
+          type: integer
+          description: "Link to a taxon in the plantConcept table. The entry in the plantConcept table will in turn point to a reference and a name used in the reference, thereby defining the taxon concept. The name that should be applied to the plantConcept will be party specific and will be found in the plantUsage table. For other than legacy data, the first interpretation recorded for a taxon observation should be redundant with the information contained in taxonObservation.PLANTNAME_ID + PLANTREFERENCE_ID."
+          example: "TODO"
+        interpretationDate:
+          type: number
+          format: date
+          description: "The date that the interpretation was made."
+          example: "TODO"
+        plantname_ID:
+          type: integer
+          description: "Foreign key into the plantName (in the plantTaxa database) table to identify the name applied by the interpreter to the plantConcept. This field is not needed except in cases where there is a publication associated with the interpretation."
+          example: "TODO"
+        party_ID:
+          type: integer
+          description: "Foreign key that identifies the party that made the interpretation, which could be the observation author."
+          example: "TODO"
+        role_ID:
+          type: integer
+          description: "Foreign key that identifies the role of the party making the interpretation (e.g., plot author, publication author, database manager, automated, plot contributor)."
+          example: "TODO"
+        interpretationType:
+          type: string
+          maxLength: 30
+          description: "Categories for the interpretation (e.g., author, computer generated, simplified for comparative analysis, correction, finer resolution)."
+          example: "TODO"
+        reference_ID:
+          type: integer
+          description: "Foreign key into reference table, which identifies a publication in which the interpretation was formally made, or in which the plot was used in a formal analysis."
+          example: "TODO"
+        originalInterpretation:
+          type: boolean
+          description: "This interpretation corresponds to the original interpretation of the plot author, as best as can be determined. There is no requirement that the authority match the authority of the author; only that the concepts are synonymous."
+          example: "TODO"
+        currentInterpretation:
+          type: boolean
+          description: "This interpretation is the most accurate and precise interpretation currently available."
+          example: "TODO"
+        taxonFit:
+          type: string
+          maxLength: 50
+          description: "ndicates the degree of fit with the plant concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188."
+          example: "TODO"
+        taxonConfidence:
+          type: string
+          maxLength: 50
+          description: "Indicates the degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the classification or the sufficiency of information about the plot (e.g., High, Moderate, Low)."
+          example: "TODO"
+        collector_ID:
+          type: integer
+          description: "Party who collected the voucher which was used to make this taxonInterpretation."
+          example: "TODO"
+        collectionNumber:
+          type: string
+          maxLength: 100
+          description: "The Collector's identification code for the voucher."
+          example: "TODO"
+        collectionDate:
+          type: string
+          format: date
+          description: "Date on which the voucher was collected."
+          example: "TODO"
+        museum_ID:
+          type: integer
+          description: "Link to the Party which is the museum which archives the voucher."
+          example: "TODO"
+        museumAccessionNumber:
+          type: string
+          maxLength: 100
+          description: "Museum Code which identifies the voucher."
+          example: "TODO"
+        groupType:
+          type: string
+          maxLength: 20
+          description: "The type of group formed for this taxonInterpretation_ID."
+          example: "TODO"
+        notes:
+          type: string
+          description: "These are notes that the interpreter has included with the interpretation (generally, the reason for the interpretation)."
+          example: "TODO"
+        notesPublic:
+          type: boolean
+          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        notesMgt:
+          type: boolean
+          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        revisions:
+          type: boolean
+          description: "TRUE indicates that revisions exist in vegPlot.Revision"
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+    project: 
+      type: object
+      properties: 
+        accessionCode:
+          type: string
+          maxLength: 100
+        projectName: 
+          type: string
+          maxLength: 150
+        projectDescription:
+          type: string
+        startDate: 
+          type: string
+          format: date
+        stopDate: 
+          type: string
+          format: date
+    taxonImportance:
+      type: object
+      properties:
+        taxonImportance_ID:
+          type: string
+          description: "Database generated number which uniquely identifies this record of the table."
+          example: "TODO"
+        taxonObservation_ID:
+          type: integer
+          description: "Foreign Key into the TaxonObservation table to link to the information about the taxon for which this importance value applies."
+          example: "TODO"
+        stratum_ID:
+          type: integer
+          description: "Foreign Key into the stratum table, if this record is limited to the importance of a taxon in one stratum. If null, all values in this record speak of the importance of the entire taxon across all strata."
+          example: "TODO"
+        cover:
+          type: number
+          format: float
+          description: "Cover, in percent, of the taxon (potentially limitied to one stratum if stratum_ID has a value)."
+          example: "TODO"
+        basalArea:
+          type: number
+          format: float
+          description: "Total basal area of the species in m2/ha (potentially limitied to one stratum if stratum_ID has a value)."
+          example: "TODO"
+        biomass:
+          type: number
+          format: float
+          description: "The biomass of the species in g/m2 (potentially limitied to one stratum if stratum_ID has a value)."
+          example: "TODO"
+        inferenceArea:
+          type: number
+          format: float
+          description: "This is the area in m2 used to infer the importance values (i.e. cover, biomass, basal area) in this record. RESERVED VALUE: -1 is used to indicate no plot boundaries were used when estimating importance values."
+          example: "TODO"
+    taxonObservation:
+      type: object
+      properties:
+        taxonObservation_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique observation of a taxon in a plot."
+          example: "TODO"
+        observation_ID:
+          type: integer
+          description: "Link to the parent observation event of this taxon observation."
+          example: "TODO"
+        authorPlantName:
+          type: string
+          maxLength: 255
+          description: "The taxon name that the author of the plot used to refer to a taxon observed within the plot."
+          example: "TODO"
+        reference_ID:
+          type: integer
+          description: "The authority for the taxon that was used by the plot author. If the authority is unknown the author of the plot is the authority. For other than legacy data, this field plus plantName_ID will be sufficient to determine taxonInterpretation.plantConcept_ID."
+          example: "TODO"
+        taxonInferenceArea:
+          type: number
+          format: float
+          description: "This is the area in m2 used to infer the presence of a given taxon. Generally this should be equal to observation.taxonInferenceArea, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+    reference: 
+      type: object
+      properties: 
+        reference_ID: 
+          type: string
+          description: "Primary key for the reference table."
+          example: "TODO"
+        shortName:
+          type: string
+          maxLength: 250
+          description: "The 'shortName' field provides a concise or abbreviated name that describes the resource that is being documented."
+          example: "TODO"
+        fulltext:
+          type: string
+          description: "Full Text of the reference citation."
+          example: "TODO"
+        referenceType:
+          type: string
+          maxLength: 250
+          description: "Describes the type of reference this generic type is being used to represent. Examples: book, journal article, web page."
+          example: "TODO"
+        title:
+          type: string
+          maxLength: 250
+          description: "The formal title given to the work by its author or publisher. The 'title' field provides a description of the resource that is being documented that is long enough to differentiate it from other similar resources."
+          example: "TODO"
+        titleSuperior:
+          type: string
+          maxLength: 250
+          description: "A second, higher order title where appropriate, which in the case of a reference to a chapter is the Book title, and in the case of a Conference Presentation is the Name of the Conference."
+          example: "TODO"
+        pubDate:
+          type: string
+          format: date
+          description: "The 'pubDate' field represents the date that the resource was published. The format should be represented as: CCYY, which represents a 4 digit year, or as CCYY-MM-DD, which denotes the full year, month, and day. Note that month and day are optional components. Formats must conform to ISO 8601. For example: 1999-10-26"
+          example: "TODO"
+        accessDate:
+          type: string
+          format: date
+          description: "The date the resource being referenced was accessed. This is useful if the resource is could be changed after formal publication, such as web sites or databases."
+          example: "TODO"
+        conferenceDate:
+          type: string
+          format: date
+          description: "The date the conference was held."
+          example: "TODO"
+        referenceJournal_ID:
+          type: integer
+          description: "Foreign key into the journal table to identify the journal of this reference."
+          example: "TODO"
+        volume:
+          type: string
+          maxLength: 250
+          description: "The volume field is used to describe the volume of the journal in which the article appears."
+          example: "TODO"
+        issue:
+          type: string
+          maxLength: 250
+          description: "The issue field is used to describe the issue of the journal in which the article appears."
+          example: "TODO"
+        pageRange:
+          type: string
+          maxLength: 250
+          description: "The page range field is used for the beginning and ending pages of the journal article that is being documented."
+          example: "TODO"
+        totalPages:
+          type: integer
+          description: "The total pages field is used to describe the total number of pages in the book that is being described."
+          example: "TODO"
+        publisher:
+          type: string
+          maxLength: 250
+          description: "The organization that physically put together the report and publishes it."
+          example: "TODO"
+        publicationPlace:
+          type: string
+          maxLength: 250
+          description: "The location at which the work was published. This is usually the name of the city in which the publishing house produced the work."
+          example: "TODO"
+        isbn:
+          type: string
+          maxLength: 250
+          description: "The ISBN, or International Standard Book Number that has been assigned to this literature resource."
+          example: "TODO"
+        edition:
+          type: string
+          maxLength: 250
+          description: "The edition field is to document the edition of the generic reference type that is being described."
+          example: "TODO"
+        numberOfVolumes:
+          type: integer
+          description: "Number of volumes in a collection"
+          example: "TODO"
+        chapterNumber:
+          type: integer
+          description: "The chapter number of the chapter of a book that is being described."
+          example: "TODO"
+        reportNumber:
+          type: integer
+          description: "The report number field is used to describe the unique identification number that has been issued by the report institution for the report being described."
+          example: "TODO"
+        communicationType:
+          type: string
+          maxLength: 250
+          description: "The type of personal communication. Could be an email, letter, memo, transcript of conversation either hardcopy or online."
+          example: "TODO"
+        degree:
+          type: string
+          maxLength: 250
+          description: "The degree field is used to describe the name or degree level for which the thesis was completed."
+          example: "TODO"
+        url:
+          type: string
+          description: "A URL (Uniform Resource Locator) from which this resource can be downloaded or additional information can be obtained."
+          example: "TODO"
+        doi:
+          type: string
+          description: "A Digital Object Identifier - a digital identifier for any object of intellectual property. A DOI provides a means of persistently identifying a piece of intellectual property on a digital network and associating it with related current data. (www.doi.org)"
+          example: "TODO"
+        additionalInfo:
+          type: string
+          description: "This field provides any information that is not characterized by the other resource metadata fields. Example: Copyright 2001, Robert Warner"
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+    soilObs:
+      type: object
+      properties:
+        soilObs_ID: 
+          type: string
+          description: "Database generated identifier assigned to each unique soil observation."
+          example: "TODO"
+        observation_ID:
+          type: integer
+          description: "Link to the observation event to which this soil observation is associated."
+          example: "TODO"
+        soilHorizon:
+          type: string
+          maxLength: 15
+          description: "The horizon to which this observation applies."
+          example: "TODO"
+        soilDepthTop:
+          type: number
+          format: float
+          description: "The depth at which the horizon observation starts."
+          example: "TODO"
+        soilDepthBottom:
+          type: number
+          format: float
+          description: "The depth at which the horizon observation ends."
+          example: "TODO"
+        soilColor:
+          type: string
+          maxLength: 30
+          description: "Soil color (USDA guidelines recommended)."
+          example: "TODO"
+        soilOrganic:
+          type: number
+          format: float
+          description: "Percent organic content of the soil (for methods see observation.methodsNarrative)."
+          example: "TODO"
+        soilTexture:
+          type: string
+          maxLength: 50
+          description: "Soil texture class.The texture classes sands, loamy sands, and sandy loams (plural terms) correspond to sand, loamy sand, and sandy loam (singular terms) in the textural triangle."
+          example: "TODO"
+        soilSand:
+          type: number
+          format: float
+          description: "Percent sand in the soil horizon."
+          example: "TODO"
+        soilSilt:
+          type: number
+          format: float
+          description: "Percent silt in the soil horizon."
+          example: "TODO"
+        soilClay:
+          type: number
+          format: float
+          description: "Percent clay in the soil horizon."
+          example: "TODO"
+        soilCoarse:
+          type: number
+          format: float
+          description: "percent coarse fragments in the soil, prior to removal for textural analysis"
+          example: "TODO"
+        soilPH: 
+          type: number
+          format: float
+          description: "pH of the soil (for methods see observation.methodsNarrative)."
+          example: "TODO"
+        exchangeCapacity:
+          type: number
+          format: float
+          description: "Cation exchange capacity (for methods see observation.methodsNarrative)."
+          example: "TODO"
+        baseSaturation:
+          type: number
+          format: float
+          description: "Percent base saturation (for methods see observation.methodsNarrative)."
+          example: "TODO"
+        soilDescription:
+          type: string
+          description: "Text description of the soil."
+          example: "TODO"
+    disturbanceObs:
+      type: object
+      properties: 
+        disturbanceObs_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique disturbance observation.."
+          example: "TODO"
+        observation_ID:
+          type: integer
+          description: "Link to the observation event with which this report of a disturbance event is associated."
+          example: "TODO"
+        disturbanceType:
+          type: string
+          maxLength: 30
+          description: "The type of disturbance being reported"
+          example: "TODO"
+        disturbanceIntensity:
+          type: string
+          maxLength: 30
+          description: "Intensity or degree of the disturbance."
+          example: "TODO"
+        disturbanceAge:
+          type: number
+          format: float
+          description: "Estimated time in years since the disturbance event."
+          example: "TODO"
+        disturbanceExtent:
+          type: number
+          format: float
+          description: "Percent of the plot that experienced the event."
+          example: "TODO"
+        disturbanceComment:
+          type: string
+          description: "Text description of details of the disturbance and its impact on the vegetation."
+          example: "TODO"
+    stemCount:
+      type: object
+      properties: 
+        stemCount_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique stem tally."
+          example: "TODO"
+        taxonImportance_ID:
+          type: integer
+          description: "Foreign key into the taxonImportance table, thereby associating a taxon identification with the tree stem(s)."
+          example: "TODO"
+        stemDiameter:
+          type: number
+          format: float
+          description: "The diameter of the stem in centimeters. When diameter classes are used, the stemDiameter is the midpoint between the low end and high end for the diameter class; the offset between this and the endpoints is stored in the stemDiameterAccuracy attribute."
+          example: "TODO"
+        stemDiameterAccuracy:
+          type: number
+          format: float
+          description: "The accuracy of the stem diameter measurements in centimeters. This represents the distance between the diameter class midpoint and endpoint."
+          example: "TODO"
+        stemHeight:
+          type: number
+          format: float
+          description: "The measured height of the stem in meters. When height classes are used, the stemHeight is the midpoint between the low end and high end for the height class; the offset between this and the endpoint is stored in the stemHeightAccuracy field."
+          example: "TODO"
+        stemHeightAccuracy:
+          type: number
+          format: float
+          description: "The accuracy of the measured height of a stem, being the offset between the midpoint of the class and the endpoint, in meters."
+          example: "TODO"
+        stemCount:
+          type: integer
+          description: "The number of stems of a single species that have these specific stem diameter and height data in common."
+          example: "TODO"
+        stemTaxonArea:
+          type: number
+          format: float
+          description: "This is the area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxonObservation, taxonImportance, and/or observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
+          example: "TODO"
+    stemLocation: 
+      type: object
+      properties:
+        stemLocation_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique stem observation."
+          example: "TODO"
+        stemCount_ID:
+          type: integer
+          description: "Foreign key into the stemSize table, thereby assigning a location to a particular stem of a specific size"
+          example: "TODO"
+        stemCode:
+          type: string
+          maxLength: 20
+          description: "Name or code applied to a specific stem in the plot. This is generally a numeric label to associate a field data entry with a stem in the database."
+          example: "TODO"
+        stemXPosition:
+          type: number
+          format: float
+          description: "The X-coordinate of the stem position in m. The user will enter the relative position of stems with respect to the plot origin (in meters) with the x-axis defined by the plot azimuth."
+          example: "TODO"
+        stemYPosition:
+          type: number
+          format: float
+          description: "The Y-coordinate of the stem position, as above."
+          example: "TODO"
+        stemHealth:
+          type: string
+          maxLength: 50
+          description: "Health of the stem referenced in this stemLocation record. Usually used to describe 'dead' stems."
+          example: "TODO"
+    taxonAlt:
+      type: object
+      properties:
+        taxonAlt_ID:
+          type: string
+          description: "Database generated number to uniquely identify this record, and thus taxonGroup."
+          example: "TODO"
+        taxonInterpretation_ID:
+          type: integer
+          description: "Links to the taxonInterpretation for which several plantConcepts are grouped to form an irregular taxon. The plantConcept referenced here is one member of the group."
+          example: "TODO"
+        plantconcept_ID:
+          type: integer
+          description: "Links to the plantConcept that is part of the taxonGroup formed by all records in this table with the same taxonInterpretation_ID."
+          example: "TODO"
+        taxonAltFit:
+          type: string
+          maxLength: 50
+          description: "Indicates the degree of fit with the plant concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188."
+          example: "TODO"
+        taxonAltConfidence:
+          type: string
+          maxLength: 50
+          description: "Indicates the degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the classification or the sufficiency of information about the plot (e.g., High, Moderate, Low)."
+          example: "TODO"
+        taxonAltNotes:
+          type: string
+          description: "These are notes that the interpreter has included with the interpretation (generally, the reason for the interpretation)."
+          example: "TODO"
+    observationContributor:
+      type: object
+      properties: 
+        observationContributor_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique contribution to an observation event."
+          example: "TODO"
+        observation_ID:
+          type: integer
+          description: "Foreign key pointing to a given plot observation event to which the contribution was made."
+          example: "TODO"
+        party_ID:
+          type: integer
+          description: "Foreign key pointing to the specific party that made the contribution."
+          example: "TODO"
+        role_ID:
+          type: integer
+          description: "Foreign key that identifies the role that the party had in the plot observation (e.g., PI, contact, research advisor, field assistant, taxonomist, owner, guide, etc.)."
+          example: "TODO"
+        contributionDate:
+          type: string
+          format: date
+          description: "The date of the specific contribution, which will generally be within the time span of the plot observation event defined by the obsStartDate and obsStopDate"
+          example: "TODO"
+    place: 
+      type: object
+      properties: 
+        plotPlace_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique plot occurrence at a place."
+          example: "TODO"
+        plot_ID:
+          type: integer
+          description: "Link to a specific plot."
+          example: "TODO"
+        calculated:
+          type: boolean
+          description: "TRUE If occurrence is calculated based on geo-coordinates, FALSE if assigned by the author (If, both methods used, the author assigned value takes priority)."
+          example: "TODO"
+        namedPlace_ID:
+          type: integer
+          description: "Link to a specific named place or region"
+          example: "TODO"
+    commClass:
+      type: object
+      properties:
+        commClass_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique observation classification event."
+          example: "TODO"
+        observation_ID:
+          type: integer
+          description: "Link to the observation table identifying which observation is being classified."
+          example: "TODO"
+        classStartDate:
+          type: string
+          format: date
+          description: "Start date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "TODO"
+        classStopDate:
+          type: string
+          format: date
+          description: "Stop date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "TODO"
+        inspection:
+          type: boolean
+          description: "Classification informed by simple inspection of data."
+          example: "TODO"
+        tableAnalysis:
+          type: boolean
+          description: "Classification informed by inspection of floristic composition tables."
+          example: "TODO"
+        multivariateAnalysis:
+          type: boolean
+          description: "Classification informed by use of multivariate numerical tools."
+          example: "TODO"
+        expertSystem:
+          type: string
+          description: "Description of any automated expert system used in classification."
+          example: "TODO"
+        classPublication_ID:
+          type: integer
+          description: "Link to a publication wherein the observation was classified."
+          example: "TODO"
+        classNotes:
+          type: string
+          description: "Notes about the classification event by the parties participating in the event. This might include the purpose or rationale for the classification."
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+    commInterpretation:
+      type: object
+      properties:
+        commInterpretation_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique assignment of a community concept to a plot observation."
+          example: "TODO"
+        commClass_ID:
+          type: integer
+          description: "Link to the commClassification table identifying the specific classification event."
+          example: "TODO"
+        commConcept_ID:
+          type: integer
+          description: "Link to the communityConcept table identifying the specific community concept being applied."
+          example: "TODO"
+        classFit:
+          type: string
+          maxLength: 50
+          description: "Indicates the degree of fit with the community concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188."
+          example: "TODO"
+        classConfidence:
+          type: string
+          maxLength: 15
+          description: "Indicates the degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the classification or the sufficiency of information about the plot (e.g., High, Moderate, Low)."
+          example: "TODO"
+        commAuthority_ID:
+          type: integer
+          description: "Link to the reference from which information on the community concept was obtained during the classification event. (A case could be made for this being moved to reference.)"
+          example: "TODO"
+        notes:
+          type: string
+          description: "Notes pertaining to the classification analysis and decision."
+          example: "TODO"
+        type:
+          type: boolean
+          description: "This assignment is the type description for the community concept, as indicated in the publication referenced in commClass.classPublication_ID (NOT the commAuthority_ID of this commInterpretation table)."
+          example: "TODO"
+        nomenclaturalType:
+          type: boolean
+          description: "Typal plot for the Braun-Blanquet community name."
+          example: "TODO"
+    classContributor:
+      type: object
+      properties: 
+        classContributor_ID:
+          type: string
+          description: "Database generated identifier assigned to each unique contribution to the classification of a plot observation."
+          example: "TODO"
+        commClass_ID:
+          type: integer
+          description: "Observation classification event to which the contributor is associated."
+          example: "TODO"
+        party_ID:
+          type: integer
+          description: "Link to the party that contributed to the classification event."
+          example: "TODO"
+        role_ID:
+          type: integer
+          description: "Foreign key that identifies the role that the party had in the classification event (e.g., classifier, consultant, research advisor)."
+          example: "TODO"
+    plantConcept: 
+      type: object
+      properties: 
+        plantconcept_ID:
+          type: string
+          description: "Database assigned value to each unique record in the commConcept table."
+          example: "TODO"
+        plantName_ID:  
+          type: integer
+          description: "This is a foreign key into the plant name list, the entry in which when combined with a reference constitutes a concept."
+          example: "TODO"
+        reference_ID:
+          type: integer
+          description: "This is a foreign key to the reference in which the name was used, thereby defining a concept."
+          example: "TODO"
+        plantDescription:
+          type: string
+          description: "The plantDescription is a description of the plantConcept by the party contributing the plantConcept."
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+    plantName_ID:
+      type: object
+      properties: 
+        plantname_ID:
+          type: string
+          description: "Database assigned value to each unique record in the plantName table."
+          example: "TODO"
+        plantName: 
+          type: string
+          maxLength: 255
+          description: "The plant name."
+          example: "TODO"
+        reference_ID:
+          type: integer
+          description: "Foreign key into the reference table to identify the original source of the name (usually the type description)."
+          example: "TODO"
+        dateEntered:
+          type: string
+          format: date
+          description: "Field stores the date that the name was entered into the database."
+          example: "TODO"
+    plantStatus: 
+      type: object
+      properties: 
+        plantStatus_ID:
+          type: string
+          description: "Database assigned value to each unique record in the plantStatus table."
+          example: "TODO"
+        plantconcept_ID:
+          type: integer
+          description: "Foreign key to identify the concept to which a party assigns a status"
+          example: "TODO"
+        reference_ID:
+          type: integer
+          description: "Link to a reference where the status was reported"
+          example: "TODO"
+        plantConceptStatus:
+          type: string
+          maxLength: 20
+          description: "Status of the concept by the party (accepted, not accepted, undetermined)"
+          example: "TODO"
+        startDate: 
+          type: string
+          format: date
+          description: "This is the date for which the status assignment by the party started."
+          example: "TODO"
+        stopDate: 
+          type: string
+          format: date
+          description: "This is the date for which the status assignment by the party ended."
+          example: "TODO"
+        plantPartyComments:
+          type: string
+          description: "Comments by party providing rationale for status assignment"
+          example: "TODO"
+        plantParent_ID:
+          type: integer
+          description: "The plantParent is a recursive key to the concept of the parent level in the classification hierarchy. For example if this plantConcept were at the genus level the plantParent would be the plantConcept that is the family level (or subfamily level)."
+          example: "TODO"
+        plantLevel:
+          type: string
+          maxLength: 80
+          description: "The classLevel attribute specifies a level in the taxonomic hierarchy that a class belongs."
+          example: "TODO"
+        party_ID:
+          type: integer
+          description: "Foreign key that identifies the party that made the status assignment"
+          example: "TODO"
+        accessionCode:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
