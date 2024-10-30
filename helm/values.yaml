@@ -114,6 +114,11 @@ postgresql:
       host        vegbank       vegbank       0.0.0.0/0       password
       host        vegbank       vegbank       ::0/0           password
       local       all           all                           trust
+    persistence:
+      enabled: true
+      storageClass: ""
+      existingClaim: ""
+      size: 1Gi
 
 
 
