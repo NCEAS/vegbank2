@@ -2,6 +2,9 @@ apiVersion: v2
 name: vegbank
 description: A Helm chart for Kubernetes
 
+sources: 
+- https://github.com/NCEAS/vegbank2
+
 # A chart can be either an 'application' or a 'library' chart.
 #
 # Application charts are a collection of templates that can be packaged into versioned archives
