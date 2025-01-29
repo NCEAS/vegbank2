@@ -126,7 +126,11 @@ postgresql:
       size: 100Gi
       accessModes: 
         - ReadWriteMany
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> develop
 
 
 
