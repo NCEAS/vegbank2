@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
 
 WORKDIR /python-docker
 
-ADD /api/vegbankapi.py .
+ADD /vegbank/vegbankapi.py .
 
 RUN pip install flask && pip install psycopg
 
