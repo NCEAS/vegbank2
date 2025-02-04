@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "vegbank"
+name = "vegbankapi"
 version = "2.0.0-alpha1"
 description = "VegBank database and data access service"
 authors = [
