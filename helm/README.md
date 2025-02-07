@@ -30,7 +30,7 @@ A note here: If you created your initial local database under your local machine
 
 Before deploying the chart, you'll need to make a temporary change to the values.yaml file to increase the memory request/limit values. The resources block in the values.yaml file currently looks like this: 
 
-```
+```YAML
 resources:
       requests:
         memory: 128Mi
@@ -40,7 +40,7 @@ resources:
 
 This is because the pod itself requires little memory to run, but the process to import the data will require more. To do this, we're going to temporarily increase the limits to the following: 
 
-```
+```YAML
 resources:
       requests:
         memory: 1Gi
@@ -74,7 +74,7 @@ Then once you have the bash open, you'll need to add the postgres folder to the 
 
 Once you've added that to the path, you should be able to use psql to view the empty Postgres instance. Once you've logged in to Postgres, run the following SQL command from the INSTALL.md document to create an empty DB and user to populate the database with: 
 
-```
+```SQL
 CREATE ROLE vegbank WITH LOGIN PASSWORD 'vegbank';
 CREATE DATABASE vegbank
 WITH
@@ -94,7 +94,7 @@ This restore took quite a while for me, especially some of the larger tables. On
 
 Now that you're done, the last step is to uninstall the chart, change back the memory setting we adjusted earlier, and reinstall the chart. Don't worry about losing your newly imported data, the persistence settings will hold onto it for you. You can run helm uninstall vegbankdb, then change the values.yaml file back to the following: 
 
-```
+```YAML
 resources:
       requests:
         memory: 128Mi
