@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: ghcr.io/nceas/vegbank
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -74,11 +74,11 @@ resources: {}
 livenessProbe:
   httpGet:
     path: /
-    port: http
+    port: 80
 readinessProbe:
   httpGet:
     path: /
-    port: http
+    port: 80
 
 autoscaling:
   enabled: false
@@ -126,7 +126,4 @@ postgresql:
       size: 100Gi
       accessModes: 
         - ReadWriteMany
-      
-
-
-
+        
