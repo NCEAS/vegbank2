@@ -1465,7 +1465,11 @@ components:
         roleDescription:
           type: string
           maxLength: 30
+        plot: 
+          $ref: '#/components/schemas/plot'
+        observations:
           type: array
+          items: 
             $ref: '#/components/schemas/observation'
 
 
