@@ -5,6 +5,7 @@ info:
 servers:
   - url: https://api.server.test/v1
 paths:
+  # takes a project, list of plots, list of observations, list of taxon interpretations
   /vegbank/plots:
     get: 
       summary: get list of plots by accession codes
@@ -25,70 +26,86 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/plot"
-  /vegbank/upload:
     post: 
-      summary: upload full data set
+      summary: upload list of plots in file format
       requestBody:
         content: 
           multipart/form-data:
             schema:
               type: object
-              $ref: "#/components/schemas/upload"
+              properties:
+                file: 
+                  type: string
+                  format: binary
       responses: 
         "200":
           description: "added successfully"
+          
+
+  
+  /vegbank/observations:
+    get: 
+      summary: get list of observations by plot accession code
+      parameters: 
+        - in: path
+          name: accessionCode
+          schema: 
+            type: string
+          required: true
+      responses:
+        "200":
+          description: "found"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items:
+                  $ref: "#/components/schemas/observation"
 
 
+  /vegbank/uploadplotdata:
+    post: 
+      summary: Takes a project, list of plots, list of observations, and list of taxon interpretations and adds them to the database. 
+      requestBody:
+        description: "OK"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/uploadPlotDataPayload"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/uploadPlotDataPayload"
+      responses:
+        "201":
+          description: Created
 components:
   schemas:
-    #compound objects not found in database, used for API calls only. 
-    upload: 
+    uploadPlotDataPayload:
       type: object
-      properties:
-        # this should be a new project for this call. 
+      properties: 
         project: 
-          type: object
-          $ref: "#/components/schemas/projectObservationCollection"
-        # List of new plots associated with this project. 
-        plots: 
-          type: array
-          items: 
-            $ref: "#/components/schemas/plot" 
-        taxonObservations:
-          type: array
-          items:
-            $ref: "#/components/schemas/taxonObservation"
-        taxonInterpretations:
-          type: array
-          items: 
-            $ref: "#/components/schemas/taxonInterpretation"
-        auxRoles:
-          type: array
-          items:
-            $ref: "#/components/schemas/auxRole"
-        commClassifications:
-          type: array
-          items: 
-            $ref: "#/components/schemas/commClass"
-        commInterpretations:
-          type: array
-          items:
-            $ref: "#/components/schemas/commInterpretation"
+          $ref: '#/components/schemas/project'
+        plotList:
+          $ref: '#/components/schemas/plotList'
+        observationList:
+          $ref: '#/components/schemas/observationList'
+        taxonInterpretationList:
+          $ref: '#/components/schemas/taxonInterpretationList'
+    plotList:
+      type: array
+      items:
+          $ref: '#/components/schemas/plot'
+    observationList:
+      type: array
+      items: 
+        $ref: '#/components/schemas/observation'
+    taxonInterpretationList:
+      type: array
+      items:
+        $ref: '#/components/schemas/taxonInterpretation'
     
-    #ties a project to a list of observations. For the purposes of the call this is for, it is assumed that this is a new project being added
-    # along with its associated observations. 
-    projectObservationCollection:
-      type: object
-      properties:
-        project: 
-          type: object 
-          $ref: "#/components/schemas/project"
-        observations:
-          type: array
-          items:
-            $ref: "#/components/schemas/observation"
-
-
+    
     plot:
       type: object
       properties: 
@@ -1448,3 +1465,11 @@ components:
         roleDescription:
           type: string
           maxLength: 30
+          type: array
+            $ref: '#/components/schemas/observation'
+
+
+  # takes a party
+  # takes a party and a list of references
+  # takes a list of key value pairs, key = observation accession code, value = new taxon observation
+    
