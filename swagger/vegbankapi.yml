@@ -6,17 +6,34 @@ servers:
   - url: https://api.server.test/v1
 paths:
   # takes a project, list of plots, list of observations, list of taxon interpretations
-  /vegbank/plotobservations:
+  /vegbank/plot-observations/{accession_code}:
+    get:
+      summary: returns a specific plot observation via the observation accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plot_observation"
+  
+  /vegbank/plot-observations:
     get: 
       summary: takes a list of accession codes and returns a list of plot/observation objects
       parameters: 
         - in: path
-          name: accessionCodes
+          name: accession_codes
           schema: 
             type: array
             items: 
               type: string
-          required: true 
+          required: true
       responses:
         "200":
           description: "found"
@@ -25,7 +42,7 @@ paths:
               schema: 
                 type: array
                 items:
-                  $ref: "#/components/schemas/plotobservation"
+                  $ref: "#/components/schemas/plot_observation"
     post: 
       summary: takes a list of plot/observation objects and inserts them into the database. 
       requestBody:
@@ -34,7 +51,7 @@ paths:
             schema: 
               type: array
               items: 
-                $ref: "#/components/schemas/plotobservation"
+                $ref: "#/components/schemas/plot_observation"
 
       responses:
         "200": 
@@ -47,12 +64,12 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/namedplace:
+  /vegbank/named-places:
     get: 
       summary: takes a list of named place accession codes and returns the named places. 
       parameters:
         - in: path
-          name: accessionCodes
+          name: accession_codes
           schema: 
             type: array
             items: 
@@ -66,7 +83,7 @@ paths:
               schema: 
                 type: array
                 items: 
-                  $ref: "#components/schemas/namedPlace"
+                  $ref: "#components/schemas/named_place"
     post: 
       summary: upload a list of named places
       requestBody:
@@ -75,7 +92,7 @@ paths:
             schema: 
               type: array
               items:
-                $ref: "#/components/schemas/namedPlace"
+                $ref: "#/components/schemas/named_place"
       responses:
         "200": 
           description: "added successfully"
@@ -89,16 +106,16 @@ paths:
 
 components:
   schemas:
-    plotobservation:
+    plot_observation:
       type: object
       properties:
-        authorPlotCode:
+        author_plot_code:
           type: string
-        authorObsCode:
+        author_obs_code:
           type: string
-        locationAccuracy:
+        location_accuracy:
           type: string
-        confidentialityStatus:
+        confidentiality_status:
           type: string
         latitude:
           type: number
@@ -106,16 +123,16 @@ components:
         longitude:
           type: number
           format: float
-        authorLocation:
+        author_location:
           type: string
-        StateOrProvince:
+        state_or_province:
           type: string
-        Country:
+        country:
           type: string
-        namedPlaces:
+        named_places:
           type: array
           items:
-            $ref: "#/components/schemas/namedPlace"
+            $ref: "#/components/schemas/named_place"
         azimuth:
           type: integer
         shape:
@@ -126,161 +143,188 @@ components:
           type: string
         elevation:
           type: string
-        elevationAccuracy:
+        elevation_accuracy:
           type: string
-        slopeAspect:
+        slope_aspect:
           type: string
-        slopeGradient:
+        slope_gradient:
           type: number
           format: float 
-        topographicPosition:
+        topographic_position:
           type: string
         landform:
           type: string
-        hydrologicRegime:
+        hydrologic_regime:
           type: string
-        observationStartDate:
-          type: string
-          format: date
-        observationEndDate:
+        observation_start_date:
           type: string
           format: date
-        dateAccuracy:
+        observation_end_date:
+          type: string
+          format: date
+        date_accuracy:
           type: string
         project:
           $ref: "#/components/schemas/project"
-        covermethod:
-          $ref: "#/components/schemas/coverMethod"
-        stratummethod: 
-          $ref: "#/components/schemas/stratumMethod"
-        stemSizeLimit: 
+        cover_method:
+          $ref: "#/components/schemas/cover_method"
+        stratum_method: 
+          $ref: "#/components/schemas/stratum_method"
+        stem_size_limit: 
           type: string
-        methodNarrative:
+        method_narrative:
           type: string
-        taxonObservationArea:
+        taxon_observation_area:
           type: string
-        coverDispersion:
+        cover_dispersion:
           type: string
-        autoTaxonCover:
+        auto_taxon_cover:
           type: string
-        stemObservationArea:
+        stem_observation_area:
           type: string
-        stemSampleMethod:
+        stem_sample_method:
           type: string
-        plotValidationLevel:
+        plot_validation_level:
           type: string
-        disturbanceObs:
+        disturbance_obs:
+          type: array
+          items: 
+            $ref: "#/components/schemas/disturbance_obs"
+        soil_obs:  
           type: object
           properties:
-            #TODO: check types here
-            disturbanceType:
+            soil_horizon:
               type: string
-            disturbanceIntensity:
+            soil_texture:
               type: string
-            disturbanceComment:
+            soil_description:
               type: string
-        soilObs:  
+        soil_taxon: 
           type: object
-          properties:
-            soilHorizon:
-              type: string
-            soilTexture:
-              type: string
-            soilDescription:
-              type: string
-        soilTaxon: 
-          type: object
-          properties:
-            soilName:
-              type: string
-            soilLevel:
-              type: string
-            accessionCode:
-              type: string
-        plotAccessionCode:
+          $ref: "#/components/schemas/soil_taxon"
+        plot_accession_code:
           type: string
-        obsAccessionCode:
+        obs_accession_code:
           type: string
 
-    namedPlace: 
+    named_place: 
       type: object
       properties:
-        placeSystem: 
+        place_system: 
           type: string
-        placeName:
+        place_name:
           type: string
-        placeCode:
+        place_code:
           type: string
         reference:
           type: string
-        accessionCode:
+        accession_code:
           type: string
 
     project:
       type: object
       properties: 
-        plotObservation:
+        plot_observation:
           type: string
-        authorPlantName:
+        author_plantName:
           type: string
         reference: 
           type: object
           $ref: "#/components/schemas/reference"
-        taxonInferenceArea:
+        taxon_inference_area:
           type: string
-        accessionCode: 
+        accession_code: 
           type: string
 
-    stratummethod:
+    stratum_method:
       type: object
       properties: 
-        stratumMethodName:
+        stratum_method_name:
           type: string
-        stratumMethodDescription:
+        stratum_method_description:
           type: string
         reference: 
           type: object
           $ref: "#/components/schemas/reference"
-        StratumTypes:
+        stratum_types:
           type: array
           items: 
-            $ref: "#/components/schemas/stratumType"
-        accessionCode: 
+            $ref: "#/components/schemas/stratum_type"
+        accession_code: 
           type: string
     
     reference: 
       type: object
       properties: 
-        shortName: 
+        short_name: 
           type: string
         title: 
           type: string
-        pubDate: 
+        pub_date: 
           type: string
         publisher: 
           type: string
         url: 
           type: string
-        accessionCode: 
+        accession_code: 
           type: string
 
     #TODO: fill in properties
-    stratumType: 
+    stratum_type: 
       type: object
       properties: 
-        accessionCode: 
+        accession_code: 
           type: string
     
     #TODO: fill in properties
-    stratumMethod: 
+    cover_method: 
       type: object
       properties: 
-        accessionCode: 
+        cover_type: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        cover_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/cover_type"
+        accession_code: 
           type: string
     
-    #TODO: fill in properties
-    coverMethod: 
+    disturbance_obs:
       type: object
-      properties: 
-        accessionCode: 
+      properties:
+        #TODO: check types here
+        disturbance_type:
+          type: string
+        disturbance_intensity:
+          type: string
+        disturbance_comment:
+          type: string
+
+    soil_taxon:
+      type: object
+      properties:
+        #TODO: check types here
+        soil_name:
+          type: string
+        soil_level:
+          type: string
+        accession_code:
+          type: string
+
+    cover_type: 
+      type: object
+      properties:
+        cover_code:
+          type: number
+        lower_limit: 
+          type: number
+        upper_limite: 
+          type: number
+        cover_percent:
+          type: number
+          format: float
+        index_description:
           type: string
