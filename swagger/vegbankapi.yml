@@ -25,15 +25,14 @@ paths:
   
   /vegbank/plot-observations:
     get: 
-      summary: takes a list of accession codes and returns a list of plot/observation objects
+      summary: takes a list of accession codes and returns a list of plot/observation objects. If no parameter is provided, returns all plot observations. 
       parameters: 
-        - in: path
+        - in: query
           name: accession_codes
           schema: 
             type: array
             items: 
               type: string
-          required: true
       responses:
         "200":
           description: "found"
@@ -64,17 +63,33 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
+  /vegbank/named-places/{accession_code}:
+      get:
+        summary: takes an accession code and returns the named place associated with it.
+        parameters: 
+          - in: path
+            name: accession_code
+            schema:
+              type: string
+            required: true
+        responses: 
+          "200": 
+            description: "found"
+            content:
+              application/json:
+                schema: 
+                  $ref: "#/components/schemas/named_place"
+
   /vegbank/named-places:
     get: 
-      summary: takes a list of named place accession codes and returns the named places. 
+      summary: takes a list of named place accession codes and returns the named places. If no codes are provided, returns all named places. 
       parameters:
-        - in: path
+        - in: query
           name: accession_codes
           schema: 
             type: array
             items: 
               type: string
-          required: true
       responses: 
         "200":
           description: "found"
@@ -103,7 +118,73 @@ paths:
                 type: array
                 items: 
                   type: string
+  
+  /vegbank/references/{accession_code}:
+    get:
+      summary: takes an accession code and returns the reference associated with it.
+      parameters: 
+        - in: path
+          name: accession_code
+          schema:
+            type: string
+          required: true
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
+    
+  /vegbank/references:
+    get:
+      summary: takes an accession code and returns the reference associated with it. If no codes are provided, returns all references. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
 
+  /vegbank/community-name/{accession_code}:
+    get: 
+      parameters:
+        - in: path
+          name: blank #NOTE: This table doesn't have accession codes. What should we do here? 
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/community_name"
+
+  /vegbank/plant-concept/{accession_code}:
+    get:
+      summary: returns a specific plant-concept via its accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_concept"
+        
 components:
   schemas:
     plot_observation:
@@ -269,14 +350,16 @@ components:
         accession_code: 
           type: string
 
-    #TODO: fill in properties
     stratum_type: 
       type: object
       properties: 
-        accession_code: 
+        stratum_index: 
           type: string
-    
-    #TODO: fill in properties
+        stratum_name: 
+          type: string
+        stratum_description: 
+          type: string
+        
     cover_method: 
       type: object
       properties: 
@@ -295,7 +378,6 @@ components:
     disturbance_obs:
       type: object
       properties:
-        #TODO: check types here
         disturbance_type:
           type: string
         disturbance_intensity:
@@ -306,7 +388,6 @@ components:
     soil_taxon:
       type: object
       properties:
-        #TODO: check types here
         soil_name:
           type: string
         soil_level:
@@ -328,3 +409,55 @@ components:
           format: float
         index_description:
           type: string
+
+    #TODO: needs properties
+    plant_name: 
+      type: object
+      properties: 
+        tbd: 
+          type: string
+    
+    #TODO: needs properties, and an identifier if no accession code. 
+    community_name:
+      type: object
+      properties: 
+        placeholder:
+          type: string
+    
+    #TODO: needs properties
+    reference_party: 
+      type: object
+      properties: 
+        tbd: 
+          type: string
+    
+    plant_concept:
+      type: object
+      properties: 
+        plant_name: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        accession_code: 
+          type: string
+
+    community_concept:
+      type: object
+      properties: 
+        name: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        description: 
+          type: string
+        accession_code:
+          type: string
+
+    party: 
+      type: object
+      properties: 
+        accesison_code: 
+          type: string
+    
