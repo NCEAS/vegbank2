@@ -5,7 +5,7 @@ info:
 servers:
   - url: https://api.server.test/v1
 paths:
-  # takes a project, list of plots, list of observations, list of taxon interpretations
+
   /vegbank/plot-observations/{accession_code}:
     get:
       summary: returns a specific plot observation via the observation accession code
@@ -151,8 +151,29 @@ paths:
             application/json:
               schema: 
                 $ref: "#/components/schemas/reference"
+    post: 
+      summary: takes a list of references and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/reference"
 
-  /vegbank/community-name/{accession_code}:
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+# QUESTION: Should Community Concept and Name be merged for API purposes, or is it better to have them separately accessible? If so, how do we access names since they don't have accession codes? 
+  /vegbank/community-names/{accession_code}:
     get: 
       parameters:
         - in: path
@@ -168,7 +189,97 @@ paths:
               schema:
                 $ref: "#/components/schemas/community_name"
 
-  /vegbank/plant-concept/{accession_code}:
+  /vegbank/community-names:
+    get:
+      summary: takes a list of accession codes and returns the list of community names associated with them. If no codes are provided, returns all community names. 
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/community_name"
+    post: 
+      summary: takes a list of community names and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/community_name"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+ 
+  /vegbank/community-concepts/{accession_code}:
+    get: 
+      parameters:
+        - in: path
+          name: blank 
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/community_concept"
+
+  /vegbank/community-concepts:
+    get:
+      summary: takes a list of accession codes and returns the list of community concepts associated with them. If no codes are provided, returns all community concepts. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/community_concept"
+    post: 
+      summary: takes a list of community concepts and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/community_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+ 
+
+ # QUESTION: Should Plant Concept and Name be merged for API purposes, or is it better to have them separately accessible? If so, how do we access names since they don't have accession codes? 
+  /vegbank/plant-concepts/{accession_code}:
     get:
       summary: returns a specific plant-concept via its accession code
       parameters:
@@ -184,7 +295,258 @@ paths:
             application/json: 
               schema:
                 $ref: "#/components/schemas/plant_concept"
-        
+
+  /vegbank/plant-concepts:
+    get:
+      summary: takes a list of accession codes and returns the list of plant concepts associated with them. If no codes are provided, returns all plant concepts. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/plant_concept"
+    post: 
+      summary: takes a list of plant concepts and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plant_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/plant-names/{accession_code}:
+    get:
+      summary: returns a specific plant name via its accession code
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_name"
+
+  /vegbank/plant-names:
+    get:
+      summary: takes a list of accession codes and returns the list of plant names associated with them. If no codes are provided, returns all plant names. 
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/plant_name"
+    post: 
+      summary: takes a list of plant names and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plant_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/stratum-methods/{accession_code}:
+    get:
+      summary: returns a specific stratum method via its accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_name"
+
+  /vegbank/stratum-methods:
+    get:
+      summary: takes a list of accession codes and returns the list of stratum methods associated with them. If no codes are provided, returns all stratum methods. 
+      parameters:
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/stratum_method"
+    post: 
+      summary: takes a list of stratum methods and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/stratum_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/cover-methods/{accession_code}:
+    get:
+      summary: returns a specific cover method via its accession code
+      parameters: 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/cover_method"
+
+  /vegbank/cover-methods:
+    get:
+      summary: takes a list of accession codes and returns the list of cover methods associated with them. If no codes are provided, returns all cover methods. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/cover_method"
+    post: 
+      summary: takes a list of cover methods and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/cover_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/projects/{accession_code}:
+    get:
+      summary: returns a specific project via its accession code
+      parameters: 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/project"
+
+  /vegbank/projects:
+    get:
+      summary: takes a list of accession codes and returns the list of projects associated with them. If no codes are provided, returns all projects. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/project"
+    post: 
+      summary: takes a list of projects and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/cover_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+ 
+    
+      
 components:
   schemas:
     plot_observation:
@@ -410,27 +772,42 @@ components:
         index_description:
           type: string
 
-    #TODO: needs properties
+    #TODO: needs properties, and an identifier if no accession code. Could be candidate for wrapping into another object.
     plant_name: 
       type: object
       properties: 
         tbd: 
           type: string
     
-    #TODO: needs properties, and an identifier if no accession code. 
+    #TODO: needs properties, and an identifier if no accession code. Could be candidate for wrapping into another object. 
     community_name:
       type: object
       properties: 
         placeholder:
           type: string
     
-    #TODO: needs properties
     reference_party: 
       type: object
       properties: 
-        tbd: 
+        type: 
           type: string
-    
+        position_name: 
+          type: string
+        salutation: 
+          type: string
+        given_name: 
+          type: string
+        surname: 
+          type: string
+        suffix: 
+          type: string
+        organization_name: 
+          type: string
+        current_name: 
+          type: string
+        accession_code: 
+          type: string
+        
     plant_concept:
       type: object
       properties: 
