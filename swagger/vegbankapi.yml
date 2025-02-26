@@ -1,7 +1,7 @@
 openapi: '3.0.3'
 info:
   title: VegBankAPI
-  version: '1.0'
+  version: '0.1'
 servers:
   - url: https://api.server.test/v1
 paths:
@@ -605,16 +605,6 @@ paths:
       
 components:
   schemas:
-    plot_observation:
-      type: object
-      properties: 
-        plot:
-          type: object
-          $ref: "#/components/schemas/plot"
-        observation:
-          type: array
-          items: 
-            $ref: "#/components/schemas/observation"
   
     plot:
       type: object
@@ -820,7 +810,7 @@ components:
           items: 
             type: string
     
-    observation:
+    plot_observation:
         properties:
           observation_id:
             type: string
@@ -1170,7 +1160,8 @@ components:
             description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
             example: "TODO"
           plot: 
-            type: string
+            type: object
+            $ref: "#/components/schemas/plot"
             description: accession code for plot associated with this observation
 
     named_place: 
