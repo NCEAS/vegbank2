@@ -1,12 +1,14 @@
 SELECT 
     plot.plot_id,
-    observation.observation_id,
+    plot.latitude,
+    plot.longitude,
+    observation.accessionCode AS obsAccessionCode,
     authorplotcode, 
     authorobscode, 
     stateprovince,
     country,
     commname.commname,
-    commconcept.accessionCode
+    commconcept.accessionCode AS commconceptAccessionCode
 FROM 
     plot 
     join observation on plot.plot_id = observation.plot_id

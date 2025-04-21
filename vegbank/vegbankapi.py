@@ -15,7 +15,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 params = {
         'dbname' : 'vegbank',
         'user' : 'vegbank',
-        'password' : 'PASS', #TODO: set up secret for db password. This is not the real one. 
+        'password' : 'vegbank', #TODO: set up secret for db password. This is not the real one. 
         'host' : 'vegbankdb-postgresql', #service name via bitnami postgres
         'port' : '5432'
     }
@@ -171,6 +171,14 @@ def get_observation_details(accessioncode):
             for record in cur.fetchall():
                 taxa.append(dict(zip(columns, record)))
             toReturn[0].update({"taxa": taxa})
+            communities = []
+            SQL = open(QUERIES_FOLDER + "get_community_for_observation.sql", "r").read() 
+            data = (accessioncode, )
+            cur.execute(SQL, data)
+            columns = [desc[0] for desc in cur.description]
+            for record in cur.fetchall():
+                communities.append(dict(zip(columns, record)))
+            toReturn[0].update({"communities": communities})
         conn.close()      
     return jsonify(toReturn)
 

@@ -10,6 +10,7 @@ SELECT
     plot.locationNarrative,
     plot.country,
     plot.slopeGradient,
+    plot.accessionCode as plotAccessionCode,
     dba_confidentialitystatus.confidentialitytext,
     observation.authorObsCode,
     observation.obsStartDate,
@@ -31,26 +32,19 @@ SELECT
     observation.floristicQuality,
     observation.bryophyteQuality,
     observation.lichenQuality,
-    project.accessionCode,
+    observation.accessionCode as obsAccessionCode,
+    project.accessionCode as projectAccessionCode,
     project.projectName,
-    coverMethod.accessionCode,
+    coverMethod.accessionCode as coverMethodAccessionCode,
     coverMethod.coverType,
-    stratumMethod.accessionCode,
+    stratumMethod.accessionCode as stratumMethodAccessionCode,
     stratumMethod.stratumMethodName,
-    stratummethod.stratumMethodDescription,
-    commconcept.reference_id,
-    commconcept.accessionCode as commconceptAccessionCode,
-    commname.reference_id,
-    commname.commname
+    stratummethod.stratumMethodDescription
 FROM plot    
     left join dba_confidentialitystatus on dba_confidentialitystatus.confidentialityStatus = plot.confidentialityStatus    
     right join observation on plot.plot_id = observation.plot_id    
     left join coverMethod on observation.covermethod_ID = coverMethod.covermethod_ID    
     left join stratumMethod on observation.stratummethod_ID = stratumMethod.stratummethod_ID    
-    left join project on observation.project_id = project.project_id    
-    left join commclass on observation.observation_id = commclass.observation_id    
-    left join comminterpretation on commclass.commclass_id = comminterpretation.commclass_id    
-    left join commconcept on comminterpretation.commconcept_id = commconcept.commconcept_id    
-    left join commname on commname.commname_id = commconcept.commname_id       
+    left join project on observation.project_id = project.project_id        
 WHERE 
     observation.accessionCode = %s;
