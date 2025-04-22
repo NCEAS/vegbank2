@@ -4,6 +4,8 @@ from psycopg import connect, ClientCursor
 import pandas as pd
 import pyarrow 
 import io
+import time
+import config
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
 ALLOWED_EXTENSIONS = 'parquet'
@@ -12,17 +14,10 @@ QUERIES_FOLDER = 'queries/'
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-params = {
-        'dbname' : 'vegbank',
-        'user' : 'vegbank',
-        'password' : 'vegbank', #TODO: set up secret for db password. This is not the real one. 
-        'host' : 'vegbankdb-postgresql', #service name via bitnami postgres
-        'port' : '5432'
-    }
+params = config.params
 
 @app.route("/")
 def welcome_page():
-    print("hitting welcome message")
     return "<h1>Welcome to the VegBank API</h1>"
 
 
@@ -191,8 +186,10 @@ def get_observation_table(pagesize, previd):
         pagesize = 100
     if(previd == None):
         previd = 0
+    startTime = time.perf_counter()
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
+            obsStartTime = time.perf_counter()
             SQL = open(QUERIES_FOLDER + "get_obs_table.sql", "r").read() 
             data = (previd, pagesize, )
             print(cur.mogrify(SQL, data))
@@ -200,8 +197,10 @@ def get_observation_table(pagesize, previd):
             columns = [desc[0] for desc in cur.description]
             for record in cur.fetchall():
                 toReturn.append(dict(zip(columns, record)))
+            obsEndTime = time.perf_counter()
+            print(f"Observations queried and processed in: {obsEndTime - obsStartTime:0.4f} seconds")  
             for record in toReturn:
-                print("record: " + str(record['plot_id']))
+                taxaStartTime = time.perf_counter()
                 SQL = open(QUERIES_FOLDER + "get_top_5_taxa_coverage.sql", "r").read()
                 data = (record['plot_id'], )
                 cur.execute(SQL, data)
@@ -210,7 +209,11 @@ def get_observation_table(pagesize, previd):
                 for taxaRecord in cur.fetchall():
                     taxa.append(dict(zip(columns, taxaRecord)))
                 record.update({"taxa": taxa})
-        conn.close()      
+                taxaEndTime = time.perf_counter()
+                print(f"Taxa queried and processed in: {taxaEndTime - taxaStartTime:0.4f} seconds")  
+        conn.close() 
+    endTime = time.perf_counter()
+    print(f"Observation table queried and processed in: {endTime - startTime:0.4f} seconds")     
     return jsonify(toReturn)
 
 #Test Data Endpoints
@@ -253,4 +256,4 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=80,debug=True)
+    app.run(host='0.0.0.0',port=28014,debug=True)

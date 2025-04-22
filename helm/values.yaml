@@ -109,11 +109,8 @@ affinity: {}
 postgresql:
   enabled: true
   primary:
-    resources:
-      requests:
-        memory: 256Mi
-      limits:
-        memory: 288Mi
+    resourcesPreset: "small"
+    resources: {}
     #borrowed this from metacat to get started, might need some further updating when we get to API time. 
     pgHbaConfiguration: |
       host        vegbank       vegbank       0.0.0.0/0       password
