@@ -256,4 +256,4 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=28014,debug=True)
+    app.run(host='0.0.0.0',port=80,debug=True)
