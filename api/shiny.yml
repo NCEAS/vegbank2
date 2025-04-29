@@ -24,7 +24,7 @@ paths:
                     items: 
                       $ref: "#/components/schemas/map_point"
   
-  /vegbank/get_observation_details/accessioncode:
+  /vegbank/get_observation_details/{accessioncode}:
     get:
       summary: returns a details about an observation based on the accession code you provide. 
       responses: 
@@ -112,6 +112,50 @@ paths:
                         type: string
                       stratumMethodDescription:
                         type: string
+
+  /vegbank/get_observation_table/{pagesize}/{offset}:
+    get:
+      summary: returns a details about an observation based on the accession code you provide. 
+      responses: 
+        "200":
+          description: "Found a list of map points"
+          content:
+            application/json: 
+              schema:
+                type: object
+                properties: 
+                  status: 
+                    type: string
+                    description: Response code
+                  data: 
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        latitude: 
+                          type: number
+                        longitude:
+                          type: number
+                        authorPlotCode:
+                          type: string
+                        stateProvince:
+                          type: string
+                        country: 
+                          type: string
+                        authorObsCode: 
+                          type: string
+                        plotValidationLevel: 
+                          type: number
+                        plotValidationLevelDescr: 
+                          type: string 
+                        obsAccessionCode:
+                          type: string 
+                        commName: 
+                          type: string
+                        commConceptAccessionCode: 
+                          type: string
+
+
 
 components:
   schemas:
