@@ -1,0 +1,128 @@
+openapi: '3.0.3'
+info:
+  title: VegBankAPI
+  version: '0.1'
+servers:
+  - url: https://api.server.test/v1
+paths:   
+  /vegbank/get_map_points:
+    get:
+      summary: returns a list of all map points and their accession codes/plot codes. 
+      responses: 
+        "200":
+          description: "Found a list of map points"
+          content:
+            application/json: 
+              schema:
+                type: object
+                properties: 
+                  status: 
+                    type: string
+                    description: Response code
+                  data: 
+                    type: array
+                    items: 
+                      $ref: "#/components/schemas/map_point"
+  
+  /vegbank/get_observation_details/accessioncode:
+    get:
+      summary: returns a details about an observation based on the accession code you provide. 
+      responses: 
+        "200":
+          description: "Found a list of map points"
+          content:
+            application/json: 
+              schema:
+                type: object
+                properties: 
+                  status: 
+                    type: string
+                    description: Response code
+                  data: 
+                    type: object
+                    properties:
+                      latitude: 
+                        type: number
+                      longitude:
+                        type: number
+                      authorPlotCode:
+                        type: string
+                      stateProvince:
+                        type: string
+                      area: 
+                        type: number
+                      permanence: 
+                        type: boolean
+                      elevation:
+                        type: number
+                      slopeAspect: 
+                        type: number
+                      locationNarrative: 
+                        type: string
+                      country: 
+                        type: string
+                      slopeGradient:
+                        type: number 
+                      plotAccessionCode: 
+                        type: string
+                      confidentialityText: 
+                        type: string
+                      authorObsCode: 
+                        type: string
+                      obsStartDate: 
+                        type: number
+                        format: date
+                      obsEndDate: 
+                        type: number
+                        format: date
+                      plotValidationLevel: 
+                        type: number
+                      plotValidationLevelDescr: 
+                         type: string 
+                      taxonObservationArea:
+                        type: number 
+                      autoTaxonCover:
+                        type: string 
+                      interp_current_partyname:
+                        type: string
+                      dateentered: 
+                        type: number
+                        format: date
+                      effortLevel: 
+                        type: string
+                      floristicQuality:
+                        type: string 
+                      bryophyteQuality:
+                        type: string 
+                      lichenQuality:
+                        type: string 
+                      obsAccessionCode:
+                        type: string 
+                      projectAccessionCode:
+                        type: string 
+                      projectName: 
+                        type: string
+                      coverMethodAccessionCode: 
+                        type: string
+                      coverType: 
+                        type: string
+                      stratumMethodAccessionCode:
+                        type: string
+                      stratumName:
+                        type: string
+                      stratumMethodDescription:
+                        type: string
+
+components:
+  schemas:
+    map_point: 
+      type: object
+      properties:
+        latitude: 
+          type: number
+        longitude: 
+          type: number
+        accessionCode:
+          type: string
+        authorObsCode:
+          type: string 
