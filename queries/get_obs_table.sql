@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     plot.plot_id,
     plot.latitude,
     plot.longitude,
@@ -16,8 +16,10 @@ FROM
     join commInterpretation on commClass.commclass_id = commInterpretation.commclass_id
     join commConcept on commInterpretation.commconcept_id = commConcept.commconcept_id
     join commname on commconcept.commname_id = commname.commname_id
-WHERE plot.plot_id > %s
+WHERE plot.confidentialitystatus < 4
+AND observation.accessionCode is not null
 ORDER BY plot.plot_id ASC
-LIMIT %s;
+LIMIT %s
+OFFSET %s;
     
 

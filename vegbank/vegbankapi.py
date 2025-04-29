@@ -29,7 +29,7 @@ def get_observation(accessioncode):
         with conn.cursor() as cur:
             if(accessioncode == None):
                 with conn.cursor() as cur:
-                    SQL = "SELECT * FROM observation INNER JOIN plot ON plot.plot_id = observation.plot_id;"
+                    SQL = "SELECT * FROM observation INNER JOIN plot ON plot.plot_id = observation.plot_id where plot.confidentialitystatus < 4;"
                     cur.execute(SQL)
                     columns = [desc[0] for desc in cur.description]
                     for record in cur.fetchall():
@@ -38,7 +38,7 @@ def get_observation(accessioncode):
             else:
                 with conn.cursor() as cur:
                     plot_observations = []
-                    SQL1 = "SELECT * FROM observation INNER JOIN plot ON plot.plot_id = observation.plot_id where observation.accessionCode = %s;"
+                    SQL1 = "SELECT * FROM observation INNER JOIN plot ON plot.plot_id = observation.plot_id where plot.confidentialitystatus < 4 AND observation.accessionCode = %s;"
                     data = (accessioncode, )
                     cur.execute(SQL1, data)
                     columns = [desc[0] for desc in cur.description]
@@ -54,7 +54,7 @@ def get_all_plots(accessioncode):
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         if(accessioncode == None):
             with conn.cursor() as cur:
-                SQL = "SELECT * from plot;"
+                SQL = "SELECT * from plot where confidentialitystatus < 4;"
                 cur.execute(SQL)
                 columns = [desc[0] for desc in cur.description]
                 for record in cur.fetchall():
@@ -62,7 +62,7 @@ def get_all_plots(accessioncode):
             conn.close()   
         else:
             with conn.cursor() as cur:
-                SQL = "SELECT * from plot where accessionCode = %s;"
+                SQL = "SELECT * from plot where confidentialitystatus < 4 AND accessionCode = %s;"
                 data = (accessioncode, )
                 cur.execute(SQL, data)
                 columns = [desc[0] for desc in cur.description]
@@ -119,7 +119,7 @@ def get_comm_concepts(accessioncode):
             conn.close()    
     return jsonify(toReturn)
 
-
+#Shiny App Endpoints
 @app.route("/get_map_points")
 def get_map_points():
     toReturn = []
@@ -177,21 +177,23 @@ def get_observation_details(accessioncode):
         conn.close()      
     return jsonify(toReturn)
 
-@app.route("/get_observation_table", defaults={'pagesize': None, 'previd': None}, methods=['GET'])
-@app.route("/get_observation_table/<pagesize>", defaults={'previd': None}, methods=['GET'])
-@app.route("/get_observation_table/<pagesize>/<previd>")
-def get_observation_table(pagesize, previd):
+@app.route("/get_observation_table", defaults={'limit': None, 'offset': None}, methods=['GET'])
+@app.route("/get_observation_table/<limit>", defaults={'offset': None}, methods=['GET'])
+@app.route("/get_observation_table/<limit>/<offset>")
+def get_observation_table(limit, offset):
     toReturn = []
-    if(pagesize == None):
-        pagesize = 100
-    if(previd == None):
-        previd = 0
+    if(limit == None):
+        limit = 100
+    if(offset == None):
+        offset = 0
+    limit = int(limit)
+    offset = int(offset)
     startTime = time.perf_counter()
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
             obsStartTime = time.perf_counter()
             SQL = open(QUERIES_FOLDER + "get_obs_table.sql", "r").read() 
-            data = (previd, pagesize, )
+            data = (limit, offset, )
             print(cur.mogrify(SQL, data))
             cur.execute(SQL, data)
             columns = [desc[0] for desc in cur.description]
@@ -214,6 +216,91 @@ def get_observation_table(pagesize, previd):
         conn.close() 
     endTime = time.perf_counter()
     print(f"Observation table queried and processed in: {endTime - startTime:0.4f} seconds")     
+    return jsonify(toReturn)
+
+@app.route("/get_datatable_observations")
+def get_datatable_observations():
+    draw = 0
+    start = 0
+    length = 0
+    search = []
+    order = []
+    columns = []
+    index = 0
+    while True:
+        if(request.args.get("columns[" + str(index) + "][data]")):
+            columns.append(
+                {
+                    "data": request.args.get("columns[" + str(index) + "][data]"),
+                    "name": request.args.get("columns[" + str(index) + "][name]"),
+                    "searchable": request.args.get("columns[" + str(index) + "][searchable]"),
+                    "orderable": request.args.get("columns[" + str(index) + "][orderable]"),
+                    "search": {
+                        "value": request.args.get("columns[" + str(index) + "][search][value]"),
+                        "regex": request.args.get("columns[" + str(index) + "][search][regex]")
+                    }  
+                }
+            )
+            index += 1
+        else:
+            break
+    
+    search = {
+        "value": request.args.get("search[value]"),
+        "regex": request.args.get("search[regex]")
+    }
+
+    if(request.args.get("draw")):
+        draw = int(request.args.get("draw"))
+    if(request.args.get("start")):
+        start = int(request.args.get("start"))
+    if(request.args.get("length")):
+        length = int(request.args.get("length"))
+    
+    print("draw: " + str(draw))
+    print("start: " + str(start))
+    print("length: " + str(length))
+    print("search: " + str(search))
+    print("columns: " + str(columns))
+    
+    toReturn={
+        "draw":draw
+    }
+    with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+        with conn.cursor() as cur:
+            countStartTime = time.perf_counter()
+            SQL = open(QUERIES_FOLDER + "get_obs_table_count.sql", "r").read() 
+            cur.execute(SQL)
+            for record in cur.fetchall():
+                toReturn["recordsTotal"] = record[0]
+            SQL = open(QUERIES_FOLDER + "get_obs_table_count_filtered.sql", "r").read()
+            cur.execute(SQL)
+            for record in cur.fetchall():
+                toReturn["recordsFiltered"] = record[0] 
+            obsStartTime = time.perf_counter()
+            SQL = open(QUERIES_FOLDER + "get_obs_table.sql", "r").read() 
+            data = (length, start, )
+            cur.execute(SQL, data)
+            columns = [desc[0] for desc in cur.description]
+            obs_data = []
+            for record in cur.fetchall():
+                obs_data.append(dict(zip(columns, record)))
+            obsEndTime = time.perf_counter()
+            print(f"Observations queried and processed in: {obsEndTime - obsStartTime:0.4f} seconds")  
+            for record in obs_data:
+                taxaStartTime = time.perf_counter()
+                SQL = open(QUERIES_FOLDER + "get_top_5_taxa_coverage.sql", "r").read()
+                data = (record['plot_id'], )
+                cur.execute(SQL, data)
+                columns = [desc[0] for desc in cur.description]
+                taxa = []
+                for taxaRecord in cur.fetchall():
+                    taxa.append(dict(zip(columns, taxaRecord)))
+                record.update({"taxa": taxa})
+                taxaEndTime = time.perf_counter()
+                print(f"Taxa queried and processed in: {taxaEndTime - taxaStartTime:0.4f} seconds")
+            toReturn["data"] = obs_data
+        conn.close()
     return jsonify(toReturn)
 
 #Test Data Endpoints
@@ -256,4 +343,4 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=80,debug=True)
+    app.run(host='0.0.0.0',port=28014,debug=True)

@@ -5,6 +5,7 @@ LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
 WORKDIR /python-docker
 
 ADD /vegbank/vegbankapi.py .
+ADD /vegbank/config.py .
 ADD queries ./queries
 
 RUN pip install flask
