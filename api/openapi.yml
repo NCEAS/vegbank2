@@ -1,0 +1,1368 @@
+openapi: '3.0.3'
+info:
+  title: VegBankAPI
+  version: '0.1'
+servers:
+  - url: https://api.server.test/v1
+paths:
+
+  /vegbank/plot-observations/{accession_code}:
+    get:
+      summary: returns a specific plot observation via the observation accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plot_observation"
+  
+  /vegbank/plot-observations:
+    get: 
+      summary: takes a list of accession codes and returns a list of plot/observation objects. If no parameter is provided, returns all plot observations. 
+      parameters: 
+        - in: query
+          name: accession_codes
+          schema: 
+            type: array
+            items: 
+              type: string
+      responses:
+        "200":
+          description: "found"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items:
+                  $ref: "#/components/schemas/plot_observation"
+    post: 
+      summary: takes a list of plot/observation objects and inserts them into the database. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plot_observation"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+  
+  /vegbank/plots:
+    get: 
+      summary: takes a list of accession codes and returns a list of plot objects. If no parameter is provided, returns all plots. 
+      parameters: 
+        - in: query
+          name: accession_codes
+          schema: 
+            type: array
+            items: 
+              type: string
+      responses:
+        "200":
+          description: "found"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items:
+                  $ref: "#/components/schemas/plot"
+    post: 
+      summary: takes a list of plot/observation objects and inserts them into the database. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plot"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+  
+  /vegbank/plots/{accession_code}:
+    get:
+      summary: returns a specific plot via its accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plot"
+  
+  /vegbank/named-places/{accession_code}:
+      get:
+        summary: takes an accession code and returns the named place associated with it.
+        parameters: 
+          - in: path
+            name: accession_code
+            schema:
+              type: string
+            required: true
+        responses: 
+          "200": 
+            description: "found"
+            content:
+              application/json:
+                schema: 
+                  $ref: "#/components/schemas/named_place"
+
+  /vegbank/named-places:
+    get: 
+      summary: takes a list of named place accession codes and returns the named places. If no codes are provided, returns all named places. 
+      parameters:
+        - in: query
+          name: accession_codes
+          schema: 
+            type: array
+            items: 
+              type: string
+      responses: 
+        "200":
+          description: "found"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  $ref: "#components/schemas/named_place"
+    post: 
+      summary: upload a list of named places
+      requestBody:
+        content: 
+          application/json:
+            schema: 
+              type: array
+              items:
+                $ref: "#/components/schemas/named_place"
+      responses:
+        "200": 
+          description: "added successfully"
+          content: 
+            application/json:
+              schema:
+                description: List of accession codes for new named places
+                type: array
+                items: 
+                  type: string
+  
+  /vegbank/references/{accession_code}:
+    get:
+      summary: takes an accession code and returns the reference associated with it.
+      parameters: 
+        - in: path
+          name: accession_code
+          schema:
+            type: string
+          required: true
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
+    
+  /vegbank/references:
+    get:
+      summary: takes an accession code and returns the reference associated with it. If no codes are provided, returns all references. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
+    post: 
+      summary: takes a list of references and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/reference"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  # QUESTION: Do we need these endpoints? Community name has no accession code and is accessible through community concept. 
+  /vegbank/community-names/{accession_code}:
+    get: 
+      parameters:
+        - in: path
+          name: blank #NOTE: This table doesn't have accession codes. What should we do here? 
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/community_name"
+
+  /vegbank/community-names:
+    get:
+      summary: takes a list of accession codes and returns the list of community names associated with them. If no codes are provided, returns all community names. 
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/community_name"
+    post: 
+      summary: takes a list of community names and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/community_name"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+ 
+  /vegbank/community-concepts/{accession_code}:
+    get: 
+      parameters:
+        - in: path
+          name: blank 
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/community_concept"
+
+  /vegbank/community-concepts:
+    get:
+      summary: takes a list of accession codes and returns the list of community concepts associated with them. If no codes are provided, returns all community concepts. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/community_concept"
+    post: 
+      summary: takes a list of community concepts and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/community_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+ 
+  /vegbank/plant-concepts/{accession_code}:
+    get:
+      summary: returns a specific plant-concept via its accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_concept"
+
+  /vegbank/plant-concepts:
+    get:
+      summary: takes a list of accession codes and returns the list of plant concepts associated with them. If no codes are provided, returns all plant concepts. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/plant_concept"
+    post: 
+      summary: takes a list of plant concepts and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plant_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  # QUESTION: Do we need these endpoints? plant name has no accession code and is accessible through plant concept. 
+  /vegbank/plant-names/{accession_code}:
+    get:
+      summary: returns a specific plant name via its accession code
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_name"
+
+  /vegbank/plant-names:
+    get:
+      summary: takes a list of accession codes and returns the list of plant names associated with them. If no codes are provided, returns all plant names. 
+      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/plant_name"
+    post: 
+      summary: takes a list of plant names and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/plant_concept"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/stratum-methods/{accession_code}:
+    get:
+      summary: returns a specific stratum method via its accession code
+      parameters:
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/plant_name"
+
+  /vegbank/stratum-methods:
+    get:
+      summary: takes a list of accession codes and returns the list of stratum methods associated with them. If no codes are provided, returns all stratum methods. 
+      parameters:
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/stratum_method"
+    post: 
+      summary: takes a list of stratum methods and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/stratum_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/cover-methods/{accession_code}:
+    get:
+      summary: returns a specific cover method via its accession code
+      parameters: 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/cover_method"
+
+  /vegbank/cover-methods:
+    get:
+      summary: takes a list of accession codes and returns the list of cover methods associated with them. If no codes are provided, returns all cover methods. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/cover_method"
+    post: 
+      summary: takes a list of cover methods and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/cover_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+  /vegbank/projects/{accession_code}:
+    get:
+      summary: returns a specific project via its accession code
+      parameters: 
+        - in: path
+          name: accession_code
+          schema: 
+            type: string
+          required: true
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/project"
+
+  /vegbank/projects:
+    get:
+      summary: takes a list of accession codes and returns the list of projects associated with them. If no codes are provided, returns all projects. 
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/project"
+    post: 
+      summary: takes a list of projects and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/cover_method"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+
+ 
+    
+      
+components:
+  schemas:
+  
+    plot:
+      type: object
+      properties: 
+        author_plot_ode: 
+          type: string
+          maxLength: 30
+          description: "Author's Plot number/code, or the original plot number if taken from literature."
+          example: "TODO"
+        reference_id: 
+          type: integer
+          description: "Link to the source reference from which this plot record was taken"
+          example: "TODO"
+        parent_id:
+          type: integer
+          description: "Link to the parent plot when plot is nested within another plot."
+          example: "TODO"
+        real_latitude:
+          type: number
+          format: float
+          description: "Latitude of the plot origin in degrees and decimals, datum =WGS84"
+          example: 45.67
+        real_longitude:
+          type: number
+          format: float
+          description: "Longitude of the plot origin in degrees and decimals, datum = WGS84"
+          example: -123.45
+        location_accuracy:
+          type: number
+          format: float
+          description: "Estimated accuracy of the location of the plot. Plot origin has a 95% or greater probability of being within this many meters of the reported location."
+          example: "TODO"
+        confidentiality_status:
+          type: integer
+          description: "Are the data to be considered confidential? 0=no, 1= 1km radius, 2=10km radius, 3=100km radius, 4=location embargo, 5=public embargo on all plot data, 6=full embargo on all plot data. This applies also to region."
+          example: "exact location"
+        confidentiality_reason: 
+          type: string
+          maxLength: 200
+          description: "The reason for confidentiality. This field should not be open to public view. Reasons might include specific rare species, ownership, prepublication embargo, or many other reason"
+          example: "TODO"
+        latitude: 
+          type: number
+          format: float
+          description: "Latitude of the plot origin in degrees and decimals, datum =WGS84, fuzzing applied"
+          example: "TODO"
+        longitude: 
+          type: number
+          format: float
+          description: "Longitude of the plot origin in degrees and decimals, datum = WGS84, fuzzing applied"
+          example: "TODO"
+        author_e:
+          type: string
+          maxLength: 20
+          description: "Original E-W coordinate as recorded by the author"
+          example: "TODO"
+        author_n:
+          type: string
+          maxLength: 20
+          description: "Original N-S coordinate as recorded by the author"
+          example: "TODO"
+        author_zone:
+          type: string
+          maxLength: 20
+          description: "Original UTM zone reported by the author"
+          example: "TODO"
+        author_datum:
+          type: string
+          maxLength: 20
+          description: "Original datum reported by the author"
+          example: "TODO"
+        author_location:
+          type: string
+          maxLength: 200
+          description: "Original location as described by author (e.g. Town-Range-Section)"
+          example: "TODO"
+        location_narrative:
+          type: string
+          description: "Text description that provides information useful for plot relocation."
+          example: "TODO"
+        azimuth:
+          type: number
+          format: float
+          description: "This element stores the azimuth of the x-axis used to describe the relative coordinate system for plot shape (dsgpoly) and other spatial information about the plot. Typically the azimuth is parallel to the long axis of the plot (in the case of a rectangle)."
+          example: "TODO"
+        dsgpoly:
+          type: string
+          description: "This field is a text string containing the points circumscribing a plot area. These points are anticipated to have been collected using tapes, GPS, or calculated from the plot shape and area. Points are X-Y coordinates in m relative to plot origin."
+          example: "TODO"
+        shape:
+          type: string
+          maxLength: 50
+          description: "Shape of the plot area."
+          example: "TODO"
+        area:
+          type: number
+          format: float
+          description: "Total area of the plot in m2. If many subplots, this area includes the subplots and the interstitial space. RESERVED VALUE: -1 is used to indicate that the plot had no boundaries."
+          example: "TODO"
+        stand_size:
+          type: string
+          maxLength: 50
+          description: "The extent of this community occurrence in relation to the plot size: very extensive (>1000x plot), extensive (>100x plot), large (10-100x plot), small (3-10x plot), very small (1-3x plot)."
+          example: "TODO"
+        placement_method:
+          type: string
+          maxLength: 50
+          description: "Brief description of strategy for determining plot placement within the stand."
+          example: "TODO"
+        permanence:
+          type: boolean
+          description: "Is the plot monumented so as to assure permanence? If so, this should be described in the layoutNarrative"
+          example: "TODO"
+        layout_narrative:
+          type: string
+          description: "Text description of and the rationale for the layout of the plot."
+          example: "TODO"
+        elevation:
+          type: number
+          format: float
+          description: "The elevation of the plot origin in meters above sea level."
+          example: "TODO"
+        elevation_accuracy:
+          type: number
+          format: float
+          description: "The accuracy of the elevation in meters."
+          example: "TODO"
+        elevation_range:
+          type: number
+          format: float
+          description: "Meters of difference in elevations of the high and low points in the plot."
+          example: "TODO"
+        slope_aspect:
+          type: number
+          format: float
+          description: "Representative azimuth of slope gradient (0-360 degrees); if too flat to determine = -1; if too irregular to determine = -2."
+          example: "TODO"
+        min_slope_aspect:
+          type: number
+          format: float
+          description: "Minimum azimuth of slope gradient (0-360 degrees), counterclockwise from representative azimuth."
+          example: "TODO"
+        max_slope_aspect:
+          type: number
+          format: float
+          description: "Maximum azimuth of slope gradient (0-360 degrees), clockwise from representative azimuth"
+          example: "TODO"
+        slope_gradient:
+          type: number
+          format: float
+          description: "Representative inclination of slope in degrees; if too irregular to determine, = -1."
+          example: "TODO"
+        min_slope_gradient:
+          type: number
+          format: float
+          description: "Minimum inclination of slope in degrees."
+          example: "TODO"
+        max_slope_gradient:
+          type: number
+          format: float
+          description: "Maximum inclination of slope in degrees."
+          example: "TODO"
+        topo_position:
+          type: string
+          maxLength: 90
+          description: "Position of the plot on land surface (e.g., Summit, shoulder, upper slope, middle slope, lower slope, toeslope, no slope, channel bed, dune swale, pond)."
+          example: "TODO"
+        landform:
+          type: string
+          maxLength: 90
+          description: "A recognizable physical feature on the surface of the earth, often including consideration of the natural cause of its formation."
+          example: "TODO"
+        surficial_deposits:
+          type: string
+          maxLength: 90
+          description: "Surficial deposits represent the parent material that are the geologic or organic precursors to the soil. They may either have been deposited by geologic (wind, ice, gravity or water) or biologic (organic) activity, or formed in place more-or-less directly from rocks and minerals below."
+          example: "TODO"
+        rock_type:
+          type: string
+          maxLength: 90
+          description: "RockType values conform to the lithic types in the FGDC Soil Geographic Data Standards, September 1997. http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF (pages 56-59)."
+          example: "TODO"
+        accession_code:
+          type: string
+          maxLength: 100
+          description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+          example: "TODO"
+        notes_public:
+          type: boolean
+          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        notes_mgt:
+          type: boolean
+          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+          example: "TODO"
+        revisions:
+          type: boolean
+          description: "TRUE indicates that revisions exist in vegPlot.Revision"
+          example: "TODO"
+        observation_codes: 
+          type: array
+          description: list of accession codes to observations for this plot
+          items: 
+            type: string
+    
+    plot_observation:
+        properties:
+          observation_id:
+            type: string
+            description: "Database generated identifier assigned to each unique plot observation."
+            example: "TODO"
+          previous_obs_id:
+            type: integer
+            description: "Link to data from the previous observation of this plot."
+            example: "TODO"
+          plot_id:
+            type: integer
+            description: "Link to data and metadata that do not change between observations and which are stored in the plot table."
+            example: "TODO"
+          project_id:
+            type: integer
+            description: "Link between an observation and the project within which the observation was made"
+            example: "TODO"
+          author_obs_code:
+            type: string
+            maxLength: 30
+            description: "This is the code or name that the author uses to identify this plot observation event. Where a plot has only one observation, this will often equal plot.authorPlotCode."
+            example: "TODO"
+          obs_start_date:
+            type: string
+            format: date
+            description: "The date of the observation, or the first day if the observation spanned more than one day."
+            example: "TODO"
+          obs_end_date:
+            type: string
+            format: date
+            description: "If the observation event spanned more than a single day, this is the last day on which observations were made."
+            example: "TODO"
+          date_accuracy:
+            type: string
+            maxLength: 30
+            description: "Estimated accuracy of the observation date."
+            example: "TODO"
+          date_entered:
+            type: string
+            format: date
+            description: "Date that the observation was added to VegBank"
+            example: "TODO"
+          cover_method_id: #possible this should just connect to the cover method table instead of returning the ID. Once I build the coverMethod schema I'll connect that up here if necessary. RS 8/14
+            type: integer
+            description: "Link to the scale used to estimate taxon cover. The database stores estimated cover to the nearest percent, but the conversion details are recovered by reference to the specific scale employed."
+            example: "TODO"
+          cover_dispersion:
+            type: integer
+            description: "Were cover values for the total taxon list collected from one contiguous area or dispersed subplots?"
+            example: "TODO"
+          auto_taxon_cover:
+            type: boolean
+            description: "TRUE indicates that taxonObservation.taxonCover was automatically calculated from the values of all stratumObservation.taxonStratumCover"
+            example: "TODO"
+          stratummethod_id:
+            type: integer
+            description: "Link to the definitions of strata used in recording taxon-specific values of cover."
+            example: "TODO"
+          method_narrative:
+            type: string
+            description: "Additional metadata helpful for understanding how the data were collected during the observation event."
+            example: "TODO"
+          taxon_observation_area:
+            type: number
+            format: float
+            description: "the total surface area (in m^2) used for cover estimates and for which a complete species list is provided. If subplots were used, this would be the total area of the subplots without interstitial space. RESERVED VALUE: -1 is used to indicate the complete list of species had no known boundaries."
+            example: "TODO"
+          stem_size_limite:
+            type: number
+            format: float
+            description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count (stemCount)."
+            example: "TODO"
+          stem_observation_area:
+            type: number
+            format: float
+            description: "the total surface area (in m^2) observed for recording woody stem data. RESERVED VALUE: -1 means no known area."
+            example: "TODO"
+          stem_sample_method:
+            type: string
+            maxLength: 30
+            description: "The method used to obtain basal area or tree stem data (e.g., full census, point quarter, random pairs, Bitterlich, other)."
+            example: "TODO"
+          original_data:
+            type: string
+            description: "Location where the hard data reside and any access instructions."
+            example: "TODO"
+          effort_level:
+            type: string
+            maxLength: 30
+            description: "This is the effort spent making the observations as estimated by the party that submitted the data (e.g., Very thorough, Average, Hurried description)."
+            example: "TODO"
+          plot_validation_level:
+            type: integer
+            description: "Quality of plot as determined by an automated filter system, including values such as (1) sufficient for determining type occurrence, (2) sufficient for inclusion in a classification revision, and (3) fully compliant with recommendations."
+            example: "TODO"
+          floristic_quality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of floristic quality by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low)."
+            example: "TODO"
+          bryophyte_quality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of the taxonomic quality of the bryophyte data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+            example: "TODO"
+          lichen_quality:
+            type: string
+            maxLength: 30
+            description: "Subjective assessment of the taxonomic quality of the lichen data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+            example: "TODO"
+          observation_narrative:
+            type: string
+            description: "Additional unstructured observations useful for understanding the ecological attributes and significance of the plot observations."
+            example: "TODO"
+          landscape_narrative:
+            type: string
+            description: "Unstructured observations on the landscape context of the observed plot."
+            example: "TODO"
+          homogeneity:
+            type: string
+            maxLength: 30
+            description: "How homogeneous was the community (e.g., homogeneous, compositional trend across plot, conspicuous inclusions, irregular mosaic or pattern)."
+            example: "TODO"
+          phenologic_aspect:
+            type: string
+            maxLength: 30
+            description: "Season expression of the community (e.g., typical growing season, vernal, aestival, wet, autumnal, winter, dry, irregular ephemerals present)."
+            example: "TODO"
+          representativeness:
+            type: string
+            maxLength: 255
+            description: "How representative was the plot of the stand?"
+            example: "TODO"
+          stand_maturity:
+            type: string
+            maxLength: 50
+            description: "How mature is the stand. Could be young, mature but even-aged, old-growth, etc."
+            example: "TODO"
+          successional_status:
+            type: string
+            description: "Description of the assumed successional status of the plot. This description is of necessity highly subjective."
+            example: "TODO"
+          basal_area:
+            type: number
+            format: float
+            description: "Total basal area of woody stems (in m²/ha). 0 should be used to indicate that plots have no stems."
+            example: "TODO"
+          hydrologic_regime:
+            type: string
+            maxLength: 30
+            description: "What is the hydrologic regime, which is a reflection of frequency and duration of flooding? List is taken from Cowardin et al. 1979, 1985."
+            example: "TODO"
+          soil_moisture_regime:
+            type: string
+            maxLength: 30
+            description: "How moist was the soil at the sampling event?"
+            example: "TODO"
+          soil_drainage:
+            type: string
+            maxLength: 30
+            description: "Identifies the natural drainage conditions of the soil and refers to the frequency and duration of wet periods. The soil drainage classes are defined in terms of (1) actual moisture content (in excess of field moisture capacity) and (2) the extent of the period during which excess water is present in the plant-root zone. Soil drainage class categories conform to the FGDC Soil Geographic Data Standards, September 1997. (http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF.) Definitions are derived from Grossman et al. (1998) and Sims et al. (1997)."
+            example: "TODO"
+          water_salinity:
+            type: string
+            maxLength: 30
+            description: "How saline is the water, if a flooded community?"
+            example: "TODO"
+          water_depth:
+            type: number
+            format: float
+            description: "For aquatic or marine vegetation, what was the water depth in m."
+            example: "TODO"
+          shore_distance:
+            type: number
+            format: float
+            description: "For aquatic or marine vegetation, what was the closest distance to shore in m."
+            example: "TODO"
+          soil_depth:
+            type: number
+            format: float
+            description: "Median depth to bedrock or permafrost in m (usually from averaging multiple probe readings)."
+            example: "TODO"
+          organic_depth:
+            type: number
+            format: float
+            description: "Depth of the surficial organic layer, where present, in centimeters."
+            example: "TODO"
+          soil_taxon_id: #This may link up to soil taxon table after I've made that schema. RS 8/14/2024
+            type: integer
+            description: "Foreign key into table of soil taxa within the USDA classification hierarchy, including Order, Suborder, Greatgroup, Subgroup, Family and Series."
+            example: "TODO"
+          soil_taxon_src:
+            type: string
+            maxLength: 200
+            description: "How was the soil taxon determined (e.g., field observation, map, other sources)?"
+            example: "TODO"
+          percent_bed_rock:
+            type: number
+            format: float
+            description: "Percent of surface that is exposed bedrock."
+            example: "TODO"
+          percent_rock_gravel:
+            type: number
+            format: float
+            description: "Percent of surface that is exposed rock and gravel."
+            example: "TODO"
+          percent_wood:
+            type: number
+            format: float
+            description: "Percent of surface that is wood."
+            example: "TODO"
+          percent_litter:
+            type: number
+            format: float
+            description: "Percent of surface that is litter."
+            example: "TODO"
+          percent_bare_soil:
+            type: number
+            format: float
+            description: "Percent of surface that is bare soil."
+            example: "TODO"
+          percent_water:
+            type: number
+            format: float
+            description: "Percent of surface that is water."
+            example: "TODO"
+          percent_other:
+            type: number
+            format: float
+            description: "Percent of surface that belong to an additional itemized category"
+            example: "TODO"
+          name_other:
+            type: string
+            maxLength: 30
+            description: "Name of additional itemized ground cover category (e.g., beer cans)."
+            example: "TODO"
+          tree_ht:
+            type: number
+            format: float
+            description: "Height of the tree layer in m."
+            example: "TODO"
+          shrub_ht:
+            type: number
+            format: float
+            description: "Height of the shrub layer in m."
+            example: "TODO"
+          field_ht:
+            type: number
+            format: float
+            description: "Height of the field layer in m."
+            example: "TODO"
+          nonvascular_ht:
+            type: number
+            format: float
+            description: "Height of the nonvascular layer in m."
+            example: "TODO"
+          submerged_ht:
+            type: number
+            format: float
+            description: "Height of the submerged layer in m."
+            example: "TODO"
+          tree_cover:
+            type: number
+            format: float
+            description: "Total cover of the tree layer in percent. Includes tall trees (single-stemmed woody plants, generally more than 5 m in height or greater at maturity under optimal growing conditions). Very tall shrubs with tree-like form may also be included here, as may other life forms, such as lianas and epiphytes."
+            example: "TODO"
+          shrub_cover:
+            type: number
+            format: float
+            description: "Total cover of the shrub layer in percent. Includes shrubs (multiple-stemmed woody plants, generally less than 5 m in height at maturity under optimal growing conditions) and shorter trees (saplings). As with the tree stratum, other life forms present in this stratum may also be included (however, herbaceous life forms should be excluded, as their stems often die back annually and do not have as consistent a height as woody life forms). Where dwarf-shrubs (i.e. shrubs shorter than 0.5 m) form a distinct stratum (either as part of a series of strata, as in a forest, or as the top stratum of more open vegetation, such as tundra or xeric shrublands), they should be treated as a low version of the shrub stratum (or short shrub substratum). In many vegetation types, dwarf-shrubs may simply occur as one life form component of the herb stratum."
+            example: "TODO"
+          field_cover:
+            type: number
+            format: float
+            description: "Total cover of the field layer in percent. Also referred to as Herb stratum. Includes herbs (plants without woody stems and often dying back annually), often in association with low creeping semi-shrubs, dwarf-shrubs, vines, and non-woody brambles (such as raspberries), as well as tree or shrub seedlings."
+            example: "TODO"
+          nonvascular_cover:
+            type: number
+            format: float
+            description: "Total cover of the nonvascular layer in percent. Also referred to as moss, bryoid, or ground stratum. Defined entirely by mosses, lichens, liverworts, and alga. Ground-creeping vines, prostrate shrubs and herbs should be treated in the herb stratum. Where herbs are entirely absent, it is still possible to recognize this stratum if other very low woody or semi-woody life forms are present."
+            example: "TODO"
+          floating_cover:
+            type: number
+            format: float
+            description: "Total cover of the floating layer in percent. Includes rooted or drifting plants that float on the water surface (e.g., duckweed, water-lily)."
+            example: "TODO"
+          submerged_cover:
+            type: number
+            format: float
+            description: "Total cover of the submerged layer in percent. Includes rooted or drifting plants that by-and-large remain submerged in the water column or on the aquatic bottom (e.g., pondweed). The focus is on the overall strata arrangement of these aquatic plants. Note that emergent plants life forms in a wetland should be placed in above water strata (e.g., cattail or sedges would be placed in the herb stratum, whereas the duckweed would be in the floating aquatic stratum)."
+            example: "TODO"
+          dominant_stratum:
+            type: string
+            maxLength: 40
+            description: "Which of the six standard strata is dominant?"
+            example: "TODO"
+          growthform1_type:
+            type: string
+            maxLength: 40
+            description: "The predominant growth form?"
+            example: "TODO"
+          growthform2_type:
+            type: string
+            maxLength: 40
+            description: "The second-most predominant growthform?"
+            example: "TODO"
+          growthform3_type:
+            type: string
+            maxLength: 40
+            description: "The third-most predominant growthform"
+            example: "TODO"
+          growthform1_cover:
+            type: number
+            format: float
+            description: "Total cover of the predominant growthform?"
+            example: "TODO"
+          growthform2_cover:
+            type: number
+            format: float
+            description: "Total cover of the second-most predominant growthform?"
+            example: "TODO"
+          growthform3_cover:
+            type: number
+            format: float
+            description: "Total cover of the third-most predominant growthform?"
+            example: "TODO"
+          total_cover:
+            type: number
+            format: float
+            description: "The total cover, in percent, of all vegetation on the plot."
+            example: "TODO"
+          accession_code:
+            type: string
+            maxLength: 100
+            description: "Code that uniquely references this record, allowing reference to this record for this version of this database. Better than a primary key, which is automatically generated by a database and not globally unique. VegBank Accession codes are only generated by VegBank, and therefore data integrity can be guaranteed, unlike with a primary key (number)."
+            example: "TODO"
+          notes_public:
+            type: boolean
+            description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+            example: "TODO"
+          notes_mgt:
+            type: boolean
+            description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+            example: "TODO"
+          revisions:
+            type: boolean
+            description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
+            example: "TODO"
+          plot: 
+            type: object
+            $ref: "#/components/schemas/plot"
+            description: accession code for plot associated with this observation
+
+    named_place: 
+      type: object
+      properties:
+        place_system: 
+          type: string
+        place_name:
+          type: string
+        place_code:
+          type: string
+        reference:
+          type: string
+        accession_code:
+          type: string
+
+    project:
+      type: object
+      properties: 
+        plot_observation:
+          type: string
+        author_plantName:
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        taxon_inference_area:
+          type: string
+        accession_code: 
+          type: string
+
+    stratum_method:
+      type: object
+      properties: 
+        stratum_method_name:
+          type: string
+        stratum_method_description:
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        stratum_types:
+          type: array
+          items: 
+            $ref: "#/components/schemas/stratum_type"
+        accession_code: 
+          type: string
+    
+    reference: 
+      type: object
+      properties: 
+        short_name: 
+          type: string
+        title: 
+          type: string
+        pub_date: 
+          type: string
+        publisher: 
+          type: string
+        url: 
+          type: string
+        accession_code: 
+          type: string
+
+    stratum_type: 
+      type: object
+      properties: 
+        stratum_index: 
+          type: string
+        stratum_name: 
+          type: string
+        stratum_description: 
+          type: string
+        
+    cover_method: 
+      type: object
+      properties: 
+        cover_type: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        cover_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/cover_type"
+        accession_code: 
+          type: string
+    
+    disturbance_obs:
+      type: object
+      properties:
+        disturbance_type:
+          type: string
+        disturbance_intensity:
+          type: string
+        disturbance_comment:
+          type: string
+
+    soil_taxon:
+      type: object
+      properties:
+        soil_name:
+          type: string
+        soil_level:
+          type: string
+        accession_code:
+          type: string
+
+    cover_type: 
+      type: object
+      properties:
+        cover_code:
+          type: number
+        lower_limit: 
+          type: number
+        upper_limite: 
+          type: number
+        cover_percent:
+          type: number
+          format: float
+        index_description:
+          type: string
+
+    plant_name: 
+      type: object
+      properties: 
+        plant_name: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        date_entered: 
+          type: number
+          format: date
+    
+    community_name:
+      type: object
+      properties: 
+        community_name:
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        date_entered: 
+          type: string
+          format: date
+    
+    reference_party: 
+      type: object
+      properties: 
+        type: 
+          type: string
+        position_name: 
+          type: string
+        salutation: 
+          type: string
+        given_name: 
+          type: string
+        surname: 
+          type: string
+        suffix: 
+          type: string
+        organization_name: 
+          type: string
+        current_name: 
+          type: string
+        accession_code: 
+          type: string
+        
+    plant_concept:
+      type: object
+      properties: 
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        plant_name: 
+          type: object
+          $ref: "#/components/schemas/plant_name"
+        accession_code: 
+          type: string
+
+    community_concept:
+      type: object
+      properties: 
+        name: 
+          type: string
+        reference: 
+          type: object
+          $ref: "#/components/schemas/reference"
+        description: 
+          type: string
+        community_name: 
+          type: object
+          $ref: "#/components/schemas/community_name"
+        accession_code:
+          type: string
+
+    party: 
+      type: object
+      properties: 
+        accesison_code: 
+          type: string
+
