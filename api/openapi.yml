@@ -4,7 +4,8 @@ info:
   version: '0.1'
 servers:
   - url: https://api.server.test/v1
-paths:     
+paths:
+
   /vegbank/plot-observations/{accession_code}:
     get:
       summary: returns a specific plot observation via the observation accession code
