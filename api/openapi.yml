@@ -185,7 +185,12 @@ paths:
           name: detail
           schema: 
             type: string
-          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet. 
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+        - in: query
+          name: numTaxa
+          schema: 
+            type: integer
+          description: How many topTaxa to return per observation, ordered by max cover. Default is 5.    
       responses: 
         "200": 
           description: "found"
