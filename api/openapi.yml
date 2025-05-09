@@ -80,6 +80,7 @@ paths:
   
   /vegbank/community-concepts/{accession_code}:
     get: 
+      x-status: "beta"
       parameters:
         - in: path
           name: accession_code 
@@ -172,6 +173,7 @@ paths:
   /vegbank/taxa:
     get: 
       summary: returns all taxa in paginated format. 
+      x-status: "beta"
       parameters: 
         - in: query
           name: limit
