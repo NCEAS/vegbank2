@@ -1,6 +1,6 @@
 SELECT
-    plot.plot_id,
     authorPlotCode,
+    plot.plot_id,
     reference_ID,
     parent_ID,
     locationAccuracy,
@@ -42,4 +42,7 @@ SELECT
     observation.*
 FROM
     plot join observation on plot.plot_id = observation.plot_id
-LIMIT 1;
+WHERE plot.confidentialityStatus < 4
+AND observation.accessionCode is not null  
+LIMIT %s
+OFFSET %s;
