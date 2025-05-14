@@ -1,5 +1,8 @@
 SELECT
     plot.plot_id,
+    observation.observation_id,
+    plot.accessionCode as plotAccessionCode,
+    observation.accessionCode as observationAccessionCode,
     authorPlotCode,
     confidentialityStatus,
     confidentialityReason,

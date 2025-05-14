@@ -35,6 +35,8 @@ SELECT
     landform,
     surficialDeposits,
     rockType,
+    plot.country,
+    plot.stateprovince,
     plot.accessionCode AS plotAccessionCode,
     plot.notesPublic AS plotNotesPublic,
     plot.notesMgt,

@@ -13,11 +13,13 @@ paths:
       parameters:
         - in: path
           name: accession_code
+          x-status: "beta"
           schema: 
             type: string
           required: true
         - in: query
           name: detail
+          x-status: "planned"
           schema: 
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default.
@@ -36,14 +38,17 @@ paths:
       parameters: 
         - in: query
           name: limit
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: offset
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: detail
+          x-status: "beta"
           schema: 
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default. 
@@ -78,17 +83,73 @@ paths:
                   type: string
                   description: accession codes for the new created records
   
+  /vegbank/community-classifications:
+    get: 
+      summary: returns all community classes in paginated format. 
+      x-status: "beta"
+      parameters: 
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
+      responses:
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.
+
+  /vegbank/community-classifications/{accession_code}: 
+    get: 
+      summary: returns a specific community class via its accession code
+      x-status: "beta"
+      parameters:
+        - in: path
+          name: accession_code
+          x-status: "beta"
+          schema: 
+            type: string
+          required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
+      responses:
+        "200":
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.  
+
   /vegbank/community-concepts/{accession_code}:
     get: 
       x-status: "beta"
       parameters:
         - in: path
           name: accession_code 
+          x-status: "beta"
           schema: 
             type: string
           required: true
         - in: query
           name: detail
+          x-status: "planned"
           schema: 
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default.
@@ -107,14 +168,17 @@ paths:
       parameters: 
         - in: query
           name: limit
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: offset
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: detail
+          x-status: "planned"
           schema:
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default.
@@ -147,18 +211,20 @@ paths:
                   type: string
                   description: accession codes for the new created records
  
-  /vegbank/taxa/{accession_code}:
+  /vegbank/taxon-observations/{accession_code}:
     get:
-      summary: returns a specific taxon via its accession code. Currently hitting the view for taxa by cover percentage. 
+      summary: returns a specific taxon observation via its (taxon observation) accession code. Currently hitting the view for taxa by cover percentage. 
       x-status: "beta"
       parameters: 
         - in: path
           name: accession_code
+          x-status: "beta"
           schema: 
             type: string
           required: true
         - in: query
           name: detail
+          x-status: "planned"
           schema: 
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet. 
@@ -170,26 +236,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
   
-  /vegbank/taxa:
+  /vegbank/taxon-observations:
     get: 
       summary: returns all taxa in paginated format. 
       x-status: "beta"
       parameters: 
         - in: query
           name: limit
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: offset
+          x-status: "beta"
           schema: 
             type: integer
         - in: query
           name: detail
+          x-status: "planned"
           schema: 
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
         - in: query
           name: numTaxa
+          x-status: "beta"
           schema: 
             type: integer
           description: How many topTaxa to return per observation, ordered by max cover. Default is 5.    

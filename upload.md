@@ -130,10 +130,10 @@ erDiagram
         string disturbanceExtent
     }
 
-    PlotCommunities
-    PlotCommunities }|--|{ PlotObservations : AuthorPlotCode
-    PlotCommunities }|--|{ CommunityConcept : CommName
-    PlotCommunities{
+    CommunityClassifications
+    CommunityClassifications }|--|{ PlotObservations : AuthorPlotCode
+    CommunityClassifications }|--|{ CommConcepts : CommName
+    CommunityClassifications{
         string AuthorPlotCode
         string classStartDate
         string CommName1
@@ -183,8 +183,8 @@ erDiagram
         string UserDef25
     }
 
-    CommunityConcept
-    CommunityConcept{
+    CommConcepts
+    CommConcepts{
         string commCode
         string commName
         string commShortName
