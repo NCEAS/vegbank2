@@ -1,6 +1,6 @@
 SELECT
     plot.plot_id,
-    plot.accessionCode AS plotAccessionCode
+    plot.accessionCode AS plotAccessionCode,
     plot.latitude,
     plot.longitude,
     observation.accessionCode AS obsAccessionCode,
