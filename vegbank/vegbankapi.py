@@ -36,7 +36,6 @@ def get_plot_observations(accessioncode):
     
     countSQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r").read()
 
-
     SQL = ""
     if(accessioncode != None):
         SQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observation_by_accession_code.sql", "r").read()
@@ -58,7 +57,7 @@ def get_plot_observations(accessioncode):
 
             if(accessioncode == None):
                 cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()
+                toReturn["count"] = cur.fetchall()[0]["count"]
             else:
                 toReturn["count"] = len(toReturn["data"])
         conn.close()   
@@ -90,6 +89,7 @@ def get_taxon_observations(accessioncode):
     else: #TODO This either needs to be an observation accession code, or a taxa one.
         SQL = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r").read()
         data = (accessioncode, )
+
     toReturn = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
@@ -99,7 +99,7 @@ def get_taxon_observations(accessioncode):
 
             if(accessioncode == None):
                 cur.execute(countSQL, countData)
-                toReturn["count"] = cur.fetchall()
+                toReturn["count"] = cur.fetchall()[0]["count"]
             else:
                 toReturn["count"] = len(toReturn["data"])
         conn.close()      
@@ -118,10 +118,15 @@ def get_community_classifications(accessioncode):
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
     
+    countSQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r").read()
+
     SQL = ""
     if(accessioncode == None): 
-        SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_full.sql", "r").read()
         data = (limit, offset, )
+        if(detail == "minimal"):
+            SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_minimal.sql", "r").read()
+        else:
+            SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_full.sql", "r").read()
     else:
         SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classification_by_accession_code.sql", "r").read()
         data = (accessioncode, )
@@ -131,6 +136,12 @@ def get_community_classifications(accessioncode):
         with conn.cursor() as cur:
             cur.execute(SQL, data)
             toReturn["data"] = cur.fetchall()
+
+            if(accessioncode == None):
+                cur.execute(countSQL)
+                toReturn["count"] = cur.fetchall()[0]["count"]
+            else:
+                toReturn["count"] = len(toReturn["data"])
         conn.close()    
     return jsonify(toReturn)
 
@@ -147,6 +158,7 @@ def get_community_concepts(accessioncode):
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
 
+    countSQL = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r").read()
     SQL = ""
     if(accessioncode == None): 
         SQL = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_full.sql", "r").read()
@@ -160,6 +172,12 @@ def get_community_concepts(accessioncode):
         with conn.cursor() as cur:
             cur.execute(SQL, data)
             toReturn["data"] = cur.fetchall()
+
+            if(accessioncode == None):
+                cur.execute(countSQL)
+                toReturn["count"] = cur.fetchall()[0]["count"]
+            else:
+                toReturn["count"] = len(toReturn["data"])
         conn.close()    
     return jsonify(toReturn)
 
@@ -175,7 +193,7 @@ def get_parties(accessioncode):
         limit = int(request.args.get("limit"))
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
-
+    countSQL = open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r").read()
     SQL = ""
     if(accessioncode == None): 
         SQL = open(QUERIES_FOLDER + "/party/get_parties_full.sql", "r").read()
@@ -189,6 +207,12 @@ def get_parties(accessioncode):
         with conn.cursor() as cur:
             cur.execute(SQL, data)
             toReturn["data"] = cur.fetchall()
+
+            if(accessioncode == None):
+                cur.execute(countSQL)
+                toReturn["count"] = cur.fetchall()[0]["count"]
+            else:
+                toReturn["count"] = len(toReturn["data"])
         conn.close()    
     return jsonify(toReturn)
 

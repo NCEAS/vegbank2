@@ -1,7 +1,7 @@
 ```mermaid
 erDiagram
 
-    Party}|--|{ PlotObservations : Contrib1_userPartyCode
+    Party}|--|{ Contributor : userPartyCode
     Party{
         string userPartyCode
         string surname
@@ -10,17 +10,15 @@ erDiagram
         string orgPosition
         string email
         string middleName
-        string contactInstructions
-        string telephonNumber
-        string telephoneType
-        string deliveryPoint
-        string city
-        string administrativeArea
-        string postalCode
-        string country
-        string currentFlag
-        string addressStartDate
         string partyType
+    }
+
+    Contributor}|--|{ PlotObservations : recordIdentifier
+    Contributor{
+        string partyCode
+        string contributorType
+        string role
+        string recordIdentifier
     }
 
     Project||--|| PlotObservations : projectCode
@@ -33,10 +31,10 @@ erDiagram
     }
 
     PresenceData }|--|{ PlotObservations : authorPlotCode
-    PresenceData }|--|{ SpeciesList : PLANTCode
+    PresenceData }|--|{ SpeciesList : authorPlantName
     PresenceData{
         string authorPlotCode
-        string PLANTCode
+        string authorPlantName
         string taxonCover
         string taxonCoverCode
         string taxonBasalArea
@@ -53,10 +51,10 @@ erDiagram
     }
 
     StrataCoverData }|--|{ PlotObservations : AuthorPlotCode
-    StrataCoverData }|--|{ SpeciesList : PLANTCode
+    StrataCoverData }|--|{ SpeciesList : authorPlantName
     StrataCoverData{
         string AuthorPlotCode
-        string PLANTCode
+        string authorPlantName
         string StratumIndex
         string coverCode
         string cover
@@ -82,10 +80,10 @@ erDiagram
 
     StemClasses
     StemClasses }|--|{ PlotObservations : authorPlotCode
-    StemClasses }|--|{ SpeciesList : PLANTCode
+    StemClasses }|--|{ SpeciesList : authorPlantName
     StemClasses{
         string AuthorPlotCode
-        string PLANTCode
+        string authorPlantName
         string tally1
         string list1
         string tally2
@@ -164,10 +162,10 @@ erDiagram
 
     StemData
     StemData }|--|{ PlotObservations : AuthorPlotCode
-    StemData }|--|{ SpeciesList : PLANTCode
+    StemData }|--|{ SpeciesList : authorPlantName
     StemData{
         string AuthorPlotCode
-        string PLANTCode
+        string authorPlantName
         string stemCount
         string stemDiameter
         string stemDiameterAccuracy
@@ -213,7 +211,7 @@ erDiagram
 
     SpeciesList
     SpeciesList{
-        string plantCode
+        string authorPlantName
         string plantName
         string originalName
         string groupType

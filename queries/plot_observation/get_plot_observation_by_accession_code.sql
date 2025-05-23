@@ -100,9 +100,13 @@ SELECT
     parent_ID,
     project_ID,
     coverMethod_ID,
-    stratumMethod_ID
+    stratumMethod.accessionCode as stratumMethodAccessionCode,
+    stratumMethod.stratumMethodName,
+    stratumMethod.stratumMethodDescription,
+    stratumMethod.stratumAssignment
 FROM
     observation left join plot on observation.plot_id = plot.plot_id
+    left join stratumMethod on observation.stratumMethod_ID = stratumMethod.stratumMethod_ID
 WHERE 
     plot.confidentialityStatus < 4
     AND observation.accessionCode = %s;
