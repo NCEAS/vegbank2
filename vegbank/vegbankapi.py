@@ -97,11 +97,11 @@ def get_taxon_observations(accessioncode):
             toReturn["data"] = cur.fetchall()
             print("number of records")
 
-            if(accessioncode == None):
-                cur.execute(countSQL, countData)
-                toReturn["count"] = cur.fetchall()[0]["count"]
-            else:
-                toReturn["count"] = len(toReturn["data"])
+            #if(accessioncode == None):
+            #    cur.execute(countSQL, countData)
+            #    toReturn["count"] = cur.fetchall()[0]["count"]
+            #else:
+            #    toReturn["count"] = len(toReturn["data"])
         conn.close()      
     return jsonify(toReturn)
 
