@@ -3,10 +3,11 @@ info:
   title: VegBankAPI
   version: '0.1'
 servers:
-  - url: https://api.server.test/v1
+  - url: https://vegbank.org/api/v1
+    description: VegBank API
 paths:
 
-  /vegbank/plot-observations/{accession_code}:
+  /plot-observations/{accession_code}:
     get:
       summary: returns a specific plot observation via the observation accession code
       x-status: "beta"
@@ -31,7 +32,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/plot_observation" #Components need updating. For more current model see vegbank loader module. 
 
-  /vegbank/plot-observations:
+  /plot-observations:
     get: 
       summary: returns all plot observations in paginated format.
       x-status: "beta"
@@ -83,7 +84,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
   
-  /vegbank/community-classifications:
+  /community-classifications:
     get: 
       summary: returns all community classes in paginated format. 
       x-status: "beta"
@@ -100,7 +101,7 @@ paths:
             type: integer
         - in: query
           name: detail
-          x-status: "planned"
+          x-status: "beta"
           schema:
             type: string
           description: How much detail to return. Options are "full" or "minimal" and full is default.
@@ -112,7 +113,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.
 
-  /vegbank/community-classifications/{accession_code}: 
+  /community-classifications/{accession_code}: 
     get: 
       summary: returns a specific community class via its accession code
       x-status: "beta"
@@ -137,7 +138,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.  
 
-  /vegbank/community-concepts/{accession_code}:
+  /community-concepts/{accession_code}:
     get: 
       x-status: "beta"
       parameters:
@@ -161,7 +162,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/community_concept" #Components need updating. For more current model see vegbank loader module. 
 
-  /vegbank/community-concepts:
+  /community-concepts:
     get:
       summary: returns all community concepts in paginated format.  
       x-status: "beta"
@@ -211,7 +212,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
  
-  /vegbank/taxon-observations/{accession_code}:
+  /taxon-observations/{accession_code}:
     get:
       summary: returns a specific taxon observation via its (taxon observation) accession code. Currently hitting the view for taxa by cover percentage. 
       x-status: "beta"
@@ -236,7 +237,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
   
-  /vegbank/taxon-observations:
+  /taxon-observations:
     get: 
       summary: returns all taxa in paginated format. 
       x-status: "beta"
@@ -271,7 +272,7 @@ paths:
               schema: 
                 $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
 
-  /vegbank/parties/{accession_code}:
+  /parties/{accession_code}:
     get:
       summary: returns a specific party via its accession code
       x-status: "beta"
@@ -296,7 +297,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
 
-  /vegbank/parties:
+  /parties:
     get: 
       summary: returns all parties in paginated format. 
       x-status: "beta"
@@ -325,7 +326,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
 
-  /vegbank/plant-concepts/{accession_code}:
+  /plant-concepts/{accession_code}:
     get:
       summary: returns a specific plant-concept via its accession code
       x-status: "planned"
@@ -343,7 +344,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/plant_concept"
 
-  /vegbank/plant-concepts:
+  /plant-concepts:
     get:
       summary: takes a list of accession codes and returns the list of plant concepts associated with them. If no codes are provided, returns all plant concepts. 
       x-status: "planned"
@@ -380,7 +381,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/stratum-methods/{accession_code}:
+  /stratum-methods/{accession_code}:
     get:
       summary: returns a specific stratum method via its accession code
       x-status: "planned"
@@ -398,7 +399,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/plant_name"
 
-  /vegbank/stratum-methods:
+  /stratum-methods:
     get:
       summary: takes a list of accession codes and returns the list of stratum methods associated with them. If no codes are provided, returns all stratum methods. 
       x-status: "planned"
@@ -435,7 +436,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/cover-methods/{accession_code}:
+  /cover-methods/{accession_code}:
     get:
       summary: returns a specific cover method via its accession code
       x-status: "planned"
@@ -453,7 +454,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/cover_method"
 
-  /vegbank/cover-methods:
+  /cover-methods:
     get:
       summary: takes a list of accession codes and returns the list of cover methods associated with them. If no codes are provided, returns all cover methods. 
       x-status: "planned"
@@ -490,7 +491,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/projects/{accession_code}:
+  /projects/{accession_code}:
     get:
       summary: returns a specific project via its accession code
       x-status: "planned"
@@ -508,7 +509,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/project"
 
-  /vegbank/projects:
+  /projects:
     get:
       summary: takes a list of accession codes and returns the list of projects associated with them. If no codes are provided, returns all projects. 
       x-status: "planned"
@@ -545,7 +546,7 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/references/{accession_code}:
+  /references/{accession_code}:
     get:
       summary: takes an accession code and returns the reference associated with it.
       x-status: "planned"
@@ -563,7 +564,7 @@ paths:
               schema: 
                 $ref: "#/components/schemas/reference"
     
-  /vegbank/references:
+  /references:
     get:
       summary: takes an accession code and returns the reference associated with it. If no codes are provided, returns all references. 
       x-status: "planned"
