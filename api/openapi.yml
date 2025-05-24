@@ -271,6 +271,60 @@ paths:
               schema: 
                 $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
 
+  /vegbank/parties/{accession_code}:
+    get:
+      summary: returns a specific party via its accession code
+      x-status: "beta"
+      parameters: 
+        - in: path
+          name: accession_code
+          x-status: "beta"
+          schema: 
+            type: string
+          required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+      responses:
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
+
+  /vegbank/parties:
+    get: 
+      summary: returns all parties in paginated format. 
+      x-status: "beta"
+      parameters: 
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+      responses:
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
+
   /vegbank/plant-concepts/{accession_code}:
     get:
       summary: returns a specific plant-concept via its accession code
