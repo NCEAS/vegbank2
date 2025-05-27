@@ -3,7 +3,7 @@ erDiagram
 
     Party}|--|{ Contributor : userPartyCode
     Party{
-        string userPartyCode
+        string userPartyCode PK "**Required**"
         string surname
         string organizationName
         string givenName
@@ -15,7 +15,7 @@ erDiagram
 
     Contributor}|--|{ PlotObservations : recordIdentifier
     Contributor{
-        string partyCode
+        string userPartyCode
         string contributorType
         string role
         string recordIdentifier
@@ -130,7 +130,7 @@ erDiagram
 
     CommunityClassifications
     CommunityClassifications }|--|{ PlotObservations : AuthorPlotCode
-    CommunityClassifications }|--|{ CommConcepts : CommName
+    CommunityClassifications }|--|{ CommunityConcepts : CommName
     CommunityClassifications{
         string AuthorPlotCode
         string classStartDate
@@ -181,8 +181,8 @@ erDiagram
         string UserDef25
     }
 
-    CommConcepts
-    CommConcepts{
+    CommunityConcepts
+    CommunityConcepts{
         string commCode
         string commName
         string commShortName

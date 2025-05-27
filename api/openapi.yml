@@ -494,7 +494,7 @@ paths:
   /projects/{accession_code}:
     get:
       summary: returns a specific project via its accession code
-      x-status: "planned"
+      x-status: "beta"
       parameters: 
         - in: path
           name: accession_code
@@ -512,12 +512,22 @@ paths:
   /projects:
     get:
       summary: takes a list of accession codes and returns the list of projects associated with them. If no codes are provided, returns all projects. 
-      x-status: "planned"
+      x-status: "beta"
       parameters: 
         - in: query
           name: accession_code
           schema:
             type: string
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
       responses: 
         "200": 
           description: "found"

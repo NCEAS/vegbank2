@@ -1,4 +1,5 @@
 SELECT 
     count(*) 
 FROM
-    party;
+    party
+WHERE partypublic IS NOT false;

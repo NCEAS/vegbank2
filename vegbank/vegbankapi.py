@@ -216,6 +216,41 @@ def get_parties(accessioncode):
         conn.close()    
     return jsonify(toReturn)
 
+@app.route("/projects", defaults={'accessioncode': None}, methods=['GET', 'POST'])
+@app.route("/projects/<accessioncode>")
+def get_projects(accessioncode):
+    detail = "full"
+    limit = 1000
+    offset = 0
+    if(request.args.get("detail") != None):
+        detail = request.args.get("detail")
+    if(request.args.get("limit") != None):
+        limit = int(request.args.get("limit"))
+    if(request.args.get("offset") != None):
+        offset = int(request.args.get("offset"))
+    countSQL = open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r").read()
+    SQL = ""
+    if(accessioncode == None): 
+        SQL = open(QUERIES_FOLDER + "/project/get_projects_full.sql", "r").read()
+        data = (limit, offset, )
+    else:
+        SQL = open(QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r").read()
+        data = (accessioncode, )
+
+    toReturn = {}
+    with psycopg.connect(**params, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(SQL, data)
+            toReturn["data"] = cur.fetchall()
+
+            if(accessioncode == None):
+                cur.execute(countSQL)
+                toReturn["count"] = cur.fetchall()[0]["count"]
+            else:
+                toReturn["count"] = len(toReturn["data"])
+        conn.close()    
+    return jsonify(toReturn)
+
 #Shiny App Endpoints - These will be retired, leaving them here just until we're done testing. 
 @app.route("/get_map_points")
 def get_map_points():
