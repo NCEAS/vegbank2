@@ -34,7 +34,7 @@ def get_plot_observations(accessioncode):
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
     
-    countSQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r").read()
 
     SQL = ""
     if(accessioncode != None):
@@ -47,21 +47,21 @@ def get_plot_observations(accessioncode):
         else:
             SQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_full.sql", "r").read()
     
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             if(accessioncode != None):
                 data = (accessioncode, )
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
 
             if(accessioncode == None):
-                cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()[0]["count"]
+                cur.execute(count_sql)
+                to_return["count"] = cur.fetchall()[0]["count"]
             else:
-                toReturn["count"] = len(toReturn["data"])
+                to_return["count"] = len(to_return["data"])
         conn.close()   
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/taxon-observations", defaults={'accessioncode': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accessioncode>")
@@ -80,7 +80,7 @@ def get_taxon_observations(accessioncode):
         offset = int(request.args.get("offset"))
     data = (numTaxa, limit, offset, )
     
-    countSQL = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r").read()
     countData = (numTaxa, )
 
     SQL = ""
@@ -90,20 +90,20 @@ def get_taxon_observations(accessioncode):
         SQL = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r").read()
         data = (accessioncode, )
 
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
             print("number of records")
 
             #if(accessioncode == None):
-            #    cur.execute(countSQL, countData)
-            #    toReturn["count"] = cur.fetchall()[0]["count"]
+            #    cur.execute(count_sql, countData)
+            #    to_return["count"] = cur.fetchall()[0]["count"]
             #else:
-            #    toReturn["count"] = len(toReturn["data"])
+            #    to_return["count"] = len(to_return["data"])
         conn.close()      
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/community-classifications", defaults={'accessioncode': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<accessioncode>")
@@ -118,7 +118,7 @@ def get_community_classifications(accessioncode):
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
     
-    countSQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r").read()
 
     SQL = ""
     if(accessioncode == None): 
@@ -131,19 +131,19 @@ def get_community_classifications(accessioncode):
         SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classification_by_accession_code.sql", "r").read()
         data = (accessioncode, )
 
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
 
             if(accessioncode == None):
-                cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()[0]["count"]
+                cur.execute(count_sql)
+                to_return["count"] = cur.fetchall()[0]["count"]
             else:
-                toReturn["count"] = len(toReturn["data"])
+                to_return["count"] = len(to_return["data"])
         conn.close()    
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/community-concepts", defaults={'accessioncode': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<accessioncode>")
@@ -158,7 +158,7 @@ def get_community_concepts(accessioncode):
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
 
-    countSQL = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r").read()
     SQL = ""
     if(accessioncode == None): 
         SQL = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_full.sql", "r").read()
@@ -167,19 +167,19 @@ def get_community_concepts(accessioncode):
         SQL = open(QUERIES_FOLDER + "/community_concept/get_community_concept_by_accession_code.sql", "r").read()
         data = (accessioncode, )
 
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
 
             if(accessioncode == None):
-                cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()[0]["count"]
+                cur.execute(count_sql)
+                to_return["count"] = cur.fetchall()[0]["count"]
             else:
-                toReturn["count"] = len(toReturn["data"])
+                to_return["count"] = len(to_return["data"])
         conn.close()    
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/parties", defaults={'accessioncode': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accessioncode>")
@@ -193,7 +193,7 @@ def get_parties(accessioncode):
         limit = int(request.args.get("limit"))
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
-    countSQL = open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r").read()
     SQL = ""
     if(accessioncode == None): 
         SQL = open(QUERIES_FOLDER + "/party/get_parties_full.sql", "r").read()
@@ -202,19 +202,19 @@ def get_parties(accessioncode):
         SQL = open(QUERIES_FOLDER + "/party/get_party_by_accession_code.sql", "r").read()
         data = (accessioncode, )
 
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
 
             if(accessioncode == None):
-                cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()[0]["count"]
+                cur.execute(count_sql)
+                to_return["count"] = cur.fetchall()[0]["count"]
             else:
-                toReturn["count"] = len(toReturn["data"])
+                to_return["count"] = len(to_return["data"])
         conn.close()    
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/projects", defaults={'accessioncode': None}, methods=['GET', 'POST'])
 @app.route("/projects/<accessioncode>")
@@ -228,7 +228,7 @@ def get_projects(accessioncode):
         limit = int(request.args.get("limit"))
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
-    countSQL = open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r").read()
+    count_sql = open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r").read()
     SQL = ""
     if(accessioncode == None): 
         SQL = open(QUERIES_FOLDER + "/project/get_projects_full.sql", "r").read()
@@ -237,37 +237,37 @@ def get_projects(accessioncode):
         SQL = open(QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r").read()
         data = (accessioncode, )
 
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(SQL, data)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
 
             if(accessioncode == None):
-                cur.execute(countSQL)
-                toReturn["count"] = cur.fetchall()[0]["count"]
+                cur.execute(count_sql)
+                to_return["count"] = cur.fetchall()[0]["count"]
             else:
-                toReturn["count"] = len(toReturn["data"])
+                to_return["count"] = len(to_return["data"])
         conn.close()    
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 #Shiny App Endpoints - These will be retired, leaving them here just until we're done testing. 
 @app.route("/get_map_points")
 def get_map_points():
-    toReturn = {}
+    to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             SQL = open(QUERIES_FOLDER + "get_map_points.sql", "r").read() 
             cur.execute(SQL)
-            toReturn["data"] = cur.fetchall()
+            to_return["data"] = cur.fetchall()
         conn.close()      
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/get_observation_table", defaults={'limit': None, 'offset': None}, methods=['GET'])
 @app.route("/get_observation_table/<limit>", defaults={'offset': None}, methods=['GET'])
 @app.route("/get_observation_table/<limit>/<offset>")
 def get_observation_table(limit, offset):
-    toReturn = []
+    to_return = []
     if(limit == None):
         limit = 100
     if(offset == None):
@@ -284,10 +284,10 @@ def get_observation_table(limit, offset):
             cur.execute(SQL, data)
             columns = [desc[0] for desc in cur.description]
             for record in cur.fetchall():
-                toReturn.append(dict(zip(columns, record)))
+                to_return.append(dict(zip(columns, record)))
             obsEndTime = time.perf_counter()
             print(f"Observations queried and processed in: {obsEndTime - obsStartTime:0.4f} seconds")  
-            for record in toReturn:
+            for record in to_return:
                 taxaStartTime = time.perf_counter()
                 SQL = open(QUERIES_FOLDER + "get_top_5_taxa_coverage.sql", "r").read()
                 data = (record['plot_id'], )
@@ -302,11 +302,11 @@ def get_observation_table(limit, offset):
         conn.close() 
     endTime = time.perf_counter()
     print(f"Observation table queried and processed in: {endTime - startTime:0.4f} seconds")     
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 @app.route("/get_observation_details/<accessioncode>")
 def get_observation_details(accessioncode):
-    toReturn = []
+    to_return = []
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
             SQL = open(QUERIES_FOLDER + "get_observation_details.sql", "r").read() 
@@ -314,8 +314,8 @@ def get_observation_details(accessioncode):
             cur.execute(SQL, data)
             columns = [desc[0] for desc in cur.description]
             for record in cur.fetchall():
-                toReturn.append(dict(zip(columns, record)))
-            if(len(toReturn) != 0):
+                to_return.append(dict(zip(columns, record)))
+            if(len(to_return) != 0):
                 taxa = []
                 SQL = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r").read() 
                 data = (accessioncode, )
@@ -323,7 +323,7 @@ def get_observation_details(accessioncode):
                 columns = [desc[0] for desc in cur.description]
                 for record in cur.fetchall():
                     taxa.append(dict(zip(columns, record)))
-                toReturn[0].update({"taxa": taxa})
+                to_return[0].update({"taxa": taxa})
                 communities = []
                 SQL = open(QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r").read() 
                 data = (accessioncode, )
@@ -331,11 +331,11 @@ def get_observation_details(accessioncode):
                 columns = [desc[0] for desc in cur.description]
                 for record in cur.fetchall():
                     communities.append(dict(zip(columns, record)))
-                toReturn[0].update({"communities": communities})
+                to_return[0].update({"communities": communities})
             else:
-                toReturn.append({"error": "No observation found with that accession code."})
+                to_return.append({"error": "No observation found with that accession code."})
         conn.close()      
-    return jsonify(toReturn)
+    return jsonify(to_return)
 
 #Utilities
 def convert_to_parquet(query, data, conn):
