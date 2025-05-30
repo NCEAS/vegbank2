@@ -17,6 +17,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 params = config.params
 
+
 @app.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
@@ -24,35 +25,31 @@ def welcome_page():
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def get_plot_observations(accession_code):
-    detail = "full"
-    limit = 1000
-    offset = 0
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
+    detail = request.args.get("detail", "full")
+    limit = int(request.args.get("limit", 1000))
+    offset = int(request.args.get("offset", 0))
     
-    count_sql = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r").read()
+    with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r") as file:
+        count_sql = file.read()
 
-    SQL = ""
-    if(accession_code != None):
-        SQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observation_by_accession_code.sql", "r").read()
+    if accession_code is not None:
+        sql = open(QUERIES_FOLDER + "/plot_observation/get_plot_observation_by_accession_code.sql", "r").read()
         data = (accession_code, )
     else:
         data = (limit, offset, )
-        if(detail == "minimal"):
-            SQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_minimal.sql", "r").read()
+        if detail == "minimal":
+            with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_minimal.sql", "r") as file:
+                sql = file.read()
+        elif detail == "full":
+            with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_full.sql", "r") as file:
+                sql = file.read()
         else:
-            SQL = open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_full.sql", "r").read()
+            return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
     
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            if(accession_code != None):
-                data = (accession_code, )
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
             if(accession_code == None):
