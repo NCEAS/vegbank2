@@ -20,7 +20,6 @@ params = config.params
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
-all_details = ("minimal", "full")
 
 @app.route("/")
 def welcome_page():
@@ -30,7 +29,7 @@ def welcome_page():
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def get_plot_observations(accession_code):
     detail = request.args.get("detail", default_detail)
-    if detail not in all_details:
+    if detail not in ("minimal", "full"):
         return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
     limit = int(request.args.get("limit", default_limit))
     offset = int(request.args.get("offset", default_offset))
@@ -68,22 +67,25 @@ def get_plot_observations(accession_code):
 @app.route("/taxon-observations/<accession_code>")
 def get_taxon_observations(accession_code):
     detail = request.args.get("detail", default_detail)
-    if detail not in all_details:
+    if detail not in ("minimal", "full"):
         return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
     limit = int(request.args.get("limit", default_limit))
     offset = int(request.args.get("offset", default_offset))
     num_taxa = int(request.args.get("num_taxa", 5))  # Default to 5 if not specified
     data = (num_taxa, limit, offset, )
     
-    count_sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r").read()
+    with open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r") as file:
+        count_sql = file.read()
     countData = (num_taxa, )
 
     sql = ""
     if(accession_code == None):
-        sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r").read()  
+        with open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r") as file:
+            sql = file.read()
     else: #TODO This either needs to be an observation accession code, or a taxa one.
-        sql = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r").read()
-        data = (accession_code, )
+        with open(QUERIES_FOLDER + "/taxon_observation/get_taxon_observation_by_accession_code.sql", "r") as file:
+            sql = file.read()
+            data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
@@ -103,33 +105,33 @@ def get_taxon_observations(accession_code):
 @app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<accession_code>")
 def get_community_classifications(accession_code):
-    detail = "full"
-    limit = 1000
-    offset = 0
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
+    detail = request.args.get("detail", default_detail)
+    if detail not in ("minimal", "full"):
+        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
     
-    count_sql = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r").read()
+    with open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r") as file:
+        count_sql = file.read()
 
-    SQL = ""
+    sql = ""
     if(accession_code == None): 
         data = (limit, offset, )
         if(detail == "minimal"):
-            SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_minimal.sql", "r").read()
+            with open(QUERIES_FOLDER + "/community_classification/get_community_classifications_minimal.sql", "r") as file:
+                sql = file.read()
         else:
-            SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classifications_full.sql", "r").read()
+            with open(QUERIES_FOLDER + "/community_classification/get_community_classifications_full.sql", "r") as file:
+                sql = file.read()
     else:
-        SQL = open(QUERIES_FOLDER + "/community_classification/get_community_classification_by_accession_code.sql", "r").read()
+        with open(QUERIES_FOLDER + "/community_classification/get_community_classification_by_accession_code.sql", "r") as file:
+            sql = file.read()
         data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
             if(accession_code == None):
@@ -143,29 +145,29 @@ def get_community_classifications(accession_code):
 @app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<accession_code>")
 def get_community_concepts(accession_code):
-    detail = "full"
-    limit = 1000
-    offset = 0
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
+    detail = request.args.get("detail", default_detail)
+    if detail not in ("full"):
+        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
 
-    count_sql = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r").read()
-    SQL = ""
+    with open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r") as file:
+        count_sql = file.read()
+
+    sql = ""
     if(accession_code == None): 
-        SQL = open(QUERIES_FOLDER + "/community_concept/get_community_concepts_full.sql", "r").read()
+        with open(QUERIES_FOLDER + "/community_concept/get_community_concepts_full.sql", "r") as file:
+            sql = file.read()
         data = (limit, offset, )
     else:
-        SQL = open(QUERIES_FOLDER + "/community_concept/get_community_concept_by_accession_code.sql", "r").read()
+        with open(QUERIES_FOLDER + "/community_concept/get_community_concept_by_accession_code.sql", "r") as file:
+            sql = file.read()
         data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
             if(accession_code == None):
@@ -179,28 +181,29 @@ def get_community_concepts(accession_code):
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accession_code>")
 def get_parties(accession_code):
-    detail = "full"
-    limit = 1000
-    offset = 0
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
-    count_sql = open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r").read()
-    SQL = ""
+    detail = request.args.get("detail", default_detail)
+    if detail not in ("full"):
+        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
+
+    with open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r") as file:
+        count_sql = file.read()
+
+    sql = ""
     if(accession_code == None): 
-        SQL = open(QUERIES_FOLDER + "/party/get_parties_full.sql", "r").read()
+        with open(QUERIES_FOLDER + "/party/get_parties_full.sql", "r") as file:
+            sql = file.read()
         data = (limit, offset, )
     else:
-        SQL = open(QUERIES_FOLDER + "/party/get_party_by_accession_code.sql", "r").read()
+        with open(QUERIES_FOLDER + "/party/get_party_by_accession_code.sql", "r") as file:
+            sql = file.read()
         data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
             if(accession_code == None):
@@ -214,28 +217,29 @@ def get_parties(accession_code):
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<accession_code>")
 def get_projects(accession_code):
-    detail = "full"
-    limit = 1000
-    offset = 0
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
-    count_sql = open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r").read()
-    SQL = ""
+    detail = request.args.get("detail", default_detail)
+    if detail not in ("full"):
+        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
+
+    with open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r") as file:
+        count_sql = file.read()
+
+    sql = ""
     if(accession_code == None): 
-        SQL = open(QUERIES_FOLDER + "/project/get_projects_full.sql", "r").read()
+        with open(QUERIES_FOLDER + "/project/get_projects_full.sql", "r") as file:
+            sql = file.read()
         data = (limit, offset, )
     else:
-        SQL = open(QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r").read()
+        with open(QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r") as file:
+            sql = file.read()
         data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
             if(accession_code == None):
