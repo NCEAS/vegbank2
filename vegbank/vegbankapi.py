@@ -69,19 +69,19 @@ def get_taxon_observations(accession_code):
     detail = "full"
     limit = 100
     offset = 0
-    numTaxa = 5
+    num_taxa = 5
     if(request.args.get("detail") != None):
         detail = request.args.get("detail")
-    if(request.args.get("numTaxa") != None):
-        numTaxa = int(request.args.get("numTaxa"))
+    if(request.args.get("num_taxa") != None):
+        num_taxa = int(request.args.get("num_taxa"))
     if(request.args.get("limit") != None):
         limit = int(request.args.get("limit"))
     if(request.args.get("offset") != None):
         offset = int(request.args.get("offset"))
-    data = (numTaxa, limit, offset, )
+    data = (num_taxa, limit, offset, )
     
     count_sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r").read()
-    countData = (numTaxa, )
+    countData = (num_taxa, )
 
     SQL = ""
     if(accession_code == None):
