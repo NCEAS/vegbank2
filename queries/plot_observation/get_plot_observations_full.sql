@@ -46,6 +46,6 @@ FROM
     plot join observation on plot.plot_id = observation.plot_id
 WHERE plot.confidentialityStatus < 4
 AND observation.accessionCode is not null  
-ORDER BY observation.observation_ID
+ORDER BY observation.observation_ID ASC
 LIMIT %s
 OFFSET %s;

@@ -20,6 +20,7 @@ params = config.params
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
+all_details = ("minimal", "full")
 
 @app.route("/")
 def welcome_page():
@@ -29,6 +30,8 @@ def welcome_page():
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def get_plot_observations(accession_code):
     detail = request.args.get("detail", default_detail)
+    if detail not in all_details:
+        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
     limit = int(request.args.get("limit", default_limit))
     offset = int(request.args.get("offset", default_offset))
     
@@ -43,11 +46,9 @@ def get_plot_observations(accession_code):
         if detail == "minimal":
             with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_minimal.sql", "r") as file:
                 sql = file.read()
-        elif detail == "full":
+        else:
             with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_full.sql", "r") as file:
                 sql = file.read()
-        else:
-            return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
     
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
@@ -66,34 +67,28 @@ def get_plot_observations(accession_code):
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accession_code>")
 def get_taxon_observations(accession_code):
-    detail = "full"
-    limit = 100
-    offset = 0
-    num_taxa = 5
-    if(request.args.get("detail") != None):
-        detail = request.args.get("detail")
-    if(request.args.get("num_taxa") != None):
-        num_taxa = int(request.args.get("num_taxa"))
-    if(request.args.get("limit") != None):
-        limit = int(request.args.get("limit"))
-    if(request.args.get("offset") != None):
-        offset = int(request.args.get("offset"))
+    detail = request.args.get("detail", default_detail)
+    if detail not in all_details:
+        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
+    num_taxa = int(request.args.get("num_taxa", 5))  # Default to 5 if not specified
     data = (num_taxa, limit, offset, )
     
     count_sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r").read()
     countData = (num_taxa, )
 
-    SQL = ""
+    sql = ""
     if(accession_code == None):
-        SQL = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r").read()  
+        sql = open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r").read()  
     else: #TODO This either needs to be an observation accession code, or a taxa one.
-        SQL = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r").read()
+        sql = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r").read()
         data = (accession_code, )
 
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
             print("number of records")
 
