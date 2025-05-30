@@ -83,7 +83,7 @@ def get_taxon_observations(accession_code):
         with open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r") as file:
             sql = file.read()
     else: #TODO This either needs to be an observation accession code, or a taxa one.
-        with open(QUERIES_FOLDER + "/taxon_observation/get_taxon_observation_by_accession_code.sql", "r") as file:
+        with open(QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r") as file:
             sql = file.read()
             data = (accession_code, )
 
