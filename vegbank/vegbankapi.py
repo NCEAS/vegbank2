@@ -17,6 +17,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 params = config.params
 
+default_detail = "full"
+default_limit = 1000
+default_offset = 0
 
 @app.route("/")
 def welcome_page():
@@ -25,9 +28,9 @@ def welcome_page():
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def get_plot_observations(accession_code):
-    detail = request.args.get("detail", "full")
-    limit = int(request.args.get("limit", 1000))
-    offset = int(request.args.get("offset", 0))
+    detail = request.args.get("detail", default_detail)
+    limit = int(request.args.get("limit", default_limit))
+    offset = int(request.args.get("offset", default_offset))
     
     with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r") as file:
         count_sql = file.read()
@@ -52,7 +55,7 @@ def get_plot_observations(accession_code):
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
-            if(accession_code == None):
+            if accession_code is None:
                 cur.execute(count_sql)
                 to_return["count"] = cur.fetchall()[0]["count"]
             else:
