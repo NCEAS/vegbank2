@@ -30,9 +30,12 @@ def welcome_page():
 def get_plot_observations(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("minimal", "full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
+        return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
     
     with open(QUERIES_FOLDER + "/plot_observation/get_plot_observations_count.sql", "r") as file:
         count_sql = file.read()
@@ -68,10 +71,14 @@ def get_plot_observations(accession_code):
 def get_taxon_observations(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("minimal", "full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
-    num_taxa = int(request.args.get("num_taxa", 5))  # Default to 5 if not specified
+        return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+        num_taxa = int(request.args.get("num_taxa", 5))  # Default to 5 if not specified
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' 'numTaxa' and 'limit' must be non-negative integers."), 400
+    
     data = (num_taxa, limit, offset, )
     
     with open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r") as file:
@@ -107,9 +114,12 @@ def get_taxon_observations(accession_code):
 def get_community_classifications(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("minimal", "full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'minimal' or 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
+        return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
     
     with open(QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r") as file:
         count_sql = file.read()
@@ -147,9 +157,12 @@ def get_community_classifications(accession_code):
 def get_community_concepts(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
+        return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
 
     with open(QUERIES_FOLDER + "/community_concept/get_community_concepts_count.sql", "r") as file:
         count_sql = file.read()
@@ -183,9 +196,12 @@ def get_community_concepts(accession_code):
 def get_parties(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
+        return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
 
     with open(QUERIES_FOLDER + "/party/get_parties_count.sql", "r") as file:
         count_sql = file.read()
@@ -219,9 +235,12 @@ def get_parties(accession_code):
 def get_projects(accession_code):
     detail = request.args.get("detail", default_detail)
     if detail not in ("full"):
-        return jsonify({"error": "Invalid detail parameter. Use 'full'."}), 400
-    limit = int(request.args.get("limit", default_limit))
-    offset = int(request.args.get("offset", default_offset))
+        return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
+    try:
+        limit = int(request.args.get("limit", default_limit))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
 
     with open(QUERIES_FOLDER + "/project/get_projects_count.sql", "r") as file:
         count_sql = file.read()
@@ -268,8 +287,11 @@ def get_map_points():
 @app.route("/get_observation_table/<limit>/<offset>")
 def get_observation_table(limit, offset):
     to_return = []
-    limit = int(request.args.get("limit", 100))
-    offset = int(request.args.get("offset", default_offset))
+    try:
+        limit = int(request.args.get("limit", 100))
+        offset = int(request.args.get("offset", default_offset))
+    except ValueError:
+        return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
     startTime = time.perf_counter()
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
@@ -333,7 +355,7 @@ def get_observation_details(accession_code):
                     communities.append(dict(zip(columns, record)))
                 to_return[0].update({"communities": communities})
             else:
-                to_return.append({"error": "No observation found with that accession code."})
+                return jsonify_error_message("No observation found with that accession code"), 204
         conn.close()      
     return jsonify(to_return)
 
@@ -351,5 +373,9 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def jsonify_error_message(message):
+    return jsonify({
+        "message": message
+    })
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
