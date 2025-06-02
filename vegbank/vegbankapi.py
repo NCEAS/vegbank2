@@ -256,8 +256,9 @@ def get_map_points():
     to_return = {}
     with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            SQL = open(QUERIES_FOLDER + "get_map_points.sql", "r").read() 
-            cur.execute(SQL)
+            with open(QUERIES_FOLDER + "get_map_points.sql", "r") as file:
+                sql = file.read()
+            cur.execute(sql)
             to_return["data"] = cur.fetchall()
         conn.close()      
     return jsonify(to_return)
@@ -267,30 +268,27 @@ def get_map_points():
 @app.route("/get_observation_table/<limit>/<offset>")
 def get_observation_table(limit, offset):
     to_return = []
-    if(limit == None):
-        limit = 100
-    if(offset == None):
-        offset = 0
-    limit = int(limit)
-    offset = int(offset)
+    limit = int(request.args.get("limit", 100))
+    offset = int(request.args.get("offset", default_offset))
     startTime = time.perf_counter()
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
             obsStartTime = time.perf_counter()
-            SQL = open(QUERIES_FOLDER + "get_obs_table.sql", "r").read() 
+            with open(QUERIES_FOLDER + "get_obs_table.sql", "r") as file:
+                sql = file.read() 
             data = (limit, offset, )
-            print(cur.mogrify(SQL, data))
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             columns = [desc[0] for desc in cur.description]
             for record in cur.fetchall():
                 to_return.append(dict(zip(columns, record)))
             obsEndTime = time.perf_counter()
             print(f"Observations queried and processed in: {obsEndTime - obsStartTime:0.4f} seconds")  
+            with open(QUERIES_FOLDER + "get_top_5_taxa_coverage.sql", "r") as file:
+                    sql = file.read()
             for record in to_return:
                 taxaStartTime = time.perf_counter()
-                SQL = open(QUERIES_FOLDER + "get_top_5_taxa_coverage.sql", "r").read()
                 data = (record['plot_id'], )
-                cur.execute(SQL, data)
+                cur.execute(sql, data)
                 columns = [desc[0] for desc in cur.description]
                 taxa = []
                 for taxaRecord in cur.fetchall():
@@ -308,25 +306,28 @@ def get_observation_details(accession_code):
     to_return = []
     with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
         with conn.cursor() as cur:
-            SQL = open(QUERIES_FOLDER + "get_observation_details.sql", "r").read() 
+            with open(QUERIES_FOLDER + "get_observation_details.sql", "r") as file:
+                sql = file.read() 
             data = (accession_code, )
-            cur.execute(SQL, data)
+            cur.execute(sql, data)
             columns = [desc[0] for desc in cur.description]
             for record in cur.fetchall():
                 to_return.append(dict(zip(columns, record)))
             if(len(to_return) != 0):
                 taxa = []
-                SQL = open(QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r").read() 
+                with open(QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r") as file:
+                    sql = file.read() 
                 data = (accession_code, )
-                cur.execute(SQL, data)
+                cur.execute(sql, data)
                 columns = [desc[0] for desc in cur.description]
                 for record in cur.fetchall():
                     taxa.append(dict(zip(columns, record)))
                 to_return[0].update({"taxa": taxa})
                 communities = []
-                SQL = open(QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r").read() 
+                with open(QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r") as file:
+                    sql = file.read() 
                 data = (accession_code, )
-                cur.execute(SQL, data)
+                cur.execute(sql, data)
                 columns = [desc[0] for desc in cur.description]
                 for record in cur.fetchall():
                     communities.append(dict(zip(columns, record)))
