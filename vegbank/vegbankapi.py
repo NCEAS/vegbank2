@@ -86,7 +86,7 @@ def get_taxon_observations(accession_code):
     countData = (num_taxa, )
 
     sql = ""
-    if(accession_code == None):
+    if(accession_code is None):
         with open(QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r") as file:
             sql = file.read()
     else: #TODO This either needs to be an observation accession code, or a taxa one.
@@ -101,7 +101,7 @@ def get_taxon_observations(accession_code):
             to_return["data"] = cur.fetchall()
             print("number of records")
 
-            #if(accession_code == None):
+            #if(accession_code is None):
             #    cur.execute(count_sql, countData)
             #    to_return["count"] = cur.fetchall()[0]["count"]
             #else:
@@ -125,7 +125,7 @@ def get_community_classifications(accession_code):
         count_sql = file.read()
 
     sql = ""
-    if(accession_code == None): 
+    if(accession_code is None): 
         data = (limit, offset, )
         if(detail == "minimal"):
             with open(QUERIES_FOLDER + "/community_classification/get_community_classifications_minimal.sql", "r") as file:
@@ -144,7 +144,7 @@ def get_community_classifications(accession_code):
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
-            if(accession_code == None):
+            if(accession_code is None):
                 cur.execute(count_sql)
                 to_return["count"] = cur.fetchall()[0]["count"]
             else:
@@ -168,7 +168,7 @@ def get_community_concepts(accession_code):
         count_sql = file.read()
 
     sql = ""
-    if(accession_code == None): 
+    if(accession_code is None): 
         with open(QUERIES_FOLDER + "/community_concept/get_community_concepts_full.sql", "r") as file:
             sql = file.read()
         data = (limit, offset, )
@@ -183,7 +183,7 @@ def get_community_concepts(accession_code):
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
-            if(accession_code == None):
+            if(accession_code is None):
                 cur.execute(count_sql)
                 to_return["count"] = cur.fetchall()[0]["count"]
             else:
@@ -207,7 +207,7 @@ def get_parties(accession_code):
         count_sql = file.read()
 
     sql = ""
-    if(accession_code == None): 
+    if(accession_code is None): 
         with open(QUERIES_FOLDER + "/party/get_parties_full.sql", "r") as file:
             sql = file.read()
         data = (limit, offset, )
@@ -222,7 +222,7 @@ def get_parties(accession_code):
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
-            if(accession_code == None):
+            if(accession_code is None):
                 cur.execute(count_sql)
                 to_return["count"] = cur.fetchall()[0]["count"]
             else:
@@ -246,7 +246,7 @@ def get_projects(accession_code):
         count_sql = file.read()
 
     sql = ""
-    if(accession_code == None): 
+    if(accession_code is None): 
         with open(QUERIES_FOLDER + "/project/get_projects_full.sql", "r") as file:
             sql = file.read()
         data = (limit, offset, )
@@ -261,7 +261,7 @@ def get_projects(accession_code):
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
 
-            if(accession_code == None):
+            if(accession_code is None):
                 cur.execute(count_sql)
                 to_return["count"] = cur.fetchall()[0]["count"]
             else:
