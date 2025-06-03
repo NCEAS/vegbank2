@@ -325,37 +325,31 @@ def get_observation_table(limit, offset):
 
 @app.route("/get_observation_details/<accession_code>")
 def get_observation_details(accession_code):
-    to_return = []
-    with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+    to_return = {}
+    with psycopg.connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             with open(QUERIES_FOLDER + "get_observation_details.sql", "r") as file:
                 sql = file.read() 
             data = (accession_code, )
             cur.execute(sql, data)
-            columns = [desc[0] for desc in cur.description]
-            for record in cur.fetchall():
-                to_return.append(dict(zip(columns, record)))
-            if(len(to_return) != 0):
+            to_return["data"] = cur.fetchall()
+            to_return["count"] = len(to_return["data"])
+            print(to_return)
+            if(len(to_return["data"]) != 0):
                 taxa = []
                 with open(QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r") as file:
                     sql = file.read() 
                 data = (accession_code, )
                 cur.execute(sql, data)
-                columns = [desc[0] for desc in cur.description]
-                for record in cur.fetchall():
-                    taxa.append(dict(zip(columns, record)))
-                to_return[0].update({"taxa": taxa})
+                taxa = cur.fetchall()
+                to_return["data"][0].update({"taxa": taxa})
                 communities = []
                 with open(QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r") as file:
                     sql = file.read() 
                 data = (accession_code, )
                 cur.execute(sql, data)
-                columns = [desc[0] for desc in cur.description]
-                for record in cur.fetchall():
-                    communities.append(dict(zip(columns, record)))
-                to_return[0].update({"communities": communities})
-            else:
-                return jsonify_error_message("No observation found with that accession code"), 204
+                communities = cur.fetchall()
+                to_return["data"][0].update({"communities": communities})
         conn.close()      
     return jsonify(to_return)
 
