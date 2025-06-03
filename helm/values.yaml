@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/nceas/vegbank
-  pullPolicy: IfNotPresent
+  pullPolicy: ifNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
@@ -109,11 +109,8 @@ affinity: {}
 postgresql:
   enabled: true
   primary:
-    resources:
-      requests:
-        memory: 128Mi
-      limits:
-        memory: 192Mi
+    resourcesPreset: "small"
+    resources: {}
     #borrowed this from metacat to get started, might need some further updating when we get to API time. 
     pgHbaConfiguration: |
       host        vegbank       vegbank       0.0.0.0/0       password

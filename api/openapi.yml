@@ -3,36 +3,56 @@ info:
   title: VegBankAPI
   version: '0.1'
 servers:
-  - url: https://api.server.test/v1
+  - url: https://vegbank.org/api/v1
+    description: VegBank API
 paths:
 
-  /vegbank/plot-observations/{accession_code}:
+  /plot-observations/{accession_code}:
     get:
       summary: returns a specific plot observation via the observation accession code
+      x-status: "beta"
       parameters:
         - in: path
           name: accession_code
+          x-status: "beta"
           schema: 
             type: string
           required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
       responses: 
         "200":
           description: "found"
           content:
             application/json: 
               schema:
-                $ref: "#/components/schemas/plot_observation"
-  
-  /vegbank/plot-observations:
+                $ref: "#/components/schemas/plot_observation" #Components need updating. For more current model see vegbank loader module. 
+
+  /plot-observations:
     get: 
-      summary: takes a list of accession codes and returns a list of plot/observation objects. If no parameter is provided, returns all plot observations. 
+      summary: returns all plot observations in paginated format.
+      x-status: "beta"
       parameters: 
         - in: query
-          name: accession_codes
+          name: limit
+          x-status: "beta"
           schema: 
-            type: array
-            items: 
-              type: string
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "beta"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. 
       responses:
         "200":
           description: "found"
@@ -44,6 +64,7 @@ paths:
                   $ref: "#/components/schemas/plot_observation"
     post: 
       summary: takes a list of plot/observation objects and inserts them into the database. 
+      x-status: "planned"
       requestBody:
         content:
           multipart/form-data:
@@ -63,249 +84,105 @@ paths:
                   type: string
                   description: accession codes for the new created records
   
-  /vegbank/plots:
+  /community-classifications:
     get: 
-      summary: takes a list of accession codes and returns a list of plot objects. If no parameter is provided, returns all plots. 
+      summary: returns all community classes in paginated format. 
+      x-status: "beta"
       parameters: 
         - in: query
-          name: accession_codes
+          name: limit
+          x-status: "beta"
           schema: 
-            type: array
-            items: 
-              type: string
-      responses:
-        "200":
-          description: "found"
-          content: 
-            application/json:
-              schema: 
-                type: array
-                items:
-                  $ref: "#/components/schemas/plot"
-    post: 
-      summary: takes a list of plot/observation objects and inserts them into the database. 
-      requestBody:
-        content:
-          multipart/form-data:
-            schema: 
-              type: array
-              items: 
-                $ref: "#/components/schemas/plot"
-
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "beta"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
       responses:
         "200": 
-          description: "completed"
-          content: 
+          description: "found"
+          content:
             application/json:
-              schema: 
-                type: array
-                items: 
-                  type: string
-                  description: accession codes for the new created records
-  
-  /vegbank/plots/{accession_code}:
-    get:
-      summary: returns a specific plot via its accession code
+              schema:
+                $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.
+
+  /community-classifications/{accession_code}: 
+    get: 
+      summary: returns a specific community class via its accession code
+      x-status: "beta"
       parameters:
         - in: path
           name: accession_code
+          x-status: "beta"
           schema: 
             type: string
           required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
+      responses:
+        "200":
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/community_class" #Components need updating. For more current model see vegbank loader module.  
+
+  /community-concepts/{accession_code}:
+    get: 
+      x-status: "beta"
+      parameters:
+        - in: path
+          name: accession_code 
+          x-status: "beta"
+          schema: 
+            type: string
+          required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
       responses: 
         "200":
           description: "found"
           content:
             application/json: 
               schema:
-                $ref: "#/components/schemas/plot"
-  
-  /vegbank/named-places/{accession_code}:
-      get:
-        summary: takes an accession code and returns the named place associated with it.
-        parameters: 
-          - in: path
-            name: accession_code
-            schema:
-              type: string
-            required: true
-        responses: 
-          "200": 
-            description: "found"
-            content:
-              application/json:
-                schema: 
-                  $ref: "#/components/schemas/named_place"
+                $ref: "#/components/schemas/community_concept" #Components need updating. For more current model see vegbank loader module. 
 
-  /vegbank/named-places:
-    get: 
-      summary: takes a list of named place accession codes and returns the named places. If no codes are provided, returns all named places. 
-      parameters:
-        - in: query
-          name: accession_codes
-          schema: 
-            type: array
-            items: 
-              type: string
-      responses: 
-        "200":
-          description: "found"
-          content: 
-            application/json:
-              schema: 
-                type: array
-                items: 
-                  $ref: "#components/schemas/named_place"
-    post: 
-      summary: upload a list of named places
-      requestBody:
-        content: 
-          application/json:
-            schema: 
-              type: array
-              items:
-                $ref: "#/components/schemas/named_place"
-      responses:
-        "200": 
-          description: "added successfully"
-          content: 
-            application/json:
-              schema:
-                description: List of accession codes for new named places
-                type: array
-                items: 
-                  type: string
-  
-  /vegbank/references/{accession_code}:
+  /community-concepts:
     get:
-      summary: takes an accession code and returns the reference associated with it.
-      parameters: 
-        - in: path
-          name: accession_code
-          schema:
-            type: string
-          required: true
-      responses: 
-        "200": 
-          description: "found"
-          content:
-            application/json:
-              schema: 
-                $ref: "#/components/schemas/reference"
-    
-  /vegbank/references:
-    get:
-      summary: takes an accession code and returns the reference associated with it. If no codes are provided, returns all references. 
+      summary: returns all community concepts in paginated format.  
+      x-status: "beta"
       parameters: 
         - in: query
-          name: accession_code
-          schema:
-            type: string
-      responses: 
-        "200": 
-          description: "found"
-          content:
-            application/json:
-              schema: 
-                $ref: "#/components/schemas/reference"
-    post: 
-      summary: takes a list of references and adds them to the database, then returns their new accession codes. 
-      requestBody:
-        content:
-          multipart/form-data:
-            schema: 
-              type: array
-              items: 
-                $ref: "#/components/schemas/reference"
-
-      responses:
-        "200": 
-          description: "completed"
-          content: 
-            application/json:
-              schema: 
-                type: array
-                items: 
-                  type: string
-                  description: accession codes for the new created records
-
-  # QUESTION: Do we need these endpoints? Community name has no accession code and is accessible through community concept. 
-  /vegbank/community-names/{accession_code}:
-    get: 
-      parameters:
-        - in: path
-          name: blank #NOTE: This table doesn't have accession codes. What should we do here? 
+          name: limit
+          x-status: "beta"
           schema: 
-            type: string
-          required: true
-      responses: 
-        "200":
-          description: "found"
-          content:
-            application/json: 
-              schema:
-                $ref: "#/components/schemas/community_name"
-
-  /vegbank/community-names:
-    get:
-      summary: takes a list of accession codes and returns the list of community names associated with them. If no codes are provided, returns all community names. 
-      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
+            type: integer
         - in: query
-          name: accession_code
-          schema:
-            type: string
-      responses: 
-        "200": 
-          description: "found"
-          content:
-            application/json:
-              schema: 
-                $ref: "#/components/schemas/community_name"
-    post: 
-      summary: takes a list of community names and adds them to the database, then returns their new accession codes. 
-      requestBody:
-        content:
-          multipart/form-data:
-            schema: 
-              type: array
-              items: 
-                $ref: "#/components/schemas/community_name"
-
-      responses:
-        "200": 
-          description: "completed"
-          content: 
-            application/json:
-              schema: 
-                type: array
-                items: 
-                  type: string
-                  description: accession codes for the new created records
- 
-  /vegbank/community-concepts/{accession_code}:
-    get: 
-      parameters:
-        - in: path
-          name: blank 
+          name: offset
+          x-status: "beta"
           schema: 
-            type: string
-          required: true
-      responses: 
-        "200":
-          description: "found"
-          content:
-            application/json: 
-              schema:
-                $ref: "#/components/schemas/community_concept"
-
-  /vegbank/community-concepts:
-    get:
-      summary: takes a list of accession codes and returns the list of community concepts associated with them. If no codes are provided, returns all community concepts. 
-      parameters: 
+            type: integer
         - in: query
-          name: accession_code
+          name: detail
+          x-status: "planned"
           schema:
             type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default.
       responses: 
         "200": 
           description: "found"
@@ -315,13 +192,14 @@ paths:
                 $ref: "#/components/schemas/community_concept"
     post: 
       summary: takes a list of community concepts and adds them to the database, then returns their new accession codes. 
+      x-status: "planned"
       requestBody:
         content:
           multipart/form-data:
             schema: 
               type: array
               items: 
-                $ref: "#/components/schemas/community_concept"
+                $ref: "#/components/schemas/community_concept" #Components need updating. For more current model see vegbank loader module. 
 
       responses:
         "200": 
@@ -334,9 +212,124 @@ paths:
                   type: string
                   description: accession codes for the new created records
  
-  /vegbank/plant-concepts/{accession_code}:
+  /taxon-observations/{accession_code}:
+    get:
+      summary: returns a specific taxon observation via its (taxon observation) accession code. Currently hitting the view for taxa by cover percentage. 
+      x-status: "beta"
+      parameters: 
+        - in: path
+          name: accession_code
+          x-status: "beta"
+          schema: 
+            type: string
+          required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet. 
+      responses: 
+        "200":
+          description: "found"
+          content:
+            application/json: 
+              schema:
+                $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
+  
+  /taxon-observations:
+    get: 
+      summary: returns all taxa in paginated format. 
+      x-status: "beta"
+      parameters: 
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema: 
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+        - in: query
+          name: numTaxa
+          x-status: "beta"
+          schema: 
+            type: integer
+          description: How many topTaxa to return per observation, ordered by max cover. Default is 5.    
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/taxon" #Components need updating. For more current model see vegbank loader module. 
+
+  /parties/{accession_code}:
+    get:
+      summary: returns a specific party via its accession code
+      x-status: "beta"
+      parameters: 
+        - in: path
+          name: accession_code
+          x-status: "beta"
+          schema: 
+            type: string
+          required: true
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+      responses:
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
+
+  /parties:
+    get: 
+      summary: returns all parties in paginated format. 
+      x-status: "beta"
+      parameters: 
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: detail
+          x-status: "planned"
+          schema:
+            type: string
+          description: How much detail to return. Options are "full" or "minimal" and full is default. This param isn't implemented yet.   
+      responses:
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/party" #Components need updating. For more current model see vegbank loader module.
+
+  /plant-concepts/{accession_code}:
     get:
       summary: returns a specific plant-concept via its accession code
+      x-status: "planned"
       parameters:
         - in: path
           name: accession_code
@@ -351,9 +344,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/plant_concept"
 
-  /vegbank/plant-concepts:
+  /plant-concepts:
     get:
       summary: takes a list of accession codes and returns the list of plant concepts associated with them. If no codes are provided, returns all plant concepts. 
+      x-status: "planned"
       parameters: 
         - in: query
           name: accession_code
@@ -387,63 +381,10 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  # QUESTION: Do we need these endpoints? plant name has no accession code and is accessible through plant concept. 
-  /vegbank/plant-names/{accession_code}:
-    get:
-      summary: returns a specific plant name via its accession code
-      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
-        - in: path
-          name: accession_code
-          schema: 
-            type: string
-          required: true
-      responses: 
-        "200":
-          description: "found"
-          content:
-            application/json: 
-              schema:
-                $ref: "#/components/schemas/plant_name"
-
-  /vegbank/plant-names:
-    get:
-      summary: takes a list of accession codes and returns the list of plant names associated with them. If no codes are provided, returns all plant names. 
-      parameters: #NOTE: This table doesn't have accession codes. What should we do here? 
-        - in: query
-          name: accession_code
-          schema:
-            type: string
-      responses: 
-        "200": 
-          description: "found"
-          content:
-            application/json:
-              schema: 
-                $ref: "#/components/schemas/plant_name"
-    post: 
-      summary: takes a list of plant names and adds them to the database, then returns their new accession codes. 
-      requestBody:
-        content:
-          multipart/form-data:
-            schema: 
-              type: array
-              items: 
-                $ref: "#/components/schemas/plant_concept"
-
-      responses:
-        "200": 
-          description: "completed"
-          content: 
-            application/json:
-              schema: 
-                type: array
-                items: 
-                  type: string
-                  description: accession codes for the new created records
-
-  /vegbank/stratum-methods/{accession_code}:
+  /stratum-methods/{accession_code}:
     get:
       summary: returns a specific stratum method via its accession code
+      x-status: "planned"
       parameters:
         - in: path
           name: accession_code
@@ -458,9 +399,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/plant_name"
 
-  /vegbank/stratum-methods:
+  /stratum-methods:
     get:
       summary: takes a list of accession codes and returns the list of stratum methods associated with them. If no codes are provided, returns all stratum methods. 
+      x-status: "planned"
       parameters:
         - in: query
           name: accession_code
@@ -494,9 +436,10 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/cover-methods/{accession_code}:
+  /cover-methods/{accession_code}:
     get:
       summary: returns a specific cover method via its accession code
+      x-status: "planned"
       parameters: 
         - in: path
           name: accession_code
@@ -511,9 +454,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/cover_method"
 
-  /vegbank/cover-methods:
+  /cover-methods:
     get:
       summary: takes a list of accession codes and returns the list of cover methods associated with them. If no codes are provided, returns all cover methods. 
+      x-status: "planned"
       parameters: 
         - in: query
           name: accession_code
@@ -547,9 +491,10 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
-  /vegbank/projects/{accession_code}:
+  /projects/{accession_code}:
     get:
       summary: returns a specific project via its accession code
+      x-status: "beta"
       parameters: 
         - in: path
           name: accession_code
@@ -564,14 +509,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/project"
 
-  /vegbank/projects:
+  /projects:
     get:
       summary: takes a list of accession codes and returns the list of projects associated with them. If no codes are provided, returns all projects. 
+      x-status: "beta"
       parameters: 
         - in: query
           name: accession_code
           schema:
             type: string
+        - in: query
+          name: limit
+          x-status: "beta"
+          schema: 
+            type: integer
+        - in: query
+          name: offset
+          x-status: "beta"
+          schema: 
+            type: integer
       responses: 
         "200": 
           description: "found"
@@ -600,9 +556,61 @@ paths:
                   type: string
                   description: accession codes for the new created records
 
- 
+  /references/{accession_code}:
+    get:
+      summary: takes an accession code and returns the reference associated with it.
+      x-status: "planned"
+      parameters: 
+        - in: path
+          name: accession_code
+          schema:
+            type: string
+          required: true
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
     
-      
+  /references:
+    get:
+      summary: takes an accession code and returns the reference associated with it. If no codes are provided, returns all references. 
+      x-status: "planned"
+      parameters: 
+        - in: query
+          name: accession_code
+          schema:
+            type: string
+      responses: 
+        "200": 
+          description: "found"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/reference"
+    post: 
+      summary: takes a list of references and adds them to the database, then returns their new accession codes. 
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: 
+              type: array
+              items: 
+                $ref: "#/components/schemas/reference"
+
+      responses:
+        "200": 
+          description: "completed"
+          content: 
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: accession codes for the new created records
+        
 components:
   schemas:
   

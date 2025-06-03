@@ -1,0 +1,51 @@
+SELECT
+    authorPlotCode,
+    plot.plot_id,
+    reference_ID,
+    parent_ID,
+    locationAccuracy,
+    confidentialityStatus,
+    confidentialityReason,
+    latitude,
+    longitude,
+    authorE,
+    authorN,
+    authorZone,
+    authorDatum,
+    authorLocation,
+    locationNarrative,
+    azimuth,
+    dsgpoly,
+    shape,
+    area,
+    standSize,
+    placementMethod,
+    permanence,
+    layoutNarrative,
+    elevation,
+    elevationAccuracy,
+    elevationRange,
+    slopeAspect,
+    minSlopeAspect,
+    maxSlopeAspect,
+    slopeGradient,
+    minSlopeGradient,
+    maxSlopeGradient,
+    topoPosition,
+    landform,
+    surficialDeposits,
+    rockType,
+    plot.country,
+    plot.stateprovince,
+    plot.accessionCode AS plotAccessionCode,
+    plot.notesPublic AS plotNotesPublic,
+    plot.notesMgt,
+    plot.revisions,
+    observation.*
+FROM
+    plot join observation on plot.plot_id = observation.plot_id
+WHERE plot.confidentialityStatus < 4
+AND observation.accessionCode is not null  
+ORDER BY observation.observation_ID ASC
+LIMIT %s
+OFFSET %s;
