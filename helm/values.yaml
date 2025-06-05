@@ -50,7 +50,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: api.vegbank.org
+    - host: api-dev.vegbank.org
       paths:
         - path: /
           pathType: Prefix
@@ -59,7 +59,10 @@ ingress:
               name: vegbank-postgresql 
               port:
                 number: 80
-  tls: []
+  tls: 
+    - hosts: 
+        - api-dev.vegbank.org
+      secretName: ingress-nginx-tls-cert
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
