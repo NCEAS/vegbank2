@@ -1,12 +1,15 @@
-# Default values for mychart.
+# Default values for VegBank.
 # This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
 replicaCount: 1
 
+# @section image - configuration for the docker image of the Flask API. 
 image:
+  # @param repository - github remote image repository address for the VegBank Docker Image
   repository: ghcr.io/nceas/vegbank
-  pullPolicy: ifNotPresent
+  # @param pullPolicy - How often should the image be pulled from the repository?
+  # Set to Always for local development, IfNotPresent for production. 
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
@@ -39,29 +42,33 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-service:
+# @section service - port and type for the service being used by the API
+service: 
   type: ClusterIP
   port: 80
 
-ingress:
+# @section ingress - configuration for the ingress, including certifications and host name
+ingress: 
   enabled: true
   className: nginx
+  # annotations for the ingress
   annotations: 
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  # @param cert-manager.io/cluster-issuer - issuer for TLS certifications on the DEV cluster. Currently the same for DEV and PRD. 
+    cert-manager.io/cluster-issuer: "letsencrypt-prod" 
+  # @section hosts - host name information for the ingress. 
   hosts:
+    # @param host - the host name for the ingress. Must be changed between DEV and PRD environments. 
     - host: api-dev.vegbank.org
+    # @param paths - the path at the hostname to route to the API service.
       paths:
         - path: /
-          pathType: Prefix       
+          pathType: Prefix 
+  # @section tls - host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
   tls: 
     - hosts: 
-        - api-dev.vegbank.org
-      secretName: ingress-nginx-tls-cert
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+        - api-dev.vegbank.org 
+      secretName: ingress-nginx-tls-cert 
+
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -110,21 +117,22 @@ tolerations: []
 
 affinity: {}
 
+# @section postgresql - configuration for the PostgreSQL database used by VegBank.
 postgresql:
   enabled: true
   primary:
     resourcesPreset: "small"
     resources: {}
-    #borrowed this from metacat to get started, might need some further updating when we get to API time. 
     pgHbaConfiguration: |
       host        vegbank       vegbank       0.0.0.0/0       password
       host        vegbank       vegbank       ::0/0           password
       local       all           all                           trust
       host        all           all           127.0.0.1/32    trust
+    # @section persistence - size of the storage space available for the database. 
+    # As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
     persistence:
       enabled: true
       storageClass: csi-cephfs-sc
-      size: 100Gi
+      size: 100Gi 
       accessModes: 
         - ReadWriteMany
-        
