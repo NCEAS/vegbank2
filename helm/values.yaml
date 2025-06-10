@@ -3,14 +3,14 @@
 
 replicaCount: 1
 
-# @section image - configuration for the docker image of the Flask API. 
+## @section image - configuration for the docker image of the Flask API. 
 image:
-  # @param repository - github remote image repository address for the VegBank Docker Image
+  ## @param repository - github remote image repository address for the VegBank Docker Image
   repository: ghcr.io/nceas/vegbank
-  # @param pullPolicy - How often should the image be pulled from the repository?
-  # Set to Always for local development, IfNotPresent for production. 
+  ## @param pullPolicy - How often should the image be pulled from the repository?
+  ## Set to Always for local development, IfNotPresent for production. 
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
+  ## Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
 imagePullSecrets: []
@@ -42,28 +42,27 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# @section service - port and type for the service being used by the API
+## @section service - port and type for the service being used by the API
 service: 
   type: ClusterIP
   port: 80
 
-# @section ingress - configuration for the ingress, including certifications and host name
+## @section ingress - configuration for the ingress, including certifications and host name
 ingress: 
   enabled: true
   className: nginx
-  # annotations for the ingress
   annotations: 
-  # @param cert-manager.io/cluster-issuer - issuer for TLS certifications on the DEV cluster. Currently the same for DEV and PRD. 
+  ## @param cert-manager.io/cluster-issuer - issuer for TLS certifications on the DEV cluster. Currently the same for DEV and PRD. 
     cert-manager.io/cluster-issuer: "letsencrypt-prod" 
-  # @section hosts - host name information for the ingress. 
+  ## @section hosts - host name information for the ingress. 
   hosts:
-    # @param host - the host name for the ingress. Must be changed between DEV and PRD environments. 
+    ## @param host - the host name for the ingress. Must be changed between DEV and PRD environments. 
     - host: api-dev.vegbank.org
-    # @param paths - the path at the hostname to route to the API service.
+    ## @param paths - the path at the hostname to route to the API service.
       paths:
         - path: /
           pathType: Prefix 
-  # @section tls - host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
+  ## @section tls - host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
   tls: 
     - hosts: 
         - api-dev.vegbank.org 
@@ -117,7 +116,7 @@ tolerations: []
 
 affinity: {}
 
-# @section postgresql - configuration for the PostgreSQL database used by VegBank.
+## @section postgresql - configuration for the PostgreSQL database used by VegBank.
 postgresql:
   enabled: true
   primary:
@@ -128,8 +127,8 @@ postgresql:
       host        vegbank       vegbank       ::0/0           password
       local       all           all                           trust
       host        all           all           127.0.0.1/32    trust
-    # @section persistence - size of the storage space available for the database. 
-    # As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
+    ## @section persistence - size of the storage space available for the database. 
+    ## As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
     persistence:
       enabled: true
       storageClass: csi-cephfs-sc
