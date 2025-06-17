@@ -1,40 +1,50 @@
 # Default values for VegBank.
 # This is a YAML-formatted file.
 
+## @param replicaCount  The number of API pods to be created when the chart is installed. 
 replicaCount: 1
 
 ## @section Image 
 ## configuration for the docker image of the Flask API. 
 image:
-  ## @param repository - github remote image repository address for the VegBank Docker Image
+  ## @param image.repository - github remote image repository address for the VegBank Docker Image
   repository: ghcr.io/nceas/vegbank
-  ## @param pullPolicy - How often should the image be pulled from the repository?
+  ## @param image.pullPolicy - How often should the image be pulled from the repository?
   ## Set to Always for local development, IfNotPresent for production. 
   pullPolicy: IfNotPresent
   ## Overrides the image tag whose default is the chart appVersion.
+  ## @param image.tag - The tag of the image to use.
   tag: ""
 
+## @param imagePullSecrets
 imagePullSecrets: []
+## @param nameOverride
 nameOverride: ""
+## @param fullnameOverride
 fullnameOverride: ""
 
+## @section serviceAccount
 serviceAccount:
-  # Specifies whether a service account should be created
+  ## @param serviceAccount.create Specifies whether a service account should be created
   create: true
-  # Automatically mount a ServiceAccount's API credentials?
+  ## @param serviceAccount.automount Automatically mount a ServiceAccount's API credentials?
   automount: true
-  # Annotations to add to the service account
+  ## @param serviceAccount.annotations Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
+  ## @param serviceAccount.name The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+## @param podAnnotations currently unused
 podAnnotations: {}
+## @param podLabels
 podLabels: {}
 
+## @param podSecurityContext
 podSecurityContext: {}
   # fsGroup: 2000
 
+## @param securityContext
 securityContext: {}
   # capabilities:
   #   drop:
@@ -47,35 +57,43 @@ securityContext: {}
 ## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
 ## as the ingress automatically pulls the default named service for the pod via release name. 
 service: 
+  ## @param service.type - The type of service to create.
   type: ClusterIP
+  ## @param service.port - The port on which the service will be exposed.
   port: 80
 
-## @section Ingress
+## @section ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
+  ## @param ingress.enabled - Should the ingress be enabled?
   enabled: true
+  ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
+  ## @section ingress.annotations - Annotations to add to the ingress resource.
   annotations: 
-  ## @param cert-manager.io/cluster-issuer - issuer for TLS certifications on the DEV cluster. Currently the same for DEV and PRD. 
+    ## @param ingress.annotations.cert-manager.io/cluster-issuer
     cert-manager.io/cluster-issuer: "letsencrypt-prod" 
-  ## @section Hosts
-  ## Host name information for the ingress. 
+  ## @section ingress.hosts Host name information for the ingress. 
   hosts:
-    ## @param host - the host name for the ingress. Must be changed between DEV and PRD environments. 
+    ## @param ingress.hosts[0].host - The host names for the ingress.
     - host: api-dev.vegbank.org
-    ## @param paths - the path at the hostname to route to the API service.
+      ## @section ingress.hosts[0].paths - The paths for the ingress.
       paths:
+        ## @param ingress.hosts[0].paths[0].path - The path for the ingress.
         - path: /
+        ## @param ingress.hosts[0].paths[0].pathType - The type of path matching to use.
           pathType: Prefix 
   ## @section tls 
   ## Host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
   tls: 
+      ## @param ingress.tls[0].hosts - The host names for the TLS certification.
     - hosts: 
         - api-dev.vegbank.org 
+      ## @param ingress.tls[0].secretName - The name of the secret containing the TLS certificate.
       secretName: ingress-nginx-tls-cert 
 
-
+## @param resources
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -88,48 +106,70 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+## @section livenessProbe
 livenessProbe:
+  ## @section livenessProbe.httpGet
   httpGet:
+    ## @param livenessProbe.httpGet.path - The path to use for the liveness probe.
     path: /
-    port: 80
-readinessProbe:
-  httpGet:
-    path: /
+    ## @param livenessProbe.httpGet.port - The port to use for the liveness probe.
     port: 80
 
+## @section readinessProbe
+readinessProbe:
+  ## @section readinessProbe.httpGet
+  httpGet:
+    ## @param readinessProbe.httpGet.path - The path to use for the readiness probe.
+    path: /
+    ## @param readinessProbe.httpGet.port - The port to use for the readiness probe.
+    port: 80
+
+## @section autoscaling
 autoscaling:
+  ## @param autoscaling.enabled
   enabled: false
+  ## @param autoscaling.minReplicas
   minReplicas: 1
+  ## @param autoscaling.maxReplicas
   maxReplicas: 100
+  ## @param autoscaling.targetCPUUtilizationPercentage
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# Additional volumes on the output Deployment definition.
+## @param volumes Additional volumes on the output Deployment definition.
 volumes: []
 # - name: foo
 #   secret:
 #     secretName: mysecret
 #     optional: false
 
-# Additional volumeMounts on the output Deployment definition.
+## @param volumeMounts Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+## @param nodeSelector
 nodeSelector: {}
 
+## @param tolerations
 tolerations: []
 
+## @param affinity
 affinity: {}
 
 ## @section PostgreSQL
 ## configuration for the PostgreSQL database used by VegBank.
 postgresql:
+  ## @param postgresql.enabled - Should the PostgreSQL database be enabled?
   enabled: true
+  ## @section postgresql.primary
   primary:
+    ## @param postgresql.primary.resourcesPreset A preset of resources to use for the PostgreSQL pod defined in the bitnami chart.
     resourcesPreset: "small"
+    ## @param postgresql.primary.resources Space for manually defining resources. If used, remove resourcesPreset.
     resources: {}
+    ## @param postgresql.primary.pgHbaConfiguration How can users access the postgresql database?
     pgHbaConfiguration: |
       host        vegbank       vegbank       0.0.0.0/0       password
       host        vegbank       vegbank       ::0/0           password
@@ -139,8 +179,12 @@ postgresql:
     ## Size of the storage space available for the database. 
     ## As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
     persistence:
+      ## @param postgresql.primary.persistence.enabled - Should persistence be enabled for the PostgreSQL database?
       enabled: true
+      ## @param postgresql.primary.persistence.storageClass - The storage class to use for the PostgreSQL database.
       storageClass: csi-cephfs-sc
+      ## @param postgresql.primary.persistence.size - The size of the storage space available for the PostgreSQL database.
       size: 100Gi 
+      ## @param postgresql.primary.persistence.accessModes - The access modes for the PostgreSQL database storage.
       accessModes: 
         - ReadWriteMany
