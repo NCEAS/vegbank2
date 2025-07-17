@@ -14,7 +14,7 @@ image:
   pullPolicy: IfNotPresent
   ## Overrides the image tag whose default is the chart appVersion.
   ## @param image.tag - The tag of the image to use.
-  tag: "vegbank:0.2.0"
+  tag: "vegbank:0.0.2"
 
 ## @param imagePullSecrets
 imagePullSecrets: []
