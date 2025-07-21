@@ -3,7 +3,6 @@ import psycopg
 from psycopg import connect, ClientCursor
 from psycopg.rows import dict_row
 import pandas as pd
-import pyarrow 
 import io
 import time
 import config
@@ -27,7 +26,16 @@ def welcome_page():
 
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
-def get_plot_observations(accession_code):
+def plot_observations(accession_code):
+    if request.method == 'POST':
+        return jsonify_error_message("POST method is not supported for plot observations."), 405
+    elif request.method == 'GET':
+        return get_plot_observations(accession_code, request)
+    else: 
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+def get_plot_observations(accession_code, request):
+    create_parquet = request.args.get("create_parquet", "false").lower() == "true"
     detail = request.args.get("detail", default_detail)
     if detail not in ("minimal", "full"):
         return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
@@ -53,7 +61,15 @@ def get_plot_observations(accession_code):
                 sql = file.read()
     
     to_return = {}
-    with psycopg.connect(**params, row_factory=dict_row) as conn:
+    with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+        if(create_parquet is False):
+            conn.row_factory=dict_row
+        else:
+            print("about to make plotobs parquet file")
+            df_parquet = convert_to_parquet(sql, data, conn)
+            print(df_parquet)
+            conn.close()
+            return send_file(io.BytesIO(df_parquet), mimetype='application/octet-stream', as_attachment=True, download_name='plot_observations.parquet')
         with conn.cursor() as cur:
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
@@ -65,6 +81,9 @@ def get_plot_observations(accession_code):
                 to_return["count"] = len(to_return["data"])
         conn.close()   
     return jsonify(to_return)
+
+def upload_plot_observations():
+    return jsonify_error_message("POST method is not supported for plot observations."), 405
 
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accession_code>")
@@ -193,7 +212,13 @@ def get_community_concepts(accession_code):
 
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accession_code>")
-def get_parties(accession_code):
+def parties(accession_code):
+    if request.method == 'POST':
+        return jsonify_error_message("POST method is not supported for parties."), 405
+    elif request.method == 'GET':
+        return get_parties(accession_code, request)
+
+def get_parties(accession_code, request):
     detail = request.args.get("detail", default_detail)
     if detail not in ("full"):
         return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
@@ -230,9 +255,21 @@ def get_parties(accession_code):
         conn.close()    
     return jsonify(to_return)
 
+def upload_parties(request):
+    return jsonify_error_message("POST method is not supported for parties."), 405
+
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<accession_code>")
-def get_projects(accession_code):
+def projects(accession_code):
+   if request.method == 'POST':
+        return upload_project(request) 
+   elif request.method == 'GET':
+        return get_projects(accession_code, request)
+   else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+def get_projects(accession_code, request):
+    create_parquet = request.args.get("create_parquet", "false").lower() == "true"
     detail = request.args.get("detail", default_detail)
     if detail not in ("full"):
         return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
@@ -254,9 +291,14 @@ def get_projects(accession_code):
         with open(QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r") as file:
             sql = file.read()
         data = (accession_code, )
-
     to_return = {}
-    with psycopg.connect(**params, row_factory=dict_row) as conn:
+    with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+        if(create_parquet is False):
+            conn.row_factory=dict_row
+        else:
+            df_parquet = convert_to_parquet(sql, data, conn)
+            conn.close()
+            return send_file(io.BytesIO(df_parquet), mimetype='application/octet-stream', as_attachment=True, download_name='projects.parquet')
         with conn.cursor() as cur:
             cur.execute(sql, data)
             to_return["data"] = cur.fetchall()
@@ -268,6 +310,55 @@ def get_projects(accession_code):
                 to_return["count"] = len(to_return["data"])
         conn.close()    
     return jsonify(to_return)
+
+def upload_project(request):
+    
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    to_return = {}
+    try:
+        df = pd.read_parquet(file)
+        print(f"DataFrame loaded with {len(df)} records.")
+
+        df.drop(columns=['project_id', 'projectaccessioncode', 'obscount', 'lastplotaddeddate'], inplace=True)
+        df.replace({pd.NaT: None}, inplace=True)
+        inputs = list(df.itertuples(index=False, name=None))
+
+        with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+            
+            with conn.cursor() as cur:
+                with conn.transaction():
+                    
+                    with open(QUERIES_FOLDER + "/project/create_project_temp_table.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    with open(QUERIES_FOLDER + "/project/insert_projects_to_temp_table.sql", "r") as file:
+                        sql = file.read()
+                    cur.executemany(sql, inputs)
+                    with open(QUERIES_FOLDER + "/project/insert_projects_from_temp_table_to_permanent.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql)
+                    flattened_list = [item for sublist in cur.fetchall() for item in sublist]
+                    flattened_tuple = tuple(flattened_list)
+                    print(flattened_tuple)
+                    print("about to run create accession code")
+                    with open(QUERIES_FOLDER + "/create_accession_code.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql, (flattened_list, ))
+                    to_return["data"] = {'accession_code': cur.fetchall()}
+                    to_return["count"] = len(to_return["data"]["accession_code"])
+        conn.close()      
+
+        return jsonify(to_return)
+        #return jsonify({"message": "File uploaded successfully.", "num_records": len(df)}), 200
+    except Exception as e:
+        return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
 
 #Shiny App Endpoints - These will be retired, leaving them here just until we're done testing. 
 @app.route("/get_map_points")
@@ -353,6 +444,50 @@ def get_observation_details(accession_code):
         conn.close()      
     return jsonify(to_return)
 
+#Upload Endpoints
+
+@app.route("/upload_parquet", methods=['POST'])
+def upload_parquet():
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+    
+    try:
+        df = pd.read_parquet(file)
+        print(f"DataFrame loaded with {len(df)} records.")
+        # Here you would typically save the DataFrame to a database or process it further.
+        return jsonify({"message": "File uploaded successfully.", "num_records": len(df)}), 200
+    except Exception as e:
+        return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+
+@app.route("/upload_parquet_multiple", methods=['POST'])
+def upload_parquet_multiple():
+    if 'files[]' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    
+    files = request.files.getlist('files[]')
+    response = {}
+    for file in files:
+        if file.filename == '':
+            return jsonify_error_message("No selected file."), 400
+        if not allowed_file(file.filename):
+            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+        
+        try:
+            df = pd.read_parquet(file)
+            print(f"DataFrame loaded with {len(df)} records.")
+            # Here you would typically save the DataFrame to a database or process it further.
+            response[file.filename] = {"message": "File uploaded successfully.", "num_records": len(df)}
+        except Exception as e:
+            response[file.filename] = {"error": f"An error occurred while processing the file: {str(e)}"}
+    return jsonify(response), 200
+
+
+
 #Utilities
 def convert_to_parquet(query, data, conn):
     dataframe = None
@@ -374,4 +509,4 @@ def jsonify_error_message(message):
         }
     })
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=80,debug=True)
+    app.run(host='0.0.0.0',port=81,debug=True)

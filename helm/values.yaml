@@ -11,10 +11,9 @@ image:
   repository: ghcr.io/nceas/vegbank
   ## @param image.pullPolicy - How often should the image be pulled from the repository?
   ## Set to Always for local development, IfNotPresent for production. 
-  pullPolicy: IfNotPresent
   ## Overrides the image tag whose default is the chart appVersion.
   ## @param image.tag - The tag of the image to use.
-  tag: "vegbank:0.0.2"
+  tag: 0.0.3
 
 ## @param imagePullSecrets
 imagePullSecrets: []
@@ -67,7 +66,6 @@ service:
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
   ## @param ingress.enabled - Should the ingress be enabled?
-  enabled: true
   ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
   ## @section ingress.annotations - Annotations to add to the ingress resource.
