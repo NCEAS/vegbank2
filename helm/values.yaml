@@ -163,6 +163,18 @@ affinity: {}
 postgresql:
   ## @param postgresql.enabled - Should the PostgreSQL database be enabled?
   enabled: true
+  ## Bitnamy legacy image override
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/os-shell
+  metrics:
+    image:
+      repository: bitnamilegacy/postgres-exporter
   ## @section postgresql.primary
   primary:
     ## @param postgresql.primary.resourcesPreset A preset of resources to use for the PostgreSQL pod defined in the bitnami chart.
