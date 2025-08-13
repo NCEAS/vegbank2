@@ -16,6 +16,15 @@ image:
   ## @param image.tag - The tag of the image to use.
   tag: 0.0.2
 
+flyway:
+  image:
+    repository: flyway/flyway
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "10.17.0"
+  configpath: /opt/local/flyway/flyway.conf
+  dbpath: /opt/local/flyway/db
+
 ## @param imagePullSecrets
 imagePullSecrets: []
 ## @param nameOverride
