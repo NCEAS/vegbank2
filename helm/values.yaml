@@ -20,10 +20,17 @@ flyway:
   image:
     repository: flyway/flyway
     pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
+    ## Overrides the image tag whose default is the chart appVersion.
     tag: "10.17.0"
   configpath: /opt/local/flyway/flyway.conf
   dbpath: /opt/local/flyway/db
+
+## TODO: SORT OUT THESE VALUES
+db:
+  host: vegbankdb-postgresql
+  port: 5432
+  name: vegbank
+  user: vegbank
 
 ## @param imagePullSecrets
 imagePullSecrets: []
