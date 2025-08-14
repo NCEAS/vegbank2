@@ -8,6 +8,9 @@ ADD /vegbank/vegbankapi.py .
 ADD /vegbank/config.py .
 ADD queries ./queries
 
+# Add flyway migration files into this image
+COPY /vegbank/src/database/migrations /opt/local/flyway/migrations
+
 RUN pip install flask
 RUN pip install psycopg
 RUN pip install pandas
