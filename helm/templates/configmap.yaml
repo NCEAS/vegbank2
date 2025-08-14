@@ -14,4 +14,4 @@ data:
     flyway.url=jdbc:postgresql://{{ .Values.db.host }}:{{ .Values.db.port }}/{{ .Values.db.name }}
     flyway.user={{ .Values.db.user }}
     flyway.password=${POSTGRES_PASSWORD}
-    flyway.locations=filesystem:/opt/local/flyway/migrations
+    flyway.locations=filesystem:/opt/local/flyway/db/migrations
