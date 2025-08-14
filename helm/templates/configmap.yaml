@@ -4,5 +4,14 @@ metadata:
      name: {{ .Release.Name }}-vegbank-configmap
 data:
      myvalue: "Hello World"
-     
-     
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-flyway-conf
+data:
+  flyway.conf: |
+    flyway.url=jdbc:postgresql://{{ .Values.db.host }}:{{ .Values.db.port }}/{{ .Values.db.name }}
+    flyway.user={{ .Values.db.user }}
+    flyway.password=${POSTGRES_PASSWORD}
+    flyway.locations=/filesystem:/Users/doumok/Code/vegbank2/src/database/migrations
