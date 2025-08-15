@@ -34,24 +34,6 @@ spec:
         - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
           image: busybox:1.28
           command: ['sh', '-c', "until nslookup vegbankdb-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for postgres; sleep 2; done"]
-        - name: {{ .Chart.Name }}-init-flyway # Run the flyway database migration
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
-          command: ['sh', '-c', 'cat {{ .Values.flyway.configpath }}; ls {{ .Values.flyway.dbpath }}/migrations; flyway -password=${POSTGRES_PASSWORD} -configFiles={{ .Values.flyway.configpath }} migrate']
-          imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
-          volumeMounts:
-            - name: {{ .Release.Name }}-config-volume
-              mountPath: {{ .Values.flyway.configpath }}
-              subPath: flyway.conf
-            - name: {{ .Release.Name }}-db-files-volume
-              mountPath: {{ .Values.flyway.dbpath }}/migrations
-          env: # TODO: SORT OUT HOW TO PASS CREDENTIALS
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgres-credentials
-                key: password
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
