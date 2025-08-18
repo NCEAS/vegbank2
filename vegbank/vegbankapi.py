@@ -6,7 +6,7 @@ import pandas as pd
 import pyarrow 
 import io
 import time
-import config
+import os
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
 ALLOWED_EXTENSIONS = 'parquet'
@@ -15,7 +15,12 @@ QUERIES_FOLDER = 'queries/'
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-params = config.params
+params = {}
+params['dbname'] = os.getenv('db_name')
+params['user'] = os.getenv('db_user')
+params['host'] = os.getenv('db_host')
+params['port'] = os.getenv('db_port')
+params['password'] = os.getenv('db_pass')
 
 default_detail = "full"
 default_limit = 1000

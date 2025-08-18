@@ -4,6 +4,19 @@
 ## @param replicaCount  The number of API pods to be created when the chart is installed. 
 replicaCount: 1
 
+## @section Database
+## configuration for the PostgreSQL database used by VegBank.
+database:
+  ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
+  db_name: vegbank
+  ## @param db_user - The user name for the database to be used by VegBank.
+  db_user: vegbank
+  ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
+  db_host: vegbankdb-postgresql
+  ## @param db_port - The port to connect to on the database pod. 
+  db_port: 5432
+
+
 ## @section Image 
 ## configuration for the docker image of the Flask API. 
 image:
@@ -14,7 +27,7 @@ image:
   pullPolicy: IfNotPresent
   ## Overrides the image tag whose default is the chart appVersion.
   ## @param image.tag - The tag of the image to use.
-  tag: 0.0.2
+  tag: 0.0.3
 
 ## @param imagePullSecrets
 imagePullSecrets: []
@@ -67,7 +80,7 @@ service:
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
   ## @param ingress.enabled - Should the ingress be enabled?
-  enabled: true
+  enabled: false
   ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
   ## @section ingress.annotations - Annotations to add to the ingress resource.
