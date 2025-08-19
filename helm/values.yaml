@@ -9,8 +9,6 @@ replicaCount: 1
 database:
   ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
   name: vegbank
-  ## @param db_user - The user name for the database to be used by VegBank.
-  user: vegbank
   ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
   host: vegbankdb-postgresql
   ## @param db_port - The port to connect to on the database pod. 
