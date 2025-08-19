@@ -16,11 +16,11 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 params = {}
-params['dbname'] = os.getenv('db_name')
-params['user'] = os.getenv('db_user')
-params['host'] = os.getenv('db_host')
-params['port'] = os.getenv('db_port')
-params['password'] = os.getenv('db_pass')
+params['dbname'] = os.getenv('VB_DB_NAME')
+params['user'] = os.getenv('VB_DB_USER')
+params['host'] = os.getenv('VB_DB_HOST')
+params['port'] = os.getenv('VB_DB_PORT')
+params['password'] = os.getenv('VB_DB_PASS')
 
 default_detail = "full"
 default_limit = 1000
