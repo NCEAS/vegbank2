@@ -14,6 +14,10 @@ database:
   ## @param db_port - The port to connect to on the database pod. 
   port: 5432
 
+databaseRestore:
+  enabled: false
+  target: "1.6"
+
 flyway:
   image:
     repository: flyway/flyway
