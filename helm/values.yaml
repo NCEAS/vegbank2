@@ -14,6 +14,14 @@ database:
   ## @param db_port - The port to connect to on the database pod. 
   port: 5432
 
+flyway:
+  image:
+    repository: flyway/flyway
+    pullPolicy: IfNotPresent
+    ## Overrides the image tag whose default is the chart appVersion.
+    tag: "10.17.0"
+  configpath: /opt/local/flyway/flyway.conf
+  dbpath: /opt/local/flyway/db
 
 ## @section Image 
 ## configuration for the docker image of the Flask API. 
