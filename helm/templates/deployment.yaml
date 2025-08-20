@@ -47,7 +47,13 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
-          command: ['sh', '-c', 'cat {{ .Values.flyway.configpath }}; ls {{ .Values.flyway.dbpath }}/migrations; flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} migrate']
+          command:
+            - sh
+            - -c
+            - >
+              cat {{ .Values.flyway.configpath }} &&
+              ls {{ .Values.flyway.dbpath }}/migrations &&
+              flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} migrate
           imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
           volumeMounts:
             - name: {{ .Release.Name }}-config-volume
