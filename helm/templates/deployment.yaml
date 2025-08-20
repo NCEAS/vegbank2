@@ -23,6 +23,15 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      volumes:
+      - name: {{ .Release.Name }}-config-volume
+        configMap:
+          name: {{ .Release.Name }}-flyway-conf
+          defaultMode: 0644
+      - name: {{ .Release.Name }}-db-files-volume
+        configMap:
+          name: {{ .Release.Name }}-db-files
+          defaultMode: 0644
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -34,6 +43,29 @@ spec:
         - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
           image: busybox:1.28
           command: ['sh', '-c', "until nslookup vegbankdb-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for postgres; sleep 2; done"]
+        - name: {{ .Chart.Name }}-init-flyway # Run the flyway database migration
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
+          command: ['sh', '-c', 'cat {{ .Values.flyway.configpath }}; ls {{ .Values.flyway.dbpath }}/migrations; flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} migrate']
+          imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ .Release.Name }}-config-volume
+              mountPath: {{ .Values.flyway.configpath }}
+              subPath: flyway.conf
+            - name: {{ .Release.Name }}-db-files-volume
+              mountPath: {{ .Values.flyway.dbpath }}/migrations
+          env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
