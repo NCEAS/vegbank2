@@ -16,7 +16,6 @@ data:
     flyway.password=${VB_DB_PASS}
     flyway.locations=filesystem:/opt/local/flyway/db/migrations
 ---
-# TODO: Review Mounting Details
 apiVersion: v1
 kind: ConfigMap
 metadata:
