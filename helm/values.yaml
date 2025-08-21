@@ -16,7 +16,8 @@ database:
 
 databaseRestore:
   enabled: false
-  target: "1.6"
+  pvc: "name-of-pvc"
+  filepath: "path-to-file"
 
 flyway:
   image:
