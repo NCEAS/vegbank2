@@ -16,8 +16,8 @@ database:
 
 databaseRestore:
   enabled: false
-  pvc: "name-of-pvc"
-  filepath: "path-to-file"
+  pvc: "vegbankdb-init-pgdata"
+  filepath: "vegbank_dataonly_20240814.sql"
 
 flyway:
   image:
