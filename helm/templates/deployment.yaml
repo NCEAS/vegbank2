@@ -68,6 +68,9 @@ spec:
               subPath: flyway.conf
             - name: {{ .Release.Name }}-db-files-volume
               mountPath: {{ .Values.flyway.dbpath }}/migrations
+              # Mount the PVC, it should show the directory that's been mounted on knbvm
+            - name: {{ .Values.databaseRestore.pvc }}
+              mountPath: "/tmp/databaseRestore"
           env:
             - name: VB_DB_PASS
               valueFrom:
