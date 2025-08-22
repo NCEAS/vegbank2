@@ -54,9 +54,9 @@ spec:
             - >
               cat {{ .Values.flyway.configpath }} &&
               ls {{ .Values.flyway.dbpath }}/migrations &&
-              if [ "{{ .Values.restore.enabled }}" = "true" ]; then
-                echo "Running partial migrate to {{ .Values.restore.target }}";
-                flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} -target={{ .Values.restore.target }} migrate;
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+                echo "Running partial migrate to {{ .Values.databaseRestore.target }}";
+                flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} -target={{ .Values.databaseRestore.target }} migrate;
               else
                 echo "Running full migrate to latest";
                 flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} migrate;
