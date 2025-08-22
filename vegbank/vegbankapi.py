@@ -23,6 +23,8 @@ params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
+allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
+
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
@@ -35,7 +37,10 @@ def welcome_page():
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def plot_observations(accession_code):
     if request.method == 'POST':
-        return upload_plot_observations(request)
+        if(allow_uploads is False):
+            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        else:
+            return upload_plot_observations(request)
     elif request.method == 'GET':
         return get_plot_observations(accession_code, request)
     else: 
@@ -106,14 +111,7 @@ def upload_plot_observations(request):
     try:
         df = pd.read_parquet(file)
         print(f"Plot Observation DataFrame loaded with {len(df)} records.")
-        
-        #These casts fix some common issues with the time fields. Not sure if this is a good plan long term, but I'm leaving it in for now. 
-        df.replace({pd.NaT: None}, inplace=True)
-        df.replace({np.nan: None}, inplace=True)
-        df['obsstartdate'] = pd.to_datetime(df['obsstartdate'])
-        df['obsenddate'] = pd.to_datetime(df['obsenddate'])
-        df['dateentered'] = pd.to_datetime(df['dateentered'])
-  
+        df.columns = map(str.lower, df.columns)
         #Checking if the user submitted any unsupported columns
         additional_columns = set(df.columns) - set(plot_fields) - set(observation_fields)
         if(len(additional_columns) > 0):
@@ -121,10 +119,21 @@ def upload_plot_observations(request):
         
         #We don't require every field to be present, so we will add any missing columns with empty data.
         #If the user omits a required field, like pl_code on an observation, the insert to the temp table will fail. 
-        missing_columns = set(plot_fields) - set(df.columns)
-        for column in missing_columns:
+        missing_plot_columns = set(plot_fields) - set(df.columns)
+        for column in missing_plot_columns:
             df[column] = None  # Add missing columns with empty data
+        missing_obs_columns = set(observation_fields) - set(df.columns)
+        for column in missing_obs_columns:
+            df[column] = None
         
+         #These casts fix some common issues with the time fields. Not sure if this is a good plan long term, but I'm leaving it in for now. 
+        df.replace({pd.NaT: None}, inplace=True)
+        df.replace({np.nan: None}, inplace=True)
+        print(df.columns)
+        df['obsstartdate'] = pd.to_datetime(df['obsstartdate'])
+        df['obsenddate'] = pd.to_datetime(df['obsenddate'])
+        df['dateentered'] = pd.to_datetime(df['dateentered'])
+
         pl_input_df = df[plot_fields]
         pl_input_no_duplicates = pl_input_df.drop_duplicates() # We need to remove duplicates because there may be multiple observations for the same plot, and we only want to insert each plot once.
         pl_code_duplicates = pl_input_no_duplicates[pl_input_no_duplicates.duplicated(subset=['pl_code'])] 
@@ -174,18 +183,18 @@ def upload_plot_observations(request):
                         sql = file.read()
                     cur.execute(sql)
                     inserted_plots = cur.fetchall()
-                    inserted_plots_df = pd.DataFrame(inserted_plots)
-                    inserted_plots_df = inserted_plots_df[['authorplotcode', 'pl_code']]
-                    
-                    vb_pl_codes_df = pd.DataFrame(pl_input_no_duplicates[['pl_code', 'authorplotcode']])
-                    vb_pl_codes_df.rename(columns={'pl_code': 'user_pl_code'}, inplace=True)
-                    pl_codes_joined_df = pd.merge(vb_pl_codes_df, inserted_plots_df, how='left', on='authorplotcode')
 
-                    user_pl_code_to_vb_pl_code = {}
-                    for index, record in pl_codes_joined_df.iterrows():
-                        user_pl_code_to_vb_pl_code[record['user_pl_code']] = record['pl_code']
+                    if(len(inserted_plots) > 0): #This conditional provides for the case where no new plots were inserted, but existing plots were matched. In that case, we don't need to convert any user provided pl_codes into the new vegbank codes. 
+                        inserted_plots_df = pd.DataFrame(inserted_plots)
+                        inserted_plots_df = inserted_plots_df[['authorplotcode', 'pl_code']]
+                        vb_pl_codes_df = pd.DataFrame(pl_input_no_duplicates[['pl_code', 'authorplotcode']])
+                        vb_pl_codes_df.rename(columns={'pl_code': 'user_pl_code'}, inplace=True)
+                        pl_codes_joined_df = pd.merge(vb_pl_codes_df, inserted_plots_df, how='left', on='authorplotcode')
+                        user_pl_code_to_vb_pl_code = {}
+                        for index, record in pl_codes_joined_df.iterrows():
+                            user_pl_code_to_vb_pl_code[record['user_pl_code']] = record['pl_code']
+                        ob_input_df['pl_code'] = ob_input_df['pl_code'].map(user_pl_code_to_vb_pl_code)
 
-                    ob_input_df['pl_code'] = ob_input_df['pl_code'].map(user_pl_code_to_vb_pl_code)
                     ob_input_df.replace({pd.NaT: None}, inplace=True)
                     obs_inputs = list(ob_input_df.itertuples(index=False, name=None))
 
@@ -244,7 +253,8 @@ def upload_plot_observations(request):
                     cur.execute(sql)
                     inserted_observations = cur.fetchall()
                     print("inserted records: " + str(inserted_observations))
-
+                    if(len(inserted_observations) == 0):
+                        raise ValueError("No new observations were found in the dataset provided.")
             
                     plot_ids = []
                     observation_ids = []
@@ -267,35 +277,34 @@ def upload_plot_observations(request):
                         sql = file.read()
                     cur.execute(sql, (observation_ids, ))
                     new_ob_codes = cur.fetchall()
-
-                    pl_codes_df = pd.DataFrame(new_pl_codes)
-                    pl_input_df['authorplotcode'] = pl_input_df['authorplotcode'].astype(str)
-                    pl_codes_df['authorplotcode'] = pl_codes_df['authorplotcode'].astype(str)
-                    joined_pl_df = pd.merge(pl_codes_df, pl_input_no_duplicates, on='authorplotcode', how='left')
-
-                    ob_codes_df = pd.DataFrame(new_ob_codes)
-                    ob_input_df['authorobscode'] = ob_input_df['authorobscode'].astype(str)
-                    ob_codes_df['authorobscode'] = ob_codes_df['authorobscode'].astype(str)
-                    joined_ob_df = pd.merge(ob_codes_df, ob_input_df, on='authorobscode', how='left')
-
-                    print("----------------------------------------")
-                    print(str(joined_ob_df))
-
+                    
                     to_return_plots = []
-                    for index, record in joined_pl_df.iterrows():
-                        to_return_plots.append({
-                            "user_code": record['pl_code'], 
-                            "pl_code": record['accessioncode'],
-                            "authorplotcode": record['authorplotcode'],
-                            "action":"inserted"
-                        })
+                    if(len(new_pl_codes) > 0):
+                        pl_codes_df = pd.DataFrame(new_pl_codes)
+                        pl_input_df['authorplotcode'] = pl_input_df['authorplotcode'].astype(str)
+                        pl_codes_df['authorplotcode'] = pl_codes_df['authorplotcode'].astype(str)
+                        joined_pl_df = pd.merge(pl_codes_df, pl_input_no_duplicates, on='authorplotcode', how='left')
+                        for index, record in joined_pl_df.iterrows():
+                            to_return_plots.append({
+                                "user_code": record['pl_code'], 
+                                "pl_code": record['accessioncode'],
+                                "authorplotcode": record['authorplotcode'],
+                                "action":"inserted"
+                            })
+                    else:  
+                        joined_pl_df = pd.DataFrame()
                     for record in existing_plots:
-                        to_return_observations.append({
+                        to_return_plots.append({
                             "user_code": record["pl_code"],
                             "pl_code": record['pl_code'],
                             "authorplotcode": record['authorplotcode'],
                             "action":"matched"
                         })
+
+                    ob_codes_df = pd.DataFrame(new_ob_codes)
+                    ob_input_df['authorobscode'] = ob_input_df['authorobscode'].astype(str)
+                    ob_codes_df['authorobscode'] = ob_codes_df['authorobscode'].astype(str)
+                    joined_ob_df = pd.merge(ob_codes_df, ob_input_df, on='authorobscode', how='left')
 
                     to_return_observations = []
                     for index, record in joined_ob_df.iterrows():
@@ -510,7 +519,10 @@ def upload_parties(request):
 @app.route("/projects/<accession_code>")
 def projects(accession_code):
    if request.method == 'POST':
-        return upload_project(request) 
+        if(allow_uploads is False):
+            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        else:
+            return upload_project(request) 
    elif request.method == 'GET':
         return get_projects(accession_code, request)
    else:

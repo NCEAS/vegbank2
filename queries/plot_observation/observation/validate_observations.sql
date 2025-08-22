@@ -25,7 +25,7 @@ FROM
     observation_temp LEFT JOIN project 
 ON
     observation_temp.pj_code = 'pj.' || project.project_id
-WHERE project.project_id IS NULL;
+WHERE project.project_id IS NULL AND observation_temp.pj_code IS NOT NULL;
 
 -- validate cover method codes
 
@@ -34,7 +34,7 @@ FROM
     observation_temp LEFT JOIN covermethod 
 ON
     observation_temp.cm_code = 'cm.' || covermethod.covermethod_id
-WHERE covermethod.covermethod_id IS NULL;
+WHERE covermethod.covermethod_id IS NULL AND observation_temp.cm_code IS NOT NULL;
 
 -- validate stratum method codes
 
@@ -43,7 +43,7 @@ FROM
     observation_temp LEFT JOIN stratummethod 
 ON
     observation_temp.sm_code = 'sm.' || stratummethod.stratummethod_id
-WHERE stratummethod.stratummethod_id IS NULL;
+WHERE stratummethod.stratummethod_id IS NULL AND observation_temp.sm_code IS NOT NULL;
 
 -- validate soil taxon codes
 
@@ -52,4 +52,4 @@ FROM
     observation_temp LEFT JOIN soiltaxon 
 ON
     observation_temp.st_code = 'st.' || soiltaxon.soiltaxon_id
-WHERE soiltaxon.soiltaxon_id IS NULL;
+WHERE soiltaxon.soiltaxon_id IS NULL AND observation_temp.st_code IS NOT NULL;

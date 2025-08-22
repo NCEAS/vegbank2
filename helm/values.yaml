@@ -4,6 +4,8 @@
 ## @param replicaCount  The number of API pods to be created when the chart is installed. 
 replicaCount: 1
 
+allowUploads: false
+
 ## @section Database
 ## configuration for the PostgreSQL database used by VegBank.
 database:
