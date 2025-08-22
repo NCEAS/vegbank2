@@ -50,6 +50,23 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
+            - name: VB_DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: VB_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: VB_DB_PORT
+              value: {{ .Values.database.port | quote }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}

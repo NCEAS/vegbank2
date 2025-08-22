@@ -4,6 +4,17 @@
 ## @param replicaCount  The number of API pods to be created when the chart is installed. 
 replicaCount: 1
 
+## @section Database
+## configuration for the PostgreSQL database used by VegBank.
+database:
+  ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
+  name: vegbank
+  ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
+  host: vegbankdb-postgresql
+  ## @param db_port - The port to connect to on the database pod. 
+  port: 5432
+
+
 ## @section Image 
 ## configuration for the docker image of the Flask API. 
 image:
@@ -11,9 +22,7 @@ image:
   repository: ghcr.io/nceas/vegbank
   ## @param image.pullPolicy - How often should the image be pulled from the repository?
   ## Set to Always for local development, IfNotPresent for production. 
-  ## Overrides the image tag whose default is the chart appVersion.
-  ## @param image.tag - The tag of the image to use.
-  tag: 0.0.3
+  pullPolicy: IfNotPresent
 
 ## @param imagePullSecrets
 imagePullSecrets: []
@@ -161,6 +170,18 @@ affinity: {}
 postgresql:
   ## @param postgresql.enabled - Should the PostgreSQL database be enabled?
   enabled: true
+  ## Bitnamy legacy image override
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/os-shell
+  metrics:
+    image:
+      repository: bitnamilegacy/postgres-exporter
   ## @section postgresql.primary
   primary:
     ## @param postgresql.primary.resourcesPreset A preset of resources to use for the PostgreSQL pod defined in the bitnami chart.
