@@ -3,9 +3,12 @@ import psycopg
 from psycopg import connect, ClientCursor
 from psycopg.rows import dict_row
 import pandas as pd
+import numpy as np
 import io
 import time
 import config
+import table_defs_config
+import traceback
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
 ALLOWED_EXTENSIONS = 'parquet'
@@ -24,11 +27,11 @@ default_offset = 0
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
 
-@app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET'])
+@app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def plot_observations(accession_code):
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for plot observations."), 405
+        return upload_plot_observations(request)
     elif request.method == 'GET':
         return get_plot_observations(accession_code, request)
     else: 
@@ -82,8 +85,249 @@ def get_plot_observations(accession_code, request):
         conn.close()   
     return jsonify(to_return)
 
-def upload_plot_observations():
-    return jsonify_error_message("POST method is not supported for plot observations."), 405
+def upload_plot_observations(request):
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    plot_fields = table_defs_config.plot
+    observation_fields = table_defs_config.observation
+
+    to_return = {}
+      
+    try:
+        df = pd.read_parquet(file)
+        print(f"Plot Observation DataFrame loaded with {len(df)} records.")
+        
+        #These casts fix some common issues with the time fields. Not sure if this is a good plan long term, but I'm leaving it in for now. 
+        df.replace({pd.NaT: None}, inplace=True)
+        df.replace({np.nan: None}, inplace=True)
+        df['obsstartdate'] = pd.to_datetime(df['obsstartdate'])
+        df['obsenddate'] = pd.to_datetime(df['obsenddate'])
+        df['dateentered'] = pd.to_datetime(df['dateentered'])
+  
+        #Checking if the user submitted any unsupported columns
+        additional_columns = set(df.columns) - set(plot_fields) - set(observation_fields)
+        if(len(additional_columns) > 0):
+            return jsonify_error_message(f"Your data must only contain fields included in the plot observation schema. The following fields are not supported: {additional_columns} ")
+        
+        #We don't require every field to be present, so we will add any missing columns with empty data.
+        #If the user omits a required field, like pl_code on an observation, the insert to the temp table will fail. 
+        missing_columns = set(plot_fields) - set(df.columns)
+        for column in missing_columns:
+            df[column] = None  # Add missing columns with empty data
+        
+        pl_input_df = df[plot_fields]
+        pl_input_no_duplicates = pl_input_df.drop_duplicates() # We need to remove duplicates because there may be multiple observations for the same plot, and we only want to insert each plot once.
+        pl_code_duplicates = pl_input_no_duplicates[pl_input_no_duplicates.duplicated(subset=['pl_code'])] 
+        if(len(pl_code_duplicates) > 0):
+            return jsonify_error_message(f"Plot codes cannot be used on more than one different plot. The following codes occur more than once: {pl_code_duplicates['pl_code']}")
+        
+        print(f"Plot data loaded with {len(pl_input_no_duplicates)} records")
+
+        ob_input_df = df[observation_fields]
+
+        ob_code_duplicates = ob_input_df[ob_input_df.duplicated(subset=['ob_code'])] 
+        if(len(ob_code_duplicates) > 0):
+            return jsonify_error_message(f"Obs codes cannot be used on more than one different observation. The following codes occur more than once: {ob_code_duplicates['obs_code']}")
+        
+        print(f"Observation data loaded with {len(ob_input_df)} records")
+        pl_input_no_duplicates['submitter_surname'] = "test_surname" #This will need to be updated after authentication
+        pl_input_no_duplicates['submitter_givenname'] = "test_givenname" #This will need to be updated after authentication
+        pl_input_no_duplicates['submitter_email'] = "test@test_email.org" #This will need to be updated after authentication
+        pl_inputs = list(pl_input_no_duplicates.itertuples(index=False, name=None))
+
+        with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
+            
+            with conn.cursor() as cur:
+                with conn.transaction():
+                    
+                    #Adding Plots to temp table, validating, then inserting into permanent table
+                    with open(QUERIES_FOLDER + "/plot_observation/plot/create_plot_temp_table.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    with open(QUERIES_FOLDER + "/plot_observation/plot/insert_plots_to_temp_table.sql", "r") as file:
+                        placeholders = ', '.join(['%s'] * len(pl_input_no_duplicates.columns))
+                        sql = file.read().format(placeholders)
+
+                    cur.executemany(sql, pl_inputs)
+                    
+                    print("about to run validate plots")
+                    with open(QUERIES_FOLDER + "/plot_observation/plot/validate_plots.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    existing_plots = cur.fetchall()
+                    print("existing records: " + str(existing_plots))
+                    cur.nextset()
+                    new_references = cur.fetchall()
+                    print("new references: " + str(new_references))
+                    
+                    with open(QUERIES_FOLDER + "/plot_observation/plot/insert_plots_from_temp_table_to_permanent.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql)
+                    inserted_plots = cur.fetchall()
+                    inserted_plots_df = pd.DataFrame(inserted_plots)
+                    inserted_plots_df = inserted_plots_df[['authorplotcode', 'pl_code']]
+                    
+                    vb_pl_codes_df = pd.DataFrame(pl_input_no_duplicates[['pl_code', 'authorplotcode']])
+                    vb_pl_codes_df.rename(columns={'pl_code': 'user_pl_code'}, inplace=True)
+                    pl_codes_joined_df = pd.merge(vb_pl_codes_df, inserted_plots_df, how='left', on='authorplotcode')
+
+                    user_pl_code_to_vb_pl_code = {}
+                    for index, record in pl_codes_joined_df.iterrows():
+                        user_pl_code_to_vb_pl_code[record['user_pl_code']] = record['pl_code']
+
+                    ob_input_df['pl_code'] = ob_input_df['pl_code'].map(user_pl_code_to_vb_pl_code)
+                    ob_input_df.replace({pd.NaT: None}, inplace=True)
+                    obs_inputs = list(ob_input_df.itertuples(index=False, name=None))
+
+                    #Adding Observations to temp table, validating, then inserting into permanent table
+                    with open(QUERIES_FOLDER + "/plot_observation/observation/create_observation_temp_table.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    
+                    with open(QUERIES_FOLDER + "/plot_observation/observation/insert_observations_to_temp_table.sql", "r") as file:
+                        placeholders = ', '.join(['%s'] * len(ob_input_df.columns))
+                        sql = file.read().format(placeholders)
+                    cur.executemany(sql, obs_inputs)
+                    
+                    print("about to run validate observations")
+                    with open(QUERIES_FOLDER + "/plot_observation/observation/validate_observations.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    existing_observations = cur.fetchall()
+                    print("existing observations: " + str(existing_observations))
+                    if(len(existing_observations) > 0):
+                        raise ValueError("Some ob_codes provided already exist in vegbank. Please ensure you are only uploading new observations. Existing ob_codes: " + str(existing_observations))
+                    
+                    cur.nextset()
+                    non_existant_plots = cur.fetchall()
+                    print("non_existant_plots: " + str(non_existant_plots))
+                    if(len(non_existant_plots) > 0):
+                        raise ValueError("Some pl_codes provided do not exist in vegbank or the dataset provided. Please ensure you are only uploading observations for existing plots. Non-existant pl_codes: " + str(non_existant_plots))
+                    
+                    cur.nextset()
+                    non_existant_projects = cur.fetchall()
+                    print("non_existant_projects: " + str(non_existant_projects))
+                    if(len(non_existant_projects) > 0):
+                        raise ValueError("Some pj_codes provided do not exist in vegbank or the dataset provided. Please ensure you are only uploading observations for existing projects. Non-existant pj_codes: " + str(non_existant_projects))
+                    
+                    cur.nextset()
+                    non_existant_cover_methods = cur.fetchall()
+                    print("non_existant_cover_methods: " + str(non_existant_cover_methods))
+                    if(len(non_existant_cover_methods) > 0):
+                        raise ValueError("Some cm_codes provided do not exist in vegbank or the dataset provided. Please ensure you are only uploading observations for existing cover methods. Non-existant cm_codes: " + str(non_existant_cover_methods))
+
+                    cur.nextset()
+                    non_existant_stratum_methods = cur.fetchall()
+                    print("non_existant_stratum_methods: " + str(non_existant_stratum_methods))
+                    if(len(non_existant_stratum_methods) > 0):
+                        raise ValueError("Some sm_codes provided do not exist in vegbank or the dataset provided. Please ensure you are only uploading observations for existing stratum methods. Non-existant sm_codes: " + str(non_existant_stratum_methods))
+                    
+                    cur.nextset()
+                    non_existant_soil_taxa = cur.fetchall()
+                    print("non_existant_soil_taxa: " + str(non_existant_soil_taxa))
+                    if(len(non_existant_soil_taxa) > 0):
+                        raise ValueError("Some st_codes provided do not exist in vegbank or the dataset provided. Please ensure you are only uploading observations for existing soil taxa. Non-existant st_codes: " + str(non_existant_soil_taxa))
+                    
+                    
+                    with open(QUERIES_FOLDER + "/plot_observation/observation/insert_observations_from_temp_table_to_permanent.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql)
+                    inserted_observations = cur.fetchall()
+                    print("inserted records: " + str(inserted_observations))
+
+            
+                    plot_ids = []
+                    observation_ids = []
+                    for record in inserted_plots:
+                        plot_ids.append(record['plot_id'])
+                    print("plot_ids: " + str(plot_ids))
+
+                    for record in inserted_observations:
+                        observation_ids.append(record['observation_id'])
+                    print("observation_ids: " + str(observation_ids))
+ 
+                    print("about to run create plot accession code")
+                    with open(QUERIES_FOLDER + "/plot_observation/plot/create_plot_accession_codes.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql, (plot_ids, ))
+                    new_pl_codes = cur.fetchall()
+
+                    print("about to run create observation accession code")
+                    with open(QUERIES_FOLDER + "/plot_observation/observation/create_observation_accession_codes.sql", "r") as file:
+                        sql = file.read()
+                    cur.execute(sql, (observation_ids, ))
+                    new_ob_codes = cur.fetchall()
+
+                    pl_codes_df = pd.DataFrame(new_pl_codes)
+                    pl_input_df['authorplotcode'] = pl_input_df['authorplotcode'].astype(str)
+                    pl_codes_df['authorplotcode'] = pl_codes_df['authorplotcode'].astype(str)
+                    joined_pl_df = pd.merge(pl_codes_df, pl_input_no_duplicates, on='authorplotcode', how='left')
+
+                    ob_codes_df = pd.DataFrame(new_ob_codes)
+                    ob_input_df['authorobscode'] = ob_input_df['authorobscode'].astype(str)
+                    ob_codes_df['authorobscode'] = ob_codes_df['authorobscode'].astype(str)
+                    joined_ob_df = pd.merge(ob_codes_df, ob_input_df, on='authorobscode', how='left')
+
+                    print("----------------------------------------")
+                    print(str(joined_ob_df))
+
+                    to_return_plots = []
+                    for index, record in joined_pl_df.iterrows():
+                        to_return_plots.append({
+                            "user_code": record['pl_code'], 
+                            "pl_code": record['accessioncode'],
+                            "authorplotcode": record['authorplotcode'],
+                            "action":"inserted"
+                        })
+                    for record in existing_plots:
+                        to_return_observations.append({
+                            "user_code": record["pl_code"],
+                            "pl_code": record['pl_code'],
+                            "authorplotcode": record['authorplotcode'],
+                            "action":"matched"
+                        })
+
+                    to_return_observations = []
+                    for index, record in joined_ob_df.iterrows():
+                        to_return_observations.append({
+                            "user_code": record['ob_code'], 
+                            "ob_code": record['accessioncode'],
+                            "authorobscode": record['authorobscode'],
+                            "action":"inserted"
+                        })
+                    for record in existing_observations:
+                        to_return_observations.append({
+                            "user_code": record["ob_code"],
+                            "ob_code": record['ob_code'],
+                            "authorobscode": record['authorobscode'],
+                            "action":"matched"
+                        })
+                    to_return["resources"] = {
+                        "pl": to_return_plots,
+                        "ob": to_return_observations
+                    }
+                    to_return["counts"] = {
+                        "pl":{
+                            "inserted": len(joined_pl_df),
+                            "matched": len(existing_plots)
+                        },
+                        "ob":{
+                            "inserted": len(joined_ob_df),
+                            "matched": len(existing_observations)
+                        }
+                    }
+        conn.close()      
+
+        return jsonify(to_return)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
 
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accession_code>")
@@ -312,7 +556,6 @@ def get_projects(accession_code, request):
     return jsonify(to_return)
 
 def upload_project(request):
-    
     if 'file' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     file = request.files['file']
@@ -326,11 +569,18 @@ def upload_project(request):
         df = pd.read_parquet(file)
         print(f"DataFrame loaded with {len(df)} records.")
 
-        df.drop(columns=['project_id', 'projectaccessioncode', 'obscount', 'lastplotaddeddate'], inplace=True)
+        #Adding these for testing, they should be removed at launch. 
+        if('project_id' in df.columns):
+            df.drop(columns=['project_id'], inplace=True)
+        if('obscount' in df.columns):
+            df.drop(columns=['obscount'], inplace=True)
+        if('lastplotaddeddate' in df.columns):
+            df.drop(columns=['lastplotaddeddate'], inplace=True)
+
         df.replace({pd.NaT: None}, inplace=True)
         inputs = list(df.itertuples(index=False, name=None))
 
-        with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
+        with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
             
             with conn.cursor() as cur:
                 with conn.transaction():
@@ -341,23 +591,73 @@ def upload_project(request):
                     with open(QUERIES_FOLDER + "/project/insert_projects_to_temp_table.sql", "r") as file:
                         sql = file.read()
                     cur.executemany(sql, inputs)
+
+                    print("about to run validate projects")
+                    with open(QUERIES_FOLDER + "/project/validate_projects.sql", "r") as file:
+                        sql = file.read() 
+                    cur.execute(sql)
+                    existing_records = cur.fetchall()
+                    print("existing records: " + str(existing_records))
+
                     with open(QUERIES_FOLDER + "/project/insert_projects_from_temp_table_to_permanent.sql", "r") as file:
                         sql = file.read()
                     cur.execute(sql)
-                    flattened_list = [item for sublist in cur.fetchall() for item in sublist]
-                    flattened_tuple = tuple(flattened_list)
-                    print(flattened_tuple)
+                    inserted_records = cur.fetchall()
+                    print("inserted records: " + str(inserted_records))
+
+                    project_ids = []
+                    for record in inserted_records:
+                        project_ids.append(record['project_id'])
+                    print("project_ids: " + str(project_ids))
+
                     print("about to run create accession code")
-                    with open(QUERIES_FOLDER + "/create_accession_code.sql", "r") as file:
+                    with open(QUERIES_FOLDER + "/project/create_project_accession_codes.sql", "r") as file:
                         sql = file.read()
-                    cur.execute(sql, (flattened_list, ))
-                    to_return["data"] = {'accession_code': cur.fetchall()}
-                    to_return["count"] = len(to_return["data"]["accession_code"])
+                    cur.execute(sql, (project_ids, ))
+                    new_pj_codes = cur.fetchall()
+
+                    pj_codes_df = pd.DataFrame(new_pj_codes)
+                    print("pj_codes_df" + str(pj_codes_df))
+                    df['projectname'] = df['projectname'].astype(str)
+                    pj_codes_df['projectname'] = pj_codes_df['projectname'].astype(str)
+                    print("project name type: " + str(df['projectname'].dtype))
+                    print("pj_code project name type: " + str(pj_codes_df['projectname'].dtype))
+
+                    joined_df = pd.merge(df, pj_codes_df, on='projectname')
+                    print("----------------------------------------")
+                    print(str(joined_df))
+
+
+                    to_return_projects = []
+                    for index, record in joined_df.iterrows():
+                        to_return_projects.append({
+                            "user_code": record['projectaccessioncode'], 
+                            "pj_code": record['accessioncode'],
+                            "projectname": record['projectname'],
+                            "action":"inserted"
+                        })
+                    for record in existing_records:
+                        to_return_projects.append({
+                            "user_code": record["user_code"],
+                            "pj_code": record['user_code'],
+                            "projectname": record['projectname'],
+                            "action":"matched"
+                        })
+                    to_return["resources"] = {
+                        "pj": to_return_projects
+                    }
+                    to_return["counts"] = {
+                        "pj":{
+                            "inserted": len(joined_df),
+                            "matched": len(existing_records)
+                        }
+                    }
+                    
         conn.close()      
 
         return jsonify(to_return)
-        #return jsonify({"message": "File uploaded successfully.", "num_records": len(df)}), 200
     except Exception as e:
+        traceback.print_exc()
         return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
 
 #Shiny App Endpoints - These will be retired, leaving them here just until we're done testing. 

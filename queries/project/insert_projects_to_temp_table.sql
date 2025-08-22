@@ -1,2 +1,2 @@
-INSERT INTO project_temp (projectname, projectdescription, startdate, stopdate)
-VALUES(%s, %s, %s, %s);
+INSERT INTO project_temp (projectname, projectdescription, startdate, stopdate, user_code)
+VALUES(%s, %s, %s, %s, %s);
