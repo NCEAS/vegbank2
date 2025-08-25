@@ -32,6 +32,9 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
+      - name: vegbankdb-init-pgdata
+        persistentVolumeClaim:
+          claimName: {{ .Values.databaseRestore.pvc }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
