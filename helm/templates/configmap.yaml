@@ -8,17 +8,6 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-flyway-conf
-data:
-  flyway.conf: |
-    flyway.url=jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}
-    flyway.user=${VB_DB_USER}
-    flyway.password=${VB_DB_PASS}
-    flyway.locations=filesystem:/opt/local/flyway/db/migrations
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: {{ .Release.Name }}-db-files
   labels:
     {{- include "vegbank.labels" . | nindent 4 }}
