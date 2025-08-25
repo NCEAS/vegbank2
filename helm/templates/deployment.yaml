@@ -24,10 +24,6 @@ spec:
         {{- end }}
     spec:
       volumes:
-      - name: {{ .Release.Name }}-config-volume
-        configMap:
-          name: {{ .Release.Name }}-flyway-conf
-          defaultMode: 0644
       - name: {{ .Release.Name }}-db-files-volume
         configMap:
           name: {{ .Release.Name }}-db-files
@@ -66,9 +62,6 @@ spec:
               fi
           imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
           volumeMounts:
-            - name: {{ .Release.Name }}-config-volume
-              mountPath: {{ .Values.flyway.configpath }}
-              subPath: flyway.conf
             - name: {{ .Release.Name }}-db-files-volume
               mountPath: {{ .Values.flyway.dbpath }}/migrations
               # Mount the PVC, it should show the directory that's been mounted on knbvm
