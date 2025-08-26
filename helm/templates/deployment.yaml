@@ -46,20 +46,6 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
-          # TODO: Determine how this data-only dump file should be handled if partial restore is turned on
-          command:
-            - sh
-            - -c
-            - >
-              cat {{ .Values.flyway.configpath }} &&
-              ls {{ .Values.flyway.dbpath }}/migrations &&
-              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
-                echo "Running partial migrate to {{ .Values.databaseRestore.target }}";
-                flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} -target={{ .Values.databaseRestore.target }} migrate;
-              else
-                echo "Running full migrate to latest";
-                flyway -password=${VB_DB_PASS} -configFiles={{ .Values.flyway.configpath }} migrate;
-              fi
           imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
           volumeMounts:
             - name: {{ .Release.Name }}-db-files-volume
@@ -68,16 +54,37 @@ spec:
             - name: {{ .Values.databaseRestore.pvc }}
               mountPath: "/tmp/databaseRestore"
           env:
-            - name: VB_DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: vegbankdbcreds
-                  key: password
-            - name: VB_DB_USER
+            - name: FLYWAY_URL
+              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+            - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
                   name: vegbankdbcreds
                   key: username
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: FLYWAY_LOCATIONS
+              value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
+          # TODO: Determine how this data-only dump file should be handled if partial restore is turned on
+          command:
+            - sh
+            - -c
+            - >
+              echo "## Flyway Env";
+              env | grep '^FLYWAY_' || true;
+              echo "## Listing Migrations";
+              ls {{ .Values.flyway.dbpath }}/migrations || true;
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+                echo "Running partial migrate to {{ .Values.databaseRestore.target }}";
+                echo "## Note: If there is no flyway CLI arguments, or conf file, it will default to ENV variables";
+                flyway -target={{ .Values.databaseRestore.target }} migrate;
+              else
+                echo "Running full migrate to latest";
+                flyway migrate;
+              fi
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
