@@ -18,6 +18,7 @@ databaseRestore:
   enabled: false
   target: "1.6"
   pvc: "vegbankdb-init-pgdata"
+  mountpath: "/tmp/databaseRestore"
   filepath: "vegbank_dataonly_20240814.sql"
 
 flyway:
