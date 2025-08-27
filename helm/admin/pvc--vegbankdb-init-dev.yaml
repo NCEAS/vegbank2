@@ -1,0 +1,25 @@
+# This PVC is for the namespace 'dev-vegbank' with user 'vegbank'
+# Creates a persistent volume claim for use by postgresql
+#
+# This should be done only one time, separately from the helm install/upgrade cycle
+#
+# NOTE: ensure that a PersistentVolume has already been created before creating
+#       the PersistentVolumeClaim!
+#
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  ## Use your own release name
+  name: vegbankdb-init-pgdata
+  ## Use your own namespace
+  namespace: vegbank
+spec:
+  accessModes:
+    - ReadWriteOnce
+  ## Use your own release name. Note must match the name of the PersistentVolume
+  volumeName: cephfs-vegbankdb-init-pgdata-dev-vegbank
+  resources:
+    requests:
+      storage: 100Gi
+  ## Use your own storage class
+  storageClassName: csi-cephfs-sc
