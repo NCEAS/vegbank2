@@ -50,9 +50,6 @@ spec:
           volumeMounts:
             - name: {{ .Release.Name }}-db-files-volume
               mountPath: {{ .Values.flyway.dbpath }}/migrations
-              # Mount the PVC, it should show the directory that's been mounted on knbvm
-            - name: {{ .Values.databaseRestore.pvc }}
-              mountPath: "/tmp/databaseRestore"
           env:
             - name: FLYWAY_URL
               value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
@@ -68,7 +65,6 @@ spec:
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
-          # TODO: Determine how this data-only dump file should be handled if partial restore is turned on
           command:
             - sh
             - -c
@@ -84,6 +80,46 @@ spec:
               else
                 echo "Running full migrate to latest";
                 flyway migrate;
+              fi
+        - name: {{ .Chart.Name }}-pg-restore
+          # Note: This image should match the postgres version installed
+          image: postgres:16
+          volumeMounts:
+              # Mount the PVC, it should show the directory that's been mounted on knbvm
+            - name: {{ .Values.databaseRestore.pvc }}
+              mountPath: "/tmp/databaseRestore"
+          env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
+            - name: VB_DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: VB_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: VB_DB_PORT
+              value: {{ .Values.database.port | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+                echo "## Checking DB env vars";
+                env | grep '^VB_DB_' || true;
+                echo "## Database Restore Requested, executing data-only dump file";
+                export PGPASSWORD="$VB_DB_PASS";
+                psql \
+                -h "$VB_DB_HOST" \
+                -p "$VB_DB_PORT" \
+                -U "$VB_DB_USER" \
+                -d "$VB_DB_NAME" \
+                -f "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
               fi
       containers:
         - name: {{ .Chart.Name }}
