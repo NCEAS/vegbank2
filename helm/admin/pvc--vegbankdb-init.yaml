@@ -1,3 +1,4 @@
+# This PVC is for the namespace 'dev-vegbank-dev' with user 'vegbank-dev'
 # Creates a persistent volume claim for use by postgresql
 #
 # This should be done only one time, separately from the helm install/upgrade cycle
