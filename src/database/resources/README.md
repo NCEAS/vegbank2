@@ -1,4 +1,6 @@
-# Flyway
+This document provides context for setting up a local docker `postgres` instance with the flyway command line interface.
+
+# Flyway How-To Information
 
 Flyway is a database migration tool... but what does that mean? How does it work? To get an overview, first read their [documentation](https://documentation.red-gate.com/flyway/flyway-cli-and-api/welcome-to-flyway)
 
@@ -53,7 +55,3 @@ That's it! In summary, set-up your configuration file, name your migration files
     ```
     psql -h localhost -p 5432 -U vegbank -d vegbank
     ```
-
-## Additional Info
-
-Section to be filled out added with findings as progress is made
