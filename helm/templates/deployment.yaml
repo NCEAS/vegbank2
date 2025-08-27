@@ -78,7 +78,7 @@ spec:
                 echo "## Note: If there is no flyway CLI arguments, or conf file, it will default to ENV variables";
                 flyway -target={{ .Values.databaseRestore.target }} migrate;
               else
-                echo "Running full migrate to latest";
+                echo "Running full migration to latest schema in db/migrations";
                 flyway migrate;
               fi
         - name: {{ .Chart.Name }}-pg-restore
