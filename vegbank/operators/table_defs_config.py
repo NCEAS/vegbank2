@@ -123,3 +123,11 @@ observation = [
     'emb_observation',                    
     'hasobservationsynonym'
 ]
+
+project = [
+    'projectname', 
+    'projectdescription', 
+    'startdate', 
+    'stopdate', 
+    'user_code'
+]

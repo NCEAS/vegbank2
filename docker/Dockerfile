@@ -7,6 +7,7 @@ WORKDIR /python-docker
 ADD /vegbank/vegbankapi.py .
 ADD /vegbank/config.py .
 ADD queries ./queries
+ADD operators ./operators
 
 RUN pip install flask
 RUN pip install psycopg
