@@ -1,64 +1,107 @@
 # Introduction
 
-This document describes how to deploy the helm chart and Database for the PostgreSQL pod component of VegBank.
+This document describes how to deploy the helm chart and database for the PostgreSQL pod component of VegBank.
 
 ## Requirements
 
-The first step in this process will change depending on what kind of database dump file you are working with as your starting point. If you have a database dump file on a previous version of Postgres, you will first need to follow the instructions provided in the INSTALL.md document located in this repository, as well as the other README.md document located at /src/database/resources. Those two files will guide you through creating a local Postgres instance on the correct version, then running the necessary Flyway migrations to get the database into the correct state. If you have a dump file from the new system already, you can skip the steps below about creating a dump file and go straight to "Adjusting Memory Limits for Import". 
+The first step in this process will change depending on what kind of database dump file you are working with as your starting point. If you have a database dump file on a previous version of Postgres, you will first need to follow the instructions provided in the INSTALL.md document located in this repository, as well as the other README.md document located at /src/database/flyway. Those two files will guide you through creating a local Postgres instance on the correct version, then running the necessary Flyway migrations to get the database into the correct state. If you have a dump file from the new system already, you can skip the steps below about creating a dump file and go straight to "Adjusting Memory Limits for Import". 
 
 You will also need the following things set up/installed: 
 
-- A Kubernetes cluster you wish to deploy the chart on
+- A Kubernetes cluster you wish to deploy the chart on (ex. dev-vegbank, dev-vegbank-dev)
 - kubectl installed locally
 - Helm installed locally
 
-# Deployment
+# Deploying to Kubernetes
 
-This section will walk you through deploying VegBank from an empty kubernetes cluster. You will also need access to some version of the database, either the current postgres version, or the old one that was deployed on the previous version of VegBank. 
+This section will walk you through deploying VegBank to an empty kubernetes namespace. The required data is already available in a directory that can be accessed by mounting a PV/PVC.
+- Note: PV/PVCs cannot be shared amongst namespaces - there can only be one PV for one PVC claim. This is why you will see under `helm/admin` two sets of PV and PVC documents: one is for the namespace `dev-vegbank` and the other is for `dev-vegbank-dev`.
 
-## Creating the Dump File
+## Step 1: Apply the PV/PVC
 
-Once you've got your local version of the database set up, the next step is to create a new dump file of the current version. As a note, one of the tables from the old databse, dba_xmlcache, throws errors when imported on a new version due to a conversion error. This table will no longer be used after the transition to JSON on the new system anyway, so I excluded it when I created the dump file to avoid this problem. Here is the command I used to create my dump file: 
+You will likely not need to apply the PV/PVC because they are already applied in the `dev-vegbank` and `dev-vegbank-dev` namespace. However, if you have a new namespace (ex. `dev-dou-vegbank`), then you will need to duplicate and apply the existing PV/PVC documents in `helm/admin`.
+- The pv.yaml file should be renamed, and you'll have to update `metadata.name`
+- The pvc.yaml file should also be renamed, and you'll have to update `metadata.namespace` to be the user of your namespace, and `spec.volumeName` to be the `metadata.name` that you used in the pv.yaml
 
-`pg_dump -T 'dba_xmlcache' vegbank > vegbankdumpfile.sql` 
+```sh
+# Apply the PV as k8s admin
+$ kubectl config use-context `dev-k8s`
+$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
 
-A note here: If you created your initial local database under your local machine's user in Postgres like I did, you may have to ignore ownership when creating the dump file, otherwise the restore will throw an error looking for a user that doesn't exist. You can do that by adding the following parameter to the above command: 
-
-`--no-owner`
-
-## Adjusting Memory Limits for Import
-
-Before deploying the chart, you'll need to make a temporary change to the values.yaml file to increase the memory request/limit values. The resources block in the values.yaml file currently looks like this: 
-
-```YAML
-resources:
-      requests:
-        memory: 128Mi
-      limits:
-        memory: 192Mi
+# Apply the PVC in your namespace
+$ kubectl config use-context `dev-dou-vegbank`
+$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
 ```
 
-This is because the pod itself requires little memory to run, but the process to import the data will require more. To do this, we're going to temporarily increase the limits to the following: 
-
-```YAML
-resources:
-      requests:
-        memory: 1Gi
-      limits:
-        memory: 2Gi
+You can check what PV/PVCs are applied like such:
+```sh
+$ kubectl get pvc | grep 'vegbank'
 ```
 
-Make that change, then save the file. We'll come back to this later once we're done to change this value back. 
-
-## Deploying the Helm Chart
+## Step 2: Helm Install (and Uninstall...)
 
 Next step is to deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
 
-`helm install vegbankdb helm`
+```sh
+# If you're in the root folder
+$ helm install vegbankdb helm
 
-This will install the Postgres pod on the cluster you have selected as your current context, and give the pod the name vegbankdb. You can change the name vegbankdb to whatever you like. The pod is currently blank, and now needs to be filled with the dump filled with the dump file you created earlier. 
+# If you're in the helm folder
+$ helm install vegbankdb .
+```
 
-## Copying the Dump File onto the Pod and Importing it
+If you are on a namespace without ingress, be sure to set the flag to prevent ingress errors:
+
+```sh
+$ helm install vegbankdb . --set ingress.enabled=false
+```
+
+This will install the Postgres pod on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the name vegbankdb. You can change the name vegbankdb to whatever you like. The pod is currently blank, and now needs to be restored with the dump file.
+
+- Tip: If you are clearing out an existing namespace, or need to restart this process - you can do this by uninstalling the helm chart and deleting the existing postgres content.
+
+  ```sh
+  $ kubectl exec -it vegbankdb-postgresql-0 -- /bin/sh
+  $ rm -rf /bitnami/postgresql/data
+  # Exit the shell (ctrl+d)
+  $ helm uninstall vegbankdb
+  ```
+
+  This will delete all the pods and give you a fresh start. The postgres pod will start up and point to an empty directory, ready for you to restart this process.
+
+At this point, your pod will not be able to start up successfully. This is because the postgres pod with the existing configuration values does not have a corresponding database to access. We will need to exec into the pod and get it set up so that the helm startup process with `flyway` and `postgres` can execute with the correct credentials/faculties in place.
+
+You can check what's happening by looking at the `initContainer` like such:
+
+```sh
+$ kubectl get pods
+vegbankdb-6966f945c6-xgq4l   0/1     Init:Error   1 (10s ago)   14s
+vegbankdb-postgresql-0       1/1     Running      0             14s
+
+# This will show you information about the pod, and if you scroll all the way down, where it's at in the initialization process 
+$ kubectl describe pod vegbankdb-6966f945c6-xgq4l
+# You can then check the logs of a specific initContainer to see what issues occurred
+$ kubectl logs vegbankdb-5b6956f48d-xgq4l -c vegbank-init-flyway
+```
+
+## Step 3: Postgres Pod Set-up
+
+First, confirm that you see the postgres pod:
+
+```sh
+$ kubectl get pods
+
+vegbankdb-6966f945c6-xgq4l   0/1     Init:Error   1 (10s ago)   14s
+vegbankdb-postgresql-0       1/1     Running      0             14s
+```
+
+Now let's set up the postgres instance (in our case, a fresh installation of PG16)
+
+```sh
+
+```
+
+## Restoring the data-only dump file
 
 Before we import the file, we have to copy it onto the pod. To do this, we use the kubectl cp command, but we can't just put the file anywhere or you might run into a permission issue when trying to import the file. The easiest place I have found to copy the file is into the /tmp folder on the pod. This folder will get emptied when you take the pod down as well, which can be good for long term space concerns. The command I used looks like this: 
 
