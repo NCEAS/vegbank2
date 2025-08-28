@@ -37,15 +37,15 @@ Take the `flyway.conf` file in this repo and move it into your local flyway `con
 flyway.url=jdbc:postgresql://localhost:5432/vegbank2
 flyway.user=vegbank
 flyway.password=vegbank
-flyway.locations=filesystem:/Users/doumok/Code/vegbank2/migrations
+flyway.locations=filesystem:/Users/doumok/Code/vegbank2/helm/db/migrations
 ```
 
 Step 4:
 
-Run the following command to apply migrations up until `V1.11__populate_datadictionary`
+If you are starting from scratch, there will likely be additional migration files that need to be applied after the restore. To recover the original version of `vegbank`, proceed by running the following command to apply migrations up until `V1.6__add_constraints`:
 
 ```
-flyway -target=1.11 migrate
+flyway -target=1.6 migrate
 ```
 
 Step 5:
@@ -102,7 +102,7 @@ Finish the migration:
 flyway migrate
 ```
 
-An example of the full process on my local terminal for added context:
+An example of the full process on my local terminal for added context. Note, this log is still accurate less the migration points (which are now different as of updating this `README` document and the actual migration files which now live in helm)
 
 ```sh
 doumok@Dou-NCEAS-MBP14 ~ % psql
@@ -455,7 +455,7 @@ You are not signed in to Flyway, to sign in please run auth
 
 ## Postgres Docker Development (Postgres12, 16)
 
-This process is also applicable to Postgres12 and 16, starting from 10.23 is not necessary.
+This process is also applicable to Postgres12, 16 AND 17 (tested!), starting from 10.23 is not necessary.
 
 **Requirements:**
 - Docker
@@ -477,12 +477,12 @@ docker run --name vegbank -e POSTGRES_PASSWORD=vegbank -e POSTGRES_DB=vegbank -e
 
 **Step 2: Apply SQL files to Postgres via Flyway migrations**
 
-Migrate `flyway` to v1.11. See the above section (Step 3, `Local Development (Postgres 10.23, MacOS M2)`) to work with `flyway` if you haven't already set it up.
+Migrate `flyway` to v1.6. See the above section (Step 3, `Local Development (Postgres 10.23, MacOS M2)`) to work with `flyway` if you haven't already set it up.
 
 ```sh
-flyway -target=1.11 migrate
+flyway -target=1.6
 ```
- - Specifically migrate to migrations version 1.11, this is everything the vegbank db needs without constraints applied
+ - Specifically migrate to migrations version 1.6, any additional migrations/schema updates must be applied after the data restore.
 
 **Step 3: Restore the vegbank data via a data-only dump (backup) file**
 
@@ -493,15 +493,15 @@ psql -h localhost -p 5432 -U vegbank -d vegbank -f /Users/doumok/Code/testing/ve
 ```
  - To assist with debugging, I have chosen here to redirect the output from the psql commands to a text file. If you delete this line, then the output will print to your terminal.
 
-**Step 4: Finish the vegbank database restoration process by applying constraints**
+**Step 4: Finish the vegbank database restoration process**
 
-Finish the migration by applying the constraints. This will apply the last migration V1.12
+Finish the migration by applying the remaining schema updates.
 
 ```sh
 flyway migrate
 ```
 
-Example Output for Reference:
+Example Output for Reference. Note, this log is still accurate less the migration points (which are now different as of updating this `README` document and the actual migration files which now live in helm)
 
 ```sh
 doumok@Dou-NCEAS-MBP14 ~ % docker run --name vegbank -e POSTGRES_PASSWORD=vegbank -e POSTGRES_DB=vegbank -e POSTGRES_USER=vegbank -e PGDATA=/tmp/postgresql/data -e POSTGRES_HOST_AUTH_METHOD=password -p 5432:5432 -d postgres:16
