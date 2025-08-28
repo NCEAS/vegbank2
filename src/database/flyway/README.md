@@ -10,7 +10,7 @@ For more information about the Flyway [CLI](https://github.com/flyway/flywaydb.o
 
 ## How does it work
 
-The command looks simple, `flyway migrate`, and it is now that you're reading this `README.md` document. To get flyway working, you must provide it with a configuration file.
+The command looks simple, `flyway migrate`, and it is now that you're reading this `README.md` document. There are various ways to get flyway working, the one described here is through a configuration file.
 
 Inside of this configuration file are key-value pairs that represent the credentials you need to access the database you want to migrate to, or re-initialize. See example below:
 
@@ -21,6 +21,13 @@ flyway.user=vegbank
 flyway.password=vegbank
 flyway.locations=filesystem:/migrations
 ```
+- Note: If you do not wish to use a `flyway.conf`, you can also set up ENV variables. I leave it up to you to decide how you want to set up `flyway`. Example:
+   ```
+    export FLYWAY_URL="jdbc:postgresql://localhost:5432/vegbank2"
+    export FLYWAY_USER="vegbank"
+    export FLYWAY_PASSWORD="vegbank"
+    export FLYWAY_LOCATIONS="filesystem:/Users/doumok/Code/vegbank2/migrations"
+   ```
 
 Flyway will take these credentials, access your database, then automatically apply all the individual .sql files you defined in the locations folder (ex. /migrations)
  - **IMPORTANT** These .sql files must be named according to Flyway conventions:
