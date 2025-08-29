@@ -1,53 +1,64 @@
 # Introduction
 
-This document describes how to deploy the helm chart and database for the PostgreSQL pod component of VegBank.
+This document describes how to deploy the helm chart and database for the PostgreSQL pod component of VegBank. After installing the helm chart, you should see two pods. The vegbankdb python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pod which contains the database that the API accesses and queries.
 
 ## Requirements
 
-The first step in this process will change depending on what kind of database dump file you are working with as your starting point. If you have a database dump file on a previous version of Postgres, you will first need to follow the instructions provided in the INSTALL.md document located in this repository, as well as the other README.md document located at /src/database/flyway. Those two files will guide you through creating a local Postgres instance on the correct version, then running the necessary Flyway migrations to get the database into the correct state. If you have a dump file from the new system already, you can skip the steps below about creating a dump file and go straight to "Adjusting Memory Limits for Import". 
+The original VegBank database and web interface (ex. `http://vegbank.org/vegbank/index.jsp`) is currently maintained by NCEAS - however, there have been no new contributions in several years. This means that the data-only dump file used in this process described below (that's currently stored in a ceph directory) is relevant and applicable for testing and for the initial production deployment. Should you need to restore the original database that's currently maintained, you can find instructions in this repo's `INSTALL.md` document and additional information at `src/database/flyway/README.md`. 
 
-You will also need the following things set up/installed: 
+You need to have the following things set up/installed: 
 
-- A Kubernetes cluster you wish to deploy the chart on (ex. dev-vegbank, dev-vegbank-dev)
+- A Kubernetes cluster and a namespace you wish to deploy the chart on (ex. dev-vegbank, dev-vegbank-dev)
 - kubectl installed locally
 - Helm installed locally
 
 # Deploying to Kubernetes
 
-This section will walk you through deploying VegBank to an empty kubernetes namespace. The required data to perform a postgres restore is already available in a directory that can be accessed by mounting a PV/PVC.
+This section will walk you through deploying VegBank to an empty kubernetes namespace. Reminder - the required data to perform a postgres restore is already available in a directory that can be accessed by mounting a PV/PVC.
 
 ## Step 1: Apply the PV/PVC
 - Note: PV/PVCs cannot be shared amongst namespaces - there can only be one PV for one PVC claim. This is why you will see under `helm/admin` two sets of PV and PVC documents: one is for the namespace `dev-vegbank` and the other is for `dev-vegbank-dev`.
 
-You will likely not need to apply the PV/PVC because they are already applied in the `dev-vegbank` and `dev-vegbank-dev` namespace. However, if you have a new namespace (ex. `dev-dou-vegbank`), then you will need to duplicate and apply the existing PV/PVC documents in `helm/admin`.
+Unless you are starting completely from scratch, you will not need to apply the PV/PVC because they are already applied in the `dev-vegbank` and `dev-vegbank-dev` namespace. You can check what PV/PVCs are applied like such:
+
+```sh
+$ kubectl get pvc | grep 'vegbank'
+
+data-vegbankdb-postgresql-0         Bound    pvc-aca31174-4a56-4a73-b38d-a27272af938b   100Gi      RWX            csi-cephfs-sc   289d
+data-vegbankdb-write-postgresql-0   Bound    pvc-bf87eec5-742c-41f2-8d3b-34d1bd228e60   100Gi      RWX            csi-cephfs-sc   66d
+vegbankdb-init-pgdata               Bound    cephfs-vegbankdb-init-pgdata-dev-vegbank   100Gi      RWO            csi-cephfs-sc   45h
+```
+
+If you have a new namespace (ex. `dev-dou-vegbank`), then you will need to duplicate and apply the existing PV/PVC documents in `helm/admin`.
 - The pv.yaml file should be renamed, and you'll have to update `metadata.name`
 - The pvc.yaml file should also be renamed, and you'll have to update `metadata.namespace` to be the user of your namespace, and `spec.volumeName` to be the `metadata.name` that you used in the pv.yaml
 
-```sh
-# Apply the PV as k8s admin
-$ kubectl config use-context `dev-k8s`
-$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
+  ```sh
+  # Apply the PV as k8s admin
+  $ kubectl config use-context `dev-k8s`
+  $ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
 
-# Apply the PVC in your namespace
-$ kubectl config use-context `dev-dou-vegbank`
-$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
-```
+  # Apply the PVC in your namespace
+  $ kubectl config use-context `dev-dou-vegbank`
+  $ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
+  ```
 
-You can check what PV/PVCs are applied like such:
-```sh
-$ kubectl get pvc | grep 'vegbank'
-```
 
 ## Step 2: Helm Install (and Uninstall...)
 
-If we're starting from scratch (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore.enabled` to be `true`:
+If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore.enabled` to be `true`:
 
-```
+```sh
 # values.yaml
 
 databaseRestore:
-  enabled: true
+  enabled: true # This needs to be changed from `false` to `true`
+  target: "1.6"
+  pvc: "vegbankdb-init-pgdata" # Name of the PVC
+  mountpath: "/tmp/databaseRestore" # Path where you can find the PV contents
+  filepath: "vegbank_dataonly_20240814.sql" # Name of the file to be used in the restoration process
 ```
+- The target `1.6` is the migration point which `flyway` will migrate until. Any new migrations after this are considered new schema updates and need to be applied after the data restore.
 
 Now we can deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
 
@@ -59,28 +70,31 @@ $ helm install vegbankdb helm
 $ helm install vegbankdb .
 ```
 
-If you are on a namespace without ingress, be sure to set the flag to prevent ingress errors:
+If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to set the flag to prevent ingress errors:
 
 ```sh
 $ helm install vegbankdb . --set ingress.enabled=false
 ```
 
-This will install the Postgres pod on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the name vegbankdb. You can change the name vegbankdb to whatever you like. The pod is currently blank, and now needs to be restored with the dump file.
+This will install both the python pod (based on the `docker/Dockerfile` in this repo) and the Postgres pod (using the `bitnami` image) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pods the starting prefix of `vegbankdb` in its name. You can change the name vegbankdb to whatever you like. The `Postgre` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be restored with the dump file.
 
 - Tip: If you are clearing out an existing namespace, or need to restart this process - you can do this by uninstalling the helm chart and deleting the existing postgres content.
 
   ```sh
   $ kubectl exec -it vegbankdb-postgresql-0 -- /bin/sh
+  # Remove all associated database data
+  # This will cause your pod to be forcefully restarted - and you will be booted out of the pod
   $ rm -rf /bitnami/postgresql/data
-  # Exit the shell (ctrl+d)
+  # Exit the shell (ctrl+d) if you aren't automatically booted
   $ helm uninstall vegbankdb
   ```
 
-  This will delete all the pods and give you a fresh start. The postgres pod will start up and point to an empty directory, ready for you to restart this process.
+  This will delete all the pods and give you a fresh start. The `PostgreSQL` pod will start up and point to an empty directory, ready for you to restart this process (ex. creating a new `vegbank` user, a new database `vegbank`, etc.)
 
-At this point, your pod will not be able to start up successfully. This is because the postgres pod with the existing configuration values does not have a corresponding database to access. We will need to exec into the pod and get it set up so that the helm startup process with `flyway` and `postgres` can execute with the correct credentials/faculties in place.
 
-You can check what's happening by looking at the `initContainer` like such:
+## Step 3: `initContainers` - Don't Panic!
+
+At this point, your pod will not be able to start up successfully. This is because the helm chart utilizes `initContainers` to restore data and/or apply migrations. You can check what's happening by looking at the logs for the python container like such:
 
 ```sh
 $ kubectl get pods
@@ -89,13 +103,24 @@ vegbankdb-postgresql-0       1/1     Running      0             14s
 
 # This will show you information about the pod, and if you scroll all the way down, where it's at in the initialization process 
 $ kubectl describe pod vegbankdb-6966f945c6-xgq4l
-# You can then check the logs of a specific initContainer to see what issues occurred
-$ kubectl logs vegbankdb-5b6956f48d-xgq4l -c vegbank-init-flyway
 ```
 
-## Step 3: Postgres Pod Set-up
+There are three `initContainers`:
+1) vegbankdb-init-postgres
+   - This waits until the `postgres` pod is active before allowing the next `initContainer` to execute
+2) vegbankdb-init-flyway
+   - This checks the `databaseRestore` section in `values.yaml` to see whether `databaseReestore.enabled` is set to true or false.
+   - If true, it will `flyway target=#.# migrate` to the specified point, and then stop.
+   - If false, it will `flyway migrate` which will apply all the migration files
+3) vegbankdb-init-pg-restore
+   - If `databaseRestore.enabled` is set to `true` it will proceed to look for the data-only dump file, which should already be present and mounted via the PV/PVC step specified earlier - and then execute it.
 
-First, confirm that you see the postgres pod:
+Upon installing the chart, the `initContainer` that runs after we confirm the Postgres pod is active, `vegbankdb-init-flyway`, will fail and error out. It uses `flyway` to apply migrations, which attempts to connect to the the `PostgresSQL` pod that does not have any database or data. So we will need to exec into the `PostgresQL` pod and get it set up so that the helm startup process with `flyway` and `postgres` can execute with the correct credentials/faculties in place.
+
+
+## Step 4: Postgres Pod Set-up
+
+First, double check that you see the postgres pod:
 
 ```sh
 $ kubectl get pods
@@ -107,6 +132,7 @@ vegbankdb-postgresql-0       1/1     Running      0             14s
 Now let's set up the postgres instance (in our case, a fresh installation of PG16)
 
 ```sh
+# Shell into the pod
 $ kubectl exec -it vegbankdb-postgresql-0 -- /bin/sh
 # Access postgres as user `postgres`
 $ psql -U postgres
@@ -125,26 +151,23 @@ GRANT ALL PRIVILEGES ON DATABASE vegbank TO vegbank;
 # Give schema-level privileges (ex. to create public.flyway_history)
 GRANT USAGE, CREATE ON SCHEMA public TO vegbank;
 ```
+- Note: `PASSWORD_PLACEHOLDER` must be replaced with the actual secret, which gets applied as an environment variable upon startup of the pod. You can get this by running the following command:
+
+  ```sh
+  $ kubectl exec -it vegbankdb-6966f945c6-xgq4 -- env
+  ```
 
 ## Step 4: Restarting the Pod & Restoring Data
 
-Now that `postgres` has been configured, we need to restart the pod so that the `initContainers` can execute again, and proceed with the data restore process. The command below will restart the pods, allowing the `initContainers` to continue. 
+Now that `postgres` has been configured, we need to restart the pod so that the `initContainers` can execute again, and proceed with the data restore process. The command below will restart the pods, allowing the `initContainers` to move forward (with the database now set up). 
 
 ```sh
 $ helm upgrade vegbankdb .
 ```
 
-There are three `initContainers`:
-1) vegbankdb-init-postgres
-   - This waits until the `postgres` pod is active before allowing the next `initContainer` to execute
-2) vegbankdb-init-flyway
-   - This checks the `databaseRestore` section in `values.yaml` to see whether `databaseReestore.enabled` is set to true or false.
-   - If true, it will `flyway target=#.# migrate` to the specified point, and then stop.
-   - If false, it will `flyway migrate` which will apply all the migration files
-3) vegbankdb-init-pg-restore
-   - If `databaseRestore.enabled` is set to `true` it will proceed to look for the data-only dump file, which should already be present and mounted via the PV/PVC step specified earlier - and then execute it.
+The `initContainer` `vegbankdb-init-flyway` will complete its migration to the specified target. Then, the `initContainer` `vegbankdb-init-pg-restore` will begin the restoration process.
 
-You can check the `initContainer` logs by running the following command (and its respective output eventually)
+the To check the status, you can view the `initContainer` logs by running the following command (and its respective output included for context)
 
 ```sh
 $ kubectl logs vegbankdb-5b6956f48d-xgq4l -c vegbankdb-init-pg-restore --timestamps
@@ -646,17 +669,23 @@ $ kubectl logs vegbankdb-5b6956f48d-xgq4l -c vegbankdb-init-pg-restore --timesta
 
 ## Step 5: Finish the migrations
 
-Once the `vegbankdb-init-pg-restore` completes its data restore (which can take around 4 hours at this time as it is not optimized), we need to update `values.yaml` and set `databaseRestore.enabled` to `false`, and then restart the pods. This will apply any remaining migrations after `1.6`
+Once the `vegbankdb-init-pg-restore` completes its data restore (which can take around 4 hours at this time because it is not optimized), we need to update `values.yaml` and set `databaseRestore.enabled` back to `false`, and then restart the pods. This will apply any remaining migrations after `1.6`.
 
 ```
 # values.yaml
 
 databaseRestore:
   enabled: false
+  target: "1.6"
+  pvc: "vegbankdb-init-pgdata"
+  mountpath: "/tmp/databaseRestore"
+  filepath: "vegbank_dataonly_20240814.sql"
 ```
 
+Restart the pods by executing helm upgrade, and ensure the `values.yaml` changes get included by including the `-f` flag for `values.yaml`
+
 ```sh
-$ helm upgrade vegbankdb .
+$ helm upgrade vegbankdb . -f values.yaml
 ```
 
 Note: This is also how we can apply any migrations/schema updates that we want to test. Update the `/db/migrations` with the correct naming convention and files, and then execute helm upgrade again.
