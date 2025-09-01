@@ -69,7 +69,7 @@ spec:
               if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
-                echo "## Createing Vegbank database and roles";
+                echo "## Creating Vegbank database and roles";
                 export PGPASSWORD="$POSTGRES_PASSWORD";
                 psql \
                 -h "$VB_DB_HOST" \
