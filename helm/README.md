@@ -76,7 +76,7 @@ If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to se
 $ helm install vegbankdb . --set ingress.enabled=false
 ```
 
-This will install both the python pod (based on the `docker/Dockerfile` in this repo) and the Postgres pod (using the `bitnami` image) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pods the starting prefix of `vegbankdb` in its name. You can change the name vegbankdb to whatever you like. The `Postgre` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be restored with the dump file.
+This will install both the python pod (based on the `docker/Dockerfile` in this repo) and the Postgres pod (using the `bitnami` image) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pods the starting prefix of `vegbankdb` in its name. You can change the name vegbankdb to whatever you like. The `Postgres` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be restored with the dump file.
 
 - Tip: If you are clearing out an existing namespace, or need to restart this process - you can do this by uninstalling the helm chart and deleting the existing postgres content.
 
