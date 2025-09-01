@@ -1,6 +1,7 @@
 # Introduction
 
-This install document describes how to restore the Vegbank database from a data-only dump file to either a local Postgres instance or a Docker container.
+This install document describes how to restore the original Vegbank database (which uses Postgres 10.23) from a data-only dump file* to either a local Postgres instance or a Docker container.
+  * Note: This data-only dump file can be found in the knbvm test server under `/mnt/ceph/repos/vegbank` with the file name `vegbank_dataonly_20240814.sql`
 
 ## Local Postgres Development (Postgres 10.23, MacOS M2)
 
