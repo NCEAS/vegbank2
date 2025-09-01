@@ -46,6 +46,11 @@ spec:
           # Note: This image should match the postgres version installed
           image: postgres:16
           env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdb-postgresql
+                  key: postgres-password
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -69,6 +74,7 @@ spec:
               if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
+                env | grep 'POSTGRES_PASSWORD' || true;
                 echo "## Creating Vegbank database and roles";
                 export PGPASSWORD="$POSTGRES_PASSWORD";
                 psql \
@@ -76,10 +82,10 @@ spec:
                 -p "$VB_DB_PORT" \
                 -U "postgres" \
                 -d postgres \
-                -c "CREATE ROLE vegbank WITH LOGIN PASSWORD '${VB_DB_PASS}';" \
-                -c "CREATE DATABASE vegbank WITH ENCODING = 'UTF8' LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8';" \
-                -c "GRANT ALL PRIVILEGES ON DATABASE vegbank TO vegbank;" \
-                -c "GRANT USAGE, CREATE ON SCHEMA public TO vegbank;";
+                -c "CREATE ROLE ${VB_DB_USER} WITH LOGIN PASSWORD '${VB_DB_PASS}';" \
+                -c "CREATE DATABASE ${VB_DB_NAME} WITH OWNER = ${VB_DB_USER} ENCODING = 'UTF8' LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8';" \
+                -c "GRANT ALL PRIVILEGES ON DATABASE ${VB_DB_NAME} TO ${VB_DB_USER};" \
+                -c "GRANT USAGE, CREATE ON SCHEMA public TO ${VB_DB_USER};";
               fi
         - name: {{ .Chart.Name }}-init-flyway # Run the flyway database migration
           securityContext:
