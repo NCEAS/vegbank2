@@ -36,11 +36,11 @@ If you have a new namespace (ex. `dev-dou-vegbank`), then you will need to dupli
   ```sh
   # Apply the PV as k8s admin
   $ kubectl config use-context `dev-k8s`
-  $ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
+  $ kubectl apply -n dev-vegbank -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
 
   # Apply the PVC in your namespace
   $ kubectl config use-context `dev-dou-vegbank`
-  $ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
+  $ kubectl apply -n dev-vegbank -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
   ```
 
 
@@ -97,12 +97,12 @@ This will install both the python pod (based on the `docker/Dockerfile` in this 
 At this point, your pod will not be able to start up successfully. This is because the helm chart utilizes `initContainers` to restore data and/or apply migrations. You can check what's happening by looking at the logs for the python container like such:
 
 ```sh
-$ kubectl get pods
+$ kubectl -n dev-vegbank get pods
 vegbankdb-6966f945c6-xgq4l   0/1     Init:Error   1 (10s ago)   14s
 vegbankdb-postgresql-0       1/1     Running      0             14s
 
 # This will show you information about the pod, and if you scroll all the way down, where it's at in the initialization process 
-$ kubectl describe pod vegbankdb-6966f945c6-xgq4l
+$ kubectl -n dev-vegbank describe pod vegbankdb-6966f945c6-xgq4l
 ```
 
 There are three `initContainers`:
@@ -123,7 +123,7 @@ Upon installing the chart, the `initContainer` that runs after we confirm the Po
 First, double check that you see the postgres pod:
 
 ```sh
-$ kubectl get pods
+$ kubectl -n dev-vegbank get pods
 
 vegbankdb-6966f945c6-xgq4l   0/1     Init:Error   1 (10s ago)   14s
 vegbankdb-postgresql-0       1/1     Running      0             14s
@@ -133,7 +133,7 @@ Now let's set up the postgres instance (in our case, a fresh installation of PG1
 
 ```sh
 # Shell into the pod
-$ kubectl exec -it vegbankdb-postgresql-0 -- /bin/sh
+$ kubectl -n dev-vegbank exec -it vegbankdb-postgresql-0 -- /bin/sh
 # Access postgres as user `postgres`
 $ psql -U postgres
 psql (16.4)
@@ -154,7 +154,7 @@ GRANT USAGE, CREATE ON SCHEMA public TO vegbank;
 - Note: `PASSWORD_PLACEHOLDER` must be replaced with the actual secret, which gets applied as an environment variable upon startup of the pod. You can get this by running the following command:
 
   ```sh
-  $ kubectl exec -it vegbankdb-6966f945c6-xgq4 -- env
+  $ kubectl -n dev-vegbank exec -it vegbankdb-6966f945c6-xgq4 -- env
   ```
 
 ## Step 4: Restarting the Pod & Restoring Data
@@ -170,7 +170,7 @@ The `initContainer` `vegbankdb-init-flyway` will complete its migration to the s
 the To check the status, you can view the `initContainer` logs by running the following command (and its respective output included for context)
 
 ```sh
-$ kubectl logs vegbankdb-5b6956f48d-xgq4l -c vegbankdb-init-pg-restore --timestamps
+$ kubectl -n dev-vegbank logs vegbankdb-5b6956f48d-xgq4l -c vegbankdb-init-pg-restore --timestamps
 
 2025-08-27T12:50:48.311616452-07:00 ## Checking DB env vars
 2025-08-27T12:50:48.318224468-07:00 VB_DB_PASS=HIDDEN_DO_NOT_LOOK
@@ -696,13 +696,13 @@ Note: This is also how we can apply any migrations/schema updates that we want t
 Once you're in the k8s dev-vegbank context, you can find the name of the API pod via the following command: 
 
 ```sh
-$ kubectl get pods
+$ kubectl -n dev-vegbank get pods
 ```
 
 The API pod is the one with the werid alphanumeric name. After that, all you need is this command: 
 
 ```sh
-$ kubectl port-forward <API pod name> <desired port on your machine>:80
+$ kubectl -n dev-vegbank port-forward <API pod name> <desired port on your machine>:80
 ```
 
 Then you can access the API on localhost via the port you specified. 
