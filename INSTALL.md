@@ -32,12 +32,14 @@ Step 3:
 
 Take the `flyway.conf` file in this repo and move it into your local flyway `conf` installation. Ensure that the contents match the location of the `/migrations` folder found in the directory where this `vegbank2` repo exists. For example:
 
-```
-// ex. /Users/doumok/Code/flyway-10.17.0/conf/flyway.conf
-flyway.url=jdbc:postgresql://localhost:5432/vegbank2
+```sh
+$ cat Users/doumok/Code/flyway-10.17.0/conf/flyway.conf
+
+flyway.url=jdbc:postgresql://localhost:5432/vegbank
 flyway.user=vegbank
 flyway.password=vegbank
-flyway.locations=filesystem:/Users/doumok/Code/vegbank2/helm/db/migrations
+# Example: flyway.locations=filesystem:/Users/doumok/Code/vegbank2/helm/db/migrations
+flyway.locations=/path/to/your/helm/db/migrations
 ```
 
 Step 4:
