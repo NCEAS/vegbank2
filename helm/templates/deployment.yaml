@@ -42,7 +42,7 @@ spec:
         - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
           image: busybox:1.28
           command: ['sh', '-c', "until nslookup vegbankdb-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for postgres; sleep 2; done"]
-        - name: {{ .Chart.Name }}-init-postgres # Set-up Postgres if restore is enabled
+        - name: {{ .Chart.Name }}-setup-postgres # Set-up Postgres if restore is enabled
           # Note: This image should match the postgres version installed
           image: postgres:16
           env:
