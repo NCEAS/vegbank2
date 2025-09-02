@@ -210,6 +210,8 @@ postgresql:
       host        vegbank       vegbank       ::0/0           password
       local       all           all                           trust
       host        all           all           127.0.0.1/32    trust
+      # allow the initContainer to connect as postgres to the postgres DB
+      host        postgres      postgres      0.0.0.0/0       password
     ## @section Persistence
     ## Size of the storage space available for the database. 
     ## As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
