@@ -28,6 +28,3 @@ spec:
       staticVolume: "true"
     volumeHandle: *pv-name
   persistentVolumeReclaimPolicy: Retain
-  ## Use your own storage class
-  storageClassName: csi-cephfs-sc
-  volumeMode: Filesystem

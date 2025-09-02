@@ -21,5 +21,3 @@ spec:
   resources:
     requests:
       storage: 100Gi
-  ## Use your own storage class
-  storageClassName: csi-cephfs-sc
