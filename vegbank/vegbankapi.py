@@ -131,8 +131,8 @@ def cover_methods(accession_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
-@app.route("/upload_parquet_multiple", methods=['POST'])
-def upload_parquet_multiple():
+@app.route("/bulk-upload", methods=['POST'])
+def bulk_upload():
     if 'files[]' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     
