@@ -37,9 +37,11 @@ default_detail = "full"
 default_limit = 1000
 default_offset = 0
 
+
 @app.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
+
 
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
@@ -55,10 +57,12 @@ def plot_observations(accession_code):
     else: 
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
 @app.route("/get_observation_details/<accession_code>", methods=['GET'])
 def get_observation_details(accession_code):
     plot_observation_operator = PlotObservation()
     return plot_observation_operator.get_observation_details(params, accession_code)
+
 
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accession_code>", methods=['GET'])
@@ -71,6 +75,7 @@ def taxon_observations(accession_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
 @app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<accession_code>", methods=['GET'])
 def community_classifications(accession_code):
@@ -81,6 +86,7 @@ def community_classifications(accession_code):
         return community_classification_operator.get_community_classifications(request, params, accession_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
 
 @app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<accession_code>", methods=['GET'])
@@ -93,6 +99,7 @@ def community_concepts(accession_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accession_code>", methods=['GET'])
 def parties(accession_code):
@@ -101,6 +108,7 @@ def parties(accession_code):
         return jsonify_error_message("POST method is not supported for parties."), 405
     elif request.method == 'GET':
         return party_operator.get_parties(request, params, accession_code)
+
 
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<accession_code>", methods=['GET'])
