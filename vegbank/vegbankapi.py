@@ -9,7 +9,13 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
-from operators import PartyOperator, ProjectOperator, PlotObservationOperator, CommunityConceptOperator, CommunityClassificationOperator, TaxonObservationOperator, table_defs_config
+from operators.TaxonObservation import TaxonObservation
+from operators.PlotObservation import PlotObservation
+from operators.Party import Party
+from operators.CommunityClassification import CommunityClassification
+from operators.CommunityConcept import CommunityConcept
+from operators.CoverMethod import CoverMethod
+from operators.Project import Project
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
@@ -38,73 +44,92 @@ def welcome_page():
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def plot_observations(accession_code):
-    plot_observation_operator = PlotObservationOperator.PlotObservationOperator(request, params, accession_code)
+    plot_observation_operator = PlotObservation()
     if request.method == 'POST':
         if(allow_uploads is False):
             return jsonify_error_message("Uploads are not allowed on this server."), 403
         else:
-            return plot_observation_operator.upload_plot_observations(request)
+            return plot_observation_operator.upload_plot_observations(request, params)
     elif request.method == 'GET':
-        return plot_observation_operator.get_plot_observations(accession_code, request)
+        return plot_observation_operator.get_plot_observations(request, params, accession_code)
     else: 
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+@app.route("/get_observation_details/<accession_code>", methods=['GET'])
+def get_observation_details(accession_code):
+    plot_observation_operator = PlotObservation()
+    return plot_observation_operator.get_observation_details(params, accession_code)
+
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-observations/<accession_code>")
+@app.route("/taxon-observations/<accession_code>", methods=['GET'])
 def taxon_observations(accession_code):
-    taxon_observation_operator = TaxonObservationOperator.TaxonObservationOperator(request, params, accession_code)
+    taxon_observation_operator = TaxonObservation()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for taxon observations."), 405
     elif request.method == 'GET':
-        return taxon_observation_operator.get_taxon_observations(accession_code)
+        return taxon_observation_operator.get_taxon_observations(request, params, accession_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 @app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-classifications/<accession_code>")
+@app.route("/community-classifications/<accession_code>", methods=['GET'])
 def community_classifications(accession_code):
-    community_classification_operator = CommunityClassificationOperator.CommunityClassificationOperator(request, params, accession_code)
+    community_classification_operator = CommunityClassification()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for community classifications."), 405
     elif request.method == 'GET':
-        return community_classification_operator.get_community_classifications(accession_code)
+        return community_classification_operator.get_community_classifications(request, params, accession_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 @app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-concepts/<accession_code>")
+@app.route("/community-concepts/<accession_code>", methods=['GET'])
 def community_concepts(accession_code):
-    community_concept_operator = CommunityConceptOperator.CommunityConceptOperator(request, params, accession_code)
+    community_concept_operator = CommunityConcept()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for community concepts."), 405
     elif request.method == 'GET':
-        return community_concept_operator.get_community_concepts(accession_code)
+        return community_concept_operator.get_community_concepts(request, params, accession_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/parties/<accession_code>")
+@app.route("/parties/<accession_code>", methods=['GET'])
 def parties(accession_code):
-    party_operator = PartyOperator.PartyOperator(request, params, accession_code)
+    party_operator = Party()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for parties."), 405
     elif request.method == 'GET':
-        return party_operator.get_parties()
+        return party_operator.get_parties(request, params, accession_code)
 
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/projects/<accession_code>")
+@app.route("/projects/<accession_code>", methods=['GET'])
 def projects(accession_code):
-   project_operator = ProjectOperator.ProjectOperator(request, params, accession_code)
+   project_operator = Project()
    if request.method == 'POST':
         if(allow_uploads is False):
             return jsonify_error_message("Uploads are not allowed on this server."), 403
         else:
-            return project_operator.upload_project(request) 
+            return project_operator.upload_project(request, params) 
    elif request.method == 'GET':
-        return project_operator.get_projects(accession_code, request)
+        return project_operator.get_projects(request, params, accession_code)
    else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
+@app.route("/cover-methods", defaults={'accession_code': None}, methods=['GET', 'POST'])
+@app.route("/cover-methods/<accession_code>")
+def cover_methods(accession_code):
+    cover_method_operator = CoverMethod()
+    if request.method == 'POST':
+        if(allow_uploads is False):
+            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        else:
+            return cover_method_operator.upload_cover_method(request, params) 
+    elif request.method == 'GET':
+        return cover_method_operator.get_cover_method(request, params, accession_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 #Shiny App Endpoints - These will be retired, leaving them here just until we're done testing. 
 @app.route("/get_map_points")
 def get_map_points():
@@ -159,35 +184,6 @@ def get_observation_table(limit, offset):
     print(f"Observation table queried and processed in: {endTime - startTime:0.4f} seconds")     
     return jsonify(to_return)
 
-@app.route("/get_observation_details/<accession_code>")
-def get_observation_details(accession_code):
-    to_return = {}
-    with psycopg.connect(**params, row_factory=dict_row) as conn:
-        with conn.cursor() as cur:
-            with open(QUERIES_FOLDER + "get_observation_details.sql", "r") as file:
-                sql = file.read() 
-            data = (accession_code, )
-            cur.execute(sql, data)
-            to_return["data"] = cur.fetchall()
-            to_return["count"] = len(to_return["data"])
-            print(to_return)
-            if(len(to_return["data"]) != 0):
-                taxa = []
-                with open(QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r") as file:
-                    sql = file.read() 
-                data = (accession_code, )
-                cur.execute(sql, data)
-                taxa = cur.fetchall()
-                to_return["data"][0].update({"taxa": taxa})
-                communities = []
-                with open(QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r") as file:
-                    sql = file.read() 
-                data = (accession_code, )
-                cur.execute(sql, data)
-                communities = cur.fetchall()
-                to_return["data"][0].update({"communities": communities})
-        conn.close()      
-    return jsonify(to_return)
 
 #Upload Endpoints
 

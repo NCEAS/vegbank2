@@ -11,11 +11,11 @@ import traceback
 from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
-class TaxonObservationOperator(Operator):
-    def __init__(self, request, params, accession_code):
-        super().__init__(request, params, accession_code)
+class TaxonObservation(Operator):
+    def __init__(self):
+        super().__init__()
 
-    def get_taxon_observations(self, accession_code):
+    def get_taxon_observations(self, request, params, accession_code):
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("minimal", "full"):
             return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
@@ -42,7 +42,7 @@ class TaxonObservationOperator(Operator):
                 data = (accession_code, )
 
         to_return = {}
-        with psycopg.connect(**self.params, row_factory=dict_row) as conn:
+        with psycopg.connect(**params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 cur.execute(sql, data)
                 to_return["data"] = cur.fetchall()

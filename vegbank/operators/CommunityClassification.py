@@ -11,51 +11,47 @@ import traceback
 from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
+class CommunityClassification(Operator):
+    def __init__(self):
+        super().__init__()
 
-class PartyOperator(Operator):
-
-
-    def __init__(self, request, params, accession_code):
-        super().__init__(request, params, accession_code)
-    
-
-    def get_parties(self):
+    def get_community_classifications(self, request, params, accession_code):
         detail = request.args.get("detail", self.default_detail)
-        if detail not in ("full"):
-            return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
+        if detail not in ("minimal", "full"):
+            return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
         try:
             limit = int(request.args.get("limit", self.default_limit))
             offset = int(request.args.get("offset", self.default_offset))
         except ValueError:
             return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
-
-        with open(self.QUERIES_FOLDER + "/party/get_parties_count.sql", "r") as file:
+        
+        with open(self.QUERIES_FOLDER + "/community_classification/get_community_classifications_count.sql", "r") as file:
             count_sql = file.read()
 
         sql = ""
-        if(self.accession_code is None): 
-            with open(self.QUERIES_FOLDER + "/party/get_parties_full.sql", "r") as file:
-                sql = file.read()
+        if(accession_code is None): 
             data = (limit, offset, )
+            if(detail == "minimal"):
+                with open(self.QUERIES_FOLDER + "/community_classification/get_community_classifications_minimal.sql", "r") as file:
+                    sql = file.read()
+            else:
+                with open(self.QUERIES_FOLDER + "/community_classification/get_community_classifications_full.sql", "r") as file:
+                    sql = file.read()
         else:
-            with open(self.QUERIES_FOLDER + "/party/get_party_by_accession_code.sql", "r") as file:
+            with open(self.QUERIES_FOLDER + "/community_classification/get_community_classification_by_accession_code.sql", "r") as file:
                 sql = file.read()
-            data = (self.accession_code, )
+            data = (accession_code, )
 
         to_return = {}
-        with psycopg.connect(**self.params, row_factory=dict_row) as conn:
+        with psycopg.connect(**params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 cur.execute(sql, data)
                 to_return["data"] = cur.fetchall()
 
-                if(self.accession_code is None):
+                if(accession_code is None):
                     cur.execute(count_sql)
                     to_return["count"] = cur.fetchall()[0]["count"]
                 else:
                     to_return["count"] = len(to_return["data"])
             conn.close()    
         return jsonify(to_return)
-
-
-    def upload_parties(request):
-        return jsonify_error_message("POST method is not supported for parties."), 405

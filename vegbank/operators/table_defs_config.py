@@ -131,3 +131,25 @@ project = [
     'stopdate', 
     'user_code'
 ]
+
+cover_method = [
+    'user_code',
+    'rf_code',
+    'covertype',
+    'coverestimationmethod'
+]
+cover_index = [
+    'covercode',
+    'upperlimit',
+    'lowerlimit',
+    'coverpercent',
+    'indexdescription'
+]
+
+stratum_method = [
+    'user_code',
+    'rf_code',
+    'stratummethodname',
+    'stratummethoddescription',
+    'stratumassignment'
+]

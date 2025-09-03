@@ -11,11 +11,11 @@ import traceback
 from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
-class PlotObservationOperator(Operator):
-    def __init__(self, request, params, accession_code):
-        super().__init__(request, params, accession_code)
+class PlotObservation(Operator):
+    def __init__(self):
+        super().__init__()
 
-    def get_plot_observations(self, accession_code, request):
+    def get_plot_observations(self, request, params, accession_code):
         create_parquet = request.args.get("create_parquet", "false").lower() == "true"
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("minimal", "full"):
@@ -42,7 +42,7 @@ class PlotObservationOperator(Operator):
                     sql = file.read()
         
         to_return = {}
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
+        with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
             if(create_parquet is False):
                 conn.row_factory=dict_row
             else:
@@ -63,7 +63,7 @@ class PlotObservationOperator(Operator):
             conn.close()   
         return jsonify(to_return)
 
-    def upload_plot_observations(self):
+    def upload_plot_observations(self, request, params):
         if 'file' not in request.files:
             return jsonify_error_message("No file part in the request."), 400
         file = request.files['file']
@@ -123,7 +123,7 @@ class PlotObservationOperator(Operator):
             pl_input_no_duplicates['submitter_email'] = "test@test_email.org" #This will need to be updated after authentication
             pl_inputs = list(pl_input_no_duplicates.itertuples(index=False, name=None))
 
-            with psycopg.connect(**self.params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
+            with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
                 
                 with conn.cursor() as cur:
                     with conn.transaction():
@@ -310,3 +310,32 @@ class PlotObservationOperator(Operator):
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+
+    def get_observation_details(self, params, accession_code):
+        to_return = {}
+        with psycopg.connect(**params, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                with open(self.QUERIES_FOLDER + "get_observation_details.sql", "r") as file:
+                    sql = file.read() 
+                data = (accession_code, )
+                cur.execute(sql, data)
+                to_return["data"] = cur.fetchall()
+                to_return["count"] = len(to_return["data"])
+                print(to_return)
+                if(len(to_return["data"]) != 0):
+                    taxa = []
+                    with open(self.QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r") as file:
+                        sql = file.read() 
+                    data = (accession_code, )
+                    cur.execute(sql, data)
+                    taxa = cur.fetchall()
+                    to_return["data"][0].update({"taxa": taxa})
+                    communities = []
+                    with open(self.QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r") as file:
+                        sql = file.read() 
+                    data = (accession_code, )
+                    cur.execute(sql, data)
+                    communities = cur.fetchall()
+                    to_return["data"][0].update({"communities": communities})
+            conn.close()      
+        return jsonify(to_return)
