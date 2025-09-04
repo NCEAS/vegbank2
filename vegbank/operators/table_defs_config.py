@@ -138,7 +138,9 @@ cover_method = [
     'covertype',
     'coverestimationmethod'
 ]
+
 cover_index = [
+    'covermethod_id',
     'covercode',
     'upperlimit',
     'lowerlimit',

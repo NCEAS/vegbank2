@@ -84,40 +84,78 @@ class CoverMethod(Operator):
                 return jsonify_error_message(f"Your data must only contain fields included in the plot observation schema. The following fields are not supported: {additional_columns} ")
 
             df.replace({pd.NaT: None}, inplace=True)
-            inputs = list(df.itertuples(index=False, name=None))
+            df.replace({np.nan: None}, inplace=True)
+
+            cover_method_df = df[cover_method_fields]
+            cover_method_df = cover_method_df.drop_duplicates()
+
+            print(str(cover_method_df))
+            print("---------------")
+            cover_method_inputs = list(cover_method_df.itertuples(index=False, name=None))
+            
 
             with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
                 
                 with conn.cursor() as cur:
                     with conn.transaction():
                         
-                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/create_cover_method_temp_table.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_to_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/insert_cover_methods_to_temp_table.sql", "r") as file:
                             sql = file.read()
-                        cur.executemany(sql, inputs)
-
+                        cur.executemany(sql, cover_method_inputs)
+                        
                         print("about to run validate cover methods")
-                        with open(self.QUERIES_FOLDER + "/cover_method/validate_cover_methods.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/validate_cover_methods.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
                         existing_records = cur.fetchall()
                         print("existing records: " + str(existing_records))
 
-                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql", "r") as file:
+                        cur.nextset()
+                        new_references = cur.fetchall()
+                        print("new references: " + str(new_references))
+
+                        if(len(new_references) > 0):
+                            raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new cover methods.")
+
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql)
-                        inserted_records = cur.fetchall()
-                        print("inserted records: " + str(inserted_records))
+                        inserted_cover_method_records = cur.fetchall()
+                        print("inserted records: " + str(inserted_cover_method_records))
+
+                        if(len(inserted_cover_method_records) == 0 and len(existing_records) == 0):
+                            raise ValueError("No new cover methods to insert. Please check your data for duplicates.")
+                        
+                        inserted_cover_method_records_df = pd.DataFrame(inserted_cover_method_records)
+                        print("inserted_cover_method_records_df: " + str(inserted_cover_method_records_df))
+
+                        cover_index_df = pd.merge(df, inserted_cover_method_records_df[['covertype', 'covermethod_id']], on='covertype')
+                        cover_index_df = cover_index_df[cover_index_fields]
+                        cover_index_inputs = list(cover_index_df.itertuples(index=False, name=None))
+
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/create_cover_index_temp_table.sql", "r") as file:
+                            sql = file.read() 
+                        cur.execute(sql)
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/insert_cover_indices_to_temp_table.sql", "r") as file:
+                            sql = file.read()
+                        cur.executemany(sql, cover_index_inputs)
+
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql", "r") as file:
+                            sql = file.read()
+                        cur.execute(sql)
+                        inserted_cover_index_records = cur.fetchall()
+                        print("inserted cover index records: " + str(inserted_cover_index_records))
 
                         covermethod_ids = []
-                        for record in inserted_records:
+                        for record in inserted_cover_method_records:
                             covermethod_ids.append(record['covermethod_id'])
                         print("covermethod_ids: " + str(covermethod_ids))
 
                         print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_accession_codes.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/create_cover_method_accession_codes.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql, (covermethod_ids, ))
                         new_cm_codes = cur.fetchall()
@@ -133,11 +171,20 @@ class CoverMethod(Operator):
 
 
                         to_return_cover_methods = []
+                        to_return_cover_indices = []
                         for index, record in joined_df.iterrows():
                             to_return_cover_methods.append({
                                 "user_code": record['user_code'], 
-                                "cm_code": record['cm_code'],
+                                "cm_code": record['accessioncode'],
                                 "covertype": record['covertype'],
+                                "action":"inserted"
+                            })
+                        for record in inserted_cover_index_records:
+                            print("record: " + str(record))
+                            to_return_cover_indices.append({
+                                "cm_code": "cm." + str(record['covermethod_id']), 
+                                "ci_code": "ci." + str(record['coverindex_id']),
+                                "covercode": record['covercode'],
                                 "action":"inserted"
                             })
                         for record in existing_records:
@@ -148,15 +195,18 @@ class CoverMethod(Operator):
                                 "action":"matched"
                             })
                         to_return["resources"] = {
-                            "cm": to_return_cover_methods
+                            "cm": to_return_cover_methods,
+                            "ci": to_return_cover_indices
                         }
                         to_return["counts"] = {
                             "cm":{
                                 "inserted": len(joined_df),
                                 "matched": len(existing_records)
+                            },
+                            "ci":{
+                                "inserted": len(inserted_cover_index_records)
                             }
                         }
-                        
             conn.close()      
 
             return jsonify(to_return)
