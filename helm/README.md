@@ -78,19 +78,22 @@ $ helm install vegbankdb . --set ingress.enabled=false
 
 This will install both the python pod (based on the `docker/Dockerfile` in this repo) and the Postgres pod (using the `bitnami` image) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pods the starting prefix of `vegbankdb` in its name. You can change the name vegbankdb to whatever you like. The `Postgres` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be restored with the dump file.
 
-- Tip: If you are clearing out an existing namespace, or need to restart this process - you can do this by uninstalling the helm chart and deleting the existing postgres content. The steps below are essentially pulling the rug out on the pg container - an alternative approach (that is more complicated but is nicer to the system) would be to helm uninstall your app first, then mount the PVC in a busybox or other container temporarily to delete the files.
+- Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by first uninstalling the chart, and then deleting the associated PVC. The PVC that is created (ex. `data-vegbankdb-postgresql-0`) is defined by the chart - and houses all data associated with the `postgres` instance.
 
   ```sh
-  $ kubectl exec -it vegbankdb-postgresql-0 -- /bin/sh
-  # Remove all associated database data
-  # This will cause your pod to be forcefully restarted - and you will be booted out of the pod
-  $ rm -rf /bitnami/postgresql/data
-  # Exit the shell (ctrl+d) if you aren't automatically booted
+  # Uninstall the chart
   $ helm uninstall vegbankdb
+  # Get the PVC
+  # kubectl get pvc -n dev-vegbank
+  NAME                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+  data-vegbankdb-postgresql-0         Bound    pvc-e4de48bf-8ada-45f1-945d-a285881f9cfc   100Gi      RWX            csi-cephfs-sc   7m41s
+  vegbankdb-init-pgdata               Bound    cephfs-vegbankdb-init-pgdata               100Gi      RWO                            2d22h
+
+  # Delete the PVC
+  $ kubectl delete -n dev-vegbank pvc data-vegbankdb-postgresql-0
   ```
 
-  This will delete all the pods and give you a fresh start. The `PostgreSQL` pod will start up and point to an empty directory, ready for you to restart this process (ex. creating a new `vegbank` user, a new database `vegbank`, etc.)
-
+Helm uninstall will delete all the pods, and deleting the PVC provides a clean slate for helm to initialize the required `postgres` settings (ex. creating a new `vegbank` user, a new database `vegbank`, etc.)
 
 ## Step 3: Watch the `initContainers`
 
