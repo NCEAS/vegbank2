@@ -159,12 +159,12 @@ spec:
                 env | grep '^VB_DB_' || true;
                 echo "## Database Restore Requested, executing data-only dump file";
                 export PGPASSWORD="$VB_DB_PASS";
-                psql \
+                pg_restore \
                 -h "$VB_DB_HOST" \
                 -p "$VB_DB_PORT" \
                 -U "$VB_DB_USER" \
                 -d "$VB_DB_NAME" \
-                -f "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
+                -j 4 "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
               fi
         - name: {{ .Chart.Name }}-apply-flyway # Apply remaining migrations
           securityContext:
