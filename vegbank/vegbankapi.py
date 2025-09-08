@@ -16,6 +16,7 @@ from operators.CommunityClassification import CommunityClassification
 from operators.CommunityConcept import CommunityConcept
 from operators.CoverMethod import CoverMethod
 from operators.Project import Project
+from operators.StratumMethod import StratumMethod
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
@@ -138,6 +139,22 @@ def cover_methods(accession_code):
         return cover_method_operator.get_cover_method(request, params, accession_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/stratum-methods", defaults={'accession_code': None}, methods=['GET', 'POST'])
+@app.route("/stratum-methods/<accession_code>", methods=['GET'])
+def stratum_methods(accession_code):
+    stratum_method_operator = StratumMethod()
+    if request.method == 'POST':
+        if(allow_uploads is False):
+            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        else:
+            return stratum_method_operator.upload_stratum_method(request, params)
+    elif request.method == 'GET':
+        return stratum_method_operator.get_stratum_method(request, params, accession_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
 
 @app.route("/bulk-upload", methods=['POST'])
 def bulk_upload():

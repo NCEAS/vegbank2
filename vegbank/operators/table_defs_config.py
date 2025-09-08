@@ -155,3 +155,10 @@ stratum_method = [
     'stratummethoddescription',
     'stratumassignment'
 ]
+
+stratum_type = [
+    'stratummethod_id',
+    'stratumindex',
+    'stratumname',
+    'stratumdescription'
+]
