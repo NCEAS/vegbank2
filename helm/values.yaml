@@ -16,6 +16,21 @@ database:
   ## @param db_port - The port to connect to on the database pod. 
   port: 5432
 
+databaseRestore:
+  enabled: false
+  target: "1.4"
+  pvc: "vegbankdb-init-pgdata"
+  mountpath: "/tmp/databaseRestore"
+  filepath: "vegbank_dataonly_fc_20250904.dump"
+
+flyway:
+  image:
+    repository: flyway/flyway
+    pullPolicy: IfNotPresent
+    ## Overrides the image tag whose default is the chart appVersion.
+    tag: "10.17.0"
+  configpath: /opt/local/flyway/flyway.conf
+  dbpath: /opt/local/flyway/db
 
 ## @section Image 
 ## configuration for the docker image of the Flask API. 
@@ -196,6 +211,8 @@ postgresql:
       host        vegbank       vegbank       ::0/0           password
       local       all           all                           trust
       host        all           all           127.0.0.1/32    trust
+      # allow the initContainer to connect as postgres to the postgres DB
+      host        postgres      postgres      0.0.0.0/0       password
     ## @section Persistence
     ## Size of the storage space available for the database. 
     ## As of today (6/10/20205), actual size of the db is about 6.5 Gi. 

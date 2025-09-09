@@ -1,0 +1,30 @@
+# This PV is for the namespace 'dev-vegbank-dev' with user 'vegbank-dev'
+# Creates a persistent volume for use by postgresql
+#
+# This should be done only one time, separately from the helm install/upgrade cycle
+#
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: &pv-name cephfs-vegbankdb-init-pgdata
+  labels:
+    metacatVolumeName: *pv-name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Gi
+  csi:
+    driver: cephfs.csi.ceph.com
+    nodeStageSecretRef:
+      name: csi-cephfs-test-data-tdg-subvol
+      namespace: ceph-csi-cephfs
+    volumeAttributes:
+      # Use your own clusterID, fsName, rootPath etc. here
+      clusterID: 8aa4d4a0-a209-11ea-baf5-ffc787bfc812
+      fsName: cephfs
+      # This is the mount on knbvm, the starting point for any file paths desecribed
+      rootPath: /volumes/tdg-subvol-group/tdg-subvol/131b18ad-e09d-4234-8bea-7c60ffa5621c/repos/vegbank/
+      staticVolume: "true"
+    volumeHandle: *pv-name
+  persistentVolumeReclaimPolicy: Retain

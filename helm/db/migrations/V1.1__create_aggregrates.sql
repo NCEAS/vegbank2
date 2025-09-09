@@ -3,4 +3,4 @@ CREATE AGGREGATE concat (
         SFUNC = textcat,
         STYPE = text,
         INITCOND = ''
-        );
+);
