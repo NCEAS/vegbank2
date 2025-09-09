@@ -4,5 +4,12 @@ metadata:
      name: {{ .Release.Name }}-vegbank-configmap
 data:
      myvalue: "Hello World"
-     
-     
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-db-files
+  labels:
+    {{- include "vegbank.labels" . | nindent 4 }}
+data:
+{{ (tpl (.Files.Glob "db/migrations/*").AsConfig . ) | indent 4 }}

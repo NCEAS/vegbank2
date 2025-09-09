@@ -1,3 +1,6 @@
+During the review process, we have been able to create the expected schema using less migration files. You can get more context and find more about that process here:
+- https://github.com/NCEAS/vegbank2/issues/74
+
 # VegBank PostGres Migration Notes (How the migration files were generated)
 
 This README document outlines the process taken to generate the Vegbank schema from scratch to reproduce the migration files found in `/migrations`, along with the modifications made to get everything in sync. This document is meant to provide context, not the concrete steps to set-up postgres from scratch and migrate to the latest version.
