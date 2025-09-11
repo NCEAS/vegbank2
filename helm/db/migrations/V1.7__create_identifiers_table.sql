@@ -11,3 +11,36 @@ CREATE TABLE identifier (
   identifier_value TEXT NOT NULL, -- e.g., "vb.ob.1234.abcd", "10.1234/abcd", "0000-0002-1825-0097"
   UNIQUE (identifier_type, identifier_value) -- Prevent duplicate mappings
 );
+
+
+-- Creates a mapping table to iterate over for an the identifier import procedure
+CREATE TABLE IF NOT EXISTS identifier_source_map (
+  source_table TEXT NOT NULL,   -- table name
+  table_code   TEXT NOT NULL,   -- short code for the table
+  pk_column    TEXT NOT NULL,   -- primary key column of the source table
+  id_type      TEXT NOT NULL    -- identifier type (e.g., AccessionCode)
+);
+
+-- Manually insert the mapping data
+INSERT INTO identifier_source_map (source_table, table_code, pk_column, id_type) VALUES
+  ('aux_role', 'ar', 'role_id', 'accessioncode'),
+  ('commClass', 'ci', 'commclass_id', 'accessioncode'),
+  ('commConcept', 'cc', 'commconcept_id', 'accessioncode'),
+  ('commStatus', 'cs', 'commstatus_id', 'accessioncode'),
+  ('coverMethod', 'cm', 'covermethod_id', 'accessioncode'),
+  ('namedPlace', 'np', 'namedplace_id', 'accessioncode'),
+  ('observation', 'ob', 'observation_id', 'accessioncode'),
+  ('party', 'py', 'party_id', 'accessioncode'),
+  ('plantConcept', 'pc', 'plantconcept_id', 'accessioncode'),
+  ('plot', 'pl', 'plot_id', 'accessioncode'),
+  ('project', 'pj', 'project_id', 'accessioncode'),
+  ('plantStatus', 'ps', 'plantstatus_id', 'accessioncode'),
+  ('reference', 'rf', 'reference_id', 'accessioncode'),
+  ('referenceJournal', 'rj', 'referencejournal_id', 'accessioncode'),
+  ('referenceParty', 'rp', 'referenceparty_id', 'accessioncode'),
+  ('soilTaxon', 'st', 'soiltaxon_id', 'accessioncode'),
+  ('stratumMethod', 'sm', 'stratummethod_id', 'accessioncode'),
+  ('taxonObservation', 'to', 'taxonobservation_id', 'accessioncode'),
+  ('taxonInterpretation', 'ti', 'taxoninterpretation_id', 'accessioncode'),
+  ('userDefined', 'ud', 'userdefined_id', 'accessioncode')
+ON CONFLICT DO NOTHING;
