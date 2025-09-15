@@ -129,7 +129,16 @@ project = [
     'projectdescription', 
     'startdate', 
     'stopdate', 
-    'user_code'
+    'pj_code'
+]
+
+#Adding soiltaxon fields now even though we're not uploading them yet, just in case. 
+soiltaxon = [
+    'soilcode',
+    'soilname',
+    'soillevel',
+    'soilparent_id',
+    'soilframework'
 ]
 
 cover_method = [
@@ -161,4 +170,19 @@ stratum_type = [
     'stratumindex',
     'stratumname',
     'stratumdescription'
+]
+
+taxon_importance = [
+    'taxonobservation_id',
+    'stratum_id',
+    'cover',
+    'basalarea',
+    'biomass',
+    'inferencearea'
+]
+
+taxon_observation = [
+    'authorplantname',
+    'rf_code',
+    'taxoninferencearea' #This and inference area are actually different in the data even though they sound similar
 ]

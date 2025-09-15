@@ -68,22 +68,26 @@ class Project(Operator):
             return jsonify_error_message("No selected file."), 400
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-
+        
+        project_fields = table_defs_config.project
         to_return = {}
+
         try:
             df = pd.read_parquet(file)
             print(f"DataFrame loaded with {len(df)} records.")
 
-            #Adding these for testing, they should be removed at launch. 
-            if('project_id' in df.columns):
-                df.drop(columns=['project_id'], inplace=True)
-            if('obscount' in df.columns):
-                df.drop(columns=['obscount'], inplace=True)
-            if('lastplotaddeddate' in df.columns):
-                df.drop(columns=['lastplotaddeddate'], inplace=True)
+            df.columns = map(str.lower, df.columns)
+            #Checking if the user submitted any unsupported columns
+            additional_columns = set(df.columns) - set(project_fields)
+            if(len(additional_columns) > 0):
+                return jsonify_error_message(f"Your data must only contain fields included in the project schema. The following fields are not supported: {additional_columns} ")
 
             df.replace({pd.NaT: None}, inplace=True)
-            inputs = list(df.itertuples(index=False, name=None))
+            df.replace({np.nan: None}, inplace=True)
+            
+            project_df = df[project_fields]
+
+            inputs = list(project_df.itertuples(index=False, name=None))
 
             with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
                 
@@ -136,15 +140,15 @@ class Project(Operator):
                         to_return_projects = []
                         for index, record in joined_df.iterrows():
                             to_return_projects.append({
-                                "user_code": record['projectaccessioncode'], 
+                                "user_code": record['pj_code'], 
                                 "pj_code": record['accessioncode'],
                                 "projectname": record['projectname'],
                                 "action":"inserted"
                             })
                         for record in existing_records:
                             to_return_projects.append({
-                                "user_code": record["user_code"],
-                                "pj_code": record['user_code'],
+                                "user_code": record["pj_code"],
+                                "pj_code": record['pj_code'],
                                 "projectname": record['projectname'],
                                 "action":"matched"
                             })
@@ -157,7 +161,6 @@ class Project(Operator):
                                 "matched": len(existing_records)
                             }
                         }
-                        
             conn.close()      
 
             return jsonify(to_return)
