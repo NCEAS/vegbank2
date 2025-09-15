@@ -11,8 +11,8 @@ DECLARE -- Declare variables
 BEGIN
   FOR r IN SELECT * FROM identifier_source_map LOOP
     -- Use Postgres' format() function to safely build a SQL statement
-    -- Dollar-quoting ($f$ ... $f$) makes it easier to write multi-line SQL
-    -- ... without escaping single quotes; $f$ could also be written as $$.
+    -- Dollar-quoting (\$f\$ ... \$f\$) makes it easier to write multi-line SQL
+    -- without escaping single quotes; \$f\$ could also be written as \$\$
     sql := format($f$
       -- := assigns the string result from format() to the variable sql
       INSERT INTO identifier (vb_table_code, vb_record_id, identifier_type, identifier_value)
