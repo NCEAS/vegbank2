@@ -2,7 +2,7 @@
 -- Creates the identifier table for storing resource identifiers
 ----------------------------------------------------------------------------
 
-CREATE TABLE identifier (
+CREATE TABLE identifiers (
   identifier_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   vb_table_code TEXT NOT NULL, -- Code representing name of the table
   vb_record_id BIGINT NOT NULL, -- FK holding the PK of the resource

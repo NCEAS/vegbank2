@@ -15,7 +15,7 @@ BEGIN
     -- without escaping single quotes; \$f\$ could also be written as \$\$
     sql := format($f$
       -- := assigns the string result from format() to the variable sql
-      INSERT INTO identifier (vb_table_code, vb_record_id, identifier_type, identifier_value)
+      INSERT INTO identifiers (vb_table_code, vb_record_id, identifier_type, identifier_value)
       SELECT
         %L,    -- literal (adds quotes, escapes safely): table code string (e.g., 'pl')
         %I,    -- identifier (column names): PK column name (e.g., plot_id)
