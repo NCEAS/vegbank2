@@ -21,7 +21,7 @@ BEGIN
         %I,    -- identifier (column names): PK column name (e.g., plot_id)
         %L,    -- literal (adds quotes, escapes safely): identifier type (e.g., 'accessioncode')
         accessionCode
-      FROM %I  -- identifier (table names): table name (e.g., plot)
+      FROM %s  -- raw substitution: table name (e.g., plot)
       WHERE accessionCode IS NOT NULL
       ON CONFLICT (identifier_type, identifier_value) DO NOTHING;
     $f$, r.table_code, r.pk_column, r.id_type, r.source_table);
