@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------
--- Creates a procedure to populate the identifier table dynamically
+-- Creates a procedure and then populate the identifiers table dynamically
 ----------------------------------------------------------------------------
 
 CREATE OR REPLACE PROCEDURE populate_identifiers()
@@ -28,3 +28,5 @@ BEGIN
     EXECUTE sql; -- Run the dynamically built query
   END LOOP;
 END$$;
+
+CALL populate_identifiers();
