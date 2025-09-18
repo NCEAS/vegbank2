@@ -28,7 +28,7 @@ INSERT INTO vb_code_source_map (source_table, table_code, pk_column, id_type) VA
   ('reference', 'rf', 'reference_id', 'vb_code'),
   ('soilTaxon', 'st', 'soiltaxon_id', 'vb_code'),
   ('stratumMethod', 'sm', 'stratummethod_id', 'vb_code'),
-  ('stratumType', 'sy', 'stratummethod_id', 'vb_code'),
+  ('stratumType', 'sy', 'stratumtype_id', 'vb_code'),
   ('taxonObservation', 'to', 'taxonobservation_id', 'vb_code'),
   ('taxonInterpretation', 'ti', 'taxoninterpretation_id', 'vb_code')
 ON CONFLICT DO NOTHING;
