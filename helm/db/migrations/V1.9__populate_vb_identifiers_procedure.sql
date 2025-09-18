@@ -54,7 +54,6 @@ BEGIN
         %L,               -- identifier type: e.g., 'accessioncode'
         %L || '.' || %I   -- build identifier_value: e.g. 'pl' || '.' || plot_id
       FROM %s             -- table name: e.g., plot
-      WHERE accessionCode IS NOT NULL
       ON CONFLICT (identifier_type, identifier_value) DO NOTHING;
     $f$, r.table_code, r.pk_column, r.id_type,
          r.table_code, r.pk_column, r.source_table);
