@@ -4,14 +4,10 @@ LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
 
 WORKDIR /python-docker
 
-ADD /vegbank/vegbankapi.py .
-ADD /vegbank/utilities.py .
-ADD queries ./queries
-ADD /vegbank/operators ./operators
+ADD /dist/vegbank-2.0.0a1-py3-none-any.whl .
 
-RUN pip install flask
-RUN pip install psycopg
-RUN pip install pandas
-RUN pip install pyarrow
+RUN pip install vegbank-2.0.0a1-py3-none-any.whl
 
-CMD [ "flask", "--app",  "vegbankapi.py", "run", "--host=0.0.0.0", "--port=80"]
+ADD /vegbank/run.py .
+
+CMD ["python", "run.py"]

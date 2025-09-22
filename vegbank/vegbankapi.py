@@ -47,6 +47,32 @@ def welcome_page():
 @app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def plot_observations(accession_code):
+    '''
+    Handles creation and return of plots and observations.
+
+    This function supports both GET and POST requests. For POST requests, it allows 
+    the uploading of plot observations if uploads are permitted via an environment variable. For GET requests, 
+    it retrieves plot observations associated with the specified accession code. If no accession code is provided, 
+    returns a paginated json object of all plot observations. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
+
+    Parameters:
+        accession_code (str): The accession code for which plot observations are 
+                            to be retrieved. Defaults to None.
+
+    Returns:
+        Response: A JSON response containing either the plot observations or an 
+                error message, along with the appropriate HTTP status code.
+
+    Methods:
+        - POST: Uploads plot observations if allowed.
+        - GET: Retrieves plot observations based on the accession code.
+
+    Raises:
+        403: If uploads are not allowed on the server.
+        405: If the request method is neither GET nor POST.
+    '''
     plot_observation_operator = PlotObservation()
     if request.method == 'POST':
         if(allow_uploads is False):
@@ -61,6 +87,17 @@ def plot_observations(accession_code):
 
 @app.route("/get_observation_details/<accession_code>", methods=['GET'])
 def get_observation_details(accession_code):
+    '''
+    Returns detailed information about a specific observation based on the provided accession code.
+    Parameters:
+        accession_code (str): The accession code of the observation to retrieve details for.
+    Returns:
+        Response: A JSON response containing the observation details or an error message.
+    Methods: 
+        - GET: Retrieves observation details based on the accession code.
+    Raises: 
+        405: If the request method is not GET.
+    '''
     plot_observation_operator = PlotObservation()
     return plot_observation_operator.get_observation_details(params, accession_code)
 
@@ -68,6 +105,27 @@ def get_observation_details(accession_code):
 @app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-observations/<accession_code>", methods=['GET'])
 def taxon_observations(accession_code):
+    '''
+    Retrieve taxon observations based on the provided accession code. 
+    If no accession code is provided, return a paginated json objsect 
+    of all taxon observations. 
+
+    This function handles HTTP requests for taxon observations. It supports 
+    only the GET method to retrieve taxon observations. If a POST request is made, 
+    it returns an error message indicating that the POST method is not supported. 
+    For any other HTTP methods, it returns a method not allowed error.
+
+    Parameters:
+        accession_code (str): The unique identifier for the taxon 
+        observation to be retrieved.
+
+    Returns:
+        Response: A JSON response containing the taxon observations or an 
+        error message with the appropriate HTTP status code.
+    
+    Raises: 
+        405: If the request method is neither GET nor POST.
+    '''
     taxon_observation_operator = TaxonObservation()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for taxon observations."), 405
@@ -80,6 +138,26 @@ def taxon_observations(accession_code):
 @app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<accession_code>", methods=['GET'])
 def community_classifications(accession_code):
+    '''
+    Retrieve community classifications based on the provided accession code. 
+    If no accession code is provided, return a paginated json objsect 
+    of all community classifications. 
+
+    This function handles HTTP requests for community classifications. It supports 
+    only the GET method to retrieve community classifications. If a POST request is made, 
+    it returns an error message indicating that the POST method is not supported. 
+    For any other HTTP methods, it returns a method not allowed error.
+
+    Parameters:
+        accession_code (str): The unique identifier for the community classification to be retrieved.
+
+    Returns:
+        Response: A JSON response containing the community classifications or an 
+        error message with the appropriate HTTP status code.
+    
+    Raises: 
+        405: If the request method is neither GET nor POST.
+    '''
     community_classification_operator = CommunityClassification()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for community classifications."), 405
@@ -92,6 +170,26 @@ def community_classifications(accession_code):
 @app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<accession_code>", methods=['GET'])
 def community_concepts(accession_code):
+    '''
+    Retrieve community concepts based on the provided accession code. 
+    If no accession code is provided, return a paginated json objsect 
+    of all community concepts. 
+
+    This function handles HTTP requests for community concepts. It supports 
+    only the GET method to retrieve community concepts. If a POST request is made, 
+    it returns an error message indicating that the POST method is not supported. 
+    For any other HTTP methods, it returns a method not allowed error.
+
+    Parameters:
+        accession_code (str): The unique identifier for the community concepts to be retrieved.
+
+    Returns:
+        Response: A JSON response containing the community concepts or an 
+        error message with the appropriate HTTP status code.
+    
+    Raises: 
+        405: If the request method is neither GET nor POST.
+    '''
     community_concept_operator = CommunityConcept()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for community concepts."), 405
@@ -104,6 +202,26 @@ def community_concepts(accession_code):
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accession_code>", methods=['GET'])
 def parties(accession_code):
+    '''
+    Retrieve parties based on the provided accession code. 
+    If no accession code is provided, return a paginated json objsect 
+    of all parties. 
+
+    This function handles HTTP requests for parties. It supports 
+    only the GET method to retrieve parties. If a POST request is made, 
+    it returns an error message indicating that the POST method is not supported. 
+    For any other HTTP methods, it returns a method not allowed error.
+
+    Parameters:
+        accession_code (str): The unique identifier for the parties to be retrieved.
+
+    Returns:
+        Response: A JSON response containing the parties or an 
+        error message with the appropriate HTTP status code.
+    
+    Raises: 
+        405: If the request method is neither GET nor POST.
+    '''
     party_operator = Party()
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for parties."), 405
@@ -114,6 +232,30 @@ def parties(accession_code):
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<accession_code>", methods=['GET'])
 def projects(accession_code):
+   '''
+    Handles creation and return of projects.
+
+    This function supports both GET and POST requests. For POST requests, it allows 
+    the uploading of projects if uploads are permitted via an environment variable. For GET requests, 
+    it retrieves projects associated with the specified accession code. If no accession code is provided, 
+    returns a paginated json object of all projects.
+
+    Parameters:
+        accession_code (str): The accession code for the project 
+                            to be retrieved. Defaults to None.
+
+    Returns:
+        Response: A JSON response containing either the projects or an 
+                error message, along with the appropriate HTTP status code.
+
+    Methods:
+        - POST: Uploads projects if allowed.
+        - GET: Retrieves project based on the accession code.
+
+    Raises:
+        403: If uploads are not allowed on the server.
+        405: If the request method is neither GET nor POST.
+    '''
    project_operator = Project()
    if request.method == 'POST':
         if(allow_uploads is False):
@@ -129,6 +271,34 @@ def projects(accession_code):
 @app.route("/cover-methods", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/cover-methods/<accession_code>")
 def cover_methods(accession_code):
+    '''
+    Handles creation and return of cover methods.
+
+    This function supports both GET and POST requests. For POST requests, it allows 
+    the uploading of cover methods if uploads are permitted via an environment variable. For GET requests, 
+    it retrieves cover methods associated with the specified accession code. If no accession code is provided, 
+    returns a paginated json object of all cover methods.
+
+    Parameters:
+        accession_code (str): The accession code for the cover method 
+                            to be retrieved. Defaults to None.
+    URL Parameters:
+        detail (str): Level of detail for the response. Currently only supports "full".
+        limit (int): Maximum number of records to return. Defaults to 1000.
+        offset (int): Number of records to skip before starting to return records. Defaults to 0.
+
+    Returns:
+        Response: A JSON response containing either the cover methods or an 
+                error message, along with the appropriate HTTP status code.
+
+    Methods:
+        - POST: Uploads cover methods if allowed.
+        - GET: Retrieves cover method based on the accession code.
+
+    Raises:
+        403: If uploads are not allowed on the server.
+        405: If the request method is neither GET nor POST.
+    '''
     cover_method_operator = CoverMethod()
     if request.method == 'POST':
         if(allow_uploads is False):
@@ -144,6 +314,28 @@ def cover_methods(accession_code):
 @app.route("/stratum-methods", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/stratum-methods/<accession_code>", methods=['GET'])
 def stratum_methods(accession_code):
+    '''
+    Handles creation and return of stratum methods.
+
+    This function supports both GET and POST requests. For POST requests, it allows 
+    the uploading of stratum methods if uploads are permitted via an environment variable. For GET requests, 
+    it retrieves stratum methods associated with the specified accession code. If no accession code is provided, 
+    returns a paginated json object of all stratum methods.
+
+    Parameters:
+        accession_code (str): The accession code for the stratum method 
+                            to be retrieved. Defaults to None.
+
+    Returns:
+        Response: A JSON response containing either the stratum methods or an 
+                error message, along with the appropriate HTTP status code.
+
+    Methods:
+        - POST: Uploads stratum methods if allowed.
+        - GET: Retrieves stratum method based on the accession code.
+
+    Raises:
+        403: If uploads are not allowed on the server.
     stratum_method_operator = StratumMethod()
     if request.method == 'POST':
         if(allow_uploads is False):
@@ -158,6 +350,7 @@ def stratum_methods(accession_code):
 
 @app.route("/bulk-upload", methods=['POST'])
 def bulk_upload():
+    ''' This is an example endpoint for uploads with multiple parquet files. '''
     if 'files[]' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     
