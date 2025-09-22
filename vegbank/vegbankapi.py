@@ -336,6 +336,7 @@ def stratum_methods(accession_code):
 
     Raises:
         403: If uploads are not allowed on the server.
+    '''
     stratum_method_operator = StratumMethod()
     if request.method == 'POST':
         if(allow_uploads is False):
