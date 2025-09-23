@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------
 -- Creates a procedure to populate the identifiers table dynamically
--- with the new vb_code identifier_type
+-- with the new 'vb_code' identifier_type
 ----------------------------------------------------------------------------
 
--- Creates a mapping table to iterate over for the vb_code procedure
+-- Create a mapping table to iterate over for the vb_code procedure
 CREATE TABLE vb_code_source_map (
   source_table TEXT NOT NULL,   -- table name
   table_code   TEXT NOT NULL,   -- short code for the table
