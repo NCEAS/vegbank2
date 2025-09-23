@@ -13,7 +13,7 @@ CREATE TABLE identifiers (
 
 
 -- Creates a mapping table to iterate over for an the identifier import procedure
-CREATE TABLE IF NOT EXISTS identifier_source_map (
+CREATE TABLE identifier_source_map (
   source_table TEXT NOT NULL,   -- table name
   table_code   TEXT NOT NULL,   -- short code for the table
   pk_column    TEXT NOT NULL,   -- primary key column of the source table
@@ -41,5 +41,4 @@ INSERT INTO identifier_source_map (source_table, table_code, pk_column, id_type)
   ('stratumMethod', 'sm', 'stratummethod_id', 'accession_code'),
   ('taxonObservation', 'to', 'taxonobservation_id', 'accession_code'),
   ('taxonInterpretation', 'ti', 'taxoninterpretation_id', 'accession_code'),
-  ('userDefined', 'ud', 'userdefined_id', 'accession_code')
-ON CONFLICT DO NOTHING;
+  ('userDefined', 'ud', 'userdefined_id', 'accession_code');
