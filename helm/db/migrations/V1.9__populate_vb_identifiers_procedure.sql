@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS vb_code_source_map (
 -- Manually insert the required vb_code table data
 INSERT INTO vb_code_source_map (source_table, table_code, pk_column, id_type) VALUES
   ('aux_role', 'ar', 'role_id', 'vb_code'),
-  ('commClass', 'ci', 'commclass_id', 'vb_code'),
+  ('commClass', 'cl', 'commclass_id', 'vb_code'),
   ('commConcept', 'cc', 'commconcept_id', 'vb_code'),
   ('commStatus', 'cs', 'commstatus_id', 'vb_code'),
   ('coverMethod', 'cm', 'covermethod_id', 'vb_code'),

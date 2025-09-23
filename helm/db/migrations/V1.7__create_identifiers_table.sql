@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS identifier_source_map (
 -- Manually insert the mapping data
 INSERT INTO identifier_source_map (source_table, table_code, pk_column, id_type) VALUES
   ('aux_role', 'ar', 'role_id', 'accession_code'),
-  ('commClass', 'ci', 'commclass_id', 'accession_code'),
+  ('commClass', 'cl', 'commclass_id', 'accession_code'),
   ('commConcept', 'cc', 'commconcept_id', 'accession_code'),
   ('commStatus', 'cs', 'commstatus_id', 'accession_code'),
   ('coverMethod', 'cm', 'covermethod_id', 'accession_code'),
