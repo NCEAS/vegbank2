@@ -108,7 +108,9 @@ def taxon_observations(accession_code):
     '''
     Retrieve taxon observations based on the provided accession code. 
     If no accession code is provided, return a paginated json objsect 
-    of all taxon observations. 
+    of all taxon observations. This function supports URL parameters for detail level, 
+    limit, offset, and the number of top taxa, that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0 num_taxa: 5.
 
     This function handles HTTP requests for taxon observations. It supports 
     only the GET method to retrieve taxon observations. If a POST request is made, 
@@ -141,7 +143,9 @@ def community_classifications(accession_code):
     '''
     Retrieve community classifications based on the provided accession code. 
     If no accession code is provided, return a paginated json objsect 
-    of all community classifications. 
+    of all community classifications. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     This function handles HTTP requests for community classifications. It supports 
     only the GET method to retrieve community classifications. If a POST request is made, 
@@ -173,7 +177,9 @@ def community_concepts(accession_code):
     '''
     Retrieve community concepts based on the provided accession code. 
     If no accession code is provided, return a paginated json objsect 
-    of all community concepts. 
+    of all community concepts. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     This function handles HTTP requests for community concepts. It supports 
     only the GET method to retrieve community concepts. If a POST request is made, 
@@ -205,7 +211,9 @@ def parties(accession_code):
     '''
     Retrieve parties based on the provided accession code. 
     If no accession code is provided, return a paginated json objsect 
-    of all parties. 
+    of all parties. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     This function handles HTTP requests for parties. It supports 
     only the GET method to retrieve parties. If a POST request is made, 
@@ -238,7 +246,9 @@ def projects(accession_code):
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of projects if uploads are permitted via an environment variable. For GET requests, 
     it retrieves projects associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all projects.
+    returns a paginated json object of all projects. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     Parameters:
         accession_code (str): The accession code for the project 
@@ -277,7 +287,9 @@ def cover_methods(accession_code):
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of cover methods if uploads are permitted via an environment variable. For GET requests, 
     it retrieves cover methods associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all cover methods.
+    returns a paginated json object of all cover methods. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     Parameters:
         accession_code (str): The accession code for the cover method 
@@ -320,7 +332,9 @@ def stratum_methods(accession_code):
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of stratum methods if uploads are permitted via an environment variable. For GET requests, 
     it retrieves stratum methods associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all stratum methods.
+    returns a paginated json object of all stratum methods. This function supports URL parameters for detail level, 
+    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
+    detail: "full", limit: 1000, offset: 0.
 
     Parameters:
         accession_code (str): The accession code for the stratum method 
