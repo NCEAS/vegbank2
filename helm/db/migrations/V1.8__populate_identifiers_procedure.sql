@@ -2,7 +2,7 @@
 -- Creates a procedure and then populate the identifiers table dynamically
 ----------------------------------------------------------------------------
 
-CREATE OR REPLACE PROCEDURE populate_identifiers()
+CREATE OR REPLACE PROCEDURE populate_acc_code_identifiers()
 LANGUAGE plpgsql -- PL/pgSQL is used for dynamic or iterative logic, rather than a static query
 AS $$ -- Begin body of the procedure
 DECLARE -- Declare variables
@@ -29,4 +29,4 @@ BEGIN
   END LOOP;
 END$$;
 
-CALL populate_identifiers();
+CALL populate_acc_code_identifiers();
