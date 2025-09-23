@@ -4,7 +4,7 @@
 ----------------------------------------------------------------------------
 
 -- Create a mapping table to iterate over for an the identifier import procedure
-CREATE TABLE identifier_source_map (
+CREATE TABLE acc_code_source_map (
   source_table TEXT NOT NULL,   -- table name
   table_code   TEXT NOT NULL,   -- short code for the table
   pk_column    TEXT NOT NULL,   -- primary key column of the source table
@@ -12,7 +12,7 @@ CREATE TABLE identifier_source_map (
 );
 
 -- Manually insert the mapping data
-INSERT INTO identifier_source_map (source_table, table_code, pk_column, id_type) VALUES
+INSERT INTO acc_code_source_map (source_table, table_code, pk_column, id_type) VALUES
   ('aux_role', 'ar', 'role_id', 'accession_code'),
   ('commClass', 'cl', 'commclass_id', 'accession_code'),
   ('commConcept', 'cc', 'commconcept_id', 'accession_code'),
@@ -38,10 +38,10 @@ CREATE OR REPLACE PROCEDURE populate_acc_code_identifiers()
 LANGUAGE plpgsql -- PL/pgSQL is used for dynamic or iterative logic, rather than a static query
 AS $$ -- Begin body of the procedure
 DECLARE -- Declare variables
-  r RECORD; -- Holds one row at a time from the 'identifier_source_map'
+  r RECORD; -- Holds one row at a time from the 'acc_code_source_map'
   sql TEXT; -- Holds the dynamically built SQL string
 BEGIN
-  FOR r IN SELECT * FROM identifier_source_map LOOP
+  FOR r IN SELECT * FROM acc_code_source_map LOOP
     -- Use Postgres' format() function to safely build a SQL statement
     -- Dollar-quoting (\$f\$ ... \$f\$) makes it easier to write multi-line SQL
     -- without escaping single quotes; \$f\$ could also be written as \$\$
