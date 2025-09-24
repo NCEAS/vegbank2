@@ -48,7 +48,8 @@ def welcome_page():
 @app.route("/plot-observations/<accession_code>", methods=['GET'])
 def plot_observations(accession_code):
     '''
-    Handles creation and return of plots and observations.
+    Handles creation and return of plots and observations. 
+    See PlotObservation.py for semantic details of plots and observations. 
 
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of plot observations if uploads are permitted via an environment variable. For GET requests, 
@@ -107,6 +108,8 @@ def get_observation_details(accession_code):
 def taxon_observations(accession_code):
     '''
     Retrieve taxon observations based on the provided accession code. 
+    See TaxonObservation.py for semantic details about taxon observations. 
+
     If no accession code is provided, return a paginated json objsect 
     of all taxon observations. This function supports URL parameters for detail level, 
     limit, offset, and the number of top taxa, that are parsed from the request. Default values are used if parameters are not provided: 
@@ -142,6 +145,8 @@ def taxon_observations(accession_code):
 def community_classifications(accession_code):
     '''
     Retrieve community classifications based on the provided accession code. 
+    See CommunityClassification.py for semantic details of community classifications. 
+
     If no accession code is provided, return a paginated json objsect 
     of all community classifications. This function supports URL parameters for detail level, 
     limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
@@ -176,6 +181,8 @@ def community_classifications(accession_code):
 def community_concepts(accession_code):
     '''
     Retrieve community concepts based on the provided accession code. 
+    See CommunityConcept.py for semantic details of community concepts. 
+
     If no accession code is provided, return a paginated json objsect 
     of all community concepts. This function supports URL parameters for detail level, 
     limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
@@ -210,6 +217,8 @@ def community_concepts(accession_code):
 def parties(accession_code):
     '''
     Retrieve parties based on the provided accession code. 
+    See Party.py for semantic details of parties. 
+
     If no accession code is provided, return a paginated json objsect 
     of all parties. This function supports URL parameters for detail level, 
     limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
@@ -242,6 +251,7 @@ def parties(accession_code):
 def projects(accession_code):
    '''
     Handles creation and return of projects.
+    See Project.py for semantic details of projects. 
 
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of projects if uploads are permitted via an environment variable. For GET requests, 
@@ -283,6 +293,7 @@ def projects(accession_code):
 def cover_methods(accession_code):
     '''
     Handles creation and return of cover methods.
+    See CoverMethod.py for semantic details of Cover Methods. 
 
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of cover methods if uploads are permitted via an environment variable. For GET requests, 
@@ -328,6 +339,7 @@ def cover_methods(accession_code):
 def stratum_methods(accession_code):
     '''
     Handles creation and return of stratum methods.
+    See StratumMethod.py for semantic details of stratum methods. 
 
     This function supports both GET and POST requests. For POST requests, it allows 
     the uploading of stratum methods if uploads are permitted via an environment variable. For GET requests, 
