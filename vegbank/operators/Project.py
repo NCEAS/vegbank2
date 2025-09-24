@@ -28,7 +28,8 @@ class Project(Operator):
     
     def get_projects(self, request, params, accession_code):
         """
-        Retrieve projects based on the provided parameters.
+        Retrieve projects based on the provided accession code,
+        or via the provided URL parameters. See definitions below.
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
@@ -36,6 +37,11 @@ class Project(Operator):
                 dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the project. 
                                            If None, retrieves all projects.
+        URL Parameters:
+            detail (str, optional): Level of detail for the response. 
+                                    Only 'full' is defined for this method. Defaults to 'full'.
+            limit (int, optional): Maximum number of records to return. Defaults to 1000.
+            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
         Returns:
             Response: A JSON response containing the projects data and count.
                       If 'detail' is specified, it can be either 'minimal' or 'full'.

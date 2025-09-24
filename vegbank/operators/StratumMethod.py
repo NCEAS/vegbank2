@@ -26,7 +26,8 @@ class StratumMethod(Operator):
 
     def get_stratum_method(self, request, params, accession_code):
         """
-        Retrieve stratum methods and stratum types based on the provided parameters.
+        Retrieve stratum methods and stratum types based on the provided accession code,
+        or via the provided URL parameters. See definitions below.
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
@@ -34,6 +35,11 @@ class StratumMethod(Operator):
                 dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the stratum method. 
                                            If None, retrieves all stratum methods and their types.
+        URL Parameters:
+            detail (str, optional): Level of detail for the response. 
+                                    Only 'full' is defined for this method. Defaults to 'full'.
+            limit (int, optional): Maximum number of records to return. Defaults to 1000.
+            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
         Returns:
             Response: A JSON response containing the stratum methods data and count.
                       If 'detail' is specified, it can be either 'minimal' or 'full'.

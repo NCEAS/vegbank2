@@ -28,7 +28,8 @@ class CommunityConcept(Operator):
     
     def get_community_concepts(self, request, params, accession_code):
         """
-        Retrieve community concepts based on the provided parameters.
+        Retrieve community concepts based on the provided accession code,
+        or via the provided URL parameters. See definitions below.
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
@@ -36,6 +37,11 @@ class CommunityConcept(Operator):
                 dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the community concepts. 
                                            If None, retrieves all concepts.
+        URL Parameters:
+            detail (str, optional): Level of detail for the response. 
+                                    Only 'full' is defined for this method. Defaults to 'full'.
+            limit (int, optional): Maximum number of records to return. Defaults to 1000.
+            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
         Returns:
             Response: A JSON response containing the community concepts data and count.
                       If 'detail' is specified, it can be either 'minimal' or 'full'.

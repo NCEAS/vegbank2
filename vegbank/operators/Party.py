@@ -26,6 +26,28 @@ class Party(Operator):
     
 
     def get_parties(self, request, params, accession_code):
+        """
+        Retrieve parties based on the provided accession code,
+        or via the provided URL parameters. See definitions below.
+        Parameters:
+            request (Request): The request object containing query parameters.
+            params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
+            accession_code (str or None): The accession code to filter the parties. 
+                                           If None, retrieves all parties.
+        URL Parameters:
+            detail (str, optional): Level of detail for the response. 
+                                    Only 'full' is defined for this method. Defaults to 'full'.
+            limit (int, optional): Maximum number of records to return. Defaults to 1000.
+            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
+        Returns:
+            Response: A JSON response containing the parties data and count.
+                      If 'detail' is specified, it can be either 'minimal' or 'full'.
+                      Returns an error message with a 400 status code for invalid parameters.
+        Raises:
+            ValueError: If 'limit' or 'offset' are not non-negative integers.
+        """
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("full"):
             return jsonify_error_message("When provided, 'detail' must be 'full'."), 400

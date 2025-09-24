@@ -35,6 +35,11 @@ class PlotObservation(Operator):
                 dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the plot observations. 
                                            If None, retrieves all observations and their plots.
+        URL Parameters:
+            detail (str, optional): Level of detail for the response. 
+                                    Can be either 'minimal' or 'full'. Defaults to 'full'.
+            limit (int, optional): Maximum number of records to return. Defaults to 1000.
+            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
         Returns:
             Response: A JSON response containing the plot observations data and count.
                       If 'detail' is specified, it can be either 'minimal' or 'full'.
