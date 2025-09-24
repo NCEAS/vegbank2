@@ -16,6 +16,21 @@ class PlotObservation(Operator):
         super().__init__()
 
     def get_plot_observations(self, request, params, accession_code):
+        """
+        Retrieve plots and observations based on the provided parameters.
+        Parameters:
+            request (Request): The request object containing query parameters.
+            params (dict): Database connection parameters.
+            accession_code (str or None): The accession code to filter the plot observations. 
+                                           If None, retrieves all observations and their plots.
+        Returns:
+            Response: A JSON response containing the plot observations data and count.
+                      If 'detail' is specified, it can be either 'minimal' or 'full'.
+                      Returns an error message with a 400 status code for invalid parameters.
+        Raises:
+            ValueError: If 'limit' or 'offset' are not non-negative integers.
+        """
+
         create_parquet = request.args.get("create_parquet", "false").lower() == "true"
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("minimal", "full"):
@@ -64,6 +79,19 @@ class PlotObservation(Operator):
         return jsonify(to_return)
 
     def upload_plot_observations(self, request, params):
+        """
+        Uploads plot and observation data from a file, validates it, and inserts it into the database.
+        Parameters:
+            request (Request): The incoming request containing the file to be uploaded.
+            params (dict): Database connection parameters.
+        Returns:
+            Response: A JSON response containing the results of the upload operation, including 
+                      inserted and matched records, or an error message if the operation fails.
+        Raises:
+            ValueError: If there are unsupported columns in the uploaded data, if references do not 
+                        exist in the database, or if there are no new plots/observations to insert.
+        """
+
         if 'file' not in request.files:
             return jsonify_error_message("No file part in the request."), 400
         file = request.files['file']
@@ -312,6 +340,25 @@ class PlotObservation(Operator):
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
 
     def get_observation_details(self, params, accession_code):
+        """
+        Retrieves observation details for a given accession code from the database.
+        This method connects to the PostgreSQL database using the provided parameters,
+        executes SQL queries to fetch observation details, associated taxa, and communities,
+        and returns the results in a JSON format.
+
+        Parameters:
+            params : dict
+                A dictionary containing the database connection parameters.
+            accession_code : str
+                The accession code for which the observation details are to be retrieved.
+        Returns:
+            Response: A JSON response containing the observation details, including the count of records,
+                associated taxa, and communities if available.
+        Raises:
+            Exception
+                If there is an error in executing the SQL queries or connecting to the database.
+        """
+        
         to_return = {}
         with psycopg.connect(**params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:

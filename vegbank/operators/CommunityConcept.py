@@ -18,6 +18,21 @@ class CommunityConcept(Operator):
     
     
     def get_community_concepts(self, request, params, accession_code):
+        """
+        Retrieve community concepts based on the provided parameters.
+        Parameters:
+            request (Request): The request object containing query parameters.
+            params (dict): Database connection parameters.
+            accession_code (str or None): The accession code to filter the community concepts. 
+                                           If None, retrieves all concepts.
+        Returns:
+            Response: A JSON response containing the community concepts data and count.
+                      If 'detail' is specified, it can be either 'minimal' or 'full'.
+                      Returns an error message with a 400 status code for invalid parameters.
+        Raises:
+            ValueError: If 'limit' or 'offset' are not non-negative integers.
+        """
+
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("full"):
             return jsonify_error_message("When provided, 'detail' must be 'full'."), 400

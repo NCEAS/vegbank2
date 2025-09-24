@@ -16,6 +16,21 @@ class CommunityClassification(Operator):
         super().__init__()
 
     def get_community_classifications(self, request, params, accession_code):
+        """
+        Retrieve community classifications based on the provided parameters.
+        Parameters:
+            request (Request): The request object containing query parameters.
+            params (dict): Database connection parameters.
+            accession_code (str or None): The accession code to filter the community classifications. 
+                                           If None, retrieves all classifications.
+        Returns:
+            Response: A JSON response containing the community classifications data and count.
+                      If 'detail' is specified, it can be either 'minimal' or 'full'.
+                      Returns an error message with a 400 status code for invalid parameters.
+        Raises:
+            ValueError: If 'limit' or 'offset' are not non-negative integers.
+        """
+
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("minimal", "full"):
             return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400

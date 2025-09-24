@@ -16,6 +16,21 @@ class StratumMethod(Operator):
         super().__init__()
 
     def get_stratum_method(self, request, params, accession_code):
+        """
+        Retrieve stratum methods and stratum types based on the provided parameters.
+        Parameters:
+            request (Request): The request object containing query parameters.
+            params (dict): Database connection parameters.
+            accession_code (str or None): The accession code to filter the stratum method. 
+                                           If None, retrieves all stratum methods and their types.
+        Returns:
+            Response: A JSON response containing the stratum methods data and count.
+                      If 'detail' is specified, it can be either 'minimal' or 'full'.
+                      Returns an error message with a 400 status code for invalid parameters.
+        Raises:
+            ValueError: If 'limit' or 'offset' are not non-negative integers.
+        """
+
         create_parquet = request.args.get("create_parquet", "false").lower() == "true"
         detail = request.args.get("detail", self.default_detail)
         if detail not in ("full"):
@@ -60,6 +75,19 @@ class StratumMethod(Operator):
         return jsonify(to_return)
     
     def upload_stratum_method(self, request, params):
+        """
+        Uploads stratum method and stratum type data from a file, validates it, and inserts it into the database.
+        Parameters:
+            request (Request): The incoming request containing the file to be uploaded.
+            params (dict): Database connection parameters.
+        Returns:
+            Response: A JSON response containing the results of the upload operation, including 
+                      inserted and matched records, or an error message if the operation fails.
+        Raises:
+            ValueError: If there are unsupported columns in the uploaded data, if references do not 
+                        exist in the database, or if there are no new stratum methods to insert.
+        """
+
         if 'file' not in request.files:
             return jsonify_error_message("No file part in the request."), 400
         file = request.files['file']
