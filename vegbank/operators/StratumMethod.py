@@ -12,6 +12,15 @@ from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 class StratumMethod(Operator):
+    '''
+    Defines operations related to stratum method and stratum type data management, 
+    including retrieval and upload functionalities.
+    Stratum Method: A defined method for categorizing vegetation strata within a plot observation.
+    Stratum Type: The index, name and description for one stratum within the method. 
+    A single stratum method can have many stratum types.
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
     def __init__(self):
         super().__init__()
 
@@ -21,6 +30,8 @@ class StratumMethod(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the stratum method. 
                                            If None, retrieves all stratum methods and their types.
         Returns:
@@ -80,6 +91,8 @@ class StratumMethod(Operator):
         Parameters:
             request (Request): The incoming request containing the file to be uploaded.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
         Returns:
             Response: A JSON response containing the results of the upload operation, including 
                       inserted and matched records, or an error message if the operation fails.

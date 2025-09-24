@@ -13,7 +13,13 @@ from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 
 class Party(Operator):
+    '''
+    Defines operations related to party data management, 
+    including retrieval and upload functionalities.
+    Party: A person or organization associated with the collection or management of vegetation data.
 
+    Inherits from the Operator parent class to utilize common default values.
+    '''
 
     def __init__(self):
         super().__init__()

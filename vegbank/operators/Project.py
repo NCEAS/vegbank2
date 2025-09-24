@@ -13,6 +13,15 @@ from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 
 class Project(Operator):
+    '''
+    Defines operations related to project data management, 
+    including retrieval and upload functionalities.
+    Project: The project or study established to collect vegetation plot data.
+    Observations are linked to projects. 
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
+
     def __init__(self):
         super().__init__()
         
@@ -23,6 +32,8 @@ class Project(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the project. 
                                            If None, retrieves all projects.
         Returns:
@@ -81,6 +92,8 @@ class Project(Operator):
         Parameters:
             request (Request): The incoming request containing the file to be uploaded.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
         Returns:
             Response: A JSON response containing the results of the upload operation, including 
                       inserted and matched records, or an error message if the operation fails.

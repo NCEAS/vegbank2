@@ -12,6 +12,15 @@ from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 class CoverMethod(Operator):
+    '''
+    Defines operations related to cover method and cover index data management, 
+    including retrieval and upload functionalities.
+    Cover Method: A defined method for cover estimation as set by the observation collector. 
+    Cover Index: A set of limits and percentage for one index in a cover method. 
+    A single cover method can have many cover indices.
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
     def __init__(self):
         super().__init__()
 
@@ -21,6 +30,8 @@ class CoverMethod(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the cover methods. 
                                            If None, retrieves all cover methods.
         Returns:
@@ -80,6 +91,8 @@ class CoverMethod(Operator):
         Parameters:
             request (Request): The incoming request containing the file to be uploaded.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
         Returns:
             Response: A JSON response containing the results of the upload operation, including 
                       inserted and matched records, or an error message if the operation fails.

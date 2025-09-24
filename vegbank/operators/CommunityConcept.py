@@ -13,6 +13,15 @@ from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 
 class CommunityConcept(Operator):
+    '''
+    Defines operations related to Community Concept and Community Usage data management, 
+    including retrieval and upload functionalities.
+    Community Concept: A definition of a vegetation community according to a linked reference.
+    Community Usage: A particular name associated with a community concept, and the 
+    effective dates, status, and system for that name. 
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
     def __init__(self):
         super().__init__()
     
@@ -23,6 +32,8 @@ class CommunityConcept(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the community concepts. 
                                            If None, retrieves all concepts.
         Returns:

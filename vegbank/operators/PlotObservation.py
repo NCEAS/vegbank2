@@ -12,15 +12,27 @@ from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 class PlotObservation(Operator):
+    '''
+    Defines operations related to plot and observation data management, 
+    including retrieval and upload functionalities.
+    Plots: Represents a specific area of land where vegetation data is collected.
+    Observations: Represents the data collected from a plot at a specific time, 
+    including attributes that may change in between different observation events.
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
     def __init__(self):
         super().__init__()
 
     def get_plot_observations(self, request, params, accession_code):
         """
-        Retrieve plots and observations based on the provided parameters.
+        Retrieve either a single plot observation by accession code, 
+        or a list of plot observations with pagination and detail level options.
         Parameters:
             request (Request): The request object containing query parameters.
-            params (dict): Database connection parameters.
+            params (dict): Database connection parameters. 
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the plot observations. 
                                            If None, retrieves all observations and their plots.
         Returns:
@@ -84,6 +96,8 @@ class PlotObservation(Operator):
         Parameters:
             request (Request): The incoming request containing the file to be uploaded.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
         Returns:
             Response: A JSON response containing the results of the upload operation, including 
                       inserted and matched records, or an error message if the operation fails.

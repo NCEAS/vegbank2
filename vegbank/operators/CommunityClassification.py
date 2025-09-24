@@ -12,6 +12,14 @@ from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 class CommunityClassification(Operator):
+    '''
+    Defines operations related to Community Classification data management, 
+    including retrieval and upload functionalities.
+    Community Classification: A record tying an observation to a community concept.  
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
+
     def __init__(self):
         super().__init__()
 
@@ -21,6 +29,8 @@ class CommunityClassification(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the community classifications. 
                                            If None, retrieves all classifications.
         Returns:

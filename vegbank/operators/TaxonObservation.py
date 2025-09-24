@@ -12,6 +12,15 @@ from operators.operator_parent_class import Operator
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
 
 class TaxonObservation(Operator):
+    '''
+    Defines operations related to Taxon Observation data management, 
+    including retrieval and upload functionalities.
+    Taxon Observation: A record of a plant observed on a particular plot observation. 
+    A single taxon observation can have many taxon interpretations. 
+
+    Inherits from the Operator parent class to utilize common default values.
+    '''
+
     def __init__(self):
         super().__init__()
 
@@ -21,6 +30,8 @@ class TaxonObservation(Operator):
         Parameters:
             request (Request): The request object containing query parameters.
             params (dict): Database connection parameters.
+            Set via env variable in vegbankapi.py. Keys are: 
+                dbname, user, host, port, password
             accession_code (str or None): The accession code to filter the taxon observation. 
                                            If None, retrieves all taxon observations and their top taxa.
         Returns:
