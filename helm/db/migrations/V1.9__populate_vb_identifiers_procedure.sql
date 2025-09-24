@@ -32,7 +32,6 @@ INSERT INTO vb_code_source_map (source_table, table_code, pk_column, id_type) VA
   ('taxonObservation', 'to', 'taxonobservation_id', 'vb_code'),
   ('taxonInterpretation', 'ti', 'taxoninterpretation_id', 'vb_code');
 
--- Create procedure to insert new vb_codes for the tables above
 CREATE OR REPLACE PROCEDURE populate_vb_code_identifiers()
 LANGUAGE plpgsql -- PL/pgSQL is used for dynamic or iterative logic, rather than a static query
 AS $$ -- Begin body of the procedure
