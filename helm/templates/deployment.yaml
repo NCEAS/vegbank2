@@ -118,7 +118,7 @@ spec:
               if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
-                echo "## Database Restore Requested, executing data-only dump file";
+                echo "## Database Restore Requested, restoring from specific dump file";
                 export PGPASSWORD="$VB_DB_PASS";
                 pg_restore \
                 -h "$VB_DB_HOST" \
