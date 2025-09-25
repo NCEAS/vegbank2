@@ -369,7 +369,7 @@ class PlotObservation(Operator):
             params : dict
                 A dictionary containing the database connection parameters.
             accession_code : str
-                The observation accession code for which the observation details are to be retrieved.
+                The unique identifier for the observation being retrieved.
         Returns:
             Response: A JSON response containing the observation details, including the count of records,
                 associated taxa, and communities if available.
