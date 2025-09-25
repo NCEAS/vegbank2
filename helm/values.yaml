@@ -19,7 +19,7 @@ databaseRestore:
   target: "1.4"
   pvc: "vegbankdb-init-pgdata"
   mountpath: "/tmp/databaseRestore"
-  filepath: "vegbank_dataonly_fc_20250904.dump"
+  filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
 
 flyway:
   image:
