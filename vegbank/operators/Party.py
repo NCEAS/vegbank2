@@ -34,7 +34,7 @@ class Party(Operator):
             params (dict): Database connection parameters.
             Set via env variable in vegbankapi.py. Keys are: 
                 dbname, user, host, port, password
-            accession_code (str or None): The accession code to filter the parties. 
+            accession_code (str or None): The unique identifier for the party being retrieved.
                                            If None, retrieves all parties.
         URL Parameters:
             detail (str, optional): Level of detail for the response. 

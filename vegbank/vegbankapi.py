@@ -59,8 +59,8 @@ def plot_observations(accession_code):
     detail: "full", limit: 1000, offset: 0.
 
     Parameters:
-        accession_code (str): The accession code for which plot observations are 
-                            to be retrieved. Defaults to None.
+        accession_code (str): The unique identifier for the observation being retrieved.
+        Defaults to None. 
 
     Returns:
         Response: A JSON response containing either the plot observations or an 
@@ -91,7 +91,7 @@ def get_observation_details(accession_code):
     '''
     Returns detailed information about a specific observation based on the provided accession code.
     Parameters:
-        accession_code (str): The accession code of the observation to retrieve details for.
+        accession_code (str): The unique identifier for the observation being retrieved.
     Returns:
         Response: A JSON response containing the observation details or an error message.
     Methods: 
@@ -194,7 +194,7 @@ def community_concepts(accession_code):
     For any other HTTP methods, it returns a method not allowed error.
 
     Parameters:
-        accession_code (str): The unique identifier for the community concepts to be retrieved.
+        accession_code (str): The unique identifier for the community concept to be retrieved.
 
     Returns:
         Response: A JSON response containing the community concepts or an 
@@ -230,7 +230,7 @@ def parties(accession_code):
     For any other HTTP methods, it returns a method not allowed error.
 
     Parameters:
-        accession_code (str): The unique identifier for the parties to be retrieved.
+        accession_code (str): The unique identifier for the party to be retrieved.
 
     Returns:
         Response: A JSON response containing the parties or an 
@@ -261,8 +261,8 @@ def projects(accession_code):
     detail: "full", limit: 1000, offset: 0.
 
     Parameters:
-        accession_code (str): The accession code for the project 
-                            to be retrieved. Defaults to None.
+        accession_code (str): The unique identifier for the project to be retrieved.
+        Defaults to None. 
 
     Returns:
         Response: A JSON response containing either the projects or an 
@@ -303,8 +303,8 @@ def cover_methods(accession_code):
     detail: "full", limit: 1000, offset: 0.
 
     Parameters:
-        accession_code (str): The accession code for the cover method 
-                            to be retrieved. Defaults to None.
+        accession_code (str): The unique identifier for the cover method being retrieved.
+        Defaults to None. 
     URL Parameters:
         detail (str): Level of detail for the response. Currently only supports "full".
         limit (int): Maximum number of records to return. Defaults to 1000.
@@ -349,8 +349,8 @@ def stratum_methods(accession_code):
     detail: "full", limit: 1000, offset: 0.
 
     Parameters:
-        accession_code (str): The accession code for the stratum method 
-                            to be retrieved. Defaults to None.
+        accession_code (str): The unique identifier for the stratum method being retrieved.
+        Defaults to None.
 
     Returns:
         Response: A JSON response containing either the stratum methods or an 

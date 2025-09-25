@@ -32,8 +32,8 @@ class CommunityClassification(Operator):
             params (dict): Database connection parameters.
             Set via env variable in vegbankapi.py. Keys are: 
                 dbname, user, host, port, password
-            accession_code (str or None): The accession code to filter the community classifications. 
-                                           If None, retrieves all classifications.
+            accession_code (str or None): The unique identifier for the community classification being retrieved.
+                                        If None, retrieves all classifications.
         URL Parameters:
             detail (str, optional): Level of detail for the response. 
                                     Can be either 'minimal' or 'full'. Defaults to 'full'.

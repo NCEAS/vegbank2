@@ -33,7 +33,7 @@ class PlotObservation(Operator):
             params (dict): Database connection parameters. 
             Set via env variable in vegbankapi.py. Keys are: 
                 dbname, user, host, port, password
-            accession_code (str or None): The accession code to filter the plot observations. 
+            accession_code (str or None): The unique identifier for the observation being retrieved. 
                                            If None, retrieves all observations and their plots.
         URL Parameters:
             detail (str, optional): Level of detail for the response. 
@@ -369,7 +369,7 @@ class PlotObservation(Operator):
             params : dict
                 A dictionary containing the database connection parameters.
             accession_code : str
-                The accession code for which the observation details are to be retrieved.
+                The observation accession code for which the observation details are to be retrieved.
         Returns:
             Response: A JSON response containing the observation details, including the count of records,
                 associated taxa, and communities if available.

@@ -33,7 +33,7 @@ class TaxonObservation(Operator):
             params (dict): Database connection parameters.
             Set via env variable in vegbankapi.py. Keys are: 
                 dbname, user, host, port, password
-            accession_code (str or None): The accession code to filter the taxon observation. 
+            accession_code (str or None): The unique identifier for the taxon observation being retrieved.
                                            If None, retrieves all taxon observations and their top taxa.
         URL Parameters:
             detail (str, optional): Level of detail for the response. 

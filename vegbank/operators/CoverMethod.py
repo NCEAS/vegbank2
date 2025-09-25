@@ -33,7 +33,7 @@ class CoverMethod(Operator):
             params (dict): Database connection parameters.
             Set via env variable in vegbankapi.py. Keys are: 
                 dbname, user, host, port, password
-            accession_code (str or None): The accession code to filter the cover methods. 
+            accession_code (str or None): The unique identifier for the cover method being retrieved.
                                            If None, retrieves all cover methods.
         URL Parameters:
             detail (str, optional): Level of detail for the response. 
