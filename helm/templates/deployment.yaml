@@ -98,6 +98,7 @@ spec:
                 -U "$VB_DB_USER" \
                 -d "$VB_DB_NAME" \
                 -j 4 "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
+                echo "## Postgres database has been restored";
               fi
         - name: {{ .Chart.Name }}-apply-flyway # Apply migrations
           securityContext:
