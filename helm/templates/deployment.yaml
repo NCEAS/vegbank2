@@ -236,6 +236,8 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
+            - name: VB_ALLOW_UPLOADS
+              value: {{ .Values.allowUploads | quote }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}

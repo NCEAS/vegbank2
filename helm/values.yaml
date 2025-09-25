@@ -4,6 +4,8 @@
 ## @param replicaCount  The number of API pods to be created when the chart is installed. 
 replicaCount: 1
 
+allowUploads: false
+
 ## @section Database
 ## configuration for the PostgreSQL database used by VegBank.
 database:
@@ -90,7 +92,6 @@ service:
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
   ## @param ingress.enabled - Should the ingress be enabled?
-  enabled: true
   ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
   ## @section ingress.annotations - Annotations to add to the ingress resource.
