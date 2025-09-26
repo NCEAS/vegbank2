@@ -25,12 +25,15 @@ TBD - A dump file is already available for development purposes. In production, 
 
 ## Step 2: Helm Install (and Uninstall...)
 
-If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore.enabled` to be `true`:
+If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore`:
+- `databaseRestore.setup` should be set to `true` so that a new vegbank database can be created in the postgres instance, along with the expected roles
+- `databaseRestore.enabled` should be set to `true` if you want to restore the database using a dump file. If you want a fresh database installation with no data, leave this as `false`.
 
 ```sh
 # values.yaml
 
 databaseRestore:
+  setup: true # This needs to be changed from `false` to `true`
   enabled: true # This needs to be changed from `false` to `true`
   pvc: "vegbankdb-init-pgdata" # Name of the PVC
   mountpath: "/tmp/databaseRestore" # Path where you can find the PVC contents
