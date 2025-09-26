@@ -9,14 +9,16 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
-from operators.TaxonObservation import TaxonObservation
-from operators.PlotObservation import PlotObservation
-from operators.Party import Party
-from operators.CommunityClassification import CommunityClassification
-from operators.CommunityConcept import CommunityConcept
-from operators.CoverMethod import CoverMethod
-from operators.Project import Project
-from operators.StratumMethod import StratumMethod
+from operators import (
+    TaxonObservation,
+    PlotObservation,
+    Party,
+    CommunityClassification,
+    CommunityConcept,
+    CoverMethod,
+    Project,
+    StratumMethod,
+)
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
