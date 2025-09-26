@@ -75,7 +75,7 @@ spec:
             - sh
             - -c
             - >
-              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+              if [ "{{ .Values.databaseRestore.setup }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
                 env | grep 'POSTGRES_PASSWORD' || true;
@@ -90,6 +90,9 @@ spec:
                 -c "CREATE DATABASE ${VB_DB_NAME} WITH OWNER = ${VB_DB_USER} ENCODING = 'UTF8' LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8';" \
                 -c "GRANT ALL PRIVILEGES ON DATABASE ${VB_DB_NAME} TO ${VB_DB_USER};" \
                 -c "GRANT USAGE, CREATE ON SCHEMA public TO ${VB_DB_USER};";
+              fi
+              
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
                 echo "## Database Restore Requested, restoring from specific dump file";
                 export PGPASSWORD="$VB_DB_PASS";
                 pg_restore \
