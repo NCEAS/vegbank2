@@ -9,14 +9,17 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, convert_to_parquet, allowed_file
-from operators.TaxonObservation import TaxonObservation
-from operators.PlotObservation import PlotObservation
-from operators.Party import Party
-from operators.CommunityClassification import CommunityClassification
-from operators.CommunityConcept import CommunityConcept
-from operators.CoverMethod import CoverMethod
-from operators.Project import Project
-from operators.StratumMethod import StratumMethod
+from operators import (
+    TaxonObservation,
+    PlotObservation,
+    Party,
+    PlantConcept,
+    CommunityClassification,
+    CommunityConcept,
+    CoverMethod,
+    Project,
+    StratumMethod,
+)
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
@@ -211,6 +214,39 @@ def community_concepts(accession_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
+@app.route("/plant-concepts", defaults={'pc_code': None}, methods=['GET', 'POST'])
+@app.route("/plant-concepts/<pc_code>")
+def plant_concepts(pc_code):
+    '''
+    Retrieve either an individual plant concept or a collection of concepts.
+
+    This function handles HTTP requests for plant concepts. It currently
+    supports only the GET method to retrieve plant concepts. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
+
+    See the PlantConcept operator for more details.
+
+    Parameters:
+        pc_code (str or None): The unique identifier for the plant concept
+            being retrieved. If None, retrieves all plant concepts.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - For individual concepts: Plant concept data as JSON or Parquet
+            - For collection concepts: Plant concept data as JSON or Parquet,
+              with associated record count if JSON
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    '''
+    plant_concept_operator = PlantConcept(params)
+    if request.method == 'POST':
+        return jsonify_error_message("POST method is not supported for plant concepts."), 405
+    elif request.method == 'GET':
+        return plant_concept_operator.get_plant_concepts(request, pc_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 @app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<accession_code>", methods=['GET'])
