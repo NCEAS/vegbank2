@@ -58,7 +58,7 @@ class Operator:
         """
         to_return = {}
         with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
-            conn.row_factory=dict_row
+            conn.row_factory = dict_row
             with conn.cursor() as cur:
                 cur.execute(sql, data)
                 to_return["data"] = cur.fetchall()
@@ -67,7 +67,6 @@ class Operator:
                     to_return["count"] = cur.fetchall()[0]["count"]
                 else:
                     to_return["count"] = len(to_return["data"])
-            conn.close()
         return jsonify(to_return)
 
     def create_parquet_response(self, sql, data):
