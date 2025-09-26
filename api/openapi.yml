@@ -64,7 +64,7 @@ paths:
                   $ref: "#/components/schemas/plot_observation"
     post: 
       summary: takes a list of plot/observation objects and inserts them into the database. 
-      x-status: "planned"
+      x-status: "beta"
       requestBody:
         content:
           multipart/form-data:
@@ -384,7 +384,7 @@ paths:
   /stratum-methods/{accession_code}:
     get:
       summary: returns a specific stratum method via its accession code
-      x-status: "planned"
+      x-status: "beta"
       parameters:
         - in: path
           name: accession_code
@@ -402,7 +402,7 @@ paths:
   /stratum-methods:
     get:
       summary: takes a list of accession codes and returns the list of stratum methods associated with them. If no codes are provided, returns all stratum methods. 
-      x-status: "planned"
+      x-status: "beta"
       parameters:
         - in: query
           name: accession_code
@@ -417,6 +417,7 @@ paths:
                 $ref: "#/components/schemas/stratum_method"
     post: 
       summary: takes a list of stratum methods and adds them to the database, then returns their new accession codes. 
+      x-status: "beta"
       requestBody:
         content:
           multipart/form-data:
@@ -439,7 +440,7 @@ paths:
   /cover-methods/{accession_code}:
     get:
       summary: returns a specific cover method via its accession code
-      x-status: "planned"
+      x-status: "beta"
       parameters: 
         - in: path
           name: accession_code
@@ -457,7 +458,7 @@ paths:
   /cover-methods:
     get:
       summary: takes a list of accession codes and returns the list of cover methods associated with them. If no codes are provided, returns all cover methods. 
-      x-status: "planned"
+      x-status: "beta"
       parameters: 
         - in: query
           name: accession_code
@@ -472,6 +473,7 @@ paths:
                 $ref: "#/components/schemas/cover_method"
     post: 
       summary: takes a list of cover methods and adds them to the database, then returns their new accession codes. 
+      x-status: "beta"
       requestBody:
         content:
           multipart/form-data:
@@ -537,6 +539,7 @@ paths:
                 $ref: "#/components/schemas/project"
     post: 
       summary: takes a list of projects and adds them to the database, then returns their new accession codes. 
+      x-status: "beta"
       requestBody:
         content:
           multipart/form-data:
