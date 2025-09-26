@@ -75,6 +75,11 @@ spec:
             - sh
             - -c
             - >
+              until pg_isready -h "$VB_DB_HOST" -p "$VB_DB_PORT" -U postgres; do
+                echo "Waiting for postgres to accept connections";
+                sleep 2;
+              done
+
               if [ "{{ .Values.databaseRestore.setup }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
