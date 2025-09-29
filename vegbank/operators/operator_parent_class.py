@@ -41,7 +41,9 @@ class Operator:
 
     def __init__(self, params=None):
         """
-        Initialize common default values for all operators.
+        Initialize common default values for all operators. Several, including
+        `name`, `table_code`, and `full_get_parameters`, must be overridden by
+        child classes to reflect their specific resource and querying details.
         """
         self.QUERIES_FOLDER = "queries/"
         self.default_detail = "full"
@@ -92,23 +94,35 @@ class Operator:
             return jsonify_error_message(e.message), e.status_code
 
         if vb_code is None:
-            sql_file_full = os.path.join(self.QUERIES_FOLDER, f'get_{self.name}_full.sql')
+            # Prepare to query for the full collection
+            sql_file_full = os.path.join(self.QUERIES_FOLDER,
+                                         f'get_{self.name}_full.sql')
             with open(sql_file_full, "r") as file:
                 sql = file.read()
-            sql_file_count = os.path.join(self.QUERIES_FOLDER, f'get_{self.name}_count.sql')
+            sql_file_count = os.path.join(self.QUERIES_FOLDER,
+                                          f'get_{self.name}_count.sql')
             with open(sql_file_count, "r") as file:
                 count_sql = file.read()
             if self.full_get_parameters is None:
                 raise ValueError("The 'full_get_parameters' attribute must be set.")
+            # Extract param values to pass to the database query, matching the
+            # placeholders contained in the associated SQL statement
             data = tuple(params[k] for k in self.full_get_parameters)
-            print(data)
         else:
+            # Prepare to query for a single resource based on its code
+            #
+            # Verify that the vb_code matches the expected code string pattern,
+            # and if so, extract the table primary key to use in the query
             vb_id_match = re.match(fr'^{self.table_code}\.(\d+)$', vb_code)
             if vb_id_match is None:
-                return jsonify_error_message(f"Invalid {self.name} code '{vb_code}'."), 400
+                return (
+                    jsonify_error_message(f"Invalid {self.name} code '{vb_code}'."),
+                    400
+                )
             else:
                 vb_id = int(vb_id_match.group(1))
-            sql_file_by_id = os.path.join(self.QUERIES_FOLDER, f'get_{self.name}_by_id.sql')
+            sql_file_by_id = os.path.join(self.QUERIES_FOLDER,
+                                          f'get_{self.name}_by_id.sql')
             with open(sql_file_by_id, "r") as file:
                 sql = file.read()
             count_sql = None

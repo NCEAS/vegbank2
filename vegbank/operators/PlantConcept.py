@@ -4,19 +4,19 @@ from utilities import QueryParameterError
 
 
 class PlantConcept(Operator):
-    '''
+    """
     Defines operations related to the exchange of plant concept data with
-    Vegbank, including usage and status (party perspective) information.
+    VegBank, including usage and status (party perspective) information.
 
-    Plant Concept: A definition of a named plant taxon according to a reference.
-    Plant Usages: Particular names associated with a plant concept, and the
-    effective dates, status, and system for that name.
+    Plant Concept: A named plant taxon according to a reference.
     Plant Status: The asserted status of a concept, according to a party
-    (a.k.a., a party perspective).
+        (a.k.a., a party perspective).
+    Plant Usages: Particular names associated with a plant concept, including
+        their naming system, status, and effective dates.
 
     Inherits from the Operator parent class to utilize common default values and
     methods.
-    '''
+    """
 
     def __init__(self, params):
         super().__init__(params)
@@ -29,7 +29,7 @@ class PlantConcept(Operator):
         """
         Validate query parameters and apply defaults to missing parameters.
 
-        This applies only validations specific to plant concepts, then
+        This only applies validations specific to plant concepts, then
         dispatches to the parent validation method for more general (and more
         permissive) validations.
 

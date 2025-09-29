@@ -13,7 +13,7 @@ from utilities import jsonify_error_message, allowed_file, QueryParameterError
 class CoverMethod(Operator):
     """
     Defines operations related to the exchange of cover method data with
-    Vegbank, including associated cover index information.
+    VegBank, including associated cover index information.
 
     Cover Method: A defined scale, as recognized and used by data
         collectors, for estimating and recording plant cover on a plot.
@@ -21,7 +21,8 @@ class CoverMethod(Operator):
         particular cover method. A single cover method can have many
         cover indices.
 
-    Inherits from the Operator parent class to utilize common default values.
+    Inherits from the Operator parent class to utilize common default values and
+    methods.
     """
 
     def __init__(self, params):
