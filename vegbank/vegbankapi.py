@@ -218,19 +218,33 @@ def community_concepts(accession_code):
 @app.route("/plant-concepts", defaults={'pc_code': None}, methods=['GET', 'POST'])
 @app.route("/plant-concepts/<pc_code>")
 def plant_concepts(pc_code):
-    '''
-    Retrieve either an individual plant concept or a collection of concepts.
+    """
+    Retrieve either an individual plant concept or a collection.
 
     This function handles HTTP requests for plant concepts. It currently
     supports only the GET method to retrieve plant concepts. If a POST
     request is made, it returns an error message indicating that POST is
     not supported. For any other HTTP method, it returns a 405 error.
 
-    See the PlantConcept operator for more details.
+    If a valid pc_code is provided, returns the corresponding record if it
+    exists. If no pc_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
 
     Parameters:
         pc_code (str or None): The unique identifier for the plant concept
             being retrieved. If None, retrieves all plant concepts.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
         flask.Response: A Flask response object containing:
@@ -239,12 +253,12 @@ def plant_concepts(pc_code):
               with associated record count if JSON
             - For invalid parameters: JSON error message with 400 status code
             - For unsupported HTTP method: JSON error message with 405 status code
-    '''
+    """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
         return jsonify_error_message("POST method is not supported for plant concepts."), 405
     elif request.method == 'GET':
-        return plant_concept_operator.get_plant_concepts(request, pc_code)
+        return plant_concept_operator.get_vegbank_resources(request, pc_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
