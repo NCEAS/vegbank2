@@ -42,9 +42,13 @@ spec:
         - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
           image: busybox:1.28
           command: ['sh', '-c', "until nslookup vegbankdb-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for postgres; sleep 2; done"]
-        - name: {{ .Chart.Name }}-setup-postgres # Set-up Postgres if restore is enabled
+        - name: {{ .Chart.Name }}-restore-postgres # Set-up and restore Postgres if databaseRestore is enabled
           # Note: This image should match the postgres version installed
           image: postgres:16
+          volumeMounts:
+            # Mount the PVC, this path will contain the directory that's been mounted on knbvm
+            - name: {{ .Values.databaseRestore.pvc }}
+              mountPath: "/tmp/databaseRestore"
           env:
             - name: POSTGRES_PASSWORD
               valueFrom:
@@ -71,7 +75,12 @@ spec:
             - sh
             - -c
             - >
-              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+              until pg_isready -h "$VB_DB_HOST" -p "$VB_DB_PORT" -U postgres; do
+                echo "Waiting for postgres to accept connections";
+                sleep 2;
+              done
+
+              if [ "{{ .Values.databaseRestore.setup }}" = "true" ]; then
                 echo "## Checking DB env vars";
                 env | grep '^VB_DB_' || true;
                 env | grep 'POSTGRES_PASSWORD' || true;
@@ -87,77 +96,9 @@ spec:
                 -c "GRANT ALL PRIVILEGES ON DATABASE ${VB_DB_NAME} TO ${VB_DB_USER};" \
                 -c "GRANT USAGE, CREATE ON SCHEMA public TO ${VB_DB_USER};";
               fi
-        - name: {{ .Chart.Name }}-init-flyway # Run the flyway database migration
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
-          volumeMounts:
-            - name: {{ .Release.Name }}-db-files-volume
-              mountPath: {{ .Values.flyway.dbpath }}/migrations
-          env:
-            - name: FLYWAY_URL
-              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
-            - name: FLYWAY_USER
-              valueFrom:
-                secretKeyRef:
-                  name: vegbankdbcreds
-                  key: username
-            - name: FLYWAY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: vegbankdbcreds
-                  key: password
-            - name: FLYWAY_LOCATIONS
-              value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
-          command:
-            - sh
-            - -c
-            - >
-              echo "## Flyway Env";
-              env | grep '^FLYWAY_' || true;
-              echo "## Listing Migrations";
-              ls {{ .Values.flyway.dbpath }}/migrations || true;
+              
               if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
-                echo "Running partial migrate to {{ .Values.databaseRestore.target }}";
-                echo "## Note: If there is no flyway CLI arguments, or conf file, it will default to ENV variables";
-                flyway -target={{ .Values.databaseRestore.target }} migrate;
-              else
-                echo "Running full migration to latest schema in db/migrations";
-                flyway migrate;
-              fi
-        - name: {{ .Chart.Name }}-pg-restore # Restore the database if restore is enabled
-          # Note: This image should match the postgres version installed
-          image: postgres:16
-          volumeMounts:
-              # Mount the PVC, it should show the directory that's been mounted on knbvm
-            - name: {{ .Values.databaseRestore.pvc }}
-              mountPath: "/tmp/databaseRestore"
-          env:
-            - name: VB_DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: vegbankdbcreds
-                  key: password
-            - name: VB_DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: vegbankdbcreds
-                  key: username
-            - name: VB_DB_NAME
-              value: {{ .Values.database.name | quote }}
-            - name: VB_DB_HOST
-              value: {{ .Values.database.host | quote }}
-            - name: VB_DB_PORT
-              value: {{ .Values.database.port | quote }}
-          command:
-            - sh
-            - -c
-            - >
-              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
-                echo "## Checking DB env vars";
-                env | grep '^VB_DB_' || true;
-                echo "## Database Restore Requested, executing data-only dump file";
+                echo "## Database Restore Requested, restoring from specific dump file";
                 export PGPASSWORD="$VB_DB_PASS";
                 pg_restore \
                 -h "$VB_DB_HOST" \
@@ -165,8 +106,9 @@ spec:
                 -U "$VB_DB_USER" \
                 -d "$VB_DB_NAME" \
                 -j 4 "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
+                echo "## Postgres database has been restored";
               fi
-        - name: {{ .Chart.Name }}-apply-flyway # Apply remaining migrations
+        - name: {{ .Chart.Name }}-apply-flyway # Apply migrations
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"

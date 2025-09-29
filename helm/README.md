@@ -13,54 +13,32 @@ You need to have the following things set up/installed:
 - kubectl installed locally
 - Helm installed locally
 
-# Deploying to Kubernetes
+# Deploying to Kubernetes - Development Server
 
-This section will walk you through deploying VegBank to an empty kubernetes namespace. The required data to perform a postgres restore is already available in a directory that can be accessed by mounting a PV/PVC.
+This section will walk you through deploying VegBank to an empty kubernetes namespace. The required dump file to perform a postgres restore has been made available via mounting of a static PV/PVC to both `dev-vegbank` and `vegbank` namespaces.
 
-## Step 1: Apply the PV/PVC
+Any additional requests for further mounts must be requested via the development team. 
 
-Unless you are starting completely from scratch, you will not need to apply the PV/PVC because they are already applied in the `dev-vegbank` and `dev-vegbank-dev` namespace. You can check what PV/PVCs are applied like such:
+## Step 1: Getting your dump file
 
-```sh
-$ kubectl get pvc | grep 'vegbank'
-
-data-vegbankdb-postgresql-0         Bound    pvc-aca31174-4a56-4a73-b38d-a27272af938b   100Gi      RWX            csi-cephfs-sc   289d
-data-vegbankdb-write-postgresql-0   Bound    pvc-bf87eec5-742c-41f2-8d3b-34d1bd228e60   100Gi      RWX            csi-cephfs-sc   66d
-vegbankdb-init-pgdata               Bound    cephfs-vegbankdb-init-pgdata-dev-vegbank   100Gi      RWO            csi-cephfs-sc   45h
-```
-
-- Note: PV/PVCs cannot be shared amongst namespaces - there can only be one PV for one PVC claim. This is why you will see under `helm/admin` two sets of PV and PVC documents: one is for the namespace `dev-vegbank` and the other is for `dev-vegbank-dev`. 
-
-If you have a new namespace (ex. `dev-dou-vegbank`), then you will need to duplicate and apply the existing PV/PVC documents in `helm/admin`.
-- The pv.yaml file should be renamed, and you'll have to update `metadata.name`
-- The pvc.yaml file should also be renamed, and you'll have to update `metadata.namespace` to be the user of your namespace, and `spec.volumeName` to be the `metadata.name` that you used in the pv.yaml
-
-  ```sh
-  # Apply the PV as k8s admin
-  $ kubectl config use-context `dev-k8s`
-  $ kubectl apply -n dev-k8s -f '/Users/doumok/Code/vegbank2/helm/admin/pvc--vegbankdb-init-douvgdb.yaml' 
-
-  # Apply the PVC in your namespace
-  $ kubectl config use-context `dev-dou-vegbank`
-  $ kubectl apply -n dev-dou-vegbank -f '/Users/doumok/Code/vegbank2/helm/admin/pv--vegbankdb-init-cephfs-douvgdb.yaml' 
-  ```
-
+TBD - A dump file is already available for development purposes. In production, this may differ.
 
 ## Step 2: Helm Install (and Uninstall...)
 
-If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore.enabled` to be `true`:
+If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore`:
+- `databaseRestore.setup` should be set to `true` so that a new vegbank database can be created in the postgres instance, along with the expected roles
+- `databaseRestore.enabled` should be set to `true` if you want to restore the database using a dump file. If you want a fresh database installation with no data, leave this as `false`.
 
 ```sh
 # values.yaml
 
 databaseRestore:
+  setup: true # This needs to be changed from `false` to `true`
   enabled: true # This needs to be changed from `false` to `true`
-  target: "1.4"
   pvc: "vegbankdb-init-pgdata" # Name of the PVC
   mountpath: "/tmp/databaseRestore" # Path where you can find the PVC contents
-  filepath: "vegbank_dataonly_fc_20250904.dump" # Name of the file to be used in the restoration process
+  filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump" # Name of the file to be used in the restoration process
 ```
-- The target `V1.4__create_vegbank_views.sql` is the migration point which `flyway` will migrate to before restoring data, after which `V1.5__add_constraints.sql` will be applied, followed by any new migrations which are considered new schema updates.
 
 Now we can deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
 
@@ -80,7 +58,7 @@ $ helm install vegbankdb . --set ingress.enabled=false
 
 This will install both the python pod (based on the `docker/Dockerfile` in this repo) and the Postgres pod (using the `bitnami` image) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pods the starting prefix of `vegbankdb` in its name. You can change the name vegbankdb to whatever you like.
 
-The `Postgres` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be restored with the dump file.
+The `Postgres` pod only has a fresh installation of `PostgreSQL`, without any databases or users - and now needs to be set-up and then restored using the dump file.
 
 - Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by first uninstalling the chart, and then deleting the PVC associated with the `postgres` pod. The PVC that is created (ex. `data-vegbankdb-postgresql-0`) is defined by the chart - and houses all data associated with the `postgres` instance.
 
@@ -104,127 +82,84 @@ The `Postgres` pod only has a fresh installation of `PostgreSQL`, without any da
 
 At this point, your namespace is empty and you have a fresh installation of `postgres`. There is nothing left for you to do but sit and wait for the `initContainers` to execute.
 
-There are five `initContainers`:
+There are three `initContainers`:
 1) vegbankdb-init-postgres
    - This waits until the `postgres` pod is active before allowing the next `initContainer` to execute
-2) vegbankdb-setup-postgres
-   - If `databaseRestore.enabled` is set to `true` in `values.yaml`, this creates the `vegbank` database in your empty `postgres` instance, along with the additional roles required for flyway to apply the migration (schema) files.
-3) vegbankdb-init-flyway
-   - If `databaseRestore.enabled` is set to:
-      - `true`, it will `flyway target=#.# migrate` to the specified point, and then stop.
-      - `false`, it will `flyway migrate` which will apply all the migration files
-4) vegbankdb-init-pg-restore
-   - If `databaseRestore.enabled` is set to `true` it will proceed to look for the data-only dump file, which should already be present and mounted via the PV/PVC step specified earlier - and then execute it.
+2) vegbankdb-restore-postgres
+   - If `databaseRestore.enabled` is set to `true` in `values.yaml`:
+       - This creates the `vegbank` database in your empty `postgres` instance, along with the additional roles required for flyway to apply the migration (schema) files.
+       - It will then proceed to look for the data-only dump file, which should already be present and mounted via the PV/PVC step specified earlier - and then execute it.
 5) vegbankdb-apply-flyway
-   - This executes `flyway migrate`, which applies any remaining migrations. 
+   - This executes `flyway migrate`, which applies the migration files found in `/db/migrations`
 
 
 Tip: To get a pulse of what's happening, you can run the following commands:
 
 ```sh
 $ kubectl -n dev-vegbank get pods
-vegbankdb-6966f945c6-xgq4l   0/1     Init:Error   1 (10s ago)   14s
-vegbankdb-postgresql-0       1/1     Running      0             14s
+NAME                        READY   STATUS     RESTARTS      AGE
+vegbankdb-95bf7c577-9m2rs   0/1     Init:1/3   2 (11m ago)   11m
+vegbankdb-postgresql-0      1/1     Running    0             11m
 
 # This will show you information about the pod, and if you scroll all the way down, where it's at in the initialization process 
-$ kubectl -n dev-vegbank describe pod vegbankdb-6966f945c6-xgq4l
+$ kubectl -n dev-vegbank describe pod vegbankdb-95bf7c577-9m2rs
 ...
 
 # You can get the logs of the initContainer like such, replacing the argument after the '-c' flag with the initContainer you want to check
 $ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-init-postgres --timestamps                                                                          
-2025-09-05T11:50:25.467808361-07:00 Server:    10.96.0.10
-2025-09-05T11:50:25.467903801-07:00 Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
-2025-09-05T11:50:25.467916402-07:00 
-2025-09-05T11:50:25.467925898-07:00 Name:      vegbankdb-postgresql.vegbank-dev.svc.cluster.local
-2025-09-05T11:50:25.467936056-07:00 Address 1: 10.101.158.44 vegbankdb-postgresql.vegbank-dev.svc.cluster.local
+2025-09-25T10:10:11.129037693-07:00 Server:    10.96.0.10
+2025-09-25T10:10:11.129130874-07:00 Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
+2025-09-25T10:10:11.129146915-07:00 
+2025-09-25T10:10:11.129157691-07:00 Name:      vegbankdb-postgresql.vegbank.svc.cluster.local
+2025-09-25T10:10:11.129169307-07:00 Address 1: 10.109.137.103 vegbankdb-postgresql.vegbank.svc.cluster.local
 
-$ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-setup-postgres --timestamps                                                                         
-2025-09-05T11:51:06.697770708-07:00 ## Checking DB env vars
-2025-09-05T11:51:06.700517826-07:00 VB_DB_PASS=IT_MUST_NOT_BE_SHOWN
-2025-09-05T11:51:06.700572711-07:00 VB_DB_HOST=vegbankdb-postgresql
-2025-09-05T11:51:06.700584740-07:00 VB_DB_USER=vegbank
-2025-09-05T11:51:06.700593488-07:00 VB_DB_PORT=5432
-2025-09-05T11:51:06.700601444-07:00 VB_DB_NAME=vegbank
-2025-09-05T11:51:06.703446094-07:00 POSTGRES_PASSWORD=IT_MUST_NOT_BE_SHOWN
-2025-09-05T11:51:06.703954976-07:00 ## Creating Vegbank database and roles
-2025-09-05T11:51:06.898518198-07:00 CREATE ROLE
-2025-09-05T11:51:07.455743823-07:00 CREATE DATABASE
-2025-09-05T11:51:07.459641265-07:00 GRANT
-2025-09-05T11:51:07.466845957-07:00 GRANT
-
-$ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-init-flyway --timestamps                                                                            
-2025-09-05T11:51:08.469416530-07:00 ## Flyway Env
-2025-09-05T11:51:08.474832435-07:00 FLYWAY_PASSWORD=IT_MUST_NOT_BE_SHOWN
-2025-09-05T11:51:08.474870917-07:00 FLYWAY_USER=vegbank
-2025-09-05T11:51:08.474878533-07:00 FLYWAY_URL=jdbc:postgresql://vegbankdb-postgresql:5432/vegbank
-2025-09-05T11:51:08.474883935-07:00 FLYWAY_LOCATIONS=filesystem:/opt/local/flyway/db/migrations
-2025-09-05T11:51:08.475426832-07:00 ## Listing Migrations
-2025-09-05T11:51:08.479394569-07:00 V1.0__vegbank.sql
-2025-09-05T11:51:08.479425690-07:00 V1.1__create_aggregrates.sql
-2025-09-05T11:51:08.479431940-07:00 V1.2__create_extras.sql
-2025-09-05T11:51:08.479437102-07:00 V1.3__create_indices.sql
-2025-09-05T11:51:08.479442045-07:00 V1.4__create_vegbank_views.sql
-2025-09-05T11:51:08.479447229-07:00 V1.5__add_constraints.sql
-2025-09-05T11:51:08.479454324-07:00 V1.6__backfill_party_null_values.sql
-2025-09-05T11:51:08.479912811-07:00 Running partial migrate to 1.4
-2025-09-05T11:51:08.479937608-07:00 ## Note: If there is no flyway CLI arguments, or conf file, it will default to ENV variables
-2025-09-05T11:51:10.464715855-07:00 A more recent version of Flyway is available. Find out more about Flyway 11.12.0 at https://rd.gt/3rXiSlV
-2025-09-05T11:51:10.464757691-07:00 
-2025-09-05T11:51:10.464767821-07:00 Flyway OSS Edition 10.17.0 by Redgate
-2025-09-05T11:51:10.464788145-07:00 
-2025-09-05T11:51:10.464904514-07:00 See release notes here: https://rd.gt/416ObMi
-2025-09-05T11:51:10.663386908-07:00 Database: jdbc:postgresql://vegbankdb-postgresql:5432/vegbank (PostgreSQL 16.4)
-2025-09-05T11:51:10.737531780-07:00 Schema history table "public"."flyway_schema_history" does not exist yet
-2025-09-05T11:51:10.743367291-07:00 Successfully validated 7 migrations (execution time 00:00.033s)
-2025-09-05T11:51:10.770431317-07:00 Creating Schema History table "public"."flyway_schema_history" ...
-2025-09-05T11:51:11.010507209-07:00 Current version of schema "public": /</< Empty Schema />/>
-2025-09-05T11:51:11.138804302-07:00 Migrating schema "public" to version "1.0 - vegbank"
-2025-09-05T11:51:18.249508762-07:00 Migrating schema "public" to version "1.1 - create aggregrates"
-2025-09-05T11:51:18.315983544-07:00 Migrating schema "public" to version "1.2 - create extras"
-2025-09-05T11:51:18.426745450-07:00 Migrating schema "public" to version "1.3 - create indices"
-2025-09-05T11:51:27.975142863-07:00 Migrating schema "public" to version "1.4 - create vegbank views"
-2025-09-05T11:51:28.262490104-07:00 Successfully applied 5 migrations to schema "public", now at version v1.4 (execution time 00:16.614s)
-
-$ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-pg-restore --timestamps
-2025-09-05T11:51:29.648359785-07:00 ## Checking DB env vars
-2025-09-05T11:51:29.652135859-07:00 VB_DB_PASS=IT_MUST_NOT_BE_SHOWN
-2025-09-05T11:51:29.652163546-07:00 VB_DB_HOST=vegbankdb-postgresql
-2025-09-05T11:51:29.652169544-07:00 VB_DB_USER=vegbank
-2025-09-05T11:51:29.652174535-07:00 VB_DB_PORT=5432
-2025-09-05T11:51:29.652179064-07:00 VB_DB_NAME=vegbank
-2025-09-05T11:51:29.652414949-07:00 ## Database Restore Requested, executing data-only dump file
+$ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-restore-postgres --timestamps                                                                         
+2025-09-25T10:10:28.289144504-07:00 ## Checking DB env vars
+2025-09-25T10:10:28.293308086-07:00 VB_DB_PASS=DO_NOT_SHOW_THIS_BAD!
+2025-09-25T10:10:28.293331099-07:00 VB_DB_HOST=vegbankdb-postgresql
+2025-09-25T10:10:28.293335931-07:00 VB_DB_USER=vegbank
+2025-09-25T10:10:28.293339535-07:00 VB_DB_PORT=5432
+2025-09-25T10:10:28.293342931-07:00 VB_DB_NAME=vegbank
+2025-09-25T10:10:28.297146056-07:00 POSTGRES_PASSWORD=RANDOMIZES!
+2025-09-25T10:10:28.297623585-07:00 ## Creating Vegbank database and roles
+2025-09-25T10:10:28.457981764-07:00 CREATE ROLE
+2025-09-25T10:10:29.175171154-07:00 CREATE DATABASE
+2025-09-25T10:10:29.178242612-07:00 GRANT
+2025-09-25T10:10:29.193205738-07:00 GRANT
+2025-09-25T10:10:29.194673189-07:00 ## Database Restore Requested, restoring from specific dump file
 
 $ kubectl logs vegbankdb-9d5859886-5bj5x -c vegbank-apply-flyway --timestamps
-2025-09-05T12:26:39.474175256-07:00 ## Flyway Env
-2025-09-05T12:26:39.477416816-07:00 FLYWAY_PASSWORD=IT_MUST_NOT_BE_SHOWN
-2025-09-05T12:26:39.477449351-07:00 FLYWAY_USER=vegbank
-2025-09-05T12:26:39.477457799-07:00 FLYWAY_URL=jdbc:postgresql://vegbankdb-postgresql:5432/vegbank
-2025-09-05T12:26:39.477463014-07:00 FLYWAY_LOCATIONS=filesystem:/opt/local/flyway/db/migrations
-2025-09-05T12:26:39.477838142-07:00 ## Listing Migrations
-2025-09-05T12:26:39.479655876-07:00 V1.0__vegbank.sql
-2025-09-05T12:26:39.479677716-07:00 V1.1__create_aggregrates.sql
-2025-09-05T12:26:39.479681354-07:00 V1.2__create_extras.sql
-2025-09-05T12:26:39.479691117-07:00 V1.3__create_indices.sql
-2025-09-05T12:26:39.479694215-07:00 V1.4__create_vegbank_views.sql
-2025-09-05T12:26:39.479698005-07:00 V1.5__add_constraints.sql
-2025-09-05T12:26:39.479701282-07:00 V1.6__backfill_party_null_values.sql
-2025-09-05T12:26:39.479823299-07:00 Applying all migrations in db/migrations
-2025-09-05T12:26:41.389386373-07:00 A more recent version of Flyway is available. Find out more about Flyway 11.12.0 at https://rd.gt/3rXiSlV
-2025-09-05T12:26:41.389441446-07:00 
-2025-09-05T12:26:41.389446352-07:00 Flyway OSS Edition 10.17.0 by Redgate
-2025-09-05T12:26:41.389449242-07:00 
-2025-09-05T12:26:41.389463465-07:00 See release notes here: https://rd.gt/416ObMi
-2025-09-05T12:26:41.623125321-07:00 Database: jdbc:postgresql://vegbankdb-postgresql:5432/vegbank (PostgreSQL 16.4)
-2025-09-05T12:26:43.430193165-07:00 Successfully validated 7 migrations (execution time 00:00.442s)
-2025-09-05T12:26:43.524264740-07:00 Current version of schema "public": 1.4
-2025-09-05T12:26:43.637810377-07:00 Migrating schema "public" to version "1.5 - add constraints"
-2025-09-05T12:28:33.399376226-07:00 Migrating schema "public" to version "1.6 - backfill party null values"
-2025-09-05T12:28:33.857676384-07:00 Successfully applied 2 migrations to schema "public", now at version v1.6 (execution time 01:49.502s)
+2025-09-25T10:35:06.910428714-07:00 ## Flyway Env
+2025-09-25T10:35:06.914609424-07:00 FLYWAY_PASSWORD=SecretVeggies2092
+2025-09-25T10:35:06.914645452-07:00 FLYWAY_USER=vegbank
+2025-09-25T10:35:06.914652983-07:00 FLYWAY_URL=jdbc:postgresql://vegbankdb-postgresql:5432/vegbank
+2025-09-25T10:35:06.914658864-07:00 FLYWAY_LOCATIONS=filesystem:/opt/local/flyway/db/migrations
+2025-09-25T10:35:06.914887785-07:00 ## Listing Migrations
+2025-09-25T10:35:06.917932660-07:00 V1.0__vegbank.sql
+2025-09-25T10:35:06.917977643-07:00 V1.1__create_aggregrates.sql
+2025-09-25T10:35:06.917983649-07:00 V1.2__create_extras.sql
+2025-09-25T10:35:06.917988364-07:00 V1.3__create_indices.sql
+2025-09-25T10:35:06.918010462-07:00 V1.4__create_vegbank_views.sql
+2025-09-25T10:35:06.918015460-07:00 V1.5__add_constraints.sql
+2025-09-25T10:35:06.918021412-07:00 V1.6__backfill_party_null_values.sql
+2025-09-25T10:35:06.918026325-07:00 V1.7__create_identifiers_table.sql
+2025-09-25T10:35:06.918031538-07:00 V1.8__populate_acc_identifiers_procedure.sql
+2025-09-25T10:35:06.918036127-07:00 V1.9__populate_vb_identifiers_procedure.sql
+2025-09-25T10:35:06.918273573-07:00 Applying all migrations in db/migrations
+2025-09-25T10:35:08.781050529-07:00 A more recent version of Flyway is available. Find out more about Flyway 11.13.1 at https://rd.gt/3rXiSlV
+2025-09-25T10:35:08.781118232-07:00 
+2025-09-25T10:35:08.781141330-07:00 Flyway OSS Edition 10.17.0 by Redgate
+2025-09-25T10:35:08.781150048-07:00 
+2025-09-25T10:35:08.781156363-07:00 See release notes here: https://rd.gt/416ObMi
+2025-09-25T10:35:08.971432146-07:00 Database: jdbc:postgresql://vegbankdb-postgresql:5432/vegbank (PostgreSQL 16.4)
+2025-09-25T10:35:09.700179135-07:00 Successfully validated 10 migrations (execution time 00:00.308s)
+2025-09-25T10:35:09.767308757-07:00 Current version of schema "public": 1.9
+2025-09-25T10:35:09.774330631-07:00 Schema "public" is up to date. No migration necessary.
 
 $ kubectl get pods
 NAME                        READY   STATUS    RESTARTS   AGE
-vegbankdb-9d5859886-5bj5x   1/1     Running   0          40m
-vegbankdb-postgresql-0      1/1     Running   0          40m
+vegbankdb-95bf7c577-9m2rs   1/1     Running   0          53m
+vegbankdb-postgresql-0      1/1     Running   0          53m
 ```
 
 After the `initContainers` complete, you will now have an up-to-date copy of the current `vegbank` postgres database - which has applied all migrations found in `helm/db/mgrations`.
