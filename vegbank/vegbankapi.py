@@ -353,7 +353,7 @@ def cover_methods(cm_code):
     via an environment variable. For any other HTTP method, it returns 405 error.
 
     Parameters (for GET requests only):
-        pc_code (str or None): The unique identifier for the cover method
+        cm_code (str or None): The unique identifier for the cover method
             being retrieved. If None, retrieves all cover methods.
 
     GET Query Parameters:
@@ -386,7 +386,7 @@ def cover_methods(cm_code):
         if(allow_uploads is False):
             return jsonify_error_message("Uploads are not allowed on this server."), 403
         else:
-            return cover_method_operator.upload_cover_method(request, params) 
+            return cover_method_operator.upload_cover_method(request, params)
     elif request.method == 'GET':
         return cover_method_operator.get_vegbank_resources(request, cm_code)
     else:
