@@ -19,6 +19,7 @@ from operators import (
     CoverMethod,
     Project,
     StratumMethod,
+    Reference,
 )
 
 
@@ -445,6 +446,54 @@ def stratum_methods(sm_code):
             return stratum_method_operator.upload_stratum_method(request, params)
     elif request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
+@app.route("/references/<rf_code>")
+def references(rf_code):
+    """
+    Retrieve either an individual reference or a collection.
+
+    This function handles HTTP requests for references. It currently
+    supports only the GET method to retrieve references. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
+
+    If a valid rf_code is provided, returns the corresponding record if it
+    exists. If no rf_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
+
+    Parameters:
+        rf_code (str or None): The unique identifier for the reference
+            being retrieved. If None, retrieves all references.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - For individual concepts: Reference data as JSON or Parquet
+            - For collection concepts: Reference data as JSON or Parquet,
+              with associated record count if JSON
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    """
+    reference_operator = Reference(params)
+    if request.method == 'POST':
+        return jsonify_error_message("POST method is not supported for references."), 405
+    elif request.method == 'GET':
+        return reference_operator.get_vegbank_resources(request, rf_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
