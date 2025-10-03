@@ -37,6 +37,9 @@ class Operator:
             type, serving as the `vb_code` prefix in the VegBank database.
         full_get_parameters (tuple): Names of query parameters to be passed to
             the full GET query, in the order of placeholders in the SQL file.
+        include_full_count (bool): If True, query the database and send the
+            full count of records. If False, simply return the count of records
+            in the response.
     """
 
     def __init__(self, params=None):
@@ -53,6 +56,7 @@ class Operator:
         self.name = "vegbank"
         self.table_code = "vb"
         self.full_get_parameters = None
+        self.include_full_count = True
 
     def get_vegbank_resources(self, request, vb_code=None):
         """
@@ -101,11 +105,14 @@ class Operator:
                                     f'get_{self.name}_{detail}.sql')
             with open(sql_file, "r") as file:
                 sql = file.read()
-            # Load collection count query string
-            sql_file_count = os.path.join(self.QUERIES_FOLDER,
-                                          f'get_{self.name}_count.sql')
-            with open(sql_file_count, "r") as file:
-                count_sql = file.read()
+            if (self.include_full_count):
+                # Load collection count query string
+                sql_file_count = os.path.join(self.QUERIES_FOLDER,
+                                              f'get_{self.name}_count.sql')
+                with open(sql_file_count, "r") as file:
+                    count_sql = file.read()
+            else:
+                count_sql = None
             # Extract param values to pass to the database query, matching the
             # placeholders contained in the associated SQL statement
             if self.full_get_parameters is None:

@@ -20,4 +20,4 @@ SELECT
 FROM    
     view_taxonobs_withmaxcover
 WHERE 
-    accessionCode = %s;
+    taxonobservation_id = %s
