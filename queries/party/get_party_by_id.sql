@@ -10,5 +10,5 @@ SELECT
 FROM
     party
 WHERE
-    party.accessionCode = %s
+    party.party_id = %s
 AND party.partypublic IS NOT false;

@@ -292,38 +292,53 @@ def plant_concepts(pc_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
-@app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/parties/<accession_code>", methods=['GET'])
-def parties(accession_code):
-    '''
-    Retrieve parties based on the provided accession code. 
-    See Party.py for semantic details of parties. 
+@app.route("/parties", defaults={'py_code': None}, methods=['GET', 'POST'])
+@app.route("/parties/<py_code>", methods=['GET'])
+def parties(py_code):
+    """
+    Retrieve either an individual party or a collection.
 
-    If no accession code is provided, return a paginated json objsect 
-    of all parties. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for parties. It currently
+    supports only the GET method to retrieve parties. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
 
-    This function handles HTTP requests for parties. It supports 
-    only the GET method to retrieve parties. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    If a valid py_code is provided, returns the corresponding record if it
+    exists. If no py_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the party to be retrieved.
+        py_code (str or None): The unique identifier for the party
+            being retrieved. If None, retrieves all parties.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the parties or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    party_operator = Party()
+        flask.Response: A Flask response object containing:
+            - For GET an individual: Party data as JSON or Parquet
+            - For GET a collection: Party data as JSON or Parquet,
+              with full collection count if JSON
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    """
+    party_operator = Party(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for parties."), 405
+        return jsonify_error_message(
+            "POST method is not supported for parties."), 405
     elif request.method == 'GET':
-        return party_operator.get_parties(request, params, accession_code)
+        return party_operator.get_vegbank_resources(request, py_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
 @app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
