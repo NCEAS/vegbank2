@@ -48,45 +48,59 @@ def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
 
 
-@app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/plot-observations/<accession_code>", methods=['GET'])
-def plot_observations(accession_code):
-    '''
-    Handles creation and return of plots and observations. 
-    See PlotObservation.py for semantic details of plots and observations. 
+@app.route("/plot-observations", defaults={'ob_code': None}, methods=['GET', 'POST'])
+@app.route("/plot-observations/<ob_code>", methods=['GET'])
+def plot_observations(ob_code):
+    """
+    Retrieve either an individual plot observation or a collection, or
+    upload a new set of plot observations.
 
-    This function supports both GET and POST requests. For POST requests, it allows 
-    the uploading of plot observations if uploads are permitted via an environment variable. For GET requests, 
-    it retrieves plot observations associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all plot observations. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for plot observations. For GET requests,
+    it retrieves plot observation details associated with a specified plot
+    observation code (e.g., `ob.1`) or a paginated collection of all plot
+    observations if no code is provided; see below for query parameters to
+    support pagination and detail. For POST requests, it facilitates uploading
+    of new plot observations if permitted via an environment variable. For any
+    other HTTP method, it returns a 405 error.
 
-    Parameters:
-        accession_code (str): The unique identifier for the observation being retrieved.
-        Defaults to None. 
+    Parameters (for GET requests only):
+        ob_code (str or None): The unique identifier for the plot observation
+            being retrieved. If None, retrieves all plot observations.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing either the plot observations or an 
-                error message, along with the appropriate HTTP status code.
-
-    Methods:
-        - POST: Uploads plot observations if allowed.
-        - GET: Retrieves plot observations based on the accession code.
+        flask.Response: A Flask response object containing:
+            - For GET an individual: Plot observation data as JSON or Parquet
+            - For GET a collection: Plot observation data as JSON or Parquet,
+              with full collection count if JSON
+            - For POST new plot observations: JSON message with details about
+              success or failure of the upload operation
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
 
     Raises:
         403: If uploads are not allowed on the server.
         405: If the request method is neither GET nor POST.
-    '''
-    plot_observation_operator = PlotObservation()
+    """
+    plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        if (allow_uploads is False):
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return plot_observation_operator.upload_plot_observations(request, params)
     elif request.method == 'GET':
-        return plot_observation_operator.get_plot_observations(request, params, accession_code)
-    else: 
+        return plot_observation_operator.get_vegbank_resources(request, ob_code)
+    else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
