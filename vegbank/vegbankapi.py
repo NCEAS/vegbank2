@@ -196,38 +196,51 @@ def community_classifications(cl_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-concepts/<accession_code>", methods=['GET'])
-def community_concepts(accession_code):
-    '''
-    Retrieve community concepts based on the provided accession code. 
-    See CommunityConcept.py for semantic details of community concepts. 
+@app.route("/community-concepts", defaults={'cc_code': None}, methods=['GET', 'POST'])
+@app.route("/community-concepts/<cc_code>")
+def community_concepts(cc_code):
+    """
+    Retrieve either an individual community concept or a collection.
 
-    If no accession code is provided, return a paginated json objsect 
-    of all community concepts. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for community concepts. It currently
+    supports only the GET method to retrieve community concepts. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
 
-    This function handles HTTP requests for community concepts. It supports 
-    only the GET method to retrieve community concepts. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    If a valid cc_code is provided, returns the corresponding record if it
+    exists. If no cc_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the community concept to be retrieved.
+        cc_code (str or None): The unique identifier for the community concept
+            being retrieved. If None, retrieves all community concepts.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the community concepts or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    community_concept_operator = CommunityConcept()
+        flask.Response: A Flask response object containing:
+            - For GET an individual: Community concept data as JSON or Parquet
+            - For GET a collection: Community concept data as JSON or Parquet,
+              with full collection count if JSON
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    """
+    community_concept_operator = CommunityConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for community concepts."), 405
+        return jsonify_error_message(
+            "POST method is not supported for community concepts."), 405
     elif request.method == 'GET':
-        return community_concept_operator.get_community_concepts(request, params, accession_code)
+        return community_concept_operator.get_vegbank_resources(request, cc_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

@@ -19,4 +19,4 @@ FROM
     left join commname on commUsage.commname_id = commname.commname_id
     left join party on commUsage.party_id = party.party_id
 WHERE  
-    commConcept.accessionCode = %s;
+    commConcept.commconcept_id = %s;
