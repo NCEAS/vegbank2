@@ -144,38 +144,54 @@ def taxon_observations(accession_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-classifications/<accession_code>", methods=['GET'])
-def community_classifications(accession_code):
-    '''
-    Retrieve community classifications based on the provided accession code. 
-    See CommunityClassification.py for semantic details of community classifications. 
+@app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
+@app.route("/community-classifications/<cl_code>", methods=['GET'])
+def community_classifications(cl_code):
+    """
+    Retrieve either an individual community classification or a collection.
 
-    If no accession code is provided, return a paginated json objsect 
-    of all community classifications. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for community classifications.
+    It currently supports only the GET method to retrieve community
+    classifications. If a POST request is made, it returns an error message
+    indicating that POST is not supported. For any other HTTP method, it
+    returns a 405 error.
 
-    This function handles HTTP requests for community classifications. It supports 
-    only the GET method to retrieve community classifications. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    If a valid cl_code is provided, returns the corresponding record if it
+    exists. If no cl_code is provided, returns the full collection of
+    classification records with pagination and field scope controlled by
+    query parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the community classification to be retrieved.
+        cl_code (str or None): The unique identifier for the community
+            classification being retrieved. If None, retrieves all
+            classifications.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the community classifications or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    community_classification_operator = CommunityClassification()
+        flask.Response: A Flask response object containing:
+            - For GET an individual: Community classification data as JSON or
+              Parquet
+            - For GET a collection: Community classification data as JSON or
+              Parquet, with full collection count if JSON
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    """
+    community_classification_operator = CommunityClassification(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for community classifications."), 405
+        return jsonify_error_message(
+            "POST method is not supported for community_classifications."), 405
     elif request.method == 'GET':
-        return community_classification_operator.get_community_classifications(request, params, accession_code)
+        return community_classification_operator.get_vegbank_resources(request, cl_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
