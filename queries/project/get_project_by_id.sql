@@ -10,4 +10,4 @@ SELECT
 FROM
     project
 WHERE
-    accessionCode = %s;
+    project_id = %s;

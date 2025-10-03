@@ -355,45 +355,58 @@ def parties(py_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/projects/<accession_code>", methods=['GET'])
-def projects(accession_code):
-   '''
-    Handles creation and return of projects.
-    See Project.py for semantic details of projects. 
+@app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
+@app.route("/projects/<pj_code>", methods=['GET'])
+def projects(pj_code):
+    """
+    Retrieve either an individual project or a collection, or upload a new set
+    of projects.
 
-    This function supports both GET and POST requests. For POST requests, it allows 
-    the uploading of projects if uploads are permitted via an environment variable. For GET requests, 
-    it retrieves projects associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all projects. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for projects. For GET requests, it
+    retrieves project details associated with a specified project code (e.g.,
+    `pj.1`) or a paginated collection of all projects if no code is provided;
+    see below for query parameters to support pagination and detail. For POST
+    requests, it facilitates uploading of new projects if permitted via an
+    environment variable. For any other HTTP method, it returns a 405 error.
 
-    Parameters:
-        accession_code (str): The unique identifier for the project to be retrieved.
-        Defaults to None. 
+    Parameters (for GET requests only):
+        pj_code (str or None): The unique identifier for the project being
+            retrieved. If None, retrieves all projects.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing either the projects or an 
-                error message, along with the appropriate HTTP status code.
-
-    Methods:
-        - POST: Uploads projects if allowed.
-        - GET: Retrieves project based on the accession code.
+        flask.Response: A Flask response object containing:
+            - For GET an individual: Project data as JSON or Parquet
+            - For GET a collection: Project data as JSON or Parquet,
+              with full collection count if JSON
+            - For POST new projects: JSON message with details about
+              success or failure of the upload operation
+            - For invalid parameters: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
 
     Raises:
         403: If uploads are not allowed on the server.
         405: If the request method is neither GET nor POST.
-    '''
-   project_operator = Project()
-   if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+    """
+    project_operator = Project(params)
+    if request.method == 'POST':
+        if (allow_uploads is False):
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
-            return project_operator.upload_project(request, params) 
-   elif request.method == 'GET':
-        return project_operator.get_projects(request, params, accession_code)
-   else:
+            return project_operator.upload_project(request, params)
+    elif request.method == 'GET':
+        return project_operator.get_vegbank_resources(request, pj_code)
+    else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
