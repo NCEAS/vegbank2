@@ -80,17 +80,11 @@ def plot_observations(ob_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Plot observation data as JSON or Parquet
-            - For GET a collection: Plot observation data as JSON or Parquet,
-              with full collection count if JSON
-            - For POST new plot observations: JSON message with details about
-              success or failure of the upload operation
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
+            - 200: Successfully retrieved plot observation(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
     """
     plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
@@ -117,9 +111,9 @@ def get_observation_details(ob_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For a successful query: Observation details data in JSON format
-            - For invalid ob_code: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved plot observation details as JSON
+            - 400: Invalid ob_code
+            - 405: Unsupported HTTP method
     """
     plot_observation_operator = PlotObservation(params)
     return plot_observation_operator.get_observation_details(ob_code)
@@ -160,11 +154,10 @@ def taxon_observations(to_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Taxon observation data as JSON or Parquet
-            - For GET a collection: Taxon observation data as JSON or Parquet,
-              with returned record count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved taxon observation(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
@@ -211,12 +204,10 @@ def community_classifications(cl_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Community classification data as JSON or
-              Parquet
-            - For GET a collection: Community classification data as JSON or
-              Parquet, with full collection count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved community classification(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     community_classification_operator = CommunityClassification(params)
     if request.method == 'POST':
@@ -261,11 +252,10 @@ def community_concepts(cc_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Community concept data as JSON or Parquet
-            - For GET a collection: Community concept data as JSON or Parquet,
-              with full collection count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved community concept(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     community_concept_operator = CommunityConcept(params)
     if request.method == 'POST':
@@ -310,11 +300,10 @@ def plant_concepts(pc_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Plant concept data as JSON or Parquet
-            - For GET a collection: Plant concept data as JSON or Parquet,
-              with full collection count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved plant concept(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
@@ -359,11 +348,10 @@ def parties(py_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Party data as JSON or Parquet
-            - For GET a collection: Party data as JSON or Parquet,
-              with full collection count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved party record(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     party_operator = Party(params)
     if request.method == 'POST':
@@ -406,17 +394,11 @@ def projects(pj_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Project data as JSON or Parquet
-            - For GET a collection: Project data as JSON or Parquet,
-              with full collection count if JSON
-            - For POST new projects: JSON message with details about
-              success or failure of the upload operation
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
+            - 200: Successfully retrieved project(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
     """
     project_operator = Project(params)
     if request.method == 'POST':
@@ -462,17 +444,11 @@ def cover_methods(cm_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Cover method data as JSON or Parquet
-            - For GET a collection: Cover method data as JSON or Parquet,
-              with full collection count if JSON
-            - For POST new cover methods: JSON message with details about
-              success or failure of the upload operation
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
+            - 200: Successfully retrieved cover method(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
@@ -518,17 +494,11 @@ def stratum_methods(sm_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Stratum method data as JSON or Parquet
-            - For GET a collection: Stratum method data as JSON or Parquet,
-              with full collection count if JSON
-            - For POST new stratum methods: JSON message with details about
-              success or failure of the upload operation
-            - For invalid GET parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
+            - 200: Successfully retrieved stratum method(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
     """
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
@@ -575,11 +545,10 @@ def references(rf_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET an individual: Reference data as JSON or Parquet
-            - For GET a collection: Reference data as JSON or Parquet,
-              with full collection count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved reference(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     reference_operator = Reference(params)
     if request.method == 'POST':
@@ -596,7 +565,7 @@ def bulk_upload():
     ''' This is an example endpoint for uploads with multiple parquet files. '''
     if 'files[]' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
-    
+
     files = request.files.getlist('files[]')
     response = {}
     for file in files:
@@ -604,7 +573,7 @@ def bulk_upload():
             return jsonify_error_message("No selected file."), 400
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-        
+
         try:
             df = pd.read_parquet(file)
             print(f"DataFrame loaded with {len(df)} records.")
