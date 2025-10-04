@@ -104,21 +104,25 @@ def plot_observations(ob_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/get_observation_details/<accession_code>", methods=['GET'])
-def get_observation_details(accession_code):
-    '''
-    Returns detailed information about a specific observation based on the provided accession code.
+@app.route("/get_observation_details/<ob_code>", methods=['GET'])
+def get_observation_details(ob_code):
+    """
+    Retrieve details about a specific plot observation as identified by
+    ob_code, returning information about the plot observation itself,
+    associated taxon observations/interpretations, and associated community
+    classifications/interpretations.
+
     Parameters:
-        accession_code (str): The unique identifier for the observation being retrieved.
+        ob_code (str): The unique observation identifier.
+
     Returns:
-        Response: A JSON response containing the observation details or an error message.
-    Methods: 
-        - GET: Retrieves observation details based on the accession code.
-    Raises: 
-        405: If the request method is not GET.
-    '''
-    plot_observation_operator = PlotObservation()
-    return plot_observation_operator.get_observation_details(params, accession_code)
+        flask.Response: A Flask response object containing:
+            - For a successful query: Observation details data in JSON format
+            - For invalid ob_code: JSON error message with 400 status code
+            - For unsupported HTTP method: JSON error message with 405 status code
+    """
+    plot_observation_operator = PlotObservation(params)
+    return plot_observation_operator.get_observation_details(ob_code)
 
 
 @app.route("/taxon-observations", defaults={'to_code': None}, methods=['GET', 'POST'])

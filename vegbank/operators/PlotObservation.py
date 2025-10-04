@@ -293,50 +293,58 @@ class PlotObservation(Operator):
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
 
-    def get_observation_details(self, params, accession_code):
+    def get_observation_details(self, ob_code):
         """
-        Retrieves observation details for a given accession code from the database.
-        This method connects to the PostgreSQL database using the provided parameters,
-        executes SQL queries to fetch observation details, associated taxa, and communities,
-        and returns the results in a JSON format.
+        Retrieves observation details for a given observation code.
 
-        Parameters:
-            params : dict
-                A dictionary containing the database connection parameters.
-            accession_code : str
-                The unique identifier for the observation being retrieved.
+        This method connects to the VegBank database and executes SQL queries
+        to fetch plot observation details, associated taxon observations, and
+        community classifications, returning the results in a JSON format.
+
+        Parameters (for GET requests only):
+            ob_code (str): The unique identifier for the plot observation.
         Returns:
-            Response: A JSON response containing the observation details, including the count of records,
-                associated taxa, and communities if available.
+            flask.Response: A Flask response object containing the observation
+                details in JSON format.
         Raises:
-            Exception
-                If there is an error in executing the SQL queries or connecting to the database.
+            Exception: If there is an error in executing the SQL queries
+                or connecting to the database.
         """
-        
         to_return = {}
-        with psycopg.connect(**params, row_factory=dict_row) as conn:
+        with psycopg.connect(**self.params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
-                with open(self.QUERIES_FOLDER + "get_observation_details.sql", "r") as file:
-                    sql = file.read() 
-                data = (accession_code, )
+                # Prepare to query for a single resource based on its code
+                try:
+                    ob_id = self.extract_id_from_vb_code(ob_code)
+                except QueryParameterError as e:
+                    return jsonify_error_message(e.message), e.status_code
+                sql_file = os.path.join(self.QUERIES_FOLDER,
+                                        f'get_observation_details.sql')
+                with open(sql_file, "r") as file:
+                    sql = file.read()
+                data = (ob_id, )
                 cur.execute(sql, data)
                 to_return["data"] = cur.fetchall()
                 to_return["count"] = len(to_return["data"])
                 print(to_return)
                 if(len(to_return["data"]) != 0):
                     taxa = []
-                    with open(self.QUERIES_FOLDER + "/taxon_observation/get_taxa_for_observation.sql", "r") as file:
-                        sql = file.read() 
-                    data = (accession_code, )
+                    sql_file = os.path.join(self.QUERIES_FOLDER,
+                                            f'get_taxa_for_observation.sql')
+                    with open(sql_file, "r") as file:
+                        sql = file.read()
+                    data = (ob_id, )
                     cur.execute(sql, data)
                     taxa = cur.fetchall()
                     to_return["data"][0].update({"taxa": taxa})
                     communities = []
-                    with open(self.QUERIES_FOLDER + "/community_concept/get_community_for_observation.sql", "r") as file:
-                        sql = file.read() 
-                    data = (accession_code, )
+                    sql_file = os.path.join(self.QUERIES_FOLDER,
+                                            f'get_community_for_observation.sql')
+                    with open(sql_file, "r") as file:
+                        sql = file.read()
+                    data = (ob_id, )
                     cur.execute(sql, data)
                     communities = cur.fetchall()
                     to_return["data"][0].update({"communities": communities})
-            conn.close()      
+            conn.close()
         return jsonify(to_return)

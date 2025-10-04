@@ -21,6 +21,6 @@ FROM
     join stratum on taxonImportance.stratum_id = stratum.stratum_id
     left join stratumtype on stratum.stratumtype_id = stratumtype.stratumtype_id
 WHERE 
-    observation.accessionCode = %s
+    observation.observation_id = %s
 ORDER BY
-    stratumtype DESC, taxonImportance.cover DESC;
+    stratumtype DESC, taxonImportance.cover DESC
