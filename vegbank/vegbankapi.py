@@ -310,19 +310,21 @@ def plant_concepts(pc_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For individual concepts: Plant concept data as JSON or Parquet
-            - For collection concepts: Plant concept data as JSON or Parquet,
-              with associated record count if JSON
+            - For GET an individual: Plant concept data as JSON or Parquet
+            - For GET a collection: Plant concept data as JSON or Parquet,
+              with full collection count if JSON
             - For invalid parameters: JSON error message with 400 status code
             - For unsupported HTTP method: JSON error message with 405 status code
     """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for plant concepts."), 405
+        return jsonify_error_message(
+            "POST method is not supported for plant concepts."), 405
     elif request.method == 'GET':
         return plant_concept_operator.get_vegbank_resources(request, pc_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
 
 @app.route("/parties", defaults={'py_code': None}, methods=['GET', 'POST'])
 @app.route("/parties/<py_code>", methods=['GET'])
@@ -432,15 +434,16 @@ def projects(pj_code):
 @app.route("/cover-methods/<cm_code>")
 def cover_methods(cm_code):
     """
-    Retrieve either an individual cover method or a collection of cover methods,
-    or upload a new cover method.
+    Retrieve either an individual cover method or a collection, or upload a new
+    cover method.
 
     This function handles HTTP requests for cover methods. For GET requests, it
     retrieves cover method details associated with a specified cover method code
     (e.g., `cm.1`) or a paginated collection of all cover methods if no code is
     provided; see below for query parameters to support pagination and detail.
     For POST requests, it facilitates uploading of cover methods if permitted
-    via an environment variable. For any other HTTP method, it returns 405 error.
+    via an environment variable. For any other HTTP method, it returns a 405
+    error.
 
     Parameters (for GET requests only):
         cm_code (str or None): The unique identifier for the cover method
@@ -459,12 +462,12 @@ def cover_methods(cm_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET individual cover methods: Cover method data as JSON or Parquet
-            - For GET a collection: Cover method data as JSON or Parquet, with
-              associated record count if JSON
+            - For GET an individual: Cover method data as JSON or Parquet
+            - For GET a collection: Cover method data as JSON or Parquet,
+              with full collection count if JSON
             - For POST new cover methods: JSON message with details about
               success or failure of the upload operation
-            - For invalid GET parameters: JSON error message with 400 status code
+            - For invalid parameters: JSON error message with 400 status code
             - For unsupported HTTP method: JSON error message with 405 status code
 
     Raises:
@@ -474,7 +477,7 @@ def cover_methods(cm_code):
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
         if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return cover_method_operator.upload_cover_method(request, params)
     elif request.method == 'GET':
@@ -487,15 +490,16 @@ def cover_methods(cm_code):
 @app.route("/stratum-methods/<sm_code>", methods=['GET'])
 def stratum_methods(sm_code):
     """
-    Retrieve either an individual stratum method or a collection of stratum methods,
-    or upload a new stratum method.
+    Retrieve either an individual stratum method or a collection, or upload a
+    new stratum method.
 
-    This function handles HTTP requests for stratum methods. For GET requests, it
-    retrieves stratum method details associated with a specified stratum method code
-    (e.g., `sm.1`) or a paginated collection of all stratum methods if no code is
-    provided; see below for query parameters to support pagination and detail.
-    For POST requests, it facilitates uploading of stratum methods if permitted
-    via an environment variable. For any other HTTP method, it returns 405 error.
+    This function handles HTTP requests for stratum methods. For GET requests,
+    it retrieves stratum method details associated with a specified stratum
+    method code (e.g., `sm.1`) or a paginated collection of all stratum methods
+    if no code is provided; see below for query parameters to support pagination
+    and detail.  For POST requests, it facilitates uploading of stratum methods
+    if permitted via an environment variable. For any other HTTP method, it
+    returns a 405 error.
 
     Parameters (for GET requests only):
         sm_code (str or None): The unique identifier for the stratum method
@@ -514,10 +518,9 @@ def stratum_methods(sm_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET individual stratum methods: Stratum method data as JSON or
-              Parquet
-            - For GET a collection: Stratum method data as JSON or Parquet, with
-              associated record count if JSON
+            - For GET an individual: Stratum method data as JSON or Parquet
+            - For GET a collection: Stratum method data as JSON or Parquet,
+              with full collection count if JSON
             - For POST new stratum methods: JSON message with details about
               success or failure of the upload operation
             - For invalid GET parameters: JSON error message with 400 status code
@@ -530,7 +533,7 @@ def stratum_methods(sm_code):
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
         if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return stratum_method_operator.upload_stratum_method(request, params)
     elif request.method == 'GET':
@@ -572,15 +575,16 @@ def references(rf_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For individual concepts: Reference data as JSON or Parquet
-            - For collection concepts: Reference data as JSON or Parquet,
-              with associated record count if JSON
+            - For GET an individual: Reference data as JSON or Parquet
+            - For GET a collection: Reference data as JSON or Parquet,
+              with full collection count if JSON
             - For invalid parameters: JSON error message with 400 status code
             - For unsupported HTTP method: JSON error message with 405 status code
     """
     reference_operator = Reference(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for references."), 405
+        return jsonify_error_message(
+            "POST method is not supported for references."), 405
     elif request.method == 'GET':
         return reference_operator.get_vegbank_resources(request, rf_code)
     else:
