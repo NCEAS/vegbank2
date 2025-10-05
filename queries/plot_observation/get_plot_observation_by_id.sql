@@ -67,7 +67,6 @@ SELECT
     maxSlopeGradient,
     authorObsCode,
     previousobs_ID,
-    obsEndDate,
     dateAccuracy,
     stemSizeLimit,
     autoTaxonCover,
