@@ -1,96 +1,57 @@
-from flask import jsonify, request, send_file
+import os
+from flask import jsonify
 import psycopg
-from psycopg import connect, ClientCursor
+from psycopg import ClientCursor
 from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
-import io
-import time
-import operators.table_defs_config as table_defs_config
 import traceback
-from operators.operator_parent_class import Operator
-from utilities import jsonify_error_message, convert_to_parquet, allowed_file
+from operators import Operator, table_defs_config
+from utilities import jsonify_error_message, allowed_file, QueryParameterError
 
 
 class Project(Operator):
-    '''
-    Defines operations related to project data management, 
-    including retrieval and upload functionalities.
+    """
+    Defines operations related to the exchange of project details with VegBank.
+
     Project: The project or study established to collect vegetation plot data.
-    Observations are linked to projects. 
 
-    Inherits from the Operator parent class to utilize common default values.
-    '''
+    Inherits from the Operator parent class to utilize common default values and
+    methods.
+    """
 
-    def __init__(self):
-        super().__init__()
-        
-    
-    def get_projects(self, request, params, accession_code):
+    def __init__(self, params):
+        super().__init__(params)
+        self.name = "project"
+        self.table_code = "pj"
+        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.full_get_parameters = ('limit', 'offset')
+
+    def validate_query_params(self, request_args):
         """
-        Retrieve projects based on the provided accession code,
-        or via the provided URL parameters. See definitions below.
+        Validate query parameters and apply defaults to missing parameters.
+
+        This only applies validations specific to projects, then dispatches
+        to the parent validation method for more general (and more permissive)
+        validations.
+
         Parameters:
-            request (Request): The request object containing query parameters.
-            params (dict): Database connection parameters.
-            Set via env variable in vegbankapi.py. Keys are: 
-                dbname, user, host, port, password
-            accession_code (str or None): The unique identifier for the project being retrieved.
-                                           If None, retrieves all projects.
-        URL Parameters:
-            detail (str, optional): Level of detail for the response. 
-                                    Only 'full' is defined for this method. Defaults to 'full'.
-            limit (int, optional): Maximum number of records to return. Defaults to 1000.
-            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
+            request_args (ImmutableMultiDict): Query parameters provided
+                as part of the request.
+
         Returns:
-            Response: A JSON response containing the projects data and count.
-                      If 'detail' is specified, it can be either 'minimal' or 'full'.
-                      Returns an error message with a 400 status code for invalid parameters.
+            dict: A dictionary of validated parameters with defaults applied.
+
         Raises:
-            ValueError: If 'limit' or 'offset' are not non-negative integers.
+            QueryParameterError: If any supplied parameters are invalid.
         """
+        # specifically require detail to be "full" for cover methods
+        if request_args.get("detail", self.default_detail) not in ("full"):
+            raise QueryParameterError("When provided, 'detail' must be 'full'.")
 
-        create_parquet = request.args.get("create_parquet", "false").lower() == "true"
-        detail = request.args.get("detail", self.default_detail)
-        if detail not in ("full"):
-            return jsonify_error_message("When provided, 'detail' must be 'full'."), 400
-        try:
-            limit = int(request.args.get("limit", self.default_limit))
-            offset = int(request.args.get("offset", self.default_offset))
-        except ValueError:
-            return jsonify_error_message("When provided, 'offset' and 'limit' must be non-negative integers."), 400
+        # now dispatch to the base validation method
+        return super().validate_query_params(request_args)
 
-        with open(self.QUERIES_FOLDER + "/project/get_projects_count.sql", "r") as file:
-            count_sql = file.read()
-
-        sql = ""
-        if(accession_code is None): 
-            with open(self.QUERIES_FOLDER + "/project/get_projects_full.sql", "r") as file:
-                sql = file.read()
-            data = (limit, offset, )
-        else:
-            with open(self.QUERIES_FOLDER + "/project/get_project_by_accession_code.sql", "r") as file:
-                sql = file.read()
-            data = (accession_code, )
-        to_return = {}
-        with psycopg.connect(**params, cursor_factory=ClientCursor) as conn:
-            if(create_parquet is False):
-                conn.row_factory=dict_row
-            else:
-                df_parquet = convert_to_parquet(sql, data, conn)
-                conn.close()
-                return send_file(io.BytesIO(df_parquet), mimetype='application/octet-stream', as_attachment=True, download_name='projects.parquet')
-            with conn.cursor() as cur:
-                cur.execute(sql, data)
-                to_return["data"] = cur.fetchall()
-
-                if(accession_code is None):
-                    cur.execute(count_sql)
-                    to_return["count"] = cur.fetchall()[0]["count"]
-                else:
-                    to_return["count"] = len(to_return["data"])
-            conn.close()    
-        return jsonify(to_return)
 
     def upload_project(self, request, params):
         """

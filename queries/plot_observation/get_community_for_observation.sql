@@ -8,4 +8,4 @@ FROM
     join commConcept on commInterpretation.commconcept_id = commConcept.commconcept_id
     join commname on commconcept.commname_id = commname.commname_id
 WHERE 
-    observation.accessioncode = %s;
+    observation.observation_id = %s

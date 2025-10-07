@@ -37,6 +37,9 @@ class Operator:
             type, serving as the `vb_code` prefix in the VegBank database.
         full_get_parameters (tuple): Names of query parameters to be passed to
             the full GET query, in the order of placeholders in the SQL file.
+        include_full_count (bool): If True, query the database and send the
+            full count of records. If False, simply return the count of records
+            in the response.
     """
 
     def __init__(self, params=None):
@@ -53,6 +56,29 @@ class Operator:
         self.name = "vegbank"
         self.table_code = "vb"
         self.full_get_parameters = None
+        self.include_full_count = True
+
+    def extract_id_from_vb_code(self, vb_code):
+        """
+        Parse the integer database ID from a vb_code string
+
+        Verifies whether the vb_code matches the expected code string pattern,
+        and if it does, extract and return the integer ID.
+
+        Parameters:
+            vb_code (str): A vb code (e.g., "pc.123")
+        Returns:
+            int: The extra integer
+        Raises:
+            QueryParameterError: If any supplied code does not match the
+                expected pattern.
+        """
+        vb_id_match = re.match(fr'^{self.table_code}\.(\d+)$', vb_code)
+        if vb_id_match is None:
+            raise QueryParameterError(
+                f"Invalid {self.name} code '{vb_code}'."
+            )
+        return int(vb_id_match.group(1))
 
     def get_vegbank_resources(self, request, vb_code=None):
         """
@@ -94,36 +120,36 @@ class Operator:
             return jsonify_error_message(e.message), e.status_code
 
         if vb_code is None:
-            # Prepare to query for the full collection
-            sql_file_full = os.path.join(self.QUERIES_FOLDER,
-                                         f'get_{self.name}_full.sql')
-            with open(sql_file_full, "r") as file:
+            # Prepare to query for a collection of resources
+            # Load collection query string
+            detail = params.get('detail', 'full')
+            sql_file = os.path.join(self.QUERIES_FOLDER,
+                                    f'get_{self.name}_{detail}.sql')
+            with open(sql_file, "r") as file:
                 sql = file.read()
-            sql_file_count = os.path.join(self.QUERIES_FOLDER,
-                                          f'get_{self.name}_count.sql')
-            with open(sql_file_count, "r") as file:
-                count_sql = file.read()
-            if self.full_get_parameters is None:
-                raise ValueError("The 'full_get_parameters' attribute must be set.")
+            if (self.include_full_count):
+                # Load collection count query string
+                sql_file_count = os.path.join(self.QUERIES_FOLDER,
+                                              f'get_{self.name}_count.sql')
+                with open(sql_file_count, "r") as file:
+                    count_sql = file.read()
+            else:
+                count_sql = None
             # Extract param values to pass to the database query, matching the
             # placeholders contained in the associated SQL statement
+            if self.full_get_parameters is None:
+                raise ValueError("The 'full_get_parameters' attribute must be set.")
             data = tuple(params[k] for k in self.full_get_parameters)
         else:
             # Prepare to query for a single resource based on its code
-            #
-            # Verify that the vb_code matches the expected code string pattern,
-            # and if so, extract the table primary key to use in the query
-            vb_id_match = re.match(fr'^{self.table_code}\.(\d+)$', vb_code)
-            if vb_id_match is None:
-                return (
-                    jsonify_error_message(f"Invalid {self.name} code '{vb_code}'."),
-                    400
-                )
-            else:
-                vb_id = int(vb_id_match.group(1))
-            sql_file_by_id = os.path.join(self.QUERIES_FOLDER,
-                                          f'get_{self.name}_by_id.sql')
-            with open(sql_file_by_id, "r") as file:
+            try:
+                vb_id = self.extract_id_from_vb_code(vb_code)
+            except QueryParameterError as e:
+                return jsonify_error_message(e.message), e.status_code
+            # Load individual resource query string
+            sql_file = os.path.join(self.QUERIES_FOLDER,
+                                    f'get_{self.name}_by_id.sql')
+            with open(sql_file, "r") as file:
                 sql = file.read()
             count_sql = None
             data = (vb_id, )

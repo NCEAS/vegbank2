@@ -47,4 +47,4 @@ FROM plot
     left join stratumMethod on observation.stratummethod_ID = stratumMethod.stratummethod_ID    
     left join project on observation.project_id = project.project_id        
 WHERE 
-    observation.accessionCode = %s;
+    observation.observation_id = %s

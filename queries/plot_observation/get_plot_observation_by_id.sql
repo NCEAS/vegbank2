@@ -67,7 +67,6 @@ SELECT
     maxSlopeGradient,
     authorObsCode,
     previousobs_ID,
-    obsEndDate,
     dateAccuracy,
     stemSizeLimit,
     autoTaxonCover,
@@ -109,4 +108,4 @@ FROM
     left join stratumMethod on observation.stratumMethod_ID = stratumMethod.stratumMethod_ID
 WHERE 
     plot.confidentialityStatus < 4
-    AND observation.accessionCode = %s;
+    AND observation.observation_id = %s;
