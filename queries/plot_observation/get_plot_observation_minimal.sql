@@ -1,10 +1,8 @@
 SELECT
-    plot.plot_id,
-    plot.accessionCode AS plotAccessionCode,
+    'pl.' || plot.plot_id AS pl_code,
     plot.latitude,
     plot.longitude,
-    observation.accessionCode AS obsAccessionCode,
-    observation.observation_id,
+    'ob.' || observation.observation_id AS ob_code,
     authorplotcode, 
     authorobscode, 
     stateprovince,
@@ -13,7 +11,6 @@ FROM
     observation 
     left join plot on observation.plot_id = plot.plot_id
 WHERE plot.confidentialitystatus < 4
-AND observation.accessionCode is not null
 ORDER BY observation.observation_id ASC
 LIMIT %s
 OFFSET %s;

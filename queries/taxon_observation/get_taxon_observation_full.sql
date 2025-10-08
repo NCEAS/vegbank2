@@ -1,22 +1,21 @@
 SELECT 
-    t.accessioncode as taxonObservationAccessionCode, 
+    'to.' || t.taxonobservation_id AS to_code,
     t.authorplantname, 
     t.emb_taxonobservation, 
     t.int_currplantcode, 
     t.int_currplantcommon, 
-    t.int_currplantconcept_id, 
+    'pc' || t.int_currplantconcept_id AS int_curr_pc_code,
     t.int_currplantscifull, 
     t.int_currplantscinamenoauth, 
     t.int_origplantcode, 
     t.int_origplantcommon, 
-    t.int_origplantconcept_id, 
+    'pc' || t.int_origplantconcept_id AS int_orig_pc_code,
     t.int_origplantscifull, 
     t.int_origplantscinamenoauth, 
     t.maxcover, 
-    t.observation_id, 
-    t.reference_id, 
-    t.taxoninferencearea, 
-    t.taxonobservation_id
+    'ob.' || t.observation_id AS ob_code,
+    'rf.' || t.reference_id AS rf_code,
+    t.taxoninferencearea
 FROM
 observation
 CROSS JOIN LATERAL
