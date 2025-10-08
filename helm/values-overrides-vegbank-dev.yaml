@@ -10,19 +10,18 @@ resources:
     memory: 2Gi
 
 init:
-  method: "pg_basebackup"
-  pg_basebackup:
-    ## use the externalCluster with the following source name
-    source: "source-db"
-    ## target database name and owner to create after cloning from the source
-    database: "vegbank"
-    owner: "vegbank"  # Defaults to the value of the pg_basebackup.database key.
-    ## Name of the secret containing the credentials for the owner of the user database that is
-    ## being copied from the source cluster
-    secret:
-      name: "vegbankdbcreds"
-    ## Necessary if the source database was initialized with libc locale provider
-    localeProvider: libc
+  import:
+    type: microservice
+    databases:
+      - vegbank
+    source:
+      externalCluster: source-db
+    pgRestoreExtraOptions:
+      - '--verbose'
+  database: vegbank
+  owner: vegbank
+  secret:
+    name: vegbankdbcreds
 
   externalClusters:
     - name: source-db
