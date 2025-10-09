@@ -1,18 +1,17 @@
 SELECT
     commConcept.commName as defaultName,
-    commConcept.reference_ID,
+    'rf.' || commConcept.reference_id AS rf_code,
     commConcept.commDescription,
-    commConcept.accessionCode,
+    'cc.' || commConcept.commconcept_id AS cc_code,
     commConcept.d_obscount as obscount,
     commConcept.d_currentAccepted as currentAccepted,
     commUsage.usageStart,
     commUsage.usageStop,
     commUsage.commNameStatus,
     commUsage.classSystem,
-    commUsage.party_ID,
+    'py.' || commUsage.party_id AS py_code,
     commName.commName,
-    commName.dateEntered as commNameDateEntered,
-    party.accessionCode as partyAccessionCode
+    commName.dateEntered as commNameDateEntered
 FROM
     commconcept
     left join commUsage on commconcept.commconcept_id = commUsage.commconcept_id

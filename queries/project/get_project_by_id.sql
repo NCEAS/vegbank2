@@ -1,10 +1,9 @@
 SELECT
-    project_id,
+    'pj.' || project_id AS pj_code,
     projectname,
     projectdescription,
     startdate,
     stopdate,
-    accessionCode as projectAccessionCode,
     d_obscount as obscount,
     d_lastplotaddeddate as lastplotaddeddate
 FROM
