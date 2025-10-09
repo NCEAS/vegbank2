@@ -4,8 +4,7 @@ from psycopg import connect, ClientCursor
 from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
-import io
-import time
+import os
 import operators.table_defs_config as table_defs_config
 import traceback
 from operators.operator_parent_class import Operator
@@ -21,8 +20,12 @@ class TaxonObservation(Operator):
     Inherits from the Operator parent class to utilize common default values.
     '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, params):
+        super().__init__(params)
+        self.name = "taxon_observation"
+        self.table_code = "to"
+        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.full_get_parameters = ('limit', 'offset')
 
     def get_taxon_observations(self, request, params, accession_code):
         """
@@ -87,3 +90,8 @@ class TaxonObservation(Operator):
                 #    to_return["count"] = len(to_return["data"])
             conn.close()      
         return jsonify(to_return)
+
+    def upload_strata_definitions(self, file):
+        df = pd.read_parquet(file)
+        with psycopg.connect(**self.params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
+            return super().upload_to_table("stratum", 'sr', table_defs_config.stratum, df, True, conn)

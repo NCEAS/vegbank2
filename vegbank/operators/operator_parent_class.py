@@ -3,6 +3,9 @@ import io
 import re
 from flask import jsonify, send_file
 import psycopg
+import pandas as pd
+import numpy as np
+import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 from utilities import convert_to_parquet, jsonify_error_message, QueryParameterError
@@ -227,3 +230,88 @@ class Operator:
                          mimetype='application/octet-stream',
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
+    
+
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, df, create_codes, conn):
+        to_return = {}
+
+        try:
+            print(f"DataFrame loaded with {len(df)} records.")
+
+            df.columns = map(str.lower, df.columns)
+            #Checking if the user submitted any unsupported columns
+            additional_columns = set(df.columns) - set(insert_table_def)
+            if(len(additional_columns) > 0):
+                return jsonify_error_message(f"Your data must only contain fields included in the {insert_table_name} schema. The following fields are not supported: {additional_columns} ")
+            
+            df.replace({pd.NaT: None}, inplace=True)
+            df.replace({np.nan: None}, inplace=True)
+
+            table_df = df[insert_table_def]
+            table_df = table_df.drop_duplicates()
+
+            table_inputs = list(table_df.itertuples(index=False, name=None))
+            print(table_inputs)
+            with conn:
+                with conn.cursor() as cur:
+                    with conn.transaction():
+
+                        sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
+                                         f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
+                        with open(sql_file_temp_table, "r") as file:
+                            sql = file.read()
+                        cur.execute(sql)
+                        sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
+                                         f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
+                        with open(sql_file_temp_insert, "r") as file:
+                            sql = file.read()
+                        cur.executemany(sql, table_inputs)
+                        sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                                         f'{insert_table_name}/validate_{insert_table_name}.sql')
+                        with open(sql_file_validate, "r") as file:
+                            sql = file.read()
+                        cur.execute(sql)
+                        validation_results = cur.fetchall()
+                        while(cur.nextset()):
+                            next_validation = cur.fetchall()
+                            if(next_validation):
+                                validation_results = validation_results + next_validation
+                        validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                        if(validation_results):
+                            raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
+
+                        sql_file_insert = os.path.join(self.QUERIES_FOLDER,
+                                         f'{insert_table_name}/insert_{insert_table_name}.sql')
+                        with open(sql_file_insert, "r") as file:
+                            sql = file.read()
+                        cur.execute(sql)
+                        new_codes = cur.fetchall()
+                        new_codes_list = [value for d in new_codes for value in d.values()]
+                        new_codes_df = pd.DataFrame()
+                        new_codes_df['vb_record_id'] = new_codes_list
+                        new_codes_df['vb_table_code'] = insert_table_code
+                        new_codes_df['identifier_type'] = 'vb_code'
+                        new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
+
+                        code_inputs = list(new_codes_df.itertuples(index=False, name=None))
+
+                        print(code_inputs)
+
+                        if(create_codes):
+                            sql_file_create_codes = os.path.join(self.QUERIES_FOLDER,
+                                             f'{insert_table_name}/create_{insert_table_name}_codes.sql')
+                            with open(sql_file_create_codes, "r") as file:
+                                sql = file.read()
+                            cur.executemany(sql, code_inputs, returning=True)
+                            new_identifiers = cur.fetchall()
+                            while(cur.nextset()):
+                                next_identifiers = cur.fetchall()
+                                if(next_identifiers):
+                                    new_identifiers = new_identifiers + next_identifiers
+
+                        #Here we need to link the new codes to the existing identifiers. Not sure how to do this yet. 
+
+                        raise ValueError("Testing rollback")
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
