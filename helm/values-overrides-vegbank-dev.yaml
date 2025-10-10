@@ -37,10 +37,6 @@ init:
 persistence:
   size: 100Gi
 
-replica:
-  enabled: true
-  source: "source-db"
-
 postgresql:
   parameters:
     max_wal_senders: 16  # must match bitnami for replication to work
