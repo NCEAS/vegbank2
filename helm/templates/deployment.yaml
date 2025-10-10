@@ -63,17 +63,17 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdb-postgresql
-                  key: postgres-password
+                  name: vegbank-cnpg-app
+                  key: password
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: vegbank-cnpg-app
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: vegbank-cnpg-app
                   key: username
             - name: VB_DB_NAME
               value: {{ .Values.database.name | quote }}
@@ -132,12 +132,12 @@ spec:
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: vegbank-cnpg-app
                   key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: vegbank-cnpg-app
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
