@@ -175,12 +175,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Values.database.secret }}"
+                  name: vegbank-cnpg-app
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Values.database.secret }}"
+                  name: vegbank-cnpg-app
                   key: username
             - name: VB_DB_NAME
               value: "{{ .Values.dbName }}"
