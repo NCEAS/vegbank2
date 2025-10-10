@@ -183,9 +183,9 @@ spec:
                   name: vegbank-cnpg-app
                   key: username
             - name: VB_DB_NAME
-              value: "{{ .Values.dbName }}"
+              value: {{ .Values.database.name | quote }}
             - name: VB_DB_HOST
-              value: "{{ .Values.dbName }}-cnpg-rw"
+              value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
             - name: VB_ALLOW_UPLOADS
