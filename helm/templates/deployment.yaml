@@ -41,7 +41,17 @@ spec:
       initContainers:
         - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup vegbankdb-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for postgres; sleep 2; done"]
+          command:
+          - sh
+          - -c
+          - >
+            echo "Waiting for CNPG primary...";
+            until nslookup vegbank-cnpg-rw.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local;
+            do
+              echo "Waiting for CNPG to be resolvable...";
+              sleep 2;
+            done;
+            echo "CNPG primary is resolvable. Proceeding with restore.";
         - name: {{ .Chart.Name }}-restore-postgres # Set-up and restore Postgres if databaseRestore is enabled
           # Note: This image should match the postgres version installed
           image: postgres:16
@@ -165,17 +175,17 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: "{{ .Values.database.secret }}"
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: "{{ .Values.database.secret }}"
                   key: username
             - name: VB_DB_NAME
-              value: {{ .Values.database.name | quote }}
+              value: "{{ .Values.dbName }}"
             - name: VB_DB_HOST
-              value: {{ .Values.database.host | quote }}
+              value: "{{ .Values.dbName }}-cnpg-rw"
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
             - name: VB_ALLOW_UPLOADS
