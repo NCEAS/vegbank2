@@ -1,8 +1,16 @@
 WITH pn AS (
   SELECT plantconcept_id,
-         JSON_OBJECT_AGG(classsystem, RTRIM(plantname)) AS usage_names,
-         JSON_OBJECT_AGG(classsystem, plantnamestatus) AS usage_statuses
-    FROM plantusage
+         JSON_OBJECT_AGG(classsystem, RTRIM(plantname)) ->> 'Code' AS plant_code,
+         JSON_AGG(usage) AS usages
+    FROM (
+      SELECT plantconcept_id,
+             classsystem,
+             plantname,
+             JSON_BUILD_OBJECT('class_system', classsystem,
+                               'plant_name', RTRIM(plantname),
+                               'status', plantnamestatus) AS usage
+        FROM plantusage
+    )
     GROUP BY plantconcept_id
 ), ps AS (
   SELECT *
@@ -30,14 +38,13 @@ WITH pn AS (
 )
 SELECT 'pc.' || pc.plantconcept_id AS pc_code,
        pc.plantname AS plant_name,
-       pn.usage_names ->> 'Code' AS plant_code,
+       pn.plant_code AS plant_code,
        pc.plantdescription AS plant_description,
        'rf.' || pc.reference_id AS concept_rf_code,
        rf_pc.shortname AS concept_rf_name,
        'rf.' || ps.reference_id AS status_rf_code,
        rf_ps.shortname AS status_rf_name,
-       pn.usage_names::text AS usage_names,
-       pn.usage_statuses::text AS usage_statuses,
+       pn.usages as usages,
        pc.d_obscount as obs_count,
        ps.plantlevel AS plant_level,
        ps.plantconceptstatus AS status,
@@ -50,21 +57,26 @@ SELECT 'pc.' || pc.plantconcept_id AS pc_code,
        ps.plantpartycomments AS plant_party_comments,
        'pc.' || ps.plantparent_id AS parent_pc_code,
        pa.plantname AS parent_name,
-       children::text AS children,
+       children AS children,
        px_group.correlations AS correlations
   FROM plantconcept pc
   LEFT JOIN pn USING (plantconcept_id)
-  LEFT JOIN ps USING(plantconcept_id)
+  LEFT JOIN ps USING (plantconcept_id)
   LEFT JOIN plantconcept pa ON (pa.plantconcept_id = ps.plantparent_id)
   LEFT JOIN reference rf_pc ON pc.reference_id = rf_pc.reference_id
   LEFT JOIN reference rf_ps ON ps.reference_id = rf_ps.reference_id
   LEFT JOIN party py ON py.party_id = ps.party_id
   LEFT JOIN (
-    SELECT plantparent_id AS parent_id,
-           JSON_OBJECT_AGG('pc.' || plantconcept_id, plantname) AS children
-      FROM plantstatus ch_status
-      JOIN plantconcept ch_concept USING (plantconcept_id)
-      GROUP BY plantparent_id
+    SELECT parent_id,
+           JSON_AGG(child) AS children
+      FROM (
+        SELECT plantparent_id AS parent_id,
+               JSON_BUILD_OBJECT('pc_code', 'pc.' || plantconcept_id,
+                                 'plant_name', plantname) AS child
+          FROM plantstatus ch_status
+          JOIN plantconcept ch_concept USING (plantconcept_id)
+      )
+      GROUP BY parent_id
     ) children ON children.parent_id = pc.plantconcept_id
   LEFT JOIN px_group USING (plantstatus_id)
   WHERE pc.plantconcept_id = %s
