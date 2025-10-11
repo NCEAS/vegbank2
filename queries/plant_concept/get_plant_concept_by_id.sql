@@ -14,6 +14,19 @@ WITH pn AS (
     FROM
         plantstatus)
   WHERE rn = 1
+), px_group AS (
+  SELECT plantstatus_id,
+         JSON_AGG(correlation) AS correlations
+    FROM (
+      SELECT plantstatus_id,
+             JSON_BUILD_OBJECT('pc_code', 'pc.' || plantconcept_id,
+                               'plant_name', plantname,
+                               'convergence', plantconvergence) AS correlation
+        FROM plantcorrelation
+        JOIN plantconcept USING (plantconcept_id)
+        WHERE correlationstop IS NULL
+    )
+    GROUP BY plantstatus_id
 )
 SELECT 'pc.' || pc.plantconcept_id AS pc_code,
        pc.plantname AS plant_name,
@@ -37,7 +50,8 @@ SELECT 'pc.' || pc.plantconcept_id AS pc_code,
        ps.plantpartycomments AS plant_party_comments,
        'pc.' || ps.plantparent_id AS parent_pc_code,
        pa.plantname AS parent_name,
-       children::text AS children
+       children::text AS children,
+       px_group.correlations AS correlations
   FROM plantconcept pc
   LEFT JOIN pn USING (plantconcept_id)
   LEFT JOIN ps USING(plantconcept_id)
@@ -52,4 +66,5 @@ SELECT 'pc.' || pc.plantconcept_id AS pc_code,
       JOIN plantconcept ch_concept USING (plantconcept_id)
       GROUP BY plantparent_id
     ) children ON children.parent_id = pc.plantconcept_id
-  WHERE pc.plantconcept_id = %s;
+  LEFT JOIN px_group USING (plantstatus_id)
+  WHERE pc.plantconcept_id = %s
