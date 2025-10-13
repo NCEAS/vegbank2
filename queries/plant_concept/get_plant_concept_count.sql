@@ -1,4 +1,2 @@
-SELECT
-    count(*)
-FROM
-    plantConcept;
+SELECT COUNT(*)
+  FROM plantconcept
