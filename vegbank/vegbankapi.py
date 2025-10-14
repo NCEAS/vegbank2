@@ -19,6 +19,7 @@ from operators import (
     CoverMethod,
     Project,
     StratumMethod,
+    Reference,
 )
 
 
@@ -47,177 +48,221 @@ def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
 
 
-@app.route("/plot-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/plot-observations/<accession_code>", methods=['GET'])
-def plot_observations(accession_code):
-    '''
-    Handles creation and return of plots and observations. 
-    See PlotObservation.py for semantic details of plots and observations. 
+@app.route("/plot-observations", defaults={'ob_code': None}, methods=['GET', 'POST'])
+@app.route("/plot-observations/<ob_code>", methods=['GET'])
+def plot_observations(ob_code):
+    """
+    Retrieve either an individual plot observation or a collection, or
+    upload a new set of plot observations.
 
-    This function supports both GET and POST requests. For POST requests, it allows 
-    the uploading of plot observations if uploads are permitted via an environment variable. For GET requests, 
-    it retrieves plot observations associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all plot observations. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for plot observations. For GET requests,
+    it retrieves plot observation details associated with a specified plot
+    observation code (e.g., `ob.1`) or a paginated collection of all plot
+    observations if no code is provided; see below for query parameters to
+    support pagination and detail. For POST requests, it facilitates uploading
+    of new plot observations if permitted via an environment variable. For any
+    other HTTP method, it returns a 405 error.
 
-    Parameters:
-        accession_code (str): The unique identifier for the observation being retrieved.
-        Defaults to None. 
+    Parameters (for GET requests only):
+        ob_code (str or None): The unique identifier for the plot observation
+            being retrieved. If None, retrieves all plot observations.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing either the plot observations or an 
-                error message, along with the appropriate HTTP status code.
-
-    Methods:
-        - POST: Uploads plot observations if allowed.
-        - GET: Retrieves plot observations based on the accession code.
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
-    '''
-    plot_observation_operator = PlotObservation()
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved plot observation(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+    """
+    plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        if (allow_uploads is False):
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return plot_observation_operator.upload_plot_observations(request, params)
     elif request.method == 'GET':
-        return plot_observation_operator.get_plot_observations(request, params, accession_code)
-    else: 
+        return plot_observation_operator.get_vegbank_resources(request, ob_code)
+    else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/get_observation_details/<accession_code>", methods=['GET'])
-def get_observation_details(accession_code):
-    '''
-    Returns detailed information about a specific observation based on the provided accession code.
-    Parameters:
-        accession_code (str): The unique identifier for the observation being retrieved.
-    Returns:
-        Response: A JSON response containing the observation details or an error message.
-    Methods: 
-        - GET: Retrieves observation details based on the accession code.
-    Raises: 
-        405: If the request method is not GET.
-    '''
-    plot_observation_operator = PlotObservation()
-    return plot_observation_operator.get_observation_details(params, accession_code)
-
-
-@app.route("/taxon-observations", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-observations/<accession_code>", methods=['GET'])
-def taxon_observations(accession_code):
-    '''
-    Retrieve taxon observations based on the provided accession code. 
-    See TaxonObservation.py for semantic details about taxon observations. 
-
-    If no accession code is provided, return a paginated json objsect 
-    of all taxon observations. This function supports URL parameters for detail level, 
-    limit, offset, and the number of top taxa, that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0 num_taxa: 5.
-
-    This function handles HTTP requests for taxon observations. It supports 
-    only the GET method to retrieve taxon observations. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+@app.route("/get_observation_details/<ob_code>", methods=['GET'])
+def get_observation_details(ob_code):
+    """
+    Retrieve details about a specific plot observation as identified by
+    ob_code, returning information about the plot observation itself,
+    associated taxon observations/interpretations, and associated community
+    classifications/interpretations.
 
     Parameters:
-        accession_code (str): The unique identifier for the taxon 
-        observation to be retrieved.
+        ob_code (str): The unique observation identifier.
 
     Returns:
-        Response: A JSON response containing the taxon observations or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved plot observation details as JSON
+            - 400: Invalid ob_code
+            - 405: Unsupported HTTP method
+    """
+    plot_observation_operator = PlotObservation(params)
+    return plot_observation_operator.get_observation_details(ob_code)
+
+
+@app.route("/taxon-observations", defaults={'to_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-observations/<to_code>", methods=['GET'])
+def taxon_observations(to_code):
+    """
+    Retrieve either an individual taxon observation or a collection.
+
+    This function handles HTTP requests for taxon observations. It currently
+    supports only the GET method to retrieve taxon observations. If a POST
+    request is made, it returns an error message indicating that POST is not
+    supported. For any other HTTP method, it returns a 405 error.
+
+    If a valid to_code is provided, returns the corresponding record if it
+    exists. If no to_code is provided, returns the full collection of
+    taxon observation records with pagination and field scope controlled by
+    query parameters.
+
+    Parameters:
+        to_code (str or None): The unique identifier for the taxon observation
+            being retrieved. If None, retrieves all taxon observations.
+
+    GET Query Parameters:
+        num_taxa (int, optional): Number of taxa to return per plot observation,
+            in descending order of max cover. Defaults to 5.
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved taxon observation(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-        return taxon_observation_operator.upload_strata_definitions(file)
+        return jsonify_error_message(
+            "POST method is not supported for taxon observations."), 405
     elif request.method == 'GET':
-        return taxon_observation_operator.get_taxon_observations(request, params, accession_code)
+        return taxon_observation_operator.get_vegbank_resources(request, to_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-classifications", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-classifications/<accession_code>", methods=['GET'])
-def community_classifications(accession_code):
-    '''
-    Retrieve community classifications based on the provided accession code. 
-    See CommunityClassification.py for semantic details of community classifications. 
+@app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
+@app.route("/community-classifications/<cl_code>", methods=['GET'])
+def community_classifications(cl_code):
+    """
+    Retrieve either an individual community classification or a collection.
 
-    If no accession code is provided, return a paginated json objsect 
-    of all community classifications. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for community classifications.
+    It currently supports only the GET method to retrieve community
+    classifications. If a POST request is made, it returns an error message
+    indicating that POST is not supported. For any other HTTP method, it
+    returns a 405 error.
 
-    This function handles HTTP requests for community classifications. It supports 
-    only the GET method to retrieve community classifications. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    If a valid cl_code is provided, returns the corresponding record if it
+    exists. If no cl_code is provided, returns the full collection of
+    classification records with pagination and field scope controlled by
+    query parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the community classification to be retrieved.
+        cl_code (str or None): The unique identifier for the community
+            classification being retrieved. If None, retrieves all
+            classifications.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the community classifications or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    community_classification_operator = CommunityClassification()
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved community classification(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    community_classification_operator = CommunityClassification(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for community classifications."), 405
+        return jsonify_error_message(
+            "POST method is not supported for community_classifications."), 405
     elif request.method == 'GET':
-        return community_classification_operator.get_community_classifications(request, params, accession_code)
+        return community_classification_operator.get_vegbank_resources(request, cl_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-concepts", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/community-concepts/<accession_code>", methods=['GET'])
-def community_concepts(accession_code):
-    '''
-    Retrieve community concepts based on the provided accession code. 
-    See CommunityConcept.py for semantic details of community concepts. 
+@app.route("/community-concepts", defaults={'cc_code': None}, methods=['GET', 'POST'])
+@app.route("/community-concepts/<cc_code>")
+def community_concepts(cc_code):
+    """
+    Retrieve either an individual community concept or a collection.
 
-    If no accession code is provided, return a paginated json objsect 
-    of all community concepts. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for community concepts. It currently
+    supports only the GET method to retrieve community concepts. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
 
-    This function handles HTTP requests for community concepts. It supports 
-    only the GET method to retrieve community concepts. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    If a valid cc_code is provided, returns the corresponding record if it
+    exists. If no cc_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the community concept to be retrieved.
+        cc_code (str or None): The unique identifier for the community concept
+            being retrieved. If None, retrieves all community concepts.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the community concepts or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    community_concept_operator = CommunityConcept()
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved community concept(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    community_concept_operator = CommunityConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for community concepts."), 405
+        return jsonify_error_message(
+            "POST method is not supported for community concepts."), 405
     elif request.method == 'GET':
-        return community_concept_operator.get_community_concepts(request, params, accession_code)
+        return community_concept_operator.get_vegbank_resources(request, cc_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
@@ -255,93 +300,115 @@ def plant_concepts(pc_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For individual concepts: Plant concept data as JSON or Parquet
-            - For collection concepts: Plant concept data as JSON or Parquet,
-              with associated record count if JSON
-            - For invalid parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
+            - 200: Successfully retrieved plant concept(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
     """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for plant concepts."), 405
+        return jsonify_error_message(
+            "POST method is not supported for plant concepts."), 405
     elif request.method == 'GET':
         return plant_concept_operator.get_vegbank_resources(request, pc_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
-@app.route("/parties", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/parties/<accession_code>", methods=['GET'])
-def parties(accession_code):
-    '''
-    Retrieve parties based on the provided accession code. 
-    See Party.py for semantic details of parties. 
 
-    If no accession code is provided, return a paginated json objsect 
-    of all parties. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+@app.route("/parties", defaults={'py_code': None}, methods=['GET', 'POST'])
+@app.route("/parties/<py_code>", methods=['GET'])
+def parties(py_code):
+    """
+    Retrieve either an individual party or a collection.
 
-    This function handles HTTP requests for parties. It supports 
-    only the GET method to retrieve parties. If a POST request is made, 
-    it returns an error message indicating that the POST method is not supported. 
-    For any other HTTP methods, it returns a method not allowed error.
+    This function handles HTTP requests for parties. It currently
+    supports only the GET method to retrieve parties. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
+
+    If a valid py_code is provided, returns the corresponding record if it
+    exists. If no py_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
 
     Parameters:
-        accession_code (str): The unique identifier for the party to be retrieved.
+        py_code (str or None): The unique identifier for the party
+            being retrieved. If None, retrieves all parties.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing the parties or an 
-        error message with the appropriate HTTP status code.
-    
-    Raises: 
-        405: If the request method is neither GET nor POST.
-    '''
-    party_operator = Party()
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved party record(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    party_operator = Party(params)
     if request.method == 'POST':
-        return jsonify_error_message("POST method is not supported for parties."), 405
+        return jsonify_error_message(
+            "POST method is not supported for parties."), 405
     elif request.method == 'GET':
-        return party_operator.get_parties(request, params, accession_code)
+        return party_operator.get_vegbank_resources(request, py_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/projects", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/projects/<accession_code>", methods=['GET'])
-def projects(accession_code):
-   '''
-    Handles creation and return of projects.
-    See Project.py for semantic details of projects. 
+@app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
+@app.route("/projects/<pj_code>", methods=['GET'])
+def projects(pj_code):
+    """
+    Retrieve either an individual project or a collection, or upload a new set
+    of projects.
 
-    This function supports both GET and POST requests. For POST requests, it allows 
-    the uploading of projects if uploads are permitted via an environment variable. For GET requests, 
-    it retrieves projects associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all projects. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for projects. For GET requests, it
+    retrieves project details associated with a specified project code (e.g.,
+    `pj.1`) or a paginated collection of all projects if no code is provided;
+    see below for query parameters to support pagination and detail. For POST
+    requests, it facilitates uploading of new projects if permitted via an
+    environment variable. For any other HTTP method, it returns a 405 error.
 
-    Parameters:
-        accession_code (str): The unique identifier for the project to be retrieved.
-        Defaults to None. 
+    Parameters (for GET requests only):
+        pj_code (str or None): The unique identifier for the project being
+            retrieved. If None, retrieves all projects.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing either the projects or an 
-                error message, along with the appropriate HTTP status code.
-
-    Methods:
-        - POST: Uploads projects if allowed.
-        - GET: Retrieves project based on the accession code.
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
-    '''
-   project_operator = Project()
-   if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved project(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+    """
+    project_operator = Project(params)
+    if request.method == 'POST':
+        if (allow_uploads is False):
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
-            return project_operator.upload_project(request, params) 
-   elif request.method == 'GET':
-        return project_operator.get_projects(request, params, accession_code)
-   else:
+            return project_operator.upload_project(request, params)
+    elif request.method == 'GET':
+        return project_operator.get_vegbank_resources(request, pj_code)
+    else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
@@ -349,15 +416,16 @@ def projects(accession_code):
 @app.route("/cover-methods/<cm_code>")
 def cover_methods(cm_code):
     """
-    Retrieve either an individual cover method or a collection of cover methods,
-    or upload a new cover method.
+    Retrieve either an individual cover method or a collection, or upload a new
+    cover method.
 
     This function handles HTTP requests for cover methods. For GET requests, it
     retrieves cover method details associated with a specified cover method code
     (e.g., `cm.1`) or a paginated collection of all cover methods if no code is
     provided; see below for query parameters to support pagination and detail.
     For POST requests, it facilitates uploading of cover methods if permitted
-    via an environment variable. For any other HTTP method, it returns 405 error.
+    via an environment variable. For any other HTTP method, it returns a 405
+    error.
 
     Parameters (for GET requests only):
         cm_code (str or None): The unique identifier for the cover method
@@ -376,22 +444,16 @@ def cover_methods(cm_code):
 
     Returns:
         flask.Response: A Flask response object containing:
-            - For GET individual cover methods: Cover method data as JSON or Parquet
-            - For GET a collection: Cover method data as JSON or Parquet, with
-              associated record count if JSON
-            - For POST new cover methods: JSON message with details about
-              success or failure of the upload operation
-            - For invalid GET parameters: JSON error message with 400 status code
-            - For unsupported HTTP method: JSON error message with 405 status code
-
-    Raises:
-        403: If uploads are not allowed on the server.
-        405: If the request method is neither GET nor POST.
+            - 200: Successfully retrieved cover method(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
         if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return cover_method_operator.upload_cover_method(request, params)
     elif request.method == 'GET':
@@ -400,43 +462,100 @@ def cover_methods(cm_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/stratum-methods", defaults={'accession_code': None}, methods=['GET', 'POST'])
-@app.route("/stratum-methods/<accession_code>", methods=['GET'])
-def stratum_methods(accession_code):
-    '''
-    Handles creation and return of stratum methods.
-    See StratumMethod.py for semantic details of stratum methods. 
+@app.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
+@app.route("/stratum-methods/<sm_code>", methods=['GET'])
+def stratum_methods(sm_code):
+    """
+    Retrieve either an individual stratum method or a collection, or upload a
+    new stratum method.
 
-    This function supports both GET and POST requests. For POST requests, it allows 
-    the uploading of stratum methods if uploads are permitted via an environment variable. For GET requests, 
-    it retrieves stratum methods associated with the specified accession code. If no accession code is provided, 
-    returns a paginated json object of all stratum methods. This function supports URL parameters for detail level, 
-    limit, and offset that are parsed from the request. Default values are used if parameters are not provided: 
-    detail: "full", limit: 1000, offset: 0.
+    This function handles HTTP requests for stratum methods. For GET requests,
+    it retrieves stratum method details associated with a specified stratum
+    method code (e.g., `sm.1`) or a paginated collection of all stratum methods
+    if no code is provided; see below for query parameters to support pagination
+    and detail.  For POST requests, it facilitates uploading of stratum methods
+    if permitted via an environment variable. For any other HTTP method, it
+    returns a 405 error.
 
-    Parameters:
-        accession_code (str): The unique identifier for the stratum method being retrieved.
-        Defaults to None.
+    Parameters (for GET requests only):
+        sm_code (str or None): The unique identifier for the stratum method
+            being retrieved. If None, retrieves all stratum methods.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
 
     Returns:
-        Response: A JSON response containing either the stratum methods or an 
-                error message, along with the appropriate HTTP status code.
-
-    Methods:
-        - POST: Uploads stratum methods if allowed.
-        - GET: Retrieves stratum method based on the accession code.
-
-    Raises:
-        403: If uploads are not allowed on the server.
-    '''
-    stratum_method_operator = StratumMethod()
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved stratum method(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+    """
+    stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
         if(allow_uploads is False):
-            return jsonify_error_message("Uploads are not allowed on this server."), 403
+            return jsonify_error_message("Uploads not allowed."), 403
         else:
             return stratum_method_operator.upload_stratum_method(request, params)
     elif request.method == 'GET':
-        return stratum_method_operator.get_stratum_method(request, params, accession_code)
+        return stratum_method_operator.get_vegbank_resources(request, sm_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
+@app.route("/references/<rf_code>")
+def references(rf_code):
+    """
+    Retrieve either an individual reference or a collection.
+
+    This function handles HTTP requests for references. It currently
+    supports only the GET method to retrieve references. If a POST
+    request is made, it returns an error message indicating that POST is
+    not supported. For any other HTTP method, it returns a 405 error.
+
+    If a valid rf_code is provided, returns the corresponding record if it
+    exists. If no rf_code is provided, returns the full collection of
+    concept records with pagination and field scope controlled by query
+    parameters.
+
+    Parameters:
+        rf_code (str or None): The unique identifier for the reference
+            being retrieved. If None, retrieves all references.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved reference(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    reference_operator = Reference(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for references."), 405
+    elif request.method == 'GET':
+        return reference_operator.get_vegbank_resources(request, rf_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
@@ -446,7 +565,7 @@ def bulk_upload():
     ''' This is an example endpoint for uploads with multiple parquet files. '''
     if 'files[]' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
-    
+
     files = request.files.getlist('files[]')
     response = {}
     for file in files:
@@ -454,7 +573,7 @@ def bulk_upload():
             return jsonify_error_message("No selected file."), 400
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-        
+
         try:
             df = pd.read_parquet(file)
             print(f"DataFrame loaded with {len(df)} records.")

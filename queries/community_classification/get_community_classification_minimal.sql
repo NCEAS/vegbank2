@@ -1,8 +1,8 @@
 SELECT
-    commClass.accessionCode as commClassAccessionCode,
-    observation.accessionCode as obsAccessionCode,
+    'cl.' || commClass.commclass_id AS cl_code,
+    'ob.' || observation.observation_id AS ob_code,
     commConcept.commName,
-    commConcept.accessionCode as commConceptAccessionCode
+    'cc.' || commConcept.commconcept_id AS cc_code
 FROM
     commClass 
     left join commInterpretation on commClass.commClass_ID = commInterpretation.commClass_ID

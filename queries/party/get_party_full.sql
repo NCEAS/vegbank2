@@ -1,12 +1,11 @@
 SELECT 
-    party_ID,
+    'py.' || party_id AS py_code,
     salutation, 
     givenName, 
     middleName,
     surName, 
     organizationName,
-    contactInstructions,
-    accessionCode as partyAccessionCode
+    contactInstructions
 FROM
     party
 WHERE partypublic IS NOT false

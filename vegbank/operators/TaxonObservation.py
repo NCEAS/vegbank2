@@ -1,95 +1,81 @@
-from flask import jsonify, request, send_file
-import psycopg
-from psycopg import connect, ClientCursor
-from psycopg.rows import dict_row
-import pandas as pd
-import numpy as np
 import os
-import operators.table_defs_config as table_defs_config
-import traceback
-from operators.operator_parent_class import Operator
-from utilities import jsonify_error_message, convert_to_parquet, allowed_file
+from operators import Operator
+from utilities import QueryParameterError
+
 
 class TaxonObservation(Operator):
-    '''
-    Defines operations related to Taxon Observation data management, 
-    including retrieval and upload functionalities.
-    Taxon Observation: A record of a plant observed on a particular plot observation. 
-    A single taxon observation can have many taxon interpretations. 
+    """
+    Defines operations related to the exchange of taxon observation data with
+    VegBank, including taxon importance and (some) taxon interpretation details.
 
-    Inherits from the Operator parent class to utilize common default values.
-    '''
+    Taxon Observation: A record of a plant observed within a particular plot
+        observation.
+    Taxon Importance: Information about the importance (i.e. cover, basal area,
+        biomass) of a taxon observation. The importance of a taxon observation
+        may be recorded not only for the plot as a whole, but also within one or
+        more specified strata.
+    Taxon Interpretation: The asserted association of a taxon observation with
+        a specific plant name and authority. A single taxon observation can have
+        multiple taxon interpretations.
+
+    Inherits from the Operator parent class to utilize common default values and
+    methods.
+
+    Note that TaxonObservation deviates from the base Operator class in 2 ways:
+    1. Skips querying the db for the full record count, because it takes too long
+       (self.include_full_count is False)
+    2. Uses an extra query parameter `num_taxa` for capping the number of taxa
+       returned per plot observation
+    """
 
     def __init__(self, params):
         super().__init__(params)
         self.name = "taxon_observation"
         self.table_code = "to"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
+        self.default_num_taxa = 5
+        self.include_full_count = False
+        self.full_get_parameters = ('num_taxa', 'limit', 'offset')
 
-    def get_taxon_observations(self, request, params, accession_code):
+    def validate_query_params(self, request_args):
         """
-        Retrieve taxon observations based on the provided accession code,
-        or via the provided URL parameters. See definitions below.
+        Validate query parameters and apply defaults to missing parameters.
+
+        This only applies validations specific to taxon observations, then
+        dispatches to the parent validation method for more general (and more
+        permissive) validations.
+
         Parameters:
-            request (Request): The request object containing query parameters.
-            params (dict): Database connection parameters.
-            Set via env variable in vegbankapi.py. Keys are: 
-                dbname, user, host, port, password
-            accession_code (str or None): The unique identifier for the taxon observation being retrieved.
-                                           If None, retrieves all taxon observations and their top taxa.
-        URL Parameters:
-            detail (str, optional): Level of detail for the response. 
-                                    Only 'full' is defined for this method. Defaults to 'full'.
-            limit (int, optional): Maximum number of records to return. Defaults to 1000.
-            offset (int, optional): Number of records to skip before starting to return records. Defaults to 0.
-            num_taxa (int, optional): Number of top taxa to return. Defaults to 5.
+            request_args (ImmutableMultiDict): Query parameters provided
+                as part of the request.
+
         Returns:
-            Response: A JSON response containing the taxon observation data and count.
-                      If 'detail' is specified, it can be either 'minimal' or 'full'.
-                      Returns an error message with a 400 status code for invalid parameters.
+            dict: A dictionary of validated parameters with defaults applied.
+
         Raises:
-            ValueError: If 'limit' or 'offset' are not non-negative integers.
+            QueryParameterError: If any supplied parameters are invalid.
         """
-        detail = request.args.get("detail", self.default_detail)
-        if detail not in ("minimal", "full"):
-            return jsonify_error_message("When provided, 'detail' must be 'minimal' or 'full'."), 400
+        # specifically require detail to be "full" for taxon observations
+        if request_args.get("detail", self.default_detail) not in ("full"):
+            raise QueryParameterError("When provided, 'detail' must be 'full'.")
+
+        # first dispatch to the base validation method
+        params = super().validate_query_params(request_args)
+
+        # now validate param specific to this class
         try:
-            limit = int(request.args.get("limit", self.default_limit))
-            offset = int(request.args.get("offset", self.default_offset))
-            num_taxa = int(request.args.get("num_taxa", 5))  # Default to 5 if not specified
+            params['num_taxa'] = int(request_args.get("num_taxa",
+                                                      self.default_num_taxa))
         except ValueError:
-            return jsonify_error_message("When provided, 'offset' 'numTaxa' and 'limit' must be non-negative integers."), 400
-        
-        data = (num_taxa, limit, offset, )
-        
-        with open(self.QUERIES_FOLDER + "/taxon_observation/get_top_taxa_count.sql", "r") as file:
-            count_sql = file.read()
-        countData = (num_taxa, )
+            raise QueryParameterError(
+                "When provided, 'num_taxa' must be a non-negative integer."
+            )
+        if params['num_taxa'] < 0:
+            raise QueryParameterError(
+                "When provided, 'num_taxa' must be a non-negative integer."
+            )
 
-        sql = ""
-        if(accession_code is None):
-            with open(self.QUERIES_FOLDER + "/taxon_observation/get_top_taxa_coverage.sql", "r") as file:
-                sql = file.read()
-        else: #TODO This either needs to be an observation accession code, or a taxa one.
-            with open(self.QUERIES_FOLDER + "/taxon_observation/get_taxa_by_accession_code.sql", "r") as file:
-                sql = file.read()
-                data = (accession_code, )
-
-        to_return = {}
-        with psycopg.connect(**params, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, data)
-                to_return["data"] = cur.fetchall()
-                print("number of records")
-
-                #if(accession_code is None):
-                #    cur.execute(count_sql, countData)
-                #    to_return["count"] = cur.fetchall()[0]["count"]
-                #else:
-                #    to_return["count"] = len(to_return["data"])
-            conn.close()      
-        return jsonify(to_return)
+        return params
 
     def upload_strata_definitions(self, file):
         """
