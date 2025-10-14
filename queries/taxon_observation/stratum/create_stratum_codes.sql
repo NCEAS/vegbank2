@@ -1,4 +1,4 @@
-INSERT INTO identifier 
+INSERT INTO identifiers
 (
     vb_record_id,
     vb_table_code,

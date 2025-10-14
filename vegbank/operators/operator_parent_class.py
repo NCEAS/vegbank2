@@ -233,8 +233,24 @@ class Operator:
     
 
     def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, df, create_codes, conn):
-        to_return = {}
+        """
+        Execute a series of insert statements that upload data for a specified table.
 
+        Parameters:
+            insert_table_name (str): The name of the table to insert data into.
+            insert_table_code (str): The two letter code prefix associated with the table.
+            insert_table_def (list): List of column names expected in the DataFrame. 
+                These are stored in table_defs_config.py. 
+            df (pd.DataFrame): DataFrame containing the data to be inserted.
+            create_codes (bool): Whether to create records in the identifier table for the new records.
+            conn (psycopg.Connection): Active database connection. 
+                Allows for multiple tables to be uploaded in a single transaction.
+
+        Returns:
+            flask.Response: A Flask JSON response containing:
+                    - resources: pairs of user and vb codes for the new records
+                    - counts: number of new records created
+        """
         try:
             print(f"DataFrame loaded with {len(df)} records.")
 
@@ -251,7 +267,6 @@ class Operator:
             table_df = table_df.drop_duplicates()
 
             table_inputs = list(table_df.itertuples(index=False, name=None))
-            print(table_inputs)
             with conn:
                 with conn.cursor() as cur:
                     with conn.transaction():
@@ -285,17 +300,23 @@ class Operator:
                         with open(sql_file_insert, "r") as file:
                             sql = file.read()
                         cur.execute(sql)
-                        new_codes = cur.fetchall()
-                        new_codes_list = [value for d in new_codes for value in d.values()]
+                        id_pairs = cur.fetchall()
+                        id_pairs_df = pd.DataFrame(id_pairs)
+
+                        new_codes_list = id_pairs_df['stratum_id'].tolist()
+
+                        join_field_name = 'user_' + insert_table_code + '_code' 
+                        joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
+                        
                         new_codes_df = pd.DataFrame()
                         new_codes_df['vb_record_id'] = new_codes_list
                         new_codes_df['vb_table_code'] = insert_table_code
                         new_codes_df['identifier_type'] = 'vb_code'
                         new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
 
-                        code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
-                        print(code_inputs)
+
+                        code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
                         if(create_codes):
                             sql_file_create_codes = os.path.join(self.QUERIES_FOLDER,
@@ -309,9 +330,26 @@ class Operator:
                                 if(next_identifiers):
                                     new_identifiers = new_identifiers + next_identifiers
 
-                        #Here we need to link the new codes to the existing identifiers. Not sure how to do this yet. 
-
-                        raise ValueError("Testing rollback")
+                        vb_field_name = 'vb_' + insert_table_code + '_code'
+                        to_return = {}
+                        to_return_entity = []
+                        for index, record in joined_df.iterrows():
+                            to_return_entity.append({
+                                join_field_name: record[join_field_name], 
+                                vb_field_name: record[vb_field_name],
+                                "action":"inserted"
+                            })
+                        to_return["resources"] = {
+                            insert_table_code: to_return_entity
+                        }
+                        to_return["counts"] = {
+                            insert_table_code: {
+                                "inserted":len(new_codes_list)
+                            } 
+                        }
+                        print(to_return)
+                        raise ValueError("Test error: " + str(to_return))
+                        return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500

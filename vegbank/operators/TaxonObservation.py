@@ -92,6 +92,14 @@ class TaxonObservation(Operator):
         return jsonify(to_return)
 
     def upload_strata_definitions(self, file):
+        """
+        takes a parquet file of strata definitions and uploads it to the stratum table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing strata definitions.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
         df = pd.read_parquet(file)
         with psycopg.connect(**self.params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
             return super().upload_to_table("stratum", 'sr', table_defs_config.stratum, df, True, conn)
