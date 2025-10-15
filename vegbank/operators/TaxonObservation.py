@@ -1,4 +1,9 @@
 import os
+import pandas as pd
+import psycopg
+from psycopg.rows import dict_row
+from psycopg import ClientCursor
+import table_defs_config
 from operators import Operator
 from utilities import QueryParameterError
 
