@@ -39,7 +39,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
-        - name: {{ .Chart.Name }}-init-postgres # Wait for Postgres to start
+        - name: {{ .Chart.Name }}-nslookup-postgres # Wait for Postgres to start
           image: busybox:1.28
           command:
           - sh
@@ -51,7 +51,24 @@ spec:
               echo "Waiting for CNPG to be resolvable...";
               sleep 2;
             done;
-            echo "CNPG primary is resolvable. Proceeding with restore.";
+            echo "CNPG primary is resolvable.";
+        - name: {{ .Chart.Name }}-pg-isready # Confirm postgres is ready
+          # Note: This image should match the postgres version installed
+          image: postgres:17
+          env:
+            - name: VB_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: VB_DB_PORT
+              value: {{ .Values.database.port | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              until pg_isready -h "$VB_DB_HOST" -p "$VB_DB_PORT" -U postgres; do
+                echo "Waiting for postgres to accept connections";
+                sleep 2;
+              done;
+              echo "CNPG is acception connections.";
         - name: {{ .Chart.Name }}-apply-flyway # Apply migrations
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
