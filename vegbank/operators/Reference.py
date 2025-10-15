@@ -3,16 +3,12 @@ from operators import Operator
 from utilities import QueryParameterError
 
 
-class CommunityConcept(Operator):
+class Reference(Operator):
     """
-    Defines operations related to the exchange of community concept data with
-    VegBank, including usage and status (party perspective) information.
+    Defines operations related to the exchange of cited references with VegBank.
 
-    Community Concept: A named community type according to a reference.
-    Community Status: The asserted status of a concept, according to a party
-        (a.k.a., a party perspective).
-    Community Usages: Particular names associated with a community concept,
-        including their naming system, status, and effective dates.
+    Reference: A cited source of information used within VegBank, e.g.
+        as required to define plant and community concepts.
 
     Inherits from the Operator parent class to utilize common default values and
     methods.
@@ -20,8 +16,8 @@ class CommunityConcept(Operator):
 
     def __init__(self, params):
         super().__init__(params)
-        self.name = "community_concept"
-        self.table_code = "cc"
+        self.name = "reference"
+        self.table_code = "rf"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
@@ -29,7 +25,7 @@ class CommunityConcept(Operator):
         """
         Validate query parameters and apply defaults to missing parameters.
 
-        This only applies validations specific to community concepts, then
+        This only applies validations specific to references, then
         dispatches to the parent validation method for more general (and more
         permissive) validations.
 
@@ -43,7 +39,7 @@ class CommunityConcept(Operator):
         Raises:
             QueryParameterError: If any supplied parameters are invalid.
         """
-        # specifically require detail to be "full" for community concepts
+        # specifically require detail to be "full" for references
         if request_args.get("detail", self.default_detail) not in ("full"):
             raise QueryParameterError("When provided, 'detail' must be 'full'.")
 

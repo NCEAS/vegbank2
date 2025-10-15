@@ -1,8 +1,6 @@
 SELECT
-    plot.plot_id,
-    observation.observation_id,
-    plot.accessionCode as plotAccessionCode,
-    observation.accessionCode as observationAccessionCode,
+    'pl.' || plot.plot_id AS pl_code,
+    'ob.' || observation.observation_id AS ob_code,
     authorPlotCode,
     confidentialityStatus,
     confidentialityReason,
@@ -66,8 +64,7 @@ SELECT
     minSlopeGradient,
     maxSlopeGradient,
     authorObsCode,
-    previousobs_ID,
-    obsEndDate,
+    'ob.' || previousobs_id AS previous_ob_code,
     dateAccuracy,
     stemSizeLimit,
     autoTaxonCover,
@@ -95,12 +92,12 @@ SELECT
     growthform3Type,
     growthform3Cover,
     totalCover,
-    soilTaxon_ID,
+    'st.' || soiltaxon_id AS st_code,
     soilTaxonSrc,
-    parent_ID,
-    project_ID,
-    coverMethod_ID,
-    stratumMethod.accessionCode as stratumMethodAccessionCode,
+    'pl.' || parent_id AS parent_pl_code,
+    'pj.' || project_id AS pj_code,
+    'cm.' || covermethod_id AS cm_code,
+    'sm.' || stratummethod.stratummethod_id AS sm_code,
     stratumMethod.stratumMethodName,
     stratumMethod.stratumMethodDescription,
     stratumMethod.stratumAssignment
@@ -109,4 +106,4 @@ FROM
     left join stratumMethod on observation.stratumMethod_ID = stratumMethod.stratumMethod_ID
 WHERE 
     plot.confidentialityStatus < 4
-    AND observation.accessionCode = %s;
+    AND observation.observation_id = %s;

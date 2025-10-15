@@ -1,5 +1,5 @@
 SELECT 
-    commClass.accessionCode as commClassAccessionCode,
+    'cl.' || commClass.commclass_id AS cl_code,
     commClass.classStartDate,
     commClass.classStopDate,
     commClass.inspection,
@@ -12,10 +12,10 @@ SELECT
     commClass.commframework,
     commClass.commLevel,
     commClass.emb_commclass,
-    commInterpretation.commconcept_ID,
+    'cc.' || commInterpretation.commconcept_id AS cc_code,
     commInterpretation.classfit,
     commInterpretation.classConfidence,
-    commInterpretation.commauthority_id,
+    'rf.' || commInterpretation.commauthority_id AS comm_authority_rf_code,
     commInterpretation.notes,
     commInterpretation.type,
     commInterpretation.nomenclaturaltype,
@@ -24,4 +24,4 @@ FROM
     commClass
     LEFT JOIN commInterpretation on commClass.commClass_ID = commInterpretation.commClass_ID
 WHERE
-    commClass.accessionCode = %s;
+    commClass.commclass_id = %s

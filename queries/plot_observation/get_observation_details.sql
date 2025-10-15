@@ -10,7 +10,7 @@ SELECT
     plot.locationNarrative,
     plot.country,
     plot.slopeGradient,
-    plot.accessionCode as plotAccessionCode,
+    'pl.' || plot.plot_id AS pl_code,
     dba_confidentialitystatus.confidentialitytext,
     observation.authorObsCode,
     observation.obsStartDate,
@@ -32,12 +32,12 @@ SELECT
     observation.floristicQuality,
     observation.bryophyteQuality,
     observation.lichenQuality,
-    observation.accessionCode as obsAccessionCode,
-    project.accessionCode as projectAccessionCode,
+    'ob.' || observation.observation_id AS ob_code,
+    'pj.' || project.project_id AS pj_code,
     project.projectName,
-    coverMethod.accessionCode as coverMethodAccessionCode,
+    'cm.' || covermethod.covermethod_id AS cm_code,
     coverMethod.coverType,
-    stratumMethod.accessionCode as stratumMethodAccessionCode,
+    'sm.' || stratummethod.stratummethod_id AS sm_code,
     stratumMethod.stratumMethodName,
     stratummethod.stratumMethodDescription
 FROM plot    
@@ -47,4 +47,4 @@ FROM plot
     left join stratumMethod on observation.stratummethod_ID = stratumMethod.stratummethod_ID    
     left join project on observation.project_id = project.project_id        
 WHERE 
-    observation.accessionCode = %s;
+    observation.observation_id = %s
