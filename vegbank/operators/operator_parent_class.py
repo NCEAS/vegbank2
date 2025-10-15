@@ -374,7 +374,6 @@ class Operator:
                             } 
                         }
                         print(to_return)
-                        raise ValueError("Test error: " + str(to_return))
                         return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
