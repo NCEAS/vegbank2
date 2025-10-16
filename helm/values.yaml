@@ -12,15 +12,14 @@ database:
   ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
   name: vegbank
   ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
-  host: vegbank-cnpg-rw
+  host: vegbankdb-cnpg-rw
   ## @param db_port - The port to connect to on the database pod. 
   port: 5432
 
 databaseRestore:
-  ## @param databaseRestore.setup - Creates the vegbank database with the expected roles
-  setup: false
   ## @param databaseRestore.enabled - Restores a given dump file defined below
-  enabled: true
+  ## Reminder, the deployment.yaml postgres image should be the same as the CNPG postgres version
+  enabled: false
   pvc: "vegbankdb-init-pgdata"
   mountpath: "/tmp/databaseRestore"
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
