@@ -39,19 +39,6 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
-        - name: {{ .Chart.Name }}-nslookup-postgres # Wait for Postgres to start
-          image: busybox:1.28
-          command:
-          - sh
-          - -c
-          - >
-            echo "Waiting for CNPG primary...";
-            until nslookup vegbankdb-cnpg-rw.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local;
-            do
-              echo "Waiting for CNPG to be resolvable...";
-              sleep 2;
-            done;
-            echo "CNPG primary is resolvable.";
         - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
           # Note: This image should match the postgres version installed
           image: postgres:17
