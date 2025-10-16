@@ -10,29 +10,11 @@ resources:
     memory: 2Gi
 
 init:
-  import:
-    type: microservice
-    databases:
-      - vegbank
-    source:
-      externalCluster: source-db
-    pgRestoreExtraOptions:
-      - '--verbose'
+  method: initdb
   database: vegbank
   owner: vegbank
   secret:
     name: vegbankdbcreds
-
-  externalClusters:
-    - name: source-db
-      connectionParameters:
-        host: vegbankdb-postgresql
-        user: vegbank
-        dbname: vegbank
-        sslmode: disable
-      password:
-        name: vegbankdbcreds
-        key: password
 
 persistence:
   size: 100Gi

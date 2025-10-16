@@ -20,7 +20,7 @@ databaseRestore:
   ## @param databaseRestore.setup - Creates the vegbank database with the expected roles
   setup: false
   ## @param databaseRestore.enabled - Restores a given dump file defined below
-  enabled: false
+  enabled: true
   pvc: "vegbankdb-init-pgdata"
   mountpath: "/tmp/databaseRestore"
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"

@@ -56,6 +56,16 @@ spec:
           # Note: This image should match the postgres version installed
           image: postgres:17
           env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-cnpg-app
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-cnpg-app
+                  key: username
             - name: VB_DB_HOST
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
@@ -69,6 +79,18 @@ spec:
                 sleep 2;
               done;
               echo "CNPG is acception connections.";
+
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+                echo "Database Restore Requested, restoring from specific dump file";
+                export PGPASSWORD="$VB_DB_PASS";
+                pg_restore \
+                -h "$VB_DB_HOST" \
+                -p "$VB_DB_PORT" \
+                -U "$VB_DB_USER" \
+                -d "$VB_DB_NAME" \
+                -j 4 "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
+                echo "## Postgres database has been restored";
+              fi
         - name: {{ .Chart.Name }}-apply-flyway # Apply migrations
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
