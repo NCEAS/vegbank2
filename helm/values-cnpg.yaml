@@ -1,5 +1,7 @@
 ## @section CNPG PostgresQL
 dbName: vegbank
+existingSecret: vegbankdbcreds
+dbUser: vegbank
 
 resources:
   requests:
@@ -8,13 +10,6 @@ resources:
   limits:
     cpu: 750m
     memory: 2Gi
-
-init:
-  method: initdb
-  database: vegbank
-  owner: vegbank
-  secret:
-    name: vegbankdbcreds
 
 persistence:
   size: 100Gi
