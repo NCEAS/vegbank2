@@ -52,9 +52,13 @@ spec:
               sleep 2;
             done;
             echo "CNPG primary is resolvable.";
-        - name: {{ .Chart.Name }}-pg-isready # Confirm postgres is ready
+        - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
           # Note: This image should match the postgres version installed
           image: postgres:17
+          volumeMounts:
+            # Mount the PVC, this path will contain the directory that's been mounted on knbvm
+            - name: {{ .Values.databaseRestore.pvc }}
+              mountPath: "/tmp/databaseRestore"
           env:
             - name: VB_DB_PASS
               valueFrom:
