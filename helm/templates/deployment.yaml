@@ -46,7 +46,7 @@ spec:
           - -c
           - >
             echo "Waiting for CNPG primary...";
-            until nslookup vegbank-cnpg-rw.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local;
+            until nslookup vegbankdb-cnpg-rw.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local;
             do
               echo "Waiting for CNPG to be resolvable...";
               sleep 2;
@@ -59,12 +59,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: username
             - name: VB_DB_HOST
               value: {{ .Values.database.host | quote }}
@@ -105,12 +105,12 @@ spec:
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
@@ -148,12 +148,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbank-cnpg-app
+                  name: vegbankdbcreds
                   key: username
             - name: VB_DB_NAME
               value: {{ .Values.database.name | quote }}
