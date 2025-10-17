@@ -47,7 +47,7 @@ Before we deploy this Vegbank API helm chart, we must ensure that postgres is av
 # We are using a dataone cnpg image - if you experience issues, double check the version
 $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version 0.2.1 -f values-cnpg.yaml
 
-$ kubectl get pods
+$ kubectl -n dev-vegbank get pods
 NAME                         READY   STATUS    RESTARTS   AGE
 vegbankdb-cnpg-1             1/1     Running   0          5m
 vegbankdb-cnpg-2             1/1     Running   0          6m
@@ -102,12 +102,12 @@ $ kubectl -n dev-vegbank describe pod vegbankapi-bb94bf498-6fpw4
 ...
 
 # You can get the logs of the initContainer like such, replacing the argument after the '-c' flag with the initContainer you want to check
-$ kubectl logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres --timestamps                                                                          
+$ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres --timestamps                                                                          
 2025-09-25T10:10:11.129037693-07:00 vegbankdb-cnpg-rw:5432 - accepting connections
 2025-09-25T10:10:11.129130874-07:00 CNPG is acception connections.
 2025-09-25T10:10:11.129146915-07:00 Database Restore Requested, restoring from specific dump file
 
-$ kubectl logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway --timestamps
+$ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway --timestamps
 2025-09-25T10:35:06.910428714-07:00 ## Flyway Env
 2025-09-25T10:35:06.914609424-07:00 FLYWAY_PASSWORD=SecretVeggies2092
 2025-09-25T10:35:06.914645452-07:00 FLYWAY_USER=vegbank
@@ -135,7 +135,7 @@ $ kubectl logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway --timestamp
 2025-09-25T10:35:09.767308757-07:00 Current version of schema "public": 1.9
 2025-09-25T10:35:09.774330631-07:00 Schema "public" is up to date. No migration necessary.
 
-$ kubectl get pods
+$ kubectl -n dev-vegbank get pods
 NAME                         READY   STATUS    RESTARTS   AGE
 vegbankapi-bb94bf498-6fpw4   1/1     Running   0          3h28m
 vegbankdb-cnpg-1             1/1     Running   0          4h10m
@@ -150,7 +150,11 @@ After the `initContainers` complete, you will now have an up-to-date copy of the
 If you are testing new schema updates, add them to `helm/db/migrations` with the correct naming convention and run a `helm` upgrade command. Example:
 
 ```sh
-$ helm upgrade vegbankdb . -f values.yaml
+# If you have ingress enabled
+$ helm upgrade vegbankdb . -f values.yaml --set ingress.enabled=true
+
+# If you don't have an ingress
+$ helm upgrade vegbankdb . -f values.yaml --set ingress.enabled=false
 ```
 
 - Note: Do not forget to change the `databaseRestore.enabled` value back to `false` if you've set it to `true`.
