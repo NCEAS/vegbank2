@@ -1,4 +1,6 @@
 ## @section CNPG PostgresQL
+## Omitting the init section will create an empty postgres cluster with
+## supplied secret. The dbUser must match the username of the secret.
 dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
