@@ -1,6 +1,6 @@
 # Introduction
 
-This document describes how to deploy the helm chart for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see four pods. The vegbank python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pods which contains the database that the API accesses and queries. The postgres pods consist of an primary read-write pod and two replica read-only pods.
+This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see four pods. The vegbank python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pods which contains the database that the API accesses and queries. The postgres pods consist of an primary read-write pod and two replica read-only pods.
 
 ## Requirements
 
@@ -40,6 +40,7 @@ databaseRestore:
 ```
 
 Before we deploy this Vegbank API helm chart, we must ensure that postgres is available. So we first deploy the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready before proceeding to deploy the Vegbank API helm chart.
+- Note: The postgres image in `deployment.yaml` must match the `cnpg` postgres version
 
 ```sh
 # The release name is vegbankdb
