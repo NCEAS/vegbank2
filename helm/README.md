@@ -91,7 +91,7 @@ Tip: To get a pulse of what's happening, you can run the following commands:
 ```sh
 $ kubectl -n dev-vegbank get pods
 NAME                          READY   STATUS     RESTARTS   AGE
-vegbankapi-bb94bf498-6fpw4   0/1     Init:0/2   0          12s
+vegbankapi-bb94bf498-6fpw4    0/1     Init:0/2   0          12s
 vegbankdb-cnpg-1              1/1     Running    0          5m4s
 vegbankdb-cnpg-2              1/1     Running    0          3m36s
 vegbankdb-cnpg-3              1/1     Running    0          2m19s
