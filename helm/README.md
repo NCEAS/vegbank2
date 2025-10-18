@@ -109,7 +109,7 @@ $ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile
 
 $ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway --timestamps
 2025-09-25T10:35:06.910428714-07:00 ## Flyway Env
-2025-09-25T10:35:06.914609424-07:00 FLYWAY_PASSWORD=SecretVeggies2092
+2025-09-25T10:35:06.914609424-07:00 FLYWAY_PASSWORD=NO_PASSWORDS_SHOULD_BE_SHARED
 2025-09-25T10:35:06.914645452-07:00 FLYWAY_USER=vegbank
 2025-09-25T10:35:06.914652983-07:00 FLYWAY_URL=jdbc:postgresql://vegbankdb-postgresql:5432/vegbank
 2025-09-25T10:35:06.914658864-07:00 FLYWAY_LOCATIONS=filesystem:/opt/local/flyway/db/migrations
