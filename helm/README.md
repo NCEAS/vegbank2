@@ -1,11 +1,11 @@
 # Introduction
 
-This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see four pods. The vegbank python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pods which contains the database that the API accesses and queries. The postgres pods consist of an primary read-write pod and two replica read-only pods.
+This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see four pods. The vegbank python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pods which contains the database that the API accesses and queries. The postgres pods consist of a primary read-write pod and two replica read-only pods.
+
+- Note #1: The original VegBank database and web interface (ex. `http://vegbank.org/vegbank/index.jsp`) is currently maintained by NCEAS - however, there have been no new contributions in several years. This means that the data-only dump file used in this process described below (that's currently stored in a ceph directory) is relevant and applicable for testing. The production deployment may start from a new dump file/starting point which includes schema migrations and updates, so do not use the dump file for production purposes without consulting the appropriate stakeholders.
+- Note #2: Should you need to restore the original database that's currently maintained, you can find instructions in this repo's `INSTALL.md` document and additional information at `src/database/flyway/README.md`. 
 
 ## Requirements
-
-The original VegBank database and web interface (ex. `http://vegbank.org/vegbank/index.jsp`) is currently maintained by NCEAS - however, there have been no new contributions in several years. This means that the data-only dump file used in this process described below (that's currently stored in a ceph directory) is relevant and applicable for testing. The production deployment may start from a new dump file/starting point which includes schema migrations and updates, so do not use the dump file for production purposes without consulting the appropriate stakeholders.
-- Note: Should you need to restore the original database that's currently maintained, you can find instructions in this repo's `INSTALL.md` document and additional information at `src/database/flyway/README.md`. 
 
 You need to have the following things set up/installed: 
 
@@ -15,17 +15,19 @@ You need to have the following things set up/installed:
 
 # Deploying to Kubernetes - Development Server
 
-This section will walk you through deploying VegBank to an empty kubernetes namespace. The required dump file to perform a postgres restore has been made available via mounting of a static PV/PVC to both `dev-vegbank` and `vegbank` namespaces.
+This section will walk you through deploying VegBank to an empty kubernetes namespace. You can deploy vegbank with data, or without data - and the required dump file to perform a postgres restore has been made available via mounting of a static PV/PVC to both `dev-vegbank` and `vegbank` namespaces.
 
 Any additional requests for further mounts must be requested via the development team. 
 
 ## Step 1: Getting your dump file
 
-TBD - A dump file is already available for development purposes. In production, this may differ.
+As progress is made, postgres dump files will be created, updated and made available to the team. These dump files currently lives in the shared development CephFS folder that's mounted in the `knbvm (test.arcticdata.io)` under `/mnt/ceph/repos/vegbank`.
+
+A dump file is already available for development purposes. In production, this process may differ.
 
 ## Step 2: Helm Install (and Uninstall...)
 
-If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to first update the helm `values.yaml` section for `databaseRestore`.
+If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to determine if we should update the helm `values.yaml` section for `databaseRestore`.
 
 `databaseRestore.enabled` should be set to `true` if you want to restore the database using a dump file. If you want a fresh database installation with no data, leave this as `false`.
 
@@ -33,18 +35,20 @@ If we're starting from nothing (ex. the namespace/context we're working in is co
 # values.yaml
 
 databaseRestore:
-  enabled: true # This needs to be changed from `false` to `true`
+  enabled: true # This needs to be changed from `false` to `true` if you want to restore data
   pvc: "vegbankdb-init-pgdata" # Name of the PVC
   mountpath: "/tmp/databaseRestore" # Path where you can find the PVC contents
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump" # Name of the file to be used in the restoration process
 ```
 
 Before we deploy this Vegbank API helm chart, we must ensure that postgres is available. So we first deploy the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready before proceeding to deploy the Vegbank API helm chart.
-- Note: The postgres image in `deployment.yaml` must match the `cnpg` postgres version
+- Note: The postgres image in the `{chart}-reconcile-postgres` initContainer in the `deployment.yaml` must match the `cnpg` postgres version. Otherwise, it will not be able to connect and restore the dump file.
 
 ```sh
-# The release name is vegbankdb
-# We are using a dataone cnpg image - if you experience issues, double check the version
+# IMPORTANT: The chart name we will use to be consistent is `vegbankdb`.
+# We are using a dataone cnpg image so the postgres cluster will deploy with the prefix 'vegbankdb'. Thus, the host of the primary postgres pod will be 'vegbankdb-cnpg-rw'
+#
+# If you experience issues with deployment, double check that you have the latest chart version.
 $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version 0.2.1 -f values-cnpg.yaml
 
 $ kubectl -n dev-vegbank get pods
@@ -64,19 +68,20 @@ $ helm install vegbankapi helm -f values.yaml --set ingress.enabled=true
 $ helm install vegbankapi . -f values.yaml --set ingress.enabled=true
 ```
 
-If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to provide the custom arguments `--set ingress.enabled=false` to prevent ingress errors:
+If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to adjust the ingress.enabled option to false to prevent ingress errors:
 
 ```sh
+# If you do not have ingress
 $ helm install vegbankapi . -f values.yaml --set ingress.enabled=false
 ```
 
 This will install the python API pod (based on the `docker/Dockerfile` in this repo) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the starting prefix of `vegbankapi` in its name. You can change the name `vegbankapi` to whatever you like.
 
-- Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by uninstalling the chart. If you run into conflicts, be sure to double check that the associated PVCs, references and charts to old dependencies are removed (ex. The .tgz file under charts/ may need to be deleted)
+- Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by uninstalling the chart. If you run into conflicts, be sure to double check that the associated PVCs, references and charts to old dependencies are removed (ex. The .tgz file under `charts/` may need to be deleted)
 
 ## Step 3: Watch the `initContainers`
 
-At this point, your namespace is empty and you have a fresh installation of `postgres`. There is nothing left for you to do but sit and wait for the `initContainers` to execute.
+At this point, your namespace is empty and you have a fresh installation of `postgres`. There is nothing left for you to do but sit and wait for the `initContainers` to finish executing.
 
 There are two `initContainers`:
 1) vegbankdb-reconcile-postgres
@@ -101,7 +106,7 @@ vegbankdb-cnpg-3              1/1     Running    0          2m19s
 $ kubectl -n dev-vegbank describe pod vegbankapi-bb94bf498-6fpw4
 ...
 
-# You can get the logs of the initContainer like such, replacing the argument after the '-c' flag with the initContainer you want to check
+# You can get the logs of the initContainer like below, replace the argument after the '-c' flag with the initContainer you want to check
 $ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres --timestamps                                                                          
 2025-09-25T10:10:11.129037693-07:00 vegbankdb-cnpg-rw:5432 - accepting connections
 2025-09-25T10:10:11.129130874-07:00 CNPG is acception connections.
@@ -159,15 +164,14 @@ $ helm upgrade vegbankdb . -f values.yaml --set ingress.enabled=false
 
 - Note: Do not forget to change the `databaseRestore.enabled` value back to `false` if you've set it to `true`.
 
-  ```
+  ```sh
   # values.yaml
 
   databaseRestore:
-    enabled: false
-    target: "1.4"
+    enabled: false # Set this back to false! 
     pvc: "vegbankdb-init-pgdata"
     mountpath: "/tmp/databaseRestore"
-    filepath: "vegbank_dataonly_fc_20250904.dump"
+    filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
   ```
 
 # Connecting to API via kubectl port forwarding
