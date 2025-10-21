@@ -15,9 +15,6 @@ database:
   host: vegbankdb-cnpg-rw
   ## @param port - The port to connect to on the database pod. 
   port: 5432
-  ## @param postgres_image - Version of postgres image to run the initContainer with.
-  ## This should match the version that is running on CNPG
-  postgres_image: postgres:17
 
 databaseRestore:
   ## @param databaseRestore.enabled - Restores a given dump file defined below
@@ -26,6 +23,9 @@ databaseRestore:
   pvc: "vegbankdb-init-pgdata"
   mountpath: "/tmp/databaseRestore"
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
+  ## @param postgres_image - Version of postgres image to run the initContainer with.
+  ## This should match the version that is running on CNPG
+  postgres_image: postgres:17
 
 flyway:
   image:
