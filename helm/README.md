@@ -61,9 +61,6 @@ vegbankdb-cnpg-3             1/1     Running   0          7m
 Now we can deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
 
 ```sh
-# If you're in the root folder
-$ helm install vegbankapi helm -f values.yaml --set ingress.enabled=true
-
 # Or if you're in the helm folder
 $ helm install vegbankapi . -f values.yaml --set ingress.enabled=true
 ```
@@ -78,6 +75,10 @@ $ helm install vegbankapi . -f values.yaml --set ingress.enabled=false
 This will install the python API pod (based on the `docker/Dockerfile` in this repo) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the starting prefix of `vegbankapi` in its name. You can change the name `vegbankapi` to whatever you like.
 
 - Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by uninstalling the chart. If you run into conflicts, be sure to double check that the associated PVCs, references and charts to old dependencies are removed (ex. The .tgz file under `charts/` may need to be deleted)
+
+  ### CAUTION: Uninstalling Charts -  Be Careful!
+
+  The `cnpg` chart we are deploying is extended from the [`dataone-cnpg` chart](https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md) with our `values-cnpg` overrides file. If you uninstall the chart, you will be deleting the associated PVC and the automatically generated secret if you did not supply one - and will likely lose all your data. Please proceed with caution and backup data and secrets.
 
 ## Step 3: Watch the `initContainers`
 
