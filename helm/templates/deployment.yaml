@@ -154,9 +154,6 @@ spec:
               value: {{ .Values.database.port | quote }}
             - name: VB_ALLOW_UPLOADS
               value: {{ .Values.allowUploads | quote }}
-      {{- with .Values.volumes }}
-      volumes:
-        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
