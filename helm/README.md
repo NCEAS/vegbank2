@@ -162,10 +162,10 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ```sh
 # If you have ingress enabled
-$ helm upgrade vegbankdb . -f values.yaml --set ingress.enabled=true
+$ helm upgrade vegbankapi . -f values.yaml --set ingress.enabled=true
 
 # If you don't have an ingress
-$ helm upgrade vegbankdb . -f values.yaml --set ingress.enabled=false
+$ helm upgrade vegbankapi . -f values.yaml --set ingress.enabled=false
 ```
 
 - Note: Do not forget to change the `databaseRestore.enabled` value back to `false` if you've set it to `true`.
