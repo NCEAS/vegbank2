@@ -9,12 +9,14 @@ allowUploads: false
 ## @section Database
 ## configuration for the PostgreSQL database used by VegBank.
 database:
-  ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
+  ## @param name - The name of the database on the postgres pod to be used by VegBank.
   name: vegbank
-  ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
+  ## @param host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
   host: vegbankdb-cnpg-rw
-  ## @param db_port - The port to connect to on the database pod. 
+  ## @param port - The port to connect to on the database pod. 
   port: 5432
+  ## @param postgres_image - Version of postgres image to run the initContainer with
+  postgres_image: postgres:17
 
 databaseRestore:
   ## @param databaseRestore.enabled - Restores a given dump file defined below

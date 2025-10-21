@@ -40,8 +40,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
         - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
-          # Note: This image should match the postgres version installed
-          image: postgres:17
+          image: {{ .Values.database.postgres_image }}
           volumeMounts:
             # Mount the PVC, this path will contain the directory that's been mounted on knbvm
             - name: {{ .Values.databaseRestore.pvc }}
@@ -154,7 +153,6 @@ spec:
               value: {{ .Values.database.port | quote }}
             - name: VB_ALLOW_UPLOADS
               value: {{ .Values.allowUploads | quote }}
-      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
