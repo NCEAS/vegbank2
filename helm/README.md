@@ -73,6 +73,7 @@ If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to ad
 
 ```sh
 # If you do not have ingress
+# Note: Please see the section 'Connecting to API via kubectl port forwarding' if you wish to access the API without ingress
 $ helm install vegbankapi . -f values.yaml --set ingress.enabled=false
 ```
 
@@ -193,7 +194,11 @@ The API pod is the one with the werid alphanumeric name. After that, all you nee
 $ kubectl -n dev-vegbank port-forward <API pod name> <desired port on your machine>:80
 ```
 
-Then you can access the API on localhost via the port you specified. 
+Then you can access the API on localhost via the port you specified. Full example below:
+```sh
+$ kubectl -n dev-vegbank port-forward vegbank-745779dccd-994r6 2580:80
+# And then access it like such: http://localhost:2580/taxon-observations/VB.TO.64992.VACCINIUMBOREAL
+```
 
 
 ## Parameters
