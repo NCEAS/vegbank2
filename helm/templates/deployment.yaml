@@ -40,7 +40,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
         - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
-          image: {{ .Values.databaseRestore.postgres_image }}
+          image: {{ .Values.databaseRestore.postgresImage }}
           volumeMounts:
             # Mount the PVC, this path will contain the directory that's been mounted on knbvm
             - name: {{ .Values.databaseRestore.pvc }}

@@ -25,7 +25,7 @@ databaseRestore:
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
   ## @param postgres_image - Version of postgres image to run the initContainer with.
   ## This should match the version that is running on CNPG
-  postgres_image: postgres:17
+  postgresImage: postgres:17
 
 flyway:
   image:
