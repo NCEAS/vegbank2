@@ -9,7 +9,7 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 You need to have the following things set up/installed: 
 
-- A Kubernetes cluster and a namespace you wish to deploy the chart on (ex. dev-vegbank, dev-vegbank-dev)
+- A Kubernetes cluster and a namespace you wish to deploy the chart on (ex. vegbank, dev-vegbank)
 - kubectl installed locally
 - Helm installed locally
 
@@ -21,7 +21,7 @@ Any additional requests for further mounts must be requested via the development
 
 ## Step 1: Getting your dump file
 
-As progress is made, postgres dump files will be created, updated and made available to the team. These dump files currently lives in the shared development CephFS folder that's mounted in the `knbvm (test.arcticdata.io)` under `/mnt/ceph/repos/vegbank`.
+As progress is made, postgres dump files will be created, updated and made available to the team. These dump files currently live in the shared development CephFS folder that's mounted in the `knbvm (knbvm.nceas.ucsb.edu)` under `/mnt/ceph/repos/vegbank`.
 
 A dump file is already available for development purposes. In production, this process may differ.
 
@@ -42,7 +42,7 @@ databaseRestore:
 ```
 
 Before we deploy this Vegbank API helm chart, we must ensure that postgres is available. So we first deploy the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready before proceeding to deploy the Vegbank API helm chart.
-- Note: The postgres image in the `{chart}-reconcile-postgres` initContainer in the `deployment.yaml` must match the `cnpg` postgres version. Otherwise, it will not be able to connect and restore the dump file.
+- Note: Double check that the postgres image in the `databaseRestore.postgres_image` section in `values.yaml` has the same major version as the `cnpg`. Postgres major versions must match otherwise the restore process will not be able to proceed with connecting and restoring.
 
 ```sh
 # IMPORTANT: The chart name we will use to be consistent is `vegbankdb`.
