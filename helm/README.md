@@ -49,7 +49,11 @@ Before we deploy this Vegbank API helm chart, we must ensure that postgres is av
 # We are using a dataone cnpg image so the postgres cluster will deploy with the prefix 'vegbankdb'. Thus, the host of the primary postgres pod will be 'vegbankdb-cnpg-rw'
 #
 # If you experience issues with deployment, double check that you have the latest chart version.
-$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version 0.2.1 -f values-cnpg.yaml
+$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f values-cnpg.yaml
+
+# If you would like to install a specific version, this is how you can do so
+# where the latest [version#] can be found at https://github.com/DataONEorg/dataone-cnpg/pkgs/container/charts%2Fcnpg
+$ $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
 
 $ kubectl -n dev-vegbank get pods
 NAME                         READY   STATUS    RESTARTS   AGE
