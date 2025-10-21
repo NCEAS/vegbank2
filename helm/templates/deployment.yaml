@@ -69,7 +69,7 @@ spec:
                 echo "Waiting for postgres to accept connections";
                 sleep 2;
               done;
-              echo "CNPG is acception connections.";
+              echo "CNPG is accepting connections.";
 
               if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
                 echo "Database Restore Requested, restoring from specific dump file";
