@@ -1,0 +1,30 @@
+## @section CNPG PostgresQL
+## Omitting the init section will create an empty postgres cluster with
+## supplied secret. The dbUser must match the username of the secret.
+dbName: vegbank
+existingSecret: vegbankdbcreds
+dbUser: vegbank
+
+resources:
+  requests:
+    cpu: 750m
+    memory: 2Gi
+  limits:
+    cpu: 750m
+    memory: 2Gi
+
+persistence:
+  size: 100Gi
+
+postgresql:
+  parameters:
+    max_wal_senders: 16  # must match bitnami for replication to work
+
+  ## metacat override to allow password auth:
+  pg_hba:
+    # TYPE        DATABASE      USER          ADDRESS         METHOD
+    - host        vegbank       vegbank       0.0.0.0/0       password
+    - host        vegbank       vegbank       ::0/0           password
+    - local       all           all                           trust
+    - host        all           all           127.0.0.1/32    trust
+    - host        postgres      postgres      0.0.0.0/0       password
