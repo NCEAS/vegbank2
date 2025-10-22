@@ -1,0 +1,14 @@
+# Overrides files to assist with development
+# This override allows you to modify common variables that need to be adjusted during testing and development.
+
+# If you execute with helm like such:
+# `helm upgrade vegbankapi . -f values-overrides-dev.yaml`
+# This will override the default values found in `values.yaml` for the following components
+
+databaseRestore:
+  ## @param databseRestore.enabled - Setting this to true will activate the 'pg_restore' process
+  enabled: false
+
+ingress:
+  ## @param ingress.enabled - If ingress is not available, setting this to 'true' will cause errors
+  enabled: false
