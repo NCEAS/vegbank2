@@ -95,7 +95,8 @@ service:
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
-  ## @param ingress.enabled - Should the ingress be enabled?
+  ## @param ingress.enabled - Enable ingress to allow web traffic
+  enabled: true
   ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
   ## @section ingress.annotations - Annotations to add to the ingress resource.
