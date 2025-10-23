@@ -53,7 +53,7 @@ $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f values-cnpg.yam
 
 # If you would like to install a specific version, this is how you can do so
 # where the latest [version#] can be found at https://github.com/DataONEorg/dataone-cnpg/pkgs/container/charts%2Fcnpg
-$ $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
+$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
 
 $ kubectl -n dev-vegbank get pods
 NAME                         READY   STATUS    RESTARTS   AGE
@@ -65,16 +65,22 @@ vegbankdb-cnpg-3             1/1     Running   0          7m
 Now we can deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
 
 ```sh
-# Or if you're in the helm folder
-$ helm install vegbankapi . -f values.yaml --set ingress.enabled=true
+$ pwd
+/Users/doumok/Code/vegbank2/helm
+$ helm install vegbankapi .
 ```
 
-If you are on a namespace without ingress (ex. `dev-vegbank-dev`), be sure to adjust the ingress.enabled option to false to prevent ingress errors:
+### Development Values File: 'values-overrides-dev.yaml' 
+
+If you are on a namespace without ingress (ex. `dev-vegbank-dev`), deploying the `vegbankapi` chart will result in errors. To help reduce confusion and for development purposes, we have a `values-overrides-dev.yaml` file which contains components that you'll likely want to take control over. By default, this overrides file' override values turns the database restoration process off and disables ingress.
 
 ```sh
-# If you do not have ingress
+$ helm install vegbankapi . -f values-overrides-dev.yaml
+
+# If you do not wish to use the overrides file, you may manually turn ingress off like such
+$ helm install vegbankapi . --set ingress.enabled=false
+
 # Note: Please see the section 'Connecting to API via kubectl port forwarding' if you wish to access the API without ingress
-$ helm install vegbankapi . -f values.yaml --set ingress.enabled=false
 ```
 
 This will install the python API pod (based on the `docker/Dockerfile` in this repo) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the starting prefix of `vegbankapi` in its name. You can change the name `vegbankapi` to whatever you like.
@@ -161,11 +167,13 @@ After the `initContainers` complete, you will now have an up-to-date copy of the
 If you are testing new schema updates, add them to `helm/db/migrations` with the correct naming convention and run a `helm` upgrade command. Example:
 
 ```sh
-# If you have ingress enabled
-$ helm upgrade vegbankapi . -f values.yaml --set ingress.enabled=true
+$ helm upgrade vegbankapi .
 
 # If you don't have an ingress
-$ helm upgrade vegbankapi . -f values.yaml --set ingress.enabled=false
+# Option 1: Use the `values-overrides-dev.yaml` file, which deactivates ingress and the database restoration
+$ helm upgrade vegbankapi . -f values-overrides-dev.yaml
+# Option 2: Manually turn off ingress
+$ helm upgrade vegbankapi . --set ingress.enabled=false
 ```
 
 - Note: Do not forget to change the `databaseRestore.enabled` value back to `false` if you've set it to `true`.
