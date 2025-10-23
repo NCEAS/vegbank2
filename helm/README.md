@@ -53,7 +53,7 @@ $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f values-cnpg.yam
 
 # If you would like to install a specific version, this is how you can do so
 # where the latest [version#] can be found at https://github.com/DataONEorg/dataone-cnpg/pkgs/container/charts%2Fcnpg
-$ $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
+$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
 
 $ kubectl -n dev-vegbank get pods
 NAME                         READY   STATUS    RESTARTS   AGE
