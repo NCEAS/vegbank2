@@ -32,7 +32,7 @@ flyway:
     repository: flyway/flyway
     pullPolicy: IfNotPresent
     ## Overrides the image tag whose default is the chart appVersion.
-    tag: "10.17.0"
+    tag: "11.15.0"
   configpath: /opt/local/flyway/flyway.conf
   dbpath: /opt/local/flyway/db
 
