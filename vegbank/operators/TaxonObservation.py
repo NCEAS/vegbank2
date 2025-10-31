@@ -94,7 +94,7 @@ class TaxonObservation(Operator):
         try:
             df = pd.read_parquet(file)
             extra_fields = find_extra_fields(df, [table_defs_config.stratum])
-            if(len(extra_fields) > 0):
+            if 0 < len(extra_fields):
                 raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
             with psycopg.connect(**self.params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
                 new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)

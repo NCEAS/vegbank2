@@ -63,7 +63,7 @@ def find_extra_fields(df, table_defs):
         list: A list of column names that are in the dataframe but not in the table definitions.
     '''
     df.columns = map(str.lower, df.columns)
-    #Checking if the user submitted any unsupported columns
+    # Checking if the user submitted any unsupported columns
     df_columns_set = set(df.columns)
     for insert_table_def in table_defs:
         df_columns_set = df_columns_set - set(insert_table_def)

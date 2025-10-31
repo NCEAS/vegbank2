@@ -281,8 +281,7 @@ class Operator:
         try:
             print(f"DataFrame loaded with {len(df)} records.")
             
-            df.replace({pd.NaT: None}, inplace=True)
-            df.replace({np.nan: None}, inplace=True)
+            df.replace({pd.NaT: None, np.nan: None}, inplace=True)
 
             table_df = df[insert_table_def]
             table_df = table_df.drop_duplicates()
@@ -308,12 +307,12 @@ class Operator:
                             sql = file.read()
                         cur.execute(sql)
                         validation_results = cur.fetchall()
-                        while(cur.nextset()):
+                        while cur.nextset():
                             next_validation = cur.fetchall()
-                            if(next_validation):
+                            if next_validation:
                                 validation_results = validation_results + next_validation
                         validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
-                        if(validation_results):
+                        if validation_results:
                             raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
 
                         sql_file_insert = os.path.join(self.QUERIES_FOLDER,
@@ -335,22 +334,20 @@ class Operator:
                         new_codes_df['identifier_type'] = 'vb_code'
                         new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
 
-
-
                         code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
-                        if(create_codes):
+                        if create_codes:
                             sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
                             with open(sql_file_create_codes, "r") as file:
                                 sql = file.read()
                             cur.executemany(sql, code_inputs, returning=True)
                             new_identifiers = cur.fetchall()
-                            while(cur.nextset()):
+                            while cur.nextset():
                                 next_identifiers = cur.fetchall()
-                                if(next_identifiers):
+                                if next_identifiers:
                                     new_identifiers = new_identifiers + next_identifiers
 
-                        vb_field_name = 'vb_' + insert_table_code + '_code'
+                        vb_field_name = f'vb_{insert_table_code}_code'
                         to_return = {}
                         to_return_entity = []
                         for index, record in joined_df.iterrows():
