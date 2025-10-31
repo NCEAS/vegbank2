@@ -62,13 +62,12 @@ def find_extra_fields(df, table_defs):
     Returns:
         list: A list of column names that are in the dataframe but not in the table definitions.
     '''
-    extra_fields = []
     df.columns = map(str.lower, df.columns)
     #Checking if the user submitted any unsupported columns
     df_columns_set = set(df.columns)
     for insert_table_def in table_defs:
         df_columns_set = df_columns_set - set(insert_table_def)
-    return extra_fields
+    return df_columns_set
 
 
 class QueryParameterError(Exception):
