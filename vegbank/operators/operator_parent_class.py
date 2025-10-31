@@ -51,6 +51,7 @@ class Operator:
         `name`, `table_code`, and `full_get_parameters`, must be overridden by
         child classes to reflect their specific resource and querying details.
         """
+        self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
         self.default_detail = "full"
         self.default_limit = "1000"
@@ -258,7 +259,7 @@ class Operator:
                          download_name=f'{self.name}.parquet')
     
 
-    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, df, create_codes, conn):
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
         """
         Execute a series of insert statements that upload data for a specified table.
 
@@ -279,12 +280,6 @@ class Operator:
         """
         try:
             print(f"DataFrame loaded with {len(df)} records.")
-
-            df.columns = map(str.lower, df.columns)
-            #Checking if the user submitted any unsupported columns
-            additional_columns = set(df.columns) - set(insert_table_def)
-            if(len(additional_columns) > 0):
-                return jsonify_error_message(f"Your data must only contain fields included in the {insert_table_name} schema. The following fields are not supported: {additional_columns} ")
             
             df.replace({pd.NaT: None}, inplace=True)
             df.replace({np.nan: None}, inplace=True)
@@ -329,7 +324,7 @@ class Operator:
                         id_pairs = cur.fetchall()
                         id_pairs_df = pd.DataFrame(id_pairs)
 
-                        new_codes_list = id_pairs_df['stratum_id'].tolist()
+                        new_codes_list = id_pairs_df[insert_table_id].tolist()
 
                         join_field_name = 'user_' + insert_table_code + '_code' 
                         joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
@@ -345,8 +340,7 @@ class Operator:
                         code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
                         if(create_codes):
-                            sql_file_create_codes = os.path.join(self.QUERIES_FOLDER,
-                                             f'{insert_table_name}/create_{insert_table_name}_codes.sql')
+                            sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
                             with open(sql_file_create_codes, "r") as file:
                                 sql = file.read()
                             cur.executemany(sql, code_inputs, returning=True)
@@ -373,7 +367,7 @@ class Operator:
                                 "inserted":len(new_codes_list)
                             } 
                         }
-                        print(to_return)
+
                         return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
