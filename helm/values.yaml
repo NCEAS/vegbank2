@@ -9,28 +9,30 @@ allowUploads: false
 ## @section Database
 ## configuration for the PostgreSQL database used by VegBank.
 database:
-  ## @param db_name - The name of the database on the postgres pod to be used by VegBank.
+  ## @param name - The name of the database on the postgres pod to be used by VegBank.
   name: vegbank
-  ## @param db_host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
-  host: vegbankdb-postgresql
-  ## @param db_port - The port to connect to on the database pod. 
+  ## @param host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
+  host: vegbankdb-cnpg-rw
+  ## @param port - The port to connect to on the database pod. 
   port: 5432
 
 databaseRestore:
-  ## @param databaseRestore.setup - Creates the vegbank database with the expected roles
-  setup: false
   ## @param databaseRestore.enabled - Restores a given dump file defined below
+  ## Reminder, the deployment.yaml postgres image should be the same as the CNPG postgres version
   enabled: false
   pvc: "vegbankdb-init-pgdata"
   mountpath: "/tmp/databaseRestore"
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
+  ## @param postgres_image - Version of postgres image to run the initContainer with.
+  ## This should match the version that is running on CNPG
+  postgresImage: postgres:17
 
 flyway:
   image:
     repository: flyway/flyway
     pullPolicy: IfNotPresent
     ## Overrides the image tag whose default is the chart appVersion.
-    tag: "10.17.0"
+    tag: "11.15.0"
   configpath: /opt/local/flyway/flyway.conf
   dbpath: /opt/local/flyway/db
 
@@ -93,7 +95,8 @@ service:
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
-  ## @param ingress.enabled - Should the ingress be enabled?
+  ## @param ingress.enabled - Enable ingress to allow web traffic
+  enabled: true
   ## @param ingress.className - The class of the ingress controller to use.
   className: nginx
   ## @section ingress.annotations - Annotations to add to the ingress resource.
@@ -162,13 +165,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-## @param volumes Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-
 ## @param volumeMounts Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
 # - name: foo
@@ -183,48 +179,3 @@ tolerations: []
 
 ## @param affinity
 affinity: {}
-
-## @section PostgreSQL
-## configuration for the PostgreSQL database used by VegBank.
-postgresql:
-  ## @param postgresql.enabled - Should the PostgreSQL database be enabled?
-  enabled: true
-  ## Bitnamy legacy image override
-  global:
-    security:
-      allowInsecureImages: true
-  image:
-    repository: bitnamilegacy/postgresql
-  volumePermissions:
-    image:
-      repository: bitnamilegacy/os-shell
-  metrics:
-    image:
-      repository: bitnamilegacy/postgres-exporter
-  ## @section postgresql.primary
-  primary:
-    ## @param postgresql.primary.resourcesPreset A preset of resources to use for the PostgreSQL pod defined in the bitnami chart.
-    resourcesPreset: "small"
-    ## @param postgresql.primary.resources Space for manually defining resources. If used, remove resourcesPreset.
-    resources: {}
-    ## @param postgresql.primary.pgHbaConfiguration How can users access the postgresql database?
-    pgHbaConfiguration: |
-      host        vegbank       vegbank       0.0.0.0/0       password
-      host        vegbank       vegbank       ::0/0           password
-      local       all           all                           trust
-      host        all           all           127.0.0.1/32    trust
-      # allow the initContainer to connect as postgres to the postgres DB
-      host        postgres      postgres      0.0.0.0/0       password
-    ## @section Persistence
-    ## Size of the storage space available for the database. 
-    ## As of today (6/10/20205), actual size of the db is about 6.5 Gi. 
-    persistence:
-      ## @param postgresql.primary.persistence.enabled - Should persistence be enabled for the PostgreSQL database?
-      enabled: true
-      ## @param postgresql.primary.persistence.storageClass - The storage class to use for the PostgreSQL database.
-      storageClass: csi-cephfs-sc
-      ## @param postgresql.primary.persistence.size - The size of the storage space available for the PostgreSQL database.
-      size: 100Gi 
-      ## @param postgresql.primary.persistence.accessModes - The access modes for the PostgreSQL database storage.
-      accessModes: 
-        - ReadWriteMany
