@@ -168,7 +168,12 @@ def taxon_observations(to_code):
             return jsonify_error_message("No selected file."), 400
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-        return taxon_observation_operator.upload_strata_definitions(file)
+        to_return = None
+        with connect(**params, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                to_return = taxon_observation_operator.upload_strata_definitions(file, cur)
+        conn.close()
+        return to_return
     elif request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, to_code)
     else:
