@@ -29,6 +29,8 @@ class Operator:
 
     Attributes:
         QUERIES_FOLDER (str): Path where SQL query files are stored.
+        ROOT_QUERIES_FOLDER (str): Root path where SQL query files are stored. 
+            This is for queries that are shared across multiple operators.
         default_detail (str): Default detail level for responses.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
