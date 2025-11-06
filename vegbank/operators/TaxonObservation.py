@@ -82,7 +82,7 @@ class TaxonObservation(Operator):
 
         return params
 
-    def upload_strata_definitions(self, file, cur):
+    def upload_strata_definitions(self, file, conn):
         """
         takes a parquet file of strata definitions and uploads it to the stratum table.
         Parameters:
@@ -96,7 +96,7 @@ class TaxonObservation(Operator):
             extra_fields = find_extra_fields(df, [table_defs_config.stratum])
             if 0 < len(extra_fields):
                 raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
-            new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, cur)
+            new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
             return new_strata
         except Exception as e:
             print(e)

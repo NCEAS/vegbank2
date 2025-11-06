@@ -261,7 +261,7 @@ class Operator:
                          download_name=f'{self.name}.parquet')
     
 
-    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, cur):
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
         """
         Execute a series of insert statements that upload data for a specified table.
 
@@ -289,82 +289,82 @@ class Operator:
             table_df = table_df.drop_duplicates()
 
             table_inputs = list(table_df.itertuples(index=False, name=None))
-            
-            sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
-            with open(sql_file_temp_table, "r") as file:
-                sql = file.read()
-            cur.execute(sql)
-            sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
-            with open(sql_file_temp_insert, "r") as file:
-                sql = file.read()
-            cur.executemany(sql, table_inputs)
-            sql_file_validate = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/validate_{insert_table_name}.sql')
-            with open(sql_file_validate, "r") as file:
-                sql = file.read()
-            cur.execute(sql)
-            validation_results = cur.fetchall()
-            while cur.nextset():
-                next_validation = cur.fetchall()
-                if next_validation:
-                    validation_results = validation_results + next_validation
-            validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
-            if validation_results:
-                raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
-
-            sql_file_insert = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/insert_{insert_table_name}.sql')
-            with open(sql_file_insert, "r") as file:
-                sql = file.read()
-            cur.execute(sql)
-            id_pairs = cur.fetchall()
-            id_pairs_df = pd.DataFrame(id_pairs)
-
-            new_codes_list = id_pairs_df[insert_table_id].tolist()
-
-            join_field_name = 'user_' + insert_table_code + '_code' 
-            joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
-            
-            new_codes_df = pd.DataFrame()
-            new_codes_df['vb_record_id'] = new_codes_list
-            new_codes_df['vb_table_code'] = insert_table_code
-            new_codes_df['identifier_type'] = 'vb_code'
-            new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
-
-            code_inputs = list(new_codes_df.itertuples(index=False, name=None))
-
-            if create_codes:
-                sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
-                with open(sql_file_create_codes, "r") as file:
+            with conn.cursor() as cur:
+                sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
+                with open(sql_file_temp_table, "r") as file:
                     sql = file.read()
-                cur.executemany(sql, code_inputs, returning=True)
-                new_identifiers = cur.fetchall()
+                cur.execute(sql)
+                sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
+                with open(sql_file_temp_insert, "r") as file:
+                    sql = file.read()
+                cur.executemany(sql, table_inputs)
+                sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/validate_{insert_table_name}.sql')
+                with open(sql_file_validate, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                validation_results = cur.fetchall()
                 while cur.nextset():
-                    next_identifiers = cur.fetchall()
-                    if next_identifiers:
-                        new_identifiers = new_identifiers + next_identifiers
+                    next_validation = cur.fetchall()
+                    if next_validation:
+                        validation_results = validation_results + next_validation
+                validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                if validation_results:
+                    raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
 
-            vb_field_name = f'vb_{insert_table_code}_code'
-            to_return = {}
-            to_return_entity = []
-            for index, record in joined_df.iterrows():
-                to_return_entity.append({
-                    join_field_name: record[join_field_name], 
-                    vb_field_name: record[vb_field_name],
-                    "action":"inserted"
-                })
-            to_return["resources"] = {
-                insert_table_code: to_return_entity
-            }
-            to_return["counts"] = {
-                insert_table_code: {
-                    "inserted":len(new_codes_list)
-                } 
-            }
+                sql_file_insert = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/insert_{insert_table_name}.sql')
+                with open(sql_file_insert, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                id_pairs = cur.fetchall()
+                id_pairs_df = pd.DataFrame(id_pairs)
 
-            return jsonify(to_return)
+                new_codes_list = id_pairs_df[insert_table_id].tolist()
+
+                join_field_name = 'user_' + insert_table_code + '_code' 
+                joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
+                
+                new_codes_df = pd.DataFrame()
+                new_codes_df['vb_record_id'] = new_codes_list
+                new_codes_df['vb_table_code'] = insert_table_code
+                new_codes_df['identifier_type'] = 'vb_code'
+                new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
+
+                code_inputs = list(new_codes_df.itertuples(index=False, name=None))
+
+                if create_codes:
+                    sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
+                    with open(sql_file_create_codes, "r") as file:
+                        sql = file.read()
+                    cur.executemany(sql, code_inputs, returning=True)
+                    new_identifiers = cur.fetchall()
+                    while cur.nextset():
+                        next_identifiers = cur.fetchall()
+                        if next_identifiers:
+                            new_identifiers = new_identifiers + next_identifiers
+
+                vb_field_name = f'vb_{insert_table_code}_code'
+                to_return = {}
+                to_return_entity = []
+                for index, record in joined_df.iterrows():
+                    to_return_entity.append({
+                        join_field_name: record[join_field_name], 
+                        vb_field_name: record[vb_field_name],
+                        "action":"inserted"
+                    })
+                to_return["resources"] = {
+                    insert_table_code: to_return_entity
+                }
+                to_return["counts"] = {
+                    insert_table_code: {
+                        "inserted":len(new_codes_list)
+                    } 
+                }
+
+                return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500

@@ -170,8 +170,7 @@ def taxon_observations(to_code):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
         to_return = None
         with connect(**params, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                to_return = taxon_observation_operator.upload_strata_definitions(file, cur)
+                to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
         conn.close()
         return to_return
     elif request.method == 'GET':
