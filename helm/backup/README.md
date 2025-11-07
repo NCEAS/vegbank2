@@ -2,7 +2,11 @@
 
 The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resource. To learn more about this, view our cnpg operator documentation [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
 
-# Example Disaster Scenario (Cumbersome, but it works)
+## Applying the 'scheduled-backup.yaml' resource
+
+TODO
+
+## Example Disaster Scenario (Cumbersome, but it works)
 
 Scenario - a disaster occurs and we have literally nothing but a physical directory of the `postgres` data that can be found from Nick's latest folder backup.
 
