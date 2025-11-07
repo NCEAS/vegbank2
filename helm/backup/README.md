@@ -4,7 +4,33 @@ The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resou
 
 ## Applying the 'scheduled-backup.yaml' resource
 
-TODO
+You can check if there is an existing `ScheduledBackup` by executing the following:
+
+```sh
+# Note, you must have admin privileges to check for `ScheduledBackup`s
+$ kubectl get scheduledbackup -n vegbank-dev --context=dev-k8s 
+
+NAME                         AGE   CLUSTER          LAST BACKUP
+vegbankdb-scheduled-backup   57s   vegbankdb-cnpg   57s
+```
+
+If there are no `ScheduledBackup` resources, you can apply the existing yaml document like such:
+
+```sh
+# Note, you must have admin privileges to apply the `ScheduledBackup` resource
+$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/backup/scheduled-backup.yaml' -n vegbank-dev --context=dev-k8s
+
+scheduledbackup.postgresql.cnpg.io/vegbankdb-scheduled-backup configured
+```
+
+You can check the existing backups by executing the following:
+
+```sh
+$ kubectl get backups -n vegbank-dev
+
+NAME                                        AGE   CLUSTER          METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251107221536   12s   vegbankdb-cnpg   volumeSnapshot   completed 
+```
 
 ## Example Disaster Scenario (Cumbersome, but it works)
 
