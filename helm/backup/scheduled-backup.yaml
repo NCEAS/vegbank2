@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: vegbankdb-scheduled-backup
+spec:
+  cluster:
+    name: vegbank-dev
+  method: volumeSnapshot
+  backupOwnerReference: self
+  schedule: '0 0 21 * * *' # At 9pm every day
+  immediate: true
