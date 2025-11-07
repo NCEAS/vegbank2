@@ -161,8 +161,18 @@ def taxon_observations(to_code):
     """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for taxon observations."), 405
+        if 'file' not in request.files:
+            return jsonify_error_message("No file part in the request."), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify_error_message("No selected file."), 400
+        if not allowed_file(file.filename):
+            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+        to_return = None
+        with connect(**params, row_factory=dict_row) as conn:
+                to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
+        conn.close()
+        return to_return
     elif request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, to_code)
     else:

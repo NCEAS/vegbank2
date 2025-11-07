@@ -3,6 +3,9 @@ import io
 import re
 from flask import jsonify, send_file
 import psycopg
+import pandas as pd
+import numpy as np
+import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 from utilities import convert_to_parquet, jsonify_error_message, QueryParameterError
@@ -26,6 +29,8 @@ class Operator:
 
     Attributes:
         QUERIES_FOLDER (str): Path where SQL query files are stored.
+        ROOT_QUERIES_FOLDER (str): Root path where SQL query files are stored. 
+            This is for queries that are shared across multiple operators.
         default_detail (str): Default detail level for responses.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
@@ -48,6 +53,7 @@ class Operator:
         `name`, `table_code`, and `full_get_parameters`, must be overridden by
         child classes to reflect their specific resource and querying details.
         """
+        self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
         self.default_detail = "full"
         self.default_limit = "1000"
@@ -253,3 +259,112 @@ class Operator:
                          mimetype='application/octet-stream',
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
+    
+
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
+        """
+        Execute a series of insert statements that upload data for a specified table.
+
+        Parameters:
+            insert_table_name (str): The name of the table to insert data into.
+            insert_table_code (str): The two letter code prefix associated with the table.
+            insert_table_def (list): List of column names expected in the DataFrame. 
+                These are stored in table_defs_config.py. 
+            df (pd.DataFrame): DataFrame containing the data to be inserted.
+            create_codes (bool): Whether to create records in the identifier table for the new records.
+            conn (psycopg.Connection): Active database connection. 
+                Allows for multiple tables to be uploaded in a single transaction.
+
+        Returns:
+            flask.Response: A Flask JSON response containing:
+                    - resources: pairs of user and vb codes for the new records
+                    - counts: number of new records created
+        """
+        try:
+            print(f"DataFrame loaded with {len(df)} records.")
+            
+            df.replace({pd.NaT: None, np.nan: None}, inplace=True)
+
+            table_df = df[insert_table_def]
+            table_df = table_df.drop_duplicates()
+
+            table_inputs = list(table_df.itertuples(index=False, name=None))
+            with conn.cursor() as cur:
+                sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
+                with open(sql_file_temp_table, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
+                with open(sql_file_temp_insert, "r") as file:
+                    sql = file.read()
+                cur.executemany(sql, table_inputs)
+                sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/validate_{insert_table_name}.sql')
+                with open(sql_file_validate, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                validation_results = cur.fetchall()
+                while cur.nextset():
+                    next_validation = cur.fetchall()
+                    if next_validation:
+                        validation_results = validation_results + next_validation
+                validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                if validation_results:
+                    raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
+
+                sql_file_insert = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/insert_{insert_table_name}.sql')
+                with open(sql_file_insert, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                id_pairs = cur.fetchall()
+                id_pairs_df = pd.DataFrame(id_pairs)
+
+                new_codes_list = id_pairs_df[insert_table_id].tolist()
+
+                join_field_name = 'user_' + insert_table_code + '_code' 
+                joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
+                
+                new_codes_df = pd.DataFrame()
+                new_codes_df['vb_record_id'] = new_codes_list
+                new_codes_df['vb_table_code'] = insert_table_code
+                new_codes_df['identifier_type'] = 'vb_code'
+                new_codes_df['identifier_value'] = insert_table_code + '.' + new_codes_df['vb_record_id'].astype(str)
+
+                code_inputs = list(new_codes_df.itertuples(index=False, name=None))
+
+                if create_codes:
+                    sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
+                    with open(sql_file_create_codes, "r") as file:
+                        sql = file.read()
+                    cur.executemany(sql, code_inputs, returning=True)
+                    new_identifiers = cur.fetchall()
+                    while cur.nextset():
+                        next_identifiers = cur.fetchall()
+                        if next_identifiers:
+                            new_identifiers = new_identifiers + next_identifiers
+
+                vb_field_name = f'vb_{insert_table_code}_code'
+                to_return = {}
+                to_return_entity = []
+                for index, record in joined_df.iterrows():
+                    to_return_entity.append({
+                        join_field_name: record[join_field_name], 
+                        vb_field_name: record[vb_field_name],
+                        "action":"inserted"
+                    })
+                to_return["resources"] = {
+                    insert_table_code: to_return_entity
+                }
+                to_return["counts"] = {
+                    insert_table_code: {
+                        "inserted":len(new_codes_list)
+                    } 
+                }
+
+                return jsonify(to_return)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500

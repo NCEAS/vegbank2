@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.13
 
 LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
 

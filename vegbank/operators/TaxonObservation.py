@@ -1,6 +1,11 @@
 import os
+import pandas as pd
+import psycopg
+from psycopg.rows import dict_row
+from psycopg import ClientCursor
+from operators import table_defs_config
 from operators import Operator
-from utilities import QueryParameterError
+from utilities import QueryParameterError, jsonify_error_message, find_extra_fields
 
 
 class TaxonObservation(Operator):
@@ -76,3 +81,23 @@ class TaxonObservation(Operator):
             )
 
         return params
+
+    def upload_strata_definitions(self, file, conn):
+        """
+        takes a parquet file of strata definitions and uploads it to the stratum table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing strata definitions.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        try:
+            df = pd.read_parquet(file)
+            extra_fields = find_extra_fields(df, [table_defs_config.stratum])
+            if 0 < len(extra_fields):
+                raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
+            new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
+            return new_strata
+        except Exception as e:
+            print(e)
+            return jsonify_error_message("An error occurred while uploading strata definitions: " + str(e)), 500
