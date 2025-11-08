@@ -243,6 +243,11 @@ class Operator:
         params.extend(self.query.get('from')['params'])
         main_sql_parts.append(main_from_sql)
 
+        # Apply same ORDER BY as in the base CTE
+        if not count and order_by_sql is not None:
+            main_sql_parts.append(order_by_sql)
+            params.extend(base.get('order_by')['params'])
+
         # Construct the full SQL statement
         sql = '\n'.join([block for block in main_sql_parts
                          if block is not None])
