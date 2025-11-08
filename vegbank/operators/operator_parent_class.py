@@ -173,7 +173,6 @@ class Operator:
                 base_condition_list.append(base_by_conditions['sql'])
                 params.extend(base_by_conditions['params'])
             base_condition_list = list(filter(None, base_condition_list))
-            base_condition_list = list(filter(None, base_condition_list))
             base_condition_list = [textwrap.dedent(sql).rstrip() for
                                    sql in base_condition_list]
             base_where_sql = f"  WHERE {'\n  AND '.join(base_condition_list)}" \
