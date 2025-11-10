@@ -25,6 +25,124 @@ class PlantConcept(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'pc_code': "'pc.' || pc.plantconcept_id",
+            'plant_name': "pc.plantname",
+            'plant_code': "pn.plant_code",
+            'plant_description': "pc.plantdescription",
+            'concept_rf_code': "'rf.' || pc.reference_id",
+            'concept_rf_name': "rf_pc.shortname",
+            'status_rf_code': "'rf.' || ps.reference_id",
+            'status_rf_name': "rf_ps.shortname",
+            'usages': "pn.usages",
+            'obs_count': "pc.d_obscount",
+            'plant_level': "ps.plantlevel",
+            'status': "ps.plantconceptstatus",
+            'start_date': "ps.startdate",
+            'stop_date': "ps.stopdate",
+            'current_accepted': ("(ps.stopdate IS NULL OR now() < ps.stopdate)"
+                                 " AND LOWER(ps.plantconceptstatus) = 'accepted'"),
+            'py_code': "'py.' || py.party_id",
+            'party': "COALESCE(py.surname, py.organizationname)",
+            'plant_party_comments': "ps.plantpartycomments",
+            'parent_pc_code': "'pc.' || ps.plantparent_id",
+            'parent_name': "pa.plantname",
+            'children': "children",
+            'correlations': "px_group.correlations",
+        }
+        from_sql = """\
+            FROM pc
+            LEFT JOIN LATERAL (
+              SELECT *
+                FROM plantstatus
+                WHERE plantconcept_id = pc.plantconcept_id
+                ORDER BY startdate DESC
+                LIMIT 1
+            ) ps ON true
+            LEFT JOIN plantconcept pa ON (pa.plantconcept_id = ps.plantparent_id)
+            LEFT JOIN reference rf_pc ON pc.reference_id = rf_pc.reference_id
+            LEFT JOIN reference rf_ps ON ps.reference_id = rf_ps.reference_id
+            LEFT JOIN party py ON py.party_id = ps.party_id
+            LEFT JOIN LATERAL (
+              SELECT JSON_OBJECT_AGG(classsystem,
+                                     RTRIM(plantname)) ->> 'Code' AS plant_code,
+                     JSON_AGG(JSON_BUILD_OBJECT(
+                         'class_system', classsystem,
+                         'plant_name', RTRIM(plantname),
+                         'status', plantnamestatus)) AS usages
+                FROM plantusage
+                WHERE plantconcept_id = pc.plantconcept_id
+            ) pn ON true
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'pc_code', 'pc.' || ch_pc.plantconcept_id,
+                         'plant_name', ch_pc.plantname
+                       )) AS children
+               FROM plantstatus ch_st
+               JOIN plantconcept ch_pc USING (plantconcept_id)
+               WHERE ch_st.plantparent_id = pc.plantconcept_id
+            ) children ON true
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'pc_code', 'pc.' || plantconcept_id,
+                         'plant_name', plantname,
+                         'convergence', plantconvergence
+                      )) AS correlations
+                FROM plantcorrelation pcorr
+                JOIN plantconcept USING (plantconcept_id)
+                WHERE pcorr.plantstatus_id = ps.plantstatus_id
+                  AND pcorr.correlationstop IS NULL
+            ) px_group ON true
+            """
+        order_by_sql = """\
+            ORDER BY pc.plantname,
+                     pc.plantconcept_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "pc",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': "FROM plantconcept AS pc",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': None,
+                    'params': []
+                },
+                "pc": {
+                    'sql': """\
+                        pc.plantconcept_id = %s
+                        """,
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
