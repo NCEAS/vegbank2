@@ -32,6 +32,74 @@ class CoverMethod(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'cm_code': "'cm.' || cm.covermethod_id",
+            'cover_type': "cm.covertype",
+            'cover_estimation_method': "cm.coverestimationmethod",
+            'rf_code': "'rf.' || rf.reference_id",
+            'rf_name': "rf.shortname",
+            'cover_code': "cm.covercode",
+            'lower_limit': "cm.lowerlimit",
+            'upper_limit': "cm.upperlimit",
+            'cover_percent': "cm.coverpercent",
+            'index_description': "cm.indexdescription",
+        }
+        from_sql = """\
+            FROM cm
+            LEFT JOIN reference rf USING (reference_id)
+            """
+
+        order_by_sql = """\
+            ORDER BY cm.covermethod_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "cm",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': """\
+                    FROM covermethod AS cm
+                    LEFT JOIN coverindex cv USING (covermethod_id)
+                    """,
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': None,
+                    'params': []
+                },
+                "cm": {
+                    'sql': """\
+                        cm.covermethod_id = %s
+                        """,
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
