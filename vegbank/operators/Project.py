@@ -27,6 +27,63 @@ class Project(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'pj_code': "'pj.' || project_id",
+            'project_name': "projectname",
+            'project_description': "projectdescription",
+            'start_date': "startdate",
+            'stop_date': "stopdate",
+            'obs_count': "d_obscount",
+            'last_plot_added_date': "d_lastplotaddeddate",
+        }
+        from_sql = "FROM pj"
+        order_by_sql = """\
+            ORDER BY projectname,
+                     project_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "pj",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': "FROM project AS pj",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': None,
+                    'params': []
+                },
+                "pj": {
+                    'sql': "pj.project_id = %s",
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
