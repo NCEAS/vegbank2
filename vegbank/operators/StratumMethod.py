@@ -32,6 +32,74 @@ class StratumMethod(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'sm_code': "'sm.' || sm.stratummethod_id",
+            'stratum_method_name': "sm.stratummethodname",
+            'stratum_method_description': "sm.stratummethoddescription",
+            'stratum_assignment': "sm.stratumassignment",
+            'rf_code': "'rf.' || rf.reference_id",
+            'rf_name': "rf.shortname",
+            'sy_code': "'sy.' || sm.stratumtype_id",
+            'stratum_index': "sm.stratumindex",
+            'stratum_name': "sm.stratumname",
+            'stratum_description': "sm.stratumdescription",
+        }
+        from_sql = """\
+            FROM sm
+            LEFT JOIN reference rf USING (reference_id)
+            """
+
+        order_by_sql = """\
+            ORDER BY sm.stratummethod_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "sm",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': """\
+                    FROM stratummethod AS sm
+                    LEFT JOIN stratumtype sy USING (stratummethod_id)
+                    """,
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': None,
+                    'params': []
+                },
+                "sm": {
+                    'sql': """\
+                        sm.stratummethod_id = %s
+                        """,
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
