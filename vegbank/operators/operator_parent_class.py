@@ -46,6 +46,11 @@ class Operator:
         include_full_count (bool): If True, query the database and send the
             full count of records. If False, simply return the count of records
             in the response.
+        debug (bool): If True, be more liberal about debugging output
+        query_mode (str): Query execution mode, which is always initialized to
+            'normal', but may be updated to an alternative value ('count',
+            'sql_debug', or 'sql_debug_count') based on a combination of the
+            client request and self.debug.
     """
 
     def __init__(self, params=None):
@@ -64,6 +69,8 @@ class Operator:
         self.table_code = "vb"
         self.full_get_parameters = None
         self.include_full_count = True
+        self.debug = True
+        self.query_mode = 'normal'
 
     def extract_id_from_vb_code(self, vb_code, table_code = None):
         """
@@ -292,6 +299,20 @@ class Operator:
                   associated record count if JSON
                 - For invalid parameters: JSON error message with 400 status code
         """
+
+        # Handle any requests to do something other than executing a full query
+        sql_mode = request.args.get('sql') is not None
+        count_mode = request.args.get('count') is not None
+
+        if sql_mode and count_mode and self.debug:
+            self.query_mode = 'sql_debug_count'
+        elif sql_mode and self.debug:
+            self.query_mode = 'sql_debug'
+        elif count_mode:
+            self.query_mode = 'count'
+        else:
+            self.query_mode = 'normal'
+
         # ** TEMPORARY -- WILL BE REMOVED IN THE NEAR FUTURE **
         # If an operator uses the "old style" logic or if we directly ask for it
         # in the API request, redirect to the old method for getting data
@@ -488,13 +509,29 @@ class Operator:
         with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
             conn.row_factory = dict_row
             with conn.cursor() as cur:
-                cur.execute(sql, data)
-                to_return["data"] = cur.fetchall()
+                if (self.debug):
+                    generated_sql = cur.mogrify(sql, data)
+                    if self.query_mode == 'sql_debug':
+                        return generated_sql
+                    print(generated_sql)
                 if count_sql is not None:
-                    cur.execute(count_sql)
+                    if self.query_mode == 'sql_debug_count':
+                        generated_sql = cur.mogrify(count_sql, count_data)
+                        return generated_sql
+                    cur.execute(count_sql, count_data)
                     to_return["count"] = cur.fetchall()[0]["count"]
-                else:
-                    to_return["count"] = len(to_return["data"])
+                    if self.query_mode == 'count':
+                        return jsonify(to_return)
+                cur.execute(sql, data)
+                results = cur.fetchall()
+                if count_sql is None:
+                    to_return["count"] = len(results)
+                    if self.query_mode == 'count':
+                        return jsonify(to_return)
+                    elif self.query_mode == 'sql_debug_count':
+                        return jsonify("/*-- No count performed --*/")
+                to_return["data"] = results
+
         return jsonify(to_return)
 
     def create_parquet_response(self, sql, data):
