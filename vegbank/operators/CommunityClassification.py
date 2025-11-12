@@ -26,7 +26,17 @@ class CommunityClassification(Operator):
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
-        base_columns = {'cl.*': "*"}
+        base_columns = {
+            'cl.*': "*",
+            'commconcept_id': "ci.commconcept_id",
+            'classfit': "ci.classfit",
+            'classconfidence': "ci.classconfidence",
+            'commauthority_id': "ci.commauthority_id",
+            'notes': "ci.notes",
+            'type': "ci.type",
+            'nomenclaturaltype': "ci.nomenclaturaltype",
+            'emb_comminterpretation': "ci.emb_comminterpretation",
+        }
         main_columns = {}
         main_columns['full'] = {
             'cl_code': "'cl.' || cl.commclass_id",
@@ -44,14 +54,14 @@ class CommunityClassification(Operator):
             'comm_framework': "cl.commframework",
             'comm_level': "cl.commlevel",
             'emb_comm_class': "cl.emb_commclass",
-            'cc_code': "'cc.' || ci.commconcept_id",
-            'class_fit': "ci.classfit",
-            'class_confidence': "ci.classconfidence",
-            'comm_authority_rf_code': "'rf.' || ci.commauthority_id",
-            'interpretation_notes': "ci.notes",
-            'interpretation_type': "ci.type",
-            'interpretation_nomenclatural_type': "ci.nomenclaturaltype",
-            'emb_comm_interpretation': "ci.emb_comminterpretation",
+            'cc_code': "'cc.' || cl.commconcept_id",
+            'class_fit': "cl.classfit",
+            'class_confidence': "cl.classconfidence",
+            'comm_authority_rf_code': "'rf.' || cl.commauthority_id",
+            'interpretation_notes': "cl.notes",
+            'interpretation_type': "cl.type",
+            'interpretation_nomenclatural_type': "cl.nomenclaturaltype",
+            'emb_comm_interpretation': "cl.emb_comminterpretation",
         }
         main_columns['minimal'] = {
             'cl_code': "'cl.' || cl.commclass_id",
@@ -61,7 +71,6 @@ class CommunityClassification(Operator):
         }
         from_sql = """\
             FROM cl
-            LEFT JOIN comminterpretation ci USING (commclass_id)
             LEFT JOIN commconcept cc USING (commconcept_id)
             """
         order_by_sql = """\
