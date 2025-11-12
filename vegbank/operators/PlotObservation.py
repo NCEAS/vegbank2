@@ -30,6 +30,213 @@ class PlotObservation(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'ob.*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'author_plot_code': "pl.authorplotcode",
+            'pl_code': "'pl.' || pl.plot_id",
+            'rf_code': "'rf.' || pl.reference_id",
+            'parent_pl_code': "'pl.' || parent_id",
+            'location_accuracy': "pl.locationaccuracy",
+            'confidentiality_status': "pl.confidentialitystatus",
+            'confidentiality_reason': "pl.confidentialityreason",
+            'latitude': "pl.latitude",
+            'longitude': "pl.longitude",
+            'author_e': "pl.authore",
+            'author_n': "pl.authorn",
+            'author_zone': "pl.authorzone",
+            'author_datum': "pl.authordatum",
+            'author_location': "pl.authorlocation",
+            'location_narrative': "pl.locationnarrative",
+            'azimuth': "pl.azimuth",
+            'dsg_poly': "pl.dsgpoly",
+            'shape': "pl.shape",
+            'area': "pl.area",
+            'stand_size': "pl.standsize",
+            'placement_method': "pl.placementmethod",
+            'permanence': "pl.permanence",
+            'layout_narrative': "pl.layoutnarrative",
+            'elevation': "pl.elevation",
+            'elevation_accuracy': "pl.elevationaccuracy",
+            'elevation_range': "pl.elevationrange",
+            'slope_aspect': "pl.slopeaspect",
+            'min_slope_aspect': "pl.minslopeaspect",
+            'max_slope_aspect': "pl.maxslopeaspect",
+            'slope_gradient': "pl.slopegradient",
+            'min_slope_gradient': "pl.minslopegradient",
+            'max_slope_gradient': "pl.maxslopegradient",
+            'topo_position': "pl.topoposition",
+            'landform': "pl.landform",
+            'surficial_deposits': "pl.surficialdeposits",
+            'rock_type': "pl.rocktype",
+            'country': "pl.country",
+            'state_province': "pl.stateprovince",
+            'pl_notes_public': "pl.notespublic",
+            'pl_notes_mgt': "pl.notesmgt",
+            'pl_revisions': "pl.revisions",
+            'ob_code': "'ob.' || ob.observation_id",
+            'previous_ob_code': "'ob.' || ob.previousobs_id",
+            'pj_code': "'pj.' || ob.project_id",
+            'author_obs_code': "ob.authorobscode",
+            'obs_start_date': "ob.obsstartdate",
+            'obs_end_date': "ob.obsenddate",
+            'date_accuracy': "ob.dateaccuracy",
+            'date_entered': "ob.dateentered",
+            'cm_code': "'cm.' || ob.covermethod_id",
+            'cover_dispersion': "ob.coverdispersion",
+            'auto_taxon_cover': "ob.autotaxoncover",
+            'sm_code': "'sm.' || sm.stratummethod_id",
+            'stratum_method_name': "sm.stratummethodname",
+            'stratum_method_description': "sm.stratummethoddescription",
+            'stratum_assignment': "sm.stratumassignment",
+            'method_narrative': "ob.methodnarrative",
+            'taxon_observation_area': "ob.taxonobservationarea",
+            'stem_size_limit': "ob.stemsizelimit",
+            'stem_observation_area': "ob.stemobservationarea",
+            'stem_sample_method': "ob.stemsamplemethod",
+            'original_data': "ob.originaldata",
+            'effort_level': "ob.effortlevel",
+            'plot_validation_level': "ob.plotvalidationlevel",
+            'floristic_quality': "ob.floristicquality",
+            'bryophyte_quality': "ob.bryophytequality",
+            'lichen_quality': "ob.lichenquality",
+            'observation_narrative': "ob.observationnarrative",
+            'landscape_narrative': "ob.landscapenarrative",
+            'homogeneity': "ob.homogeneity",
+            'phenologic_aspect': "ob.phenologicaspect",
+            'representativeness': "ob.representativeness",
+            'stand_maturity': "ob.standmaturity",
+            'successional_status': "ob.successionalstatus",
+            'number_of_taxa': "ob.numberoftaxa",
+            'basal_area': "ob.basalarea",
+            'hydrologic_regime': "ob.hydrologicregime",
+            'soil_moisture_regime': "ob.soilmoistureregime",
+            'soil_drainage': "ob.soildrainage",
+            'water_salinity': "ob.watersalinity",
+            'water_depth': "ob.waterdepth",
+            'shore_distance': "ob.shoredistance",
+            'soil_depth': "ob.soildepth",
+            'organic_depth': "ob.organicdepth",
+            'st_code': "'st.' || ob.soiltaxon_id",
+            'soil_taxon_src': "ob.soiltaxonsrc",
+            'percent_bed_rock': "ob.percentbedrock",
+            'percent_rock_gravel': "ob.percentrockgravel",
+            'percent_wood': "ob.percentwood",
+            'percent_litter': "ob.percentlitter",
+            'percent_bare_soil': "ob.percentbaresoil",
+            'percent_water': "ob.percentwater",
+            'percent_other': "ob.percentother",
+            'name_other': "ob.nameother",
+            'tree_ht': "ob.treeht",
+            'shrub_ht': "ob.shrubht",
+            'field_ht': "ob.fieldht",
+            'nonvascular_ht': "ob.nonvascularht",
+            'submerged_ht': "ob.submergedht",
+            'tree_cover': "ob.treecover",
+            'shrub_cover': "ob.shrubcover",
+            'field_cover': "ob.fieldcover",
+            'nonvascular_cover': "ob.nonvascularcover",
+            'floating_cover': "ob.floatingcover",
+            'submerged_cover': "ob.submergedcover",
+            'dominant_stratum': "ob.dominantstratum",
+            'growthform_1_type': "ob.growthform1type",
+            'growthform_2_type': "ob.growthform2type",
+            'growthform_3_type': "ob.growthform3type",
+            'growthform_1_cover': "ob.growthform1cover",
+            'growthform_2_cover': "ob.growthform2cover",
+            'growthform_3_cover': "ob.growthform3cover",
+            'total_cover': "ob.totalcover",
+            'ob_notes_public': "ob.notespublic",
+            'ob_notes_mgt': "ob.notesmgt",
+            'ob_revisions': "ob.revisions",
+            'emb_observation': "ob.emb_observation",
+            'interp_orig_ci_code': "'ci.' || ob.interp_orig_ci_id",
+            'interp_orig_cc_code': "'cc.' || ob.interp_orig_cc_id",
+            'interp_orig_sciname': "ob.interp_orig_sciname",
+            'interp_orig_code': "ob.interp_orig_code",
+            'interp_orig_py_code': "'py.' || ob.interp_orig_party_id",
+            'interp_orig_partyname': "ob.interp_orig_partyname",
+            'interp_current_ci_code': "'ci.' || ob.interp_current_ci_id",
+            'interp_current_cc_code': "'cc.' || ob.interp_current_cc_id",
+            'interp_current_sciname': "ob.interp_current_sciname",
+            'interp_current_code': "ob.interp_current_code",
+            'interp_current_py_code': "'py.' || ob.interp_current_party_id",
+            'interp_current_partyname': "ob.interp_current_partyname",
+            'interp_bestfit_ci_code': "'ci.' || ob.interp_bestfit_ci_id",
+            'interp_bestfit_cc_code': "'cc.' || ob.interp_bestfit_cc_id",
+            'interp_bestfit_sciname': "ob.interp_bestfit_sciname",
+            'interp_bestfit_code': "ob.interp_bestfit_code",
+            'interp_bestfit_py_code': "'py.' || ob.interp_bestfit_party_id",
+            'interp_bestfit_partyname': "ob.interp_bestfit_partyname",
+            'top_taxon1_name': "ob.toptaxon1name",
+            'top_taxon2_name': "ob.toptaxon2name",
+            'top_taxon3_name': "ob.toptaxon3name",
+            'top_taxon4_name': "ob.toptaxon4name",
+            'top_taxon5_name': "ob.toptaxon5name",
+            'has_observation_synonym': "ob.hasobservationsynonym",
+        }
+        main_columns['minimal'] = {
+            'pl_code': "'pl.' || pl.plot_id",
+            'latitude': "pl.latitude",
+            'longitude': "pl.longitude",
+            'ob_code': "'ob.' || ob.observation_id",
+            'author_plot_code': "pl.authorplotcode",
+            'author_obs_code': "ob.authorobscode",
+            'state_province': "pl.stateprovince",
+            'country': "pl.country",
+        }
+        from_sql = """\
+            FROM ob
+            LEFT JOIN plot pl USING (plot_id)
+            LEFT JOIN stratummethod sm USING (stratummethod_id)
+            """
+        order_by_sql = """\
+            ORDER BY ob.observation_id ASC
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "ob",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': """\
+                    FROM observation AS ob
+                    JOIN plot AS pl USING (plot_id)
+                    """,
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': "pl.confidentialitystatus < 4",
+                    'params': []
+                },
+                'ob': {
+                    'sql': "ob.observation_id = %s",
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def upload_plot_observations(self, request, params):
         """
         Uploads plot and observation data from a file, validates it, and inserts it into the database.
