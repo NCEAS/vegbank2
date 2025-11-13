@@ -1,6 +1,7 @@
 import os
+import traceback
 import pandas as pd
-import psycopg
+from flask import jsonify
 from psycopg.rows import dict_row
 from psycopg import ClientCursor
 from operators import table_defs_config
@@ -81,6 +82,42 @@ class TaxonObservation(Operator):
             )
 
         return params
+    
+    def upload_strata_cover_data(self, file, conn):
+        """
+        takes a parquet file in the strata cover data format from the loader module and uploads it to the taxon observation,
+        taxon importance, and taxon interpretation tables. 
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing taxon observations.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        try:
+            df = pd.read_parquet(file)
+            
+            taxon_observation_codes = super().upload_to_table("taxon_observation", 'to', table_defs_config.taxon_observation, 'taxonobservation_id', df, True, conn)
+            to_codes_df = pd.DataFrame(taxon_observation_codes['resources']['to'])
+            to_codes_df = to_codes_df[['user_to_code', 'vb_to_code']]
+
+            df = df.merge(to_codes_df, on='user_to_code', how='left')
+
+            taxon_importance_codes = super().upload_to_table("taxon_importance", 'tm', table_defs_config.taxon_importance, 'taxonimportance_id', df, True, conn)
+            print(taxon_importance_codes)
+            to_return = {
+                'resources':{
+                    'to': taxon_observation_codes['resources']['to'],
+                    'tm': taxon_importance_codes['resources']['tm']
+                },
+                'counts':{
+                    'to': taxon_observation_codes['counts']['to'],
+                    'tm': taxon_importance_codes['counts']['tm']
+                }
+            }
+            return jsonify(to_return)
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message("An error occurred while uploading taxon observations: " + str(e)), 500
 
     def upload_strata_definitions(self, file, conn):
         """
@@ -97,7 +134,7 @@ class TaxonObservation(Operator):
             if 0 < len(extra_fields):
                 raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
             new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
-            return new_strata
+            return jsonify(new_strata)
         except Exception as e:
             print(e)
             return jsonify_error_message("An error occurred while uploading strata definitions: " + str(e)), 500

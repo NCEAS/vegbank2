@@ -576,8 +576,9 @@ class Operator:
             print(f"DataFrame loaded with {len(df)} records.")
             
             df.replace({pd.NaT: None, np.nan: None}, inplace=True)
-
-            table_df = df[insert_table_def]
+            df.columns = df.columns.str.lower()
+            table_df = df[df.columns.intersection(insert_table_def)]
+            table_df = table_df.reindex(columns=insert_table_def)
             table_df = table_df.drop_duplicates()
 
             table_inputs = list(table_df.itertuples(index=False, name=None))
@@ -656,7 +657,7 @@ class Operator:
                     } 
                 }
 
-                return jsonify(to_return)
+                return to_return
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500

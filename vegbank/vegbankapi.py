@@ -179,6 +179,41 @@ def taxon_observations(to_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
+@app.route("/strata-cover-data", methods=['POST'])
+def strata_cover_data():
+    """
+    Upload strata cover data from a Parquet file.
+
+    This function handles HTTP POST requests to upload strata cover data.
+    It expects a Parquet file containing strata cover data in the request.
+    Uploads data to the taxon observation and taxon importance tables.
+    If the upload is successful, it returns a JSON response indicating
+    success. If there are any errors during the upload process, it returns
+    an appropriate error message.
+
+    POST Parameters: 
+        file (FileStorage): The uploaded Parquet file containing strata
+            cover data.
+
+    Returns:
+        flask.Response: A JSON response indicating success or failure of
+            the upload operation.
+    """
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    taxon_observation_operator = TaxonObservation(params)
+    to_return = None
+    with connect(**params, row_factory=dict_row) as conn:
+            to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
+    conn.close()
+    return to_return
+
 @app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<cl_code>", methods=['GET'])
 def community_classifications(cl_code):
