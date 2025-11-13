@@ -21,6 +21,72 @@ class Reference(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'rf_code': "'rf.' || rf.reference_id",
+            'short_name': "rf.shortname",
+            'full_citation': "rf.fulltext",
+            'reference_type': "rf.referencetype",
+            'title': "rf.title",
+            'publication_date': "rf.pubdate",
+            'total_pages': "rf.totalpages",
+            'publisher': "rf.publisher",
+            'publication_place': "rf.publicationplace",
+            'degree': "rf.degree",
+            'isbn': "rf.isbn",
+            'url': "rf.url",
+            'doi': "rf.doi",
+            'journal': "rj.journal",
+        }
+        from_sql = """\
+            FROM rf
+            LEFT JOIN referencejournal rj USING (referencejournal_id)
+            """
+        order_by_sql = """\
+            ORDER BY rf.reference_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "rf",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': "FROM reference AS rf",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': None,
+                    'params': []
+                },
+                "rf": {
+                    'sql': "rf.reference_id = %s",
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.

@@ -22,6 +22,63 @@ class Party(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
 
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        main_columns = {}
+        main_columns['full'] = {
+            'py_code': "'py.' || py.party_id",
+            'salutation': "py.salutation",
+            'given_name': "py.givenname",
+            'middle_name': "py.middlename",
+            'surname': "py.surname",
+            'organization_name': "py.organizationname",
+            'contact_instructions': "py.contactinstructions",
+        }
+        from_sql = "FROM py"
+        order_by_sql = """\
+            ORDER BY COALESCE(surname, organizationname),
+                     party_id
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "py",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': "FROM party AS py",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': "partypublic IS NOT false",
+                    'params': []
+                },
+                "py": {
+                    'sql': "py.party_id = %s",
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
