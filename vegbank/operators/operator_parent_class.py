@@ -660,4 +660,4 @@ class Operator:
                 return to_return
         except Exception as e:
             traceback.print_exc()
-            return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+            raise Exception(e)

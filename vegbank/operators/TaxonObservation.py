@@ -117,7 +117,7 @@ class TaxonObservation(Operator):
             return jsonify(to_return)
         except Exception as e:
             print(traceback.format_exc())
-            return jsonify_error_message("An error occurred while uploading taxon observations: " + str(e)), 500
+            return jsonify_error_message("An error occurred while uploading strata cover data: " + str(e)), 500
 
     def upload_strata_definitions(self, file, conn):
         """
