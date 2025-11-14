@@ -107,7 +107,7 @@ class Operator:
             select_dict.pop('*')
         return 'SELECT ' + ',\n       '.join(select_list)
 
-    def build_query(self, by=None, detail="full", count=False,
+    def build_query(self, by=None, detail="full", count=False, searching=False,
                     sort=False, paginating=False):
         """
         Helper method to construct the full SQL query for retrieving data
@@ -122,6 +122,7 @@ class Operator:
             detail: (default "full")
             count (bool): Apply COUNT(1) rather than returning actual table
                 fields? (default False)
+            searching (bool): Inject fulltext search? (default False)
             sort (bool): Apply ORDER BY? (default False)
             paginating (bool): Apply LIMIT/OFFET? (default False)
 
@@ -155,6 +156,9 @@ class Operator:
                 base_select = base.get('select')
                 base_columns = base_select.get('always')['columns']
                 params.extend(base_select.get('always')['params'])
+                if (searching):
+                    base_columns.update(base_select.get('search')['columns'])
+                    params.extend(base_select.get('search')['params'])
                 base_select_sql = self.select_dict_to_sql(base_columns)
             base_sql_parts.append(base_select_sql)
 
@@ -179,6 +183,10 @@ class Operator:
                     raise QueryParameterError(f"Invalid query term '{by}'.")
                 base_condition_list.append(base_by_conditions['sql'])
                 params.extend(base_by_conditions['params'])
+            if (searching):
+                base_search = base.get('search', {})
+                base_condition_list.append(base_conditions.get('search')['sql'])
+                params.extend(base_conditions.get('search')['params'])
             base_condition_list = list(filter(None, base_condition_list))
             base_condition_list = [textwrap.dedent(sql).rstrip() for
                                    sql in base_condition_list]
@@ -239,6 +247,9 @@ class Operator:
             select_dict = self.query.get('select')
             main_columns = select_dict.get('always')['columns']
             params.extend(select_dict.get('always')['params'])
+            if (searching):
+                main_columns.update(select_dict.get('search')['columns'])
+                params.extend(select_dict.get('search')['params'])
             main_select_sql = self.select_dict_to_sql(main_columns)
         main_sql_parts.append(main_select_sql)
 
@@ -335,6 +346,9 @@ class Operator:
         paginating = not is_query_by_code
         # Are we sorting? Yes always, if we might pull multiple records
         sort = paginating
+        # Are we searching? Yes if asked, unless we're getting a single record,
+        # in which case *we will ignore the search condition*
+        searching = (params.get('search') is not None) and paginating
 
         if is_query_by_code:
             try:
@@ -347,12 +361,12 @@ class Operator:
             by = None
 
         sql, placeholders = self.build_query(by=by, detail=params['detail'],
-            paginating=paginating, sort=paginating)
+            searching=searching, paginating=paginating, sort=paginating)
         data = [params.get(val) for val in placeholders]
 
         if (not is_query_by_code and self.include_full_count):
             count_sql, placeholders = self.build_query(by=by, count=True,
-                sort=False)
+                searching=searching, sort=False)
         else:
             count_sql, placeholders = None, ()
         count_data = [params.get(val) for val in placeholders]

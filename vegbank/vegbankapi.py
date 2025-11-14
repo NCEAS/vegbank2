@@ -341,6 +341,7 @@ def plant_concepts(pc_code):
             being retrieved. If None, retrieves all plant concepts.
 
     GET Query Parameters:
+        search (str, optional): Plant name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
