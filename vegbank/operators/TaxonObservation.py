@@ -6,7 +6,7 @@ from psycopg.rows import dict_row
 from psycopg import ClientCursor
 from operators import table_defs_config
 from operators import Operator
-from utilities import QueryParameterError, jsonify_error_message, find_extra_fields, validate_required_fields
+from utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class TaxonObservation(Operator):
@@ -94,15 +94,12 @@ class TaxonObservation(Operator):
                 along with the number of new records and the newly created keys. 
         """
         df = pd.read_parquet(file)
-        
-        extra_fields = find_extra_fields(df, [table_defs_config.taxon_importance, table_defs_config.taxon_observation])
-        if 0 < len(extra_fields):
-            raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
-        
+
+        table_defs = [table_defs_config.taxon_importance, table_defs_config.taxon_observation]
         required_fields = ['user_to_code', 'vb_ob_code', 'author_plant_name', 'user_tm_code']
-        missing_fields = validate_required_fields(df, required_fields)
-        if 0 < len(missing_fields):
-            raise ValueError("The following required fields are missing for uploading strata cover data: " + ", ".join(missing_fields))
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "strata cover data")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
         
         taxon_observation_codes = super().upload_to_table("taxon_observation", 'to', table_defs_config.taxon_observation, 'taxonobservation_id', df, True, conn)
         
@@ -136,8 +133,12 @@ class TaxonObservation(Operator):
                 along with the number of new records and the newly created keys. 
         """
         df = pd.read_parquet(file)
-        extra_fields = find_extra_fields(df, [table_defs_config.stratum])
-        if 0 < len(extra_fields):
-            raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
+
+        table_defs = [table_defs_config.stratum]
+        required_fields = ['vb_ob_code', 'user_ob_code', 'user_sr_code', 'vb_sy_code']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "strata definitions")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
         return jsonify(new_strata)
