@@ -12,3 +12,7 @@ databaseRestore:
 ingress:
   ## @param ingress.enabled - If ingress is not available, setting this to 'true' will cause errors
   enabled: false
+
+image:
+  ## @param image.pullPolicy - Set image pull policy to 'Always' for development to ensure latest image is used
+  pullPolicy: Always

@@ -186,3 +186,13 @@ taxon_observation = [
     'rf_code',
     'taxoninferencearea' #This and inference area are actually different in the data even though they sound similar
 ]
+
+stratum = [
+    'vb_ob_code',
+    'user_ob_code',
+    'user_sr_code',
+    'vb_sy_code', 
+    'stratumbase', 
+    'stratumheight', 
+    'stratumcover'
+]

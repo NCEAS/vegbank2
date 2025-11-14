@@ -50,6 +50,26 @@ def jsonify_error_message(message):
     })
 
 
+def find_extra_fields(df, table_defs):
+    '''
+    Compares the columns of a provided dataframe to a list of table definitions
+    and returns a list of any columns in the dataframe that are not in the table definitions.
+    
+    Parameters:
+        df (pandas.DataFrame): The dataframe whose columns are to be compared.
+        table_defs (list): The list of valid table definition fields. This should be a list of lists,
+        to allow for validating multiple tables in one file's dataframe according to loader module schema. 
+    Returns:
+        list: A list of column names that are in the dataframe but not in the table definitions.
+    '''
+    df.columns = map(str.lower, df.columns)
+    # Checking if the user submitted any unsupported columns
+    df_columns_set = set(df.columns)
+    for insert_table_def in table_defs:
+        df_columns_set = df_columns_set - set(insert_table_def)
+    return df_columns_set
+
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
