@@ -14,4 +14,4 @@ FROM
     taxon_importance_temp LEFT JOIN stratum
 ON
     taxon_importance_temp.vb_sr_code = 'sr.' || stratum.stratum_id
-WHERE stratum.stratum_id IS NULL;
+WHERE stratum.stratum_id IS NULL AND taxon_importance_temp.vb_sr_code IS NOT NULL;

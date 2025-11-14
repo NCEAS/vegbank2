@@ -69,6 +69,13 @@ def find_extra_fields(df, table_defs):
         df_columns_set = df_columns_set - set(insert_table_def)
     return df_columns_set
 
+def validate_required_fields(df, required_fields):
+    df.columns = map(str.lower, df.columns)
+    to_return = []
+    for field in required_fields:
+        if field not in df.columns:
+            to_return.append(field)
+    return to_return
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""

@@ -169,9 +169,13 @@ def taxon_observations(to_code):
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
         to_return = None
-        with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
-        conn.close()
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                    to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
         return to_return
     elif request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, to_code)
@@ -209,9 +213,13 @@ def strata_cover_data():
 
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
-    with connect(**params, row_factory=dict_row) as conn:
+    try:
+        with connect(**params, row_factory=dict_row) as conn:
             to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
-    conn.close()
+        conn.close()
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
 
 @app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
@@ -630,4 +638,4 @@ def bulk_upload():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=80,debug=True)
+    app.run(host='0.0.0.0',port=81,debug=True)

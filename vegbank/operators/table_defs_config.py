@@ -174,20 +174,23 @@ stratum_type = [
 
 taxon_importance = [
     'user_tm_code',
+    'user_to_code',
     'vb_to_code',
+    'user_sr_code',
     'vb_sr_code',
     'cover',
-    'basalarea',
+    'basal_area',
     'biomass',
-    'inferencearea'
+    'inference_area'
 ]
 
 taxon_observation = [
     'user_to_code',
+    'user_ob_code',
     'vb_ob_code',
-    'authorplantname',
+    'author_plant_name',
     'vb_rf_code',
-    'taxoninferencearea' #This and inference area are actually different in the data even though they sound similar
+    'taxon_inference_area' #This and inference area are actually different in the data even though they sound similar
 ]
 
 stratum = [

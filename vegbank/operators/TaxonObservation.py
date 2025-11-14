@@ -6,7 +6,7 @@ from psycopg.rows import dict_row
 from psycopg import ClientCursor
 from operators import table_defs_config
 from operators import Operator
-from utilities import QueryParameterError, jsonify_error_message, find_extra_fields
+from utilities import QueryParameterError, jsonify_error_message, find_extra_fields, validate_required_fields
 
 
 class TaxonObservation(Operator):
@@ -93,31 +93,38 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        try:
-            df = pd.read_parquet(file)
-            
-            taxon_observation_codes = super().upload_to_table("taxon_observation", 'to', table_defs_config.taxon_observation, 'taxonobservation_id', df, True, conn)
-            to_codes_df = pd.DataFrame(taxon_observation_codes['resources']['to'])
-            to_codes_df = to_codes_df[['user_to_code', 'vb_to_code']]
+        df = pd.read_parquet(file)
+        
+        extra_fields = find_extra_fields(df, [table_defs_config.taxon_importance, table_defs_config.taxon_observation])
+        if 0 < len(extra_fields):
+            raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
+        
+        required_fields = ['user_to_code', 'vb_ob_code', 'author_plant_name', 'user_tm_code']
+        missing_fields = validate_required_fields(df, required_fields)
+        if 0 < len(missing_fields):
+            raise ValueError("The following required fields are missing for uploading strata cover data: " + ", ".join(missing_fields))
+        
+        taxon_observation_codes = super().upload_to_table("taxon_observation", 'to', table_defs_config.taxon_observation, 'taxonobservation_id', df, True, conn)
+        
 
-            df = df.merge(to_codes_df, on='user_to_code', how='left')
+        to_codes_df = pd.DataFrame(taxon_observation_codes['resources']['to'])
+        to_codes_df = to_codes_df[['user_to_code', 'vb_to_code']]
 
-            taxon_importance_codes = super().upload_to_table("taxon_importance", 'tm', table_defs_config.taxon_importance, 'taxonimportance_id', df, True, conn)
-            print(taxon_importance_codes)
-            to_return = {
-                'resources':{
-                    'to': taxon_observation_codes['resources']['to'],
-                    'tm': taxon_importance_codes['resources']['tm']
-                },
-                'counts':{
-                    'to': taxon_observation_codes['counts']['to'],
-                    'tm': taxon_importance_codes['counts']['tm']
-                }
+        df = df.merge(to_codes_df, on='user_to_code', how='left')
+
+        taxon_importance_codes = super().upload_to_table("taxon_importance", 'tm', table_defs_config.taxon_importance, 'taxonimportance_id', df, True, conn)
+        print(taxon_importance_codes)
+        to_return = {
+            'resources':{
+                'to': taxon_observation_codes['resources']['to'],
+                'tm': taxon_importance_codes['resources']['tm']
+            },
+            'counts':{
+                'to': taxon_observation_codes['counts']['to'],
+                'tm': taxon_importance_codes['counts']['tm']
             }
-            return jsonify(to_return)
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message("An error occurred while uploading strata cover data: " + str(e)), 500
+        }
+        return jsonify(to_return)
 
     def upload_strata_definitions(self, file, conn):
         """
@@ -128,13 +135,9 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        try:
-            df = pd.read_parquet(file)
-            extra_fields = find_extra_fields(df, [table_defs_config.stratum])
-            if 0 < len(extra_fields):
-                raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
-            new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
-            return jsonify(new_strata)
-        except Exception as e:
-            print(e)
-            return jsonify_error_message("An error occurred while uploading strata definitions: " + str(e)), 500
+        df = pd.read_parquet(file)
+        extra_fields = find_extra_fields(df, [table_defs_config.stratum])
+        if 0 < len(extra_fields):
+            raise ValueError("The following fields are not supported for strata definitions: " + ", ".join(extra_fields))
+        new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
+        return jsonify(new_strata)
