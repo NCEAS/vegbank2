@@ -27,6 +27,10 @@ class PlantConcept(Operator):
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(pc.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         main_columns['full'] = {
             'pc_code': "'pc.' || pc.plantconcept_id",
@@ -110,6 +114,10 @@ class PlantConcept(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
                 'sql': "FROM plantconcept AS pc",
@@ -119,6 +127,12 @@ class PlantConcept(Operator):
                 'always': {
                     'sql': None,
                     'params': []
+                },
+                'search': {
+                    'sql': """\
+                         pc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
                 },
                 "pc": {
                     'sql': """\
@@ -135,6 +149,10 @@ class PlantConcept(Operator):
         self.query['select'] = {
             "always": {
                 'columns': main_columns[self.detail],
+                'params': []
+            },
+            'search': {
+                'columns': {'search_rank': 'pc.search_rank'},
                 'params': []
             },
         }
@@ -166,4 +184,9 @@ class PlantConcept(Operator):
             raise QueryParameterError("When provided, 'detail' must be 'full'.")
 
         # now dispatch to the base validation method
-        return super().validate_query_params(request_args)
+        params = super().validate_query_params(request_args)
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
+
+        return params
