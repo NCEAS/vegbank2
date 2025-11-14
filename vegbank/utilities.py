@@ -50,11 +50,23 @@ def jsonify_error_message(message):
     })
 
 def validate_required_and_missing_fields(df, required_fields, table_defs, file_name):
+    '''
+    Validates that the provided dataframe contains all required fields and does not contain any unsupported fields.
+    Parameters:
+        df (pd.DataFrame): The dataframe to be validated.
+        required_fields (list): A list of required field names.
+        table_defs (list): A list of lists, where each inner list contains the field names for a specific table.
+        file_name (str): The name of the file being validated (used in error messages).
+    Returns:
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
+    '''
     df.columns = map(str.lower, df.columns)
+
     to_return = {
         'has_error': False,
         'error': ""
     }
+    #Checking if the user's submission is missing any required columns
     error_string = ""
     missing_fields = []
     for field in required_fields:

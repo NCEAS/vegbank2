@@ -198,7 +198,7 @@ stratum = [
     'user_ob_code',
     'user_sr_code',
     'vb_sy_code', 
-    'stratumbase', 
-    'stratumheight', 
-    'stratumcover'
+    'stratum_base', 
+    'stratum_height', 
+    'stratum_cover'
 ]
