@@ -1,3 +1,4 @@
+-- Ordering of input parameters is handled via list order in table_defs_config.py
 INSERT INTO stratum_temp
     (
         vb_ob_code,
