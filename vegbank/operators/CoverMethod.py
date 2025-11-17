@@ -39,17 +39,24 @@ class CoverMethod(Operator):
             'cm_code': "'cm.' || cm.covermethod_id",
             'cover_type': "cm.covertype",
             'cover_estimation_method': "cm.coverestimationmethod",
+            'cover_indexes': "cv.cover_indexes",
             'rf_code': "'rf.' || rf.reference_id",
             'rf_name': "rf.shortname",
-            'cover_code': "cm.covercode",
-            'lower_limit': "cm.lowerlimit",
-            'upper_limit': "cm.upperlimit",
-            'cover_percent': "cm.coverpercent",
-            'index_description': "cm.indexdescription",
         }
         from_sql = """\
             FROM cm
             LEFT JOIN reference rf USING (reference_id)
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'cv_code', 'cv.' || coverindex_id,
+                      'cover_code', covercode,
+                      'lower_limit', lowerlimit,
+                      'upper_limit', upperlimit,
+                      'cover_percent', coverpercent,
+                      'index_description', indexdescription)) AS cover_indexes
+                FROM coverindex
+                WHERE covermethod_id = cm.covermethod_id
+            ) cv ON true
             """
 
         order_by_sql = """\
@@ -68,7 +75,6 @@ class CoverMethod(Operator):
             'from': {
                 'sql': """\
                     FROM covermethod AS cm
-                    LEFT JOIN coverindex cv USING (covermethod_id)
                     """,
                 'params': []
             },
