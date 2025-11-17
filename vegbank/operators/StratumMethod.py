@@ -40,16 +40,22 @@ class StratumMethod(Operator):
             'stratum_method_name': "sm.stratummethodname",
             'stratum_method_description': "sm.stratummethoddescription",
             'stratum_assignment': "sm.stratumassignment",
+            'stratum_types': "sy.stratum_types",
             'rf_code': "'rf.' || rf.reference_id",
             'rf_name': "rf.shortname",
-            'sy_code': "'sy.' || sm.stratumtype_id",
-            'stratum_index': "sm.stratumindex",
-            'stratum_name': "sm.stratumname",
-            'stratum_description': "sm.stratumdescription",
         }
         from_sql = """\
             FROM sm
             LEFT JOIN reference rf USING (reference_id)
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'sy_code', 'sy.' || stratumtype_id,
+                      'stratum_index', stratumindex,
+                      'stratum_name', stratumname,
+                      'stratum_description', stratumdescription)) AS stratum_types
+                FROM stratumtype
+                WHERE stratummethod_id = sm.stratummethod_id
+            ) sy ON true
             """
 
         order_by_sql = """\
@@ -68,7 +74,6 @@ class StratumMethod(Operator):
             'from': {
                 'sql': """\
                     FROM stratummethod AS sm
-                    LEFT JOIN stratumtype sy USING (stratummethod_id)
                     """,
                 'params': []
             },
