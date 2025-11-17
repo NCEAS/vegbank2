@@ -49,26 +49,44 @@ def jsonify_error_message(message):
         }
     })
 
-
-def find_extra_fields(df, table_defs):
+def validate_required_and_missing_fields(df, required_fields, table_defs, file_name):
     '''
-    Compares the columns of a provided dataframe to a list of table definitions
-    and returns a list of any columns in the dataframe that are not in the table definitions.
-    
+    Validates that the provided dataframe contains all required fields and does not contain any unsupported fields.
     Parameters:
-        df (pandas.DataFrame): The dataframe whose columns are to be compared.
-        table_defs (list): The list of valid table definition fields. This should be a list of lists,
-        to allow for validating multiple tables in one file's dataframe according to loader module schema. 
+        df (pd.DataFrame): The dataframe to be validated.
+        required_fields (list): A list of required field names.
+        table_defs (list): A list of lists, where each inner list contains the field names for a specific table.
+        file_name (str): The name of the file being validated (used in error messages).
     Returns:
-        list: A list of column names that are in the dataframe but not in the table definitions.
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
     '''
     df.columns = map(str.lower, df.columns)
-    # Checking if the user submitted any unsupported columns
-    df_columns_set = set(df.columns)
-    for insert_table_def in table_defs:
-        df_columns_set = df_columns_set - set(insert_table_def)
-    return df_columns_set
 
+    to_return = {
+        'has_error': False,
+        'error': ""
+    }
+    #Checking if the user's submission is missing any required columns
+    error_string = ""
+    missing_fields = []
+    for field in required_fields:
+        if field not in df.columns:
+            missing_fields.append(field)
+    if 0 < len(missing_fields):
+            error_string += "The following required columns are missing from the uploaded " + file_name + ": " + ", ".join(missing_fields) + ". "
+
+    # Checking if the user submitted any unsupported columns
+    extra_fields = set(df.columns)
+    for insert_table_def in table_defs:
+        extra_fields = extra_fields - set(insert_table_def)
+    if 0 < len(extra_fields):
+            error_string += "The following columns are not supported for " + file_name + ": " + ", ".join(extra_fields) + ". "
+
+    if error_string != "":
+        to_return['has_error'] = True
+        to_return['error'] = error_string
+    
+    return to_return
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""

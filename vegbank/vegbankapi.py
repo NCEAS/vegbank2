@@ -169,15 +169,58 @@ def taxon_observations(to_code):
         if not allowed_file(file.filename):
             return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
         to_return = None
-        with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
-        conn.close()
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                    to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
         return to_return
     elif request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, to_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
+@app.route("/strata-cover-data", methods=['POST'])
+def strata_cover_data():
+    """
+    Upload strata cover data from a Parquet file.
+
+    This function handles HTTP POST requests to upload strata cover data.
+    It expects a Parquet file containing strata cover data in the request.
+    Uploads data to the taxon observation and taxon importance tables.
+    If the upload is successful, it returns a JSON response indicating
+    success. If there are any errors during the upload process, it returns
+    an appropriate error message.
+
+    POST Parameters: 
+        file (FileStorage): The uploaded Parquet file containing strata
+            cover data.
+
+    Returns:
+        flask.Response: A JSON response indicating success or failure of
+            the upload operation.
+    """
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    taxon_observation_operator = TaxonObservation(params)
+    to_return = None
+    try:
+        with connect(**params, row_factory=dict_row) as conn:
+            to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
+        conn.close()
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
+    return to_return
 
 @app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<cl_code>", methods=['GET'])
@@ -298,6 +341,7 @@ def plant_concepts(pc_code):
             being retrieved. If None, retrieves all plant concepts.
 
     GET Query Parameters:
+        search (str, optional): Plant name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
