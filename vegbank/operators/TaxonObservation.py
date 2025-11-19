@@ -142,3 +142,43 @@ class TaxonObservation(Operator):
 
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
         return jsonify(new_strata)
+    
+    def upload_stem_data(self, file, conn):
+        """
+        takes a parquet file in the stem data format from the loader module and uploads it to the stem count
+         and stem location tables. 
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing stem data.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        table_defs = [table_defs_config.stem_location, table_defs_config.stem_count]
+        required_fields = ['user_tm_code', 'stem_count']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "stem data")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+        
+        stem_count_codes = super().upload_to_table("stem_count", 'sc', table_defs_config.stem_count, 'stemcount_id', df, True, conn)
+        
+
+        sc_codes_df = pd.DataFrame(stem_count_codes['resources']['sc'])
+        sc_codes_df = sc_codes_df[['user_sc_code', 'vb_sc_code']]
+
+        df = df.merge(sc_codes_df, on='user_sc_code', how='left')
+
+        stem_location_codes = super().upload_to_table("stem_location", 'sl', table_defs_config.stem_location, 'stemlocation_id', df, True, conn)
+        print(stem_location_codes)
+        to_return = {
+            'resources':{
+                'sc': stem_count_codes['resources']['sc'],
+                'sl': stem_location_codes['resources']['sl']
+            },
+            'counts':{
+                'sc': stem_count_codes['counts']['sc'],
+                'sl': stem_location_codes['counts']['sl']
+            }
+        }
+        return to_return
