@@ -1,3 +1,4 @@
+-- Ordering of input parameters is handled via list order in table_defs_config.py
 INSERT INTO taxon_interpretation_temp
 (
     user_ti_code,
