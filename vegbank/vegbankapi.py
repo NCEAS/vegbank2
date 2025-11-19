@@ -262,7 +262,7 @@ def stem_data():
                 message = "Dry run - rolling back transaction."
                 return jsonify({
                     "message": message,
-                    "data": to_return
+                    "dry_run_data": to_return
                 })
         conn.close()
     except Exception as e:
