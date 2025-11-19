@@ -234,7 +234,11 @@ def stem_data():
     success. If there are any errors during the upload process, it returns
     an appropriate error message.
 
+    Query Parameters:
         dry_run (str, optional): If set to 'true', the upload will be
+            simulated without committing changes to the database.
+            Defaults to 'false'.
+
     POST Parameters: 
         file (FileStorage): The uploaded Parquet file containing stem data.
 
