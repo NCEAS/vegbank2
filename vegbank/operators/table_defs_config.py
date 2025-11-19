@@ -229,8 +229,6 @@ taxon_interpretation = [
     'museum_accession_number',
     'group_type',
     'notes',
-    'stem_height',
-    'stem_heightaccuracy',
-    'stem_count',
-    'stem_taxonarea'    
+    'notes_public',
+    'notes_mgt'   
 ]
