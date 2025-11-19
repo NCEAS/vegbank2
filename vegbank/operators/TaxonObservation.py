@@ -142,3 +142,25 @@ class TaxonObservation(Operator):
 
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
         return jsonify(new_strata)
+    
+    def upload_taxon_interpretations(self, file, conn):
+        """
+        takes a parquet file of taxon interpretations and uploads it to the taxon interpretation table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing taxon interpretations.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        table_defs = [table_defs_config.taxon_interpretation]
+        required_fields = ['vb_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "taxon interpretations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        df['interpretation_date'] = pd.Timestamp.now()
+
+        new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', table_defs_config.taxon_interpretation, 'taxoninterpretation_id', df, True, conn)
+        return new_taxon_interpretations
