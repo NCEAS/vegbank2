@@ -161,6 +161,8 @@ def taxon_observations(to_code):
     """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
+        if allow_uploads is False:
+            return jsonify_error_message("Uploads not allowed."), 403
         if 'file' not in request.files:
             return jsonify_error_message("No file part in the request."), 400
         file = request.files['file']
@@ -203,6 +205,8 @@ def strata_cover_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
     if 'file' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     file = request.files['file']
@@ -246,6 +250,8 @@ def taxon_interpretations():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
     if 'file' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     file = request.files['file']
