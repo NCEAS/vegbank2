@@ -29,10 +29,21 @@ class PlotObservation(Operator):
         self.table_code = "ob"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
+        self.detail_options = ("minimal", "full", "geo")
+        self.nested_options = ("true", "false")
+        self.default_num_taxa = 5
+        self.default_num_comms = 5
 
     def configure_query(self, *args, **kwargs):
+        query_type = self.detail
+        nesting = False
+        if query_type != "geo" and self.with_nested == 'true':
+            query_type += "_nested"
+            nesting = True
+
         base_columns = {'ob.*': "*"}
         main_columns = {}
+        # identify full shallow columns
         main_columns['full'] = {
             'author_plot_code': "pl.authorplotcode",
             'pl_code': "'pl.' || pl.plot_id",
@@ -79,6 +90,7 @@ class PlotObservation(Operator):
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
             'author_obs_code': "ob.authorobscode",
+            'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
             'obs_end_date': "ob.obsenddate",
             'date_accuracy': "ob.dateaccuracy",
@@ -176,20 +188,141 @@ class PlotObservation(Operator):
             'top_taxon5_name': "ob.toptaxon5name",
             'has_observation_synonym': "ob.hasobservationsynonym",
         }
-        main_columns['minimal'] = {
-            'pl_code': "'pl.' || pl.plot_id",
-            'latitude': "pl.latitude",
-            'longitude': "pl.longitude",
-            'ob_code': "'ob.' || ob.observation_id",
-            'author_plot_code': "pl.authorplotcode",
-            'author_obs_code': "ob.authorobscode",
-            'state_province': "pl.stateprovince",
-            'country': "pl.country",
+        # identify full columns with nesting
+        main_columns['full_nested'] = main_columns['full'] | {
+            'taxon_count': "taxon_count",
+            'taxon_importance_count': "taxon_importance_count",
+            'taxon_importance_count_returned': "taxon_importance_count_returned",
+            'top_taxon_observations': "top_taxon_observations",
+            'top_classifications': "top_classifications",
         }
-        from_sql = """\
+        # identify minimal columns
+        main_columns['minimal'] = {alias:col for alias, col in
+            main_columns['full'].items() if alias in [
+                'area', 'author_obs_code', 'author_plot_code', 'country',
+                'elevation', 'latitude', 'longitude', 'ob_code', 'pl_code',
+                'state_province', 'year'
+            ]}
+        # identify minimal columns with nesting
+        main_columns['minimal_nested'] = main_columns['minimal'] | {
+            'taxon_count': "taxon_count",
+            'taxon_count_returned': "taxon_count_returned",
+            'top_taxon_observations': "top_taxon_observations",
+            'top_classifications': "top_classifications",
+        }
+        # identify geo columns
+        main_columns['geo'] = {alias:col for alias, col in
+            main_columns['full'].items() if alias in [
+                'author_obs_code', 'latitude', 'longitude',
+                'ob_code'
+            ]}
+        from_sql = {}
+        from_sql['geo'] = """\
             FROM ob
             LEFT JOIN plot pl USING (plot_id)
+            """
+        from_sql['minimal'] = from_sql['geo'].rstrip() + """
             LEFT JOIN stratummethod sm USING (stratummethod_id)
+            """
+        from_sql['full'] = from_sql['minimal']
+        from_sql_nested = """
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'cl_code', 'cl.' || commclass_id,
+                         'cc_code', 'cc.' || commconcept_id,
+                         'comm_name', comm_name,
+                         'comm_code', comm_code
+                       )) AS top_classifications
+                FROM (
+                  SELECT cl.commclass_id,
+                         cc.commconcept_id,
+                         cc.commname as comm_name,
+                         cu.commname as comm_code
+                    FROM commclass cl
+                    JOIN comminterpretation ci USING (commclass_id)
+                    JOIN commconcept cc USING (commconcept_id)
+                    LEFT JOIN commusage cu ON cu.commconcept_id = cc.commconcept_id
+                                          AND cu.classsystem = 'Code'
+                    WHERE cl.observation_id = ob.observation_id
+                    ORDER BY cl.commclass_id
+                    LIMIT %s
+                ) AS top_n_classifications
+            ) AS cl ON true
+            """.rstrip()
+        from_sql['minimal_nested'] = from_sql['minimal'].rstrip() + \
+            from_sql_nested + """
+            LEFT JOIN LATERAL (
+              WITH all_taxa AS (
+                SELECT taxonobservation_id,
+                       int_currplantconcept_id,
+                       int_currplantscinamenoauth,
+                       authorplantname,
+                       maxcover
+                  FROM view_taxonobs_withmaxcover txmc
+                  WHERE txmc.observation_id = ob.observation_id
+              ), returned_taxa AS (
+                SELECT *
+                  FROM all_taxa
+                  ORDER BY maxcover DESC,
+                           authorplantname
+                  LIMIT %s
+              )
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'to_code', 'to.' || taxonobservation_id,
+                         'pc_code', 'pc.' || int_currplantconcept_id,
+                         'name', COALESCE(int_currplantscinamenoauth,
+                                          authorplantname),
+                         'max_cover', maxcover
+                       )) AS top_taxon_observations,
+                     (SELECT COUNT(int_currplantconcept_id)
+                        FROM all_taxa) AS taxon_count,
+                     (SELECT COUNT(int_currplantconcept_id)
+                        FROM returned_taxa) AS taxon_count_returned
+                FROM returned_taxa
+            ) AS txo ON true
+            """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + \
+            from_sql_nested + """
+            LEFT JOIN LATERAL (
+              WITH all_taxon_observations AS (
+                SELECT txo.taxonobservation_id,
+                       tm.taxonimportance_id,
+                       txo.int_currplantconcept_id,
+                       txo.int_currplantscinamenoauth,
+                       txo.authorplantname,
+                       sr.stratum_id,
+                       sr.stratumname,
+                       tm.cover
+                  FROM taxonobservation txo
+                  LEFT JOIN taxonimportance tm USING (taxonobservation_id)
+                  LEFT JOIN stratum sr USING (stratum_id)
+                  WHERE txo.observation_id = ob.observation_id
+              ), returned_taxon_observations AS (
+                SELECT *
+                  FROM all_taxon_observations
+                  ORDER BY COALESCE(int_currplantscinamenoauth,
+                                    authorplantname),
+                           cover DESC
+                  LIMIT %s
+              )
+              SELECT (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'to_code', 'to.' || taxonobservation_id,
+                         'tm_code', 'tm.' || taxonimportance_id,
+                         'pc_code', 'pc.' || int_currplantconcept_id,
+                         'plant_name', COALESCE(int_currplantscinamenoauth,
+                                                authorplantname),
+                         'sr_code', 'sr.' || stratum_id,
+                         'stratum_name', COALESCE(stratumname, '-all-'),
+                         'cover', cover
+                         )) AS top_taxon_observations
+                        FROM returned_taxon_observations) AS top_taxon_observations,
+                     (SELECT COUNT(DISTINCT int_currplantconcept_id)
+                        FROM all_taxon_observations) AS taxon_count,
+                     (SELECT COUNT(1)
+                        FROM all_taxon_observations) AS taxon_importance_count,
+                     (SELECT COUNT(1)
+                        FROM returned_taxon_observations) AS taxon_importance_count_returned
+            ) AS txo ON true
             """
         order_by_sql = """\
             ORDER BY ob.observation_id ASC
@@ -228,14 +361,42 @@ class PlotObservation(Operator):
         }
         self.query['select'] = {
             "always": {
-                'columns': main_columns[self.detail],
+                'columns': main_columns[query_type],
                 'params': []
             },
         }
         self.query['from'] = {
-            'sql': from_sql,
-            'params': []
+            'sql': from_sql[query_type],
+            'params': ['num_comms', 'num_taxa'] if nesting else []
         }
+
+    def validate_query_params(self, request_args):
+        """
+        Validate query parameters and apply defaults to missing parameters.
+
+        This applies validations specific to plot observations, while
+        dispatching to the parent validation method for more general validation.
+
+        Parameters:
+            request_args (ImmutableMultiDict): Query parameters provided
+                as part of the request.
+
+        Returns:
+            dict: A dictionary of validated parameters with defaults applied.
+
+        Raises:
+            QueryParameterError: If any supplied parameters are invalid.
+        """
+        # dispatch to the base validation method
+        params = super().validate_query_params(request_args)
+
+        # add params for limiting nested fields
+        params['num_taxa'] = self.process_integer_param('num_taxa',
+            request_args.get('num_taxa', self.default_num_taxa))
+        params['num_comms'] = self.process_integer_param('num_comms',
+            request_args.get('num_comms', self.default_num_comms))
+
+        return params
 
     def upload_plot_observations(self, request, params):
         """
