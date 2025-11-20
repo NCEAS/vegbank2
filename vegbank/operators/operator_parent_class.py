@@ -29,10 +29,16 @@ class Operator:
         - Executing read queries and returning data as Parquet
 
     Attributes:
-        QUERIES_FOLDER (str): Path where SQL query files are stored.
         ROOT_QUERIES_FOLDER (str): Root path where SQL query files are stored.
             This is for queries that are shared across multiple operators.
-        default_detail (str): Default detail level for responses.
+        QUERIES_FOLDER (str): Path where SQL query files are stored.
+        detail_options (str): Accepted detail param values. This should
+            be overridden by operator implementations as needed.
+        default_detail (str): Default detail value.
+        nested_options (str): Accepted with_nested param values. This should
+            be overridden by operator implementations as needed.
+        default_nested (str): Default with_nested value.
+        default_create_parquet (str): Default create_parquet value.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
         default_offset (str): Default offset for number of records to skip.
@@ -61,7 +67,11 @@ class Operator:
         """
         self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
+        self.detail_options = ["full"]
         self.default_detail = "full"
+        self.nested_options = ["false"]
+        self.default_nested = "false"
+        self.default_create_parquet = "false"
         self.default_limit = "1000"
         self.default_offset = "0"
         self.params = params
@@ -107,8 +117,37 @@ class Operator:
             select_dict.pop('*')
         return 'SELECT ' + ',\n       '.join(select_list)
 
-    def build_query(self, by=None, detail="full", count=False, searching=False,
-                    sort=False, paginating=False):
+    def process_integer_param(self, param_name, param_value):
+        err_msg = f"When provided, {param_name} must be a non-negative integer."
+        try:
+            param_value = int(param_value)
+        except ValueError:
+            raise QueryParameterError(err_msg)
+        if param_value < 0:
+            raise QueryParameterError(err_msg)
+        return param_value
+
+    def process_option_param(self, param_name, param_value, options):
+        param_value = param_value.lower()
+        # Retun the lower-cased parameter if its valid
+        if param_value in options:
+            return param_value
+        # ... otherwise raise an informative error message
+        q_options = [f"'{option}'" for option in options]
+        if len(q_options) == 0:
+            err_msg = f"Unhandled parameter '{param_name}'."
+        else:
+            if len(q_options) == 1:
+                option_str = q_options[0]
+            elif len(q_options) == 2:
+                option_str = ' or '.join(q_options)
+            elif 2 < len(q_options):
+                option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
+            err_msg = f"When provided, '{param_name}' must be {option_str}"
+        raise QueryParameterError(err_msg)
+
+    def build_query(self, by=None, count=False, searching=False, sort=False,
+                    paginating=False):
         """
         Helper method to construct the full SQL query for retrieving data
 
@@ -119,7 +158,6 @@ class Operator:
         Parameters:
             by (str): A vb table code (e.g., "ob"), or None. Used to inject the
                 relevant sql snippets for matching to a given record type.
-            detail: (default "full")
             count (bool): Apply COUNT(1) rather than returning actual table
                 fields? (default False)
             searching (bool): Inject fulltext search? (default False)
@@ -136,7 +174,6 @@ class Operator:
         # Preliminaries
         args = locals().copy()
         del args['self']
-        self.detail = detail
         self.configure_query(**args)
 
         # Start with empty list of query placeholders, to be built out as we go
@@ -293,7 +330,9 @@ class Operator:
 
         Query Parameters:
             detail (str, optional): Level of detail for the response.
-                Can be either 'minimal' or 'full'. Defaults to 'full'.
+                Can always be 'full', sometimes 'minimal'. Defaults to 'full'.
+            with_nested (str, optional): Include nested fields?
+                Can always be 'false', sometimes 'true'. Defaults to 'false'.
             limit (int, optional): Maximum number of records to return.
                 Defaults to 1000.
             offset (int, optional): Number of records to skip before starting
@@ -332,6 +371,8 @@ class Operator:
 
         try:
             params = self.validate_query_params(request.args)
+            self.detail = params['detail']
+            self.with_nested = params['with_nested']
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
@@ -360,8 +401,8 @@ class Operator:
         else:
             by = None
 
-        sql, placeholders = self.build_query(by=by, detail=params['detail'],
-            searching=searching, paginating=paginating, sort=paginating)
+        sql, placeholders = self.build_query(by=by, searching=searching,
+                                             paginating=paginating, sort=paginating)
         data = [params.get(val) for val in placeholders]
 
         if (not is_query_by_code and self.include_full_count):
@@ -480,25 +521,19 @@ class Operator:
         """
         params = {}
         params['create_parquet'] = request_args.get("create_parquet",
-                                                    "false").lower() == "true"
-        params['detail'] = request_args.get("detail", self.default_detail)
-        if params['detail'] not in ("minimal", "full"):
-            raise QueryParameterError(
-                "When provided, 'detail' must be 'minimal' or 'full'."
-            )
-        try:
-            params['limit'] = int(request_args.get("limit",
-                                                   self.default_limit))
-            params['offset'] = int(request_args.get("offset",
-                                                    self.default_offset))
-        except ValueError:
-            raise QueryParameterError(
-                "When provided, 'offset' and 'limit' must be non-negative integers."
-            )
-        if params['limit'] < 0 or params['offset'] < 0:
-            raise QueryParameterError(
-                "When provided, 'offset' and 'limit' must be non-negative integers."
-            )
+            self.default_create_parquet).lower() == "true"
+
+        params['detail'] = self.process_option_param('detail',
+            request_args.get('detail', self.default_detail),
+            self.detail_options)
+        params['with_nested'] = self.process_option_param('with_nested',
+            request_args.get('with_nested', self.default_nested),
+            self.nested_options)
+        params['limit'] = self.process_integer_param('limit',
+            request_args.get('limit', self.default_limit))
+        params['offset'] = self.process_integer_param('offset',
+            request_args.get('offset', self.default_offset))
+
         return params
 
     def create_json_response(self, sql, data, count_sql, count_data=None):
