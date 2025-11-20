@@ -246,6 +246,8 @@ def stem_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
     if 'file' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     file = request.files['file']
