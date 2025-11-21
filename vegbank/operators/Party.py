@@ -37,6 +37,7 @@ class Party(Operator):
             'surname': "py.surname",
             'organization_name': "py.organizationname",
             'contact_instructions': "py.contactinstructions",
+            'obs_count': "d_obscount",
         }
         from_sql = "FROM py"
         order_by_sql = """\
