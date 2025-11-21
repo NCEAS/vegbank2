@@ -398,6 +398,7 @@ def parties(py_code):
             being retrieved. If None, retrieves all parties.
 
     GET Query Parameters:
+        search (str, optional): Party name/organization search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
