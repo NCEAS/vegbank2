@@ -143,7 +143,7 @@ class Operator:
                 option_str = ' or '.join(q_options)
             elif 2 < len(q_options):
                 option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
-            err_msg = f"When provided, '{param_name}' must be {option_str}"
+            err_msg = f"When provided, '{param_name}' must be {option_str}."
         raise QueryParameterError(err_msg)
 
     def build_query(self, by=None, count=False, searching=False, sort=False,
