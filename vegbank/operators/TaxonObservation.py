@@ -155,7 +155,7 @@ class TaxonObservation(Operator):
         df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.taxon_interpretation]
-        required_fields = ['vb_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']
+        required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "taxon interpretations")
         if validation['has_error']:
             raise ValueError(validation['error'])
