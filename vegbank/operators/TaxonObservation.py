@@ -161,14 +161,15 @@ class TaxonObservation(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
         
+        df['user_sc_code'] = df['user_sc_code'].astype(str) # Ensure user_sc_code is string for consistent merging
         stem_count_codes = super().upload_to_table("stem_count", 'sc', table_defs_config.stem_count, 'stemcount_id', df, True, conn)
-        
 
         sc_codes_df = pd.DataFrame(stem_count_codes['resources']['sc'])
         sc_codes_df = sc_codes_df[['user_sc_code', 'vb_sc_code']]
 
         df = df.merge(sc_codes_df, on='user_sc_code', how='left')
 
+        df['user_sl_code'] = df['user_sl_code'].astype(str) # Ensure user_sl_code is string for consistent merging
         stem_location_codes = super().upload_to_table("stem_location", 'sl', table_defs_config.stem_location, 'stemlocation_id', df, True, conn)
         print(stem_location_codes)
         to_return = {
