@@ -162,5 +162,6 @@ class TaxonObservation(Operator):
 
         df['interpretation_date'] = pd.Timestamp.now()
 
+        df['user_ti_code'] = df['user_ti_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
         new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', table_defs_config.taxon_interpretation, 'taxoninterpretation_id', df, True, conn)
         return new_taxon_interpretations
