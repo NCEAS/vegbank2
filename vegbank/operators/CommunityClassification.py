@@ -6,13 +6,16 @@ from utilities import QueryParameterError
 class CommunityClassification(Operator):
     """
     Defines operations related to the exchange of community classification data
-    with VegBank, including community interpretations.
+    with VegBank, potentially including community interpretations and
+    classification contributors.
 
     Community Classification: Information about a classification activity
         leading one or more parties to apply a community concept to a
         plot observation
     Community Interpretation: The assignment of a specific community concept
         to a plot observations
+    Classification Contributor: Party who contributed to the classification
+        activity, acting in some role
 
     Inherits from the Operator parent class to utilize common default values and
     methods.
@@ -24,20 +27,17 @@ class CommunityClassification(Operator):
         self.table_code = "cl"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.full_get_parameters = ('limit', 'offset')
+        self.nested_options = ("true", "false")
+        self.detail_options = ("minimal", "full")
 
     def configure_query(self, *args, **kwargs):
-        base_columns = {
-            'cl.*': "*",
-            'commconcept_id': "ci.commconcept_id",
-            'classfit': "ci.classfit",
-            'classconfidence': "ci.classconfidence",
-            'commauthority_id': "ci.commauthority_id",
-            'notes': "ci.notes",
-            'type': "ci.type",
-            'nomenclaturaltype': "ci.nomenclaturaltype",
-            'emb_comminterpretation': "ci.emb_comminterpretation",
-        }
+        query_type = self.detail
+        if self.with_nested == 'true':
+            query_type += "_nested"
+
+        base_columns = {'*': "*"}
         main_columns = {}
+        # identify full shallow columns
         main_columns['full'] = {
             'cl_code': "'cl.' || cl.commclass_id",
             'ob_code': "'ob.' || cl.observation_id",
@@ -47,31 +47,70 @@ class CommunityClassification(Operator):
             'table_analysis': "cl.tableanalysis",
             'multivariate_analysis': "cl.multivariateanalysis",
             'expert_system': "cl.expertsystem",
+            'class_publication_rf_code': "'rf.' || cl.classpublication_id",
+            'class_publication_rf_label': "rf.reference_id_transl",
             'class_notes': "cl.classnotes",
-            'cc_code': "'cc.' || cc.commconcept_id",
-            'comm_name': "cc.commname",
-            'comm_code': "cl.commcode",
-            'comm_framework': "cl.commframework",
-            'comm_level': "cl.commlevel",
-            'emb_comm_class': "cl.emb_commclass",
-            'cc_code': "'cc.' || cl.commconcept_id",
-            'class_fit': "cl.classfit",
-            'class_confidence': "cl.classconfidence",
-            'comm_authority_rf_code': "'rf.' || cl.commauthority_id",
-            'interpretation_notes': "cl.notes",
-            'interpretation_type': "cl.type",
-            'interpretation_nomenclatural_type': "cl.nomenclaturaltype",
-            'emb_comm_interpretation': "cl.emb_comminterpretation",
         }
-        main_columns['minimal'] = {
-            'cl_code': "'cl.' || cl.commclass_id",
-            'ob_code': "'ob.' || cl.observation_id",
-            'cc_code': "'cc.' || cc.commconcept_id",
-            'comm_name': "cc.commname",
+        # identify minimal shallow colunms
+        main_columns['minimal'] = main_columns['full']
+        # identify full columns with nesting
+        main_columns['full_nested'] = main_columns['full'] | {
+            'interpretations': "interpretations",
+            'contributors': "contributors",
         }
-        from_sql = """\
+        # identify minimal columns with nesting
+        main_columns['minimal_nested'] = main_columns['full_nested']
+        from_sql = {}
+        from_sql['full'] = """\
             FROM cl
-            LEFT JOIN commconcept cc USING (commconcept_id)
+            LEFT JOIN view_reference_transl rf ON reference_id = cl.classpublication_id
+            """
+        from_sql['minimal'] = from_sql['full']
+        from_sql_common_nested =  """
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'py_code', 'py.' || party_id,
+                         'party', py.party_id_transl,
+                         'role', ar.rolecode)) AS contributors
+                FROM classcontributor co
+                LEFT JOIN view_party_transl py USING (party_id)
+                LEFT JOIN aux_role ar USING (role_id)
+                WHERE co.commclass_id = cl.commclass_id
+            ) co ON true
+            """.rstrip()
+        from_sql['full_nested'] = from_sql['full'].rstrip() + \
+            from_sql_common_nested.rstrip() + """
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'ci_code', 'ci.' || comminterpretation_id,
+                         'cc_code', 'cc.' || commconcept_id,
+                         'comm_code', commcode,
+                         'comm_name', commname,
+                         'class_fit', classfit,
+                         'class_confidence', classconfidence,
+                         'comm_authority_rf_code', 'rf.' || ci.commauthority_id,
+                         'comm_authority_name', rf.reference_id_transl,
+                         'notes', notes,
+                         'type', type,
+                         'nomenclatural_type', nomenclaturaltype
+                       )) AS interpretations
+                FROM comminterpretation ci
+                LEFT JOIN view_reference_transl rf ON rf.reference_id = ci.commauthority_id
+                WHERE ci.commclass_id = cl.commclass_id
+            ) AS ci ON true
+            """
+        from_sql['minimal_nested'] = from_sql['minimal'].rstrip() + \
+            from_sql_common_nested.rstrip() + """
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'ci_code', 'ci.' || comminterpretation_id,
+                         'cc_code', 'cc.' || commconcept_id,
+                         'comm_code', commcode,
+                         'comm_name', commname
+                       )) AS interpretations
+                FROM comminterpretation ci
+                WHERE ci.commclass_id = cl.commclass_id
+            ) AS ci ON true
             """
         order_by_sql = """\
             ORDER BY cl.commclass_id
@@ -87,10 +126,7 @@ class CommunityClassification(Operator):
                 },
             },
             'from': {
-                'sql': """\
-                    FROM commclass AS cl
-                    LEFT JOIN comminterpretation ci USING (commclass_id)
-                    """,
+                'sql': "FROM commclass AS cl",
                 'params': []
             },
             'conditions': {
@@ -110,11 +146,11 @@ class CommunityClassification(Operator):
         }
         self.query['select'] = {
             "always": {
-                'columns': main_columns[self.detail],
+                'columns': main_columns[query_type],
                 'params': []
             },
         }
         self.query['from'] = {
-            'sql': from_sql,
+            'sql': from_sql[query_type],
             'params': []
         }

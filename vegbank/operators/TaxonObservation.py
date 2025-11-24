@@ -22,16 +22,11 @@ class TaxonObservation(Operator):
         more specified strata.
     Taxon Interpretation: The asserted association of a taxon observation with
         a specific plant name and authority. A single taxon observation can have
-        multiple taxon interpretations.
+        multiple taxon interpretations. The current and original interpretations
+        (which may be the same) are returned here.
 
     Inherits from the Operator parent class to utilize common default values and
     methods.
-
-    Note that TaxonObservation deviates from the base Operator class in 2 ways:
-    1. Skips querying the db for the full record count, because it takes too long
-       (self.include_full_count is False)
-    2. Uses an extra query parameter `num_taxa` for capping the number of taxa
-       returned per plot observation
     """
 
     def __init__(self, params):
@@ -39,50 +34,118 @@ class TaxonObservation(Operator):
         self.name = "taxon_observation"
         self.table_code = "to"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.default_num_taxa = 5
-        self.include_full_count = False
-        self.full_get_parameters = ('num_taxa', 'limit', 'offset')
+        self.nested_options = ("true", "false")
 
-    def validate_query_params(self, request_args):
-        """
-        Validate query parameters and apply defaults to missing parameters.
+    def configure_query(self, *args, **kwargs):
+        query_type = self.detail
+        if self.with_nested == 'true':
+            query_type += "_nested"
 
-        This only applies validations specific to taxon observations, then
-        dispatches to the parent validation method for more general (and more
-        permissive) validations.
+        base_columns = {'*': "*"}
+        main_columns = {}
+        # identify full shallow columns
+        main_columns['full'] = {
+            'to_code': "'to.' || txo.taxonobservation_id",
+            'ob_code': "'ob.' || txo.observation_id",
+            'author_plant_name': "txo.authorplantname",
+            'int_curr_plant_code': "txo.int_currplantcode",
+            'int_curr_plant_common': "txo.int_currplantcommon",
+            'int_curr_pc_code': "'pc.' || txo.int_currplantconcept_id",
+            'int_curr_plant_sci_full': "txo.int_currplantscifull",
+            'int_curr_plant_sci_name_no_auth': "txo.int_currplantscinamenoauth",
+            'int_orig_plant_code': "txo.int_origplantcode",
+            'int_orig_plant_common': "txo.int_origplantcommon",
+            'int_orig_pc_code': "'pc.' || txo.int_origplantconcept_id",
+            'int_orig_plant_sci_full': "txo.int_origplantscifull",
+            'int_orig_plant_sci_name_no_auth': "txo.int_origplantscinamenoauth",
+            'taxon_inference_area': "txo.taxoninferencearea",
+            'rf_code': "rf.reference_id",
+            'rf_label': "rf.reference_id_transl",
+        }
+        # identify full columns with nesting
+        main_columns['full_nested'] = main_columns['full'] | {
+            'taxon_importance': "importances",
+        }
+        from_sql = {}
+        from_sql['full'] = """\
+            FROM txo
+            LEFT JOIN view_reference_transl rf USING (reference_id)
+            """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                         'tm_code', 'tm.' || taxonimportance_id,
+                         'sm_code', 'sm.' || stratum_id,
+                         'stratum_name', COALESCE(stratumname, '<All>'),
+                         'cover', cover,
+                         'cover_code', covercode,
+                         'basal_area', basalarea,
+                         'biomass', biomass,
+                         'inference_area', inferencearea,
+                         'stratum_base', stratumbase,
+                         'stratum_height', stratumheight
+                       )) AS importances
+                FROM (
+                  SELECT tm.taxonimportance_id,
+                         tm.cover,
+                         tm.covercode,
+                         tm.basalarea,
+                         tm.biomass,
+                         tm.inferencearea,
+                         tm.stratumbase,
+                         tm.stratumheight,
+                         sr.stratumname,
+                         sr.stratum_id
+                    FROM taxonimportance tm
+                    LEFT JOIN stratum sr USING (stratum_id)
+                    WHERE tm.taxonobservation_id = txo.taxonobservation_id
+                    ORDER BY stratum_id
+                )
+            ) AS tm ON true
+            """
+        order_by_sql = """\
+            ORDER BY txo.taxonobservation_id
+            """
 
-        Parameters:
-            request_args (ImmutableMultiDict): Query parameters provided
-                as part of the request.
+        self.query = {}
+        self.query['base'] = {
+            'alias': "txo",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+            },
+            'from': {
+                'sql': "FROM taxonobservation AS txo",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': "emb_taxonobservation < 6",
+                    'params': []
+                },
+                "to": {
+                    'sql': "txo.taxonobservation_id = %s",
+                    'params': ['vb_id']
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql,
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[query_type],
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql[query_type],
+            'params': []
+        }
 
-        Returns:
-            dict: A dictionary of validated parameters with defaults applied.
-
-        Raises:
-            QueryParameterError: If any supplied parameters are invalid.
-        """
-        # specifically require detail to be "full" for taxon observations
-        if request_args.get("detail", self.default_detail) not in ("full"):
-            raise QueryParameterError("When provided, 'detail' must be 'full'.")
-
-        # first dispatch to the base validation method
-        params = super().validate_query_params(request_args)
-
-        # now validate param specific to this class
-        try:
-            params['num_taxa'] = int(request_args.get("num_taxa",
-                                                      self.default_num_taxa))
-        except ValueError:
-            raise QueryParameterError(
-                "When provided, 'num_taxa' must be a non-negative integer."
-            )
-        if params['num_taxa'] < 0:
-            raise QueryParameterError(
-                "When provided, 'num_taxa' must be a non-negative integer."
-            )
-
-        return params
-    
     def upload_strata_cover_data(self, file, conn):
         """
         takes a parquet file in the strata cover data format from the loader module and uploads it to the taxon observation,

@@ -71,7 +71,7 @@ def plot_observations(ob_code):
         detail (str, optional): Level of detail for the response.
             Can be either 'minimal' or 'full'. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
-            Can always be 'true' or 'false'. Defaults to 'false'.
+            Can be 'true' or 'false'. Defaults to 'false'.
         num_taxa (int, optional): Number of taxa to return per plot observation,
             in descending order of max cover if detail=minimal, and in
             alphabetical order by plant name if detail=full. Defaults to 5.
@@ -313,6 +313,8 @@ def community_classifications(cl_code):
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
             Can be either 'minimal' or 'full'. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -457,6 +459,7 @@ def parties(py_code):
             being retrieved. If None, retrieves all parties.
 
     GET Query Parameters:
+        search (str, optional): Party name/organization search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
@@ -503,6 +506,7 @@ def projects(pj_code):
             retrieved. If None, retrieves all projects.
 
     GET Query Parameters:
+        search (str, optional): Project name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
