@@ -6,10 +6,12 @@ from flask import jsonify, send_file
 import psycopg
 import pandas as pd
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import convert_to_parquet, jsonify_error_message, QueryParameterError
+from utilities import jsonify_error_message, QueryParameterError
 
 class Operator:
     """
@@ -346,7 +348,7 @@ class Operator:
             flask.Response: A Flask response object containing:
                 - For individual records: Data as JSON or Parquet
                 - For collection records: Data as JSON or Parquet, with
-                  associated record count if JSON
+                  associated record count if provided
                 - For invalid parameters: JSON error message with 400 status code
         """
 
@@ -381,17 +383,17 @@ class Operator:
         table_code = table_code or self.table_code
 
         # Are we querying based on some specific vb_code?
-        is_query_by_code = vb_code is not None
+        querying_by_code = vb_code is not None
         # Are we paginating? Yes whenever we might be pulling multiple records,
         # which is true except when querying a resource directly by its vb_code
-        paginating = not is_query_by_code
+        paginating = not querying_by_code
         # Are we sorting? Yes always, if we might pull multiple records
         sort = paginating
         # Are we searching? Yes if asked, unless we're getting a single record,
         # in which case *we will ignore the search condition*
         searching = (params.get('search') is not None) and paginating
 
-        if is_query_by_code:
+        if querying_by_code:
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
@@ -405,17 +407,48 @@ class Operator:
                                              paginating=paginating, sort=paginating)
         data = [params.get(val) for val in placeholders]
 
-        if (not is_query_by_code and self.include_full_count):
-            count_sql, placeholders = self.build_query(by=by, count=True,
-                searching=searching, sort=False)
-        else:
-            count_sql, placeholders = None, ()
-        count_data = [params.get(val) for val in placeholders]
-
-        if params['create_parquet']:
-            return self.create_parquet_response(sql, data)
-        else:
-            return self.create_json_response(sql, data, count_sql, count_data)
+        using_record_count = querying_by_code
+        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
+            # In sql_debug mode, just return the generated SQL
+            if self.query_mode == 'sql_debug':
+                with conn.cursor() as cur:
+                    return cur.mogrify(sql, data)
+            # Otherwise, deal with counting before proceeding to actual queries
+            if not self.include_full_count:
+                if self.query_mode == 'sql_debug_count':
+                    return jsonify("/*-- No count performed --*/")
+                # Setting to None means no count will be reported later
+                count = None
+                if self.query_mode == 'count':
+                    return jsonify({'count': count})
+            elif using_record_count:
+                if self.query_mode == 'sql_debug_count':
+                    return jsonify("/*-- Using actual record count --*/")
+                # Setting to -1 means count will be based on actual record count
+                count = -1
+                if self.query_mode == 'count':
+                    # Note: with query_mode set to 'count', this method will
+                    # only query for and report counts, not the full data
+                    return self.create_json_response(conn, sql, data, count)
+            else:
+                count_sql, placeholders = self.build_query(by=by, count=True,
+                    searching=searching, sort=False)
+                count_data = [params.get(val) for val in placeholders]
+                if self.query_mode == 'sql_debug_count':
+                    with conn.cursor() as cur:
+                        return cur.mogrify(count_sql, count_data)
+                # In this case, count is based on full record count
+                with conn.cursor() as cur:
+                    count = cur.execute(count_sql, count_data).fetchone()[0]
+                if self.query_mode == 'count':
+                    return jsonify({'count': count})
+            # Now query for data (if we didn't already return SQL or a count),
+            # passing in the count as set above to one of: the full count, -1 as
+            # an indicator to use the record count, or None to skip counting
+            if params['create_parquet']:
+                return self.create_parquet_response(conn, sql, data, count)
+            else:
+                return self.create_json_response(conn, sql, data, count)
 
     def get_vegbank_resources_old(self, request, vb_code=None):
         """
@@ -536,71 +569,76 @@ class Operator:
 
         return params
 
-    def create_json_response(self, sql, data, count_sql, count_data=None):
+    def create_json_response(self, conn, sql, data, count=None):
         """
         Execute a database query and return results as a JSON response
 
-        If count_sql is provided, an additional query will be executed to
-        obtain a record count along with the actual data records.
+        If count is None, no count will reported. If count is -1
+        (sentinel value), the number of records in the query result set
+        will be reported as the count. Otherwise, the provided count
+        value will be reported along with the response. When reported,
+        counts are provided as a top-level JSON element with key 'count'.
 
         Parameters:
+            conn (psycopg.Connection): Active database connection.
             sql (str): Main SQL query to retrieve data records.
             data (tuple): Query parameters to be substituted into the SQL query.
-            count_sql (str or None): Optional SQL query to count total records.
-                If None, count is determined from the length of returned data.
+            count (int): Total record count, or None if not available.
 
         Returns:
             flask.Response: A Flask JSON response containing:
                 - data (list): List of database records as dictionaries
-                - count (int): Total record count (from count_sql or len(data))
+                - count (int): Total record count (from count or len(data)),
+                      omitted if count is None
         """
         to_return = {}
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
-            conn.row_factory = dict_row
-            with conn.cursor() as cur:
-                if (self.debug):
-                    generated_sql = cur.mogrify(sql, data)
-                    if self.query_mode == 'sql_debug':
-                        return generated_sql
-                    print(generated_sql)
-                if count_sql is not None:
-                    if self.query_mode == 'sql_debug_count':
-                        generated_sql = cur.mogrify(count_sql, count_data)
-                        return generated_sql
-                    cur.execute(count_sql, count_data)
-                    to_return["count"] = cur.fetchall()[0]["count"]
-                    if self.query_mode == 'count':
-                        return jsonify(to_return)
-                cur.execute(sql, data)
-                results = cur.fetchall()
-                if count_sql is None:
-                    to_return["count"] = len(results)
-                    if self.query_mode == 'count':
-                        return jsonify(to_return)
-                    elif self.query_mode == 'sql_debug_count':
-                        return jsonify("/*-- No count performed --*/")
+        conn.row_factory = dict_row
+        with conn.cursor() as cur:
+            cur.execute(sql, data)
+            results = cur.fetchall()
+            if count == -1:
+                count = len(results)
+            if count is not None:
+                to_return["count"] = count
+            if self.query_mode == 'normal':
                 to_return["data"] = results
-
         return jsonify(to_return)
 
-    def create_parquet_response(self, sql, data):
+    def create_parquet_response(self, conn, sql, data, count=None):
         """
         Execute a database query and return results as a Parquet response
 
+        If count is None, no count will reported. If count is -1
+        (sentinel value), the number of records in the query result set
+        will be reported as the count. Otherwise, the provided count
+        value will be reported along with the response. When reported,
+        counts are embedded in Parquet as metadata with key 'vb_count'.
+
         Parameters:
+            conn (psycopg.Connection): Active database connection.
             sql (str): Main SQL query to retrieve data records.
             data (tuple): Query parameters to be substituted into the SQL query.
+            count (int): Full record count, or None if not available
 
         Returns:
-            flask.Response: A Flask Parquet response containing the data
+            flask.Response: A Flask Parquet response containing the data,
+                including with a custom metadata field with key 'vb_count'
+                containing the reported record count (omitted if count is None)
         """
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
-            df_parquet = convert_to_parquet(sql, data, conn)
-        return send_file(io.BytesIO(df_parquet),
+        with conn.cursor() as cur:
+            df = pd.read_sql(cur.mogrify(sql, data), conn)
+        if count is -1:
+            count = len(df)
+        arrow_tbl = pa.Table.from_pandas(df)
+        if count is not None:
+            arrow_tbl = arrow_tbl.replace_schema_metadata({'vb_count': str(count)})
+        buffer = io.BytesIO()
+        pq.write_table(arrow_tbl, buffer)
+        buffer.seek(0)
+        return send_file(buffer,
                          mimetype='application/octet-stream',
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
-    
 
     def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
         """
