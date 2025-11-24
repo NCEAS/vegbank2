@@ -29,6 +29,10 @@ class Project(Operator):
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(pj.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         main_columns['full'] = {
             'pj_code': "'pj.' || project_id",
@@ -53,6 +57,10 @@ class Project(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
                 'sql': "FROM project AS pj",
@@ -62,6 +70,12 @@ class Project(Operator):
                 'always': {
                     'sql': None,
                     'params': []
+                },
+                'search': {
+                    'sql': """\
+                         pj.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
                 },
                 "pj": {
                     'sql': "pj.project_id = %s",
@@ -76,6 +90,10 @@ class Project(Operator):
         self.query['select'] = {
             "always": {
                 'columns': main_columns[self.detail],
+                'params': []
+            },
+            'search': {
+                'columns': {'search_rank': 'pj.search_rank'},
                 'params': []
             },
         }
@@ -106,8 +124,13 @@ class Project(Operator):
         if request_args.get("detail", self.default_detail) not in ("full"):
             raise QueryParameterError("When provided, 'detail' must be 'full'.")
 
-        # now dispatch to the base validation method
-        return super().validate_query_params(request_args)
+        # dispatch to the base validation method
+        params = super().validate_query_params(request_args)
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
+
+        return params
 
 
     def upload_project(self, request, params):
