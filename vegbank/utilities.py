@@ -72,7 +72,7 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
     for field in required_fields:
         if field not in df.columns:
             missing_fields.append(field)
-        elif df[field].isnull().all():
+        elif df[field].isnull().any():
             missing_fields.append(field)
     if 0 < len(missing_fields):
             error_string += "The following required columns are missing from the uploaded " + file_name + ": " + ", ".join(missing_fields) + ". "
