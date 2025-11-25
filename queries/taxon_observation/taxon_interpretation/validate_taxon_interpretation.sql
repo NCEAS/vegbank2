@@ -34,13 +34,13 @@ ON
     taxon_interpretation_temp.vb_ro_code = 'ro.' || aux_role.role_id
 WHERE aux_role.role_id IS NULL;
 
--- Validate reference codes
+-- Validate reference codes. Additional AND statement is added because this is an optional foreign key. 
 
 SELECT taxon_interpretation_temp.vb_rf_code
 FROM 
     taxon_interpretation_temp LEFT JOIN reference
 ON
     taxon_interpretation_temp.vb_rf_code = 'rf.' || reference.reference_id
-WHERE reference.reference_id IS NULL;
+WHERE reference.reference_id IS NULL AND taxon_interpretation_temp.vb_rf_code IS NOT NULL;
 
 -- Leaving out collector_id and museum_id for now as they are not used in the DB. Check with team. 

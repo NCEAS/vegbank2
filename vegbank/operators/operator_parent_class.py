@@ -630,6 +630,12 @@ class Operator:
         table_df = table_df.drop_duplicates()
         table_df.replace({pd.NaT: None, np.nan: None}, inplace=True)
 
+        join_field_name = 'user_' + insert_table_code + '_code' 
+        duplicate_user_codes = table_df[join_field_name].duplicated()
+        if duplicate_user_codes.any():
+            duplicated_codes = table_df.loc[duplicate_user_codes, join_field_name].tolist()
+            raise ValueError(f"The following user codes are duplicated in the upload data for table {insert_table_name}: {duplicated_codes}")
+        
         table_inputs = list(table_df.itertuples(index=False, name=None))
         with conn.cursor() as cur:
             sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
@@ -666,7 +672,6 @@ class Operator:
 
             new_codes_list = id_pairs_df[insert_table_id].tolist()
 
-            join_field_name = 'user_' + insert_table_code + '_code' 
             joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
             
             new_codes_df = pd.DataFrame()
