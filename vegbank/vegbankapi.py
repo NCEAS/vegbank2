@@ -168,6 +168,8 @@ def taxon_observations(to_code):
     """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
+        if allow_uploads is False:
+            return jsonify_error_message("Uploads not allowed."), 403
         if 'file' not in request.files:
             return jsonify_error_message("No file part in the request."), 400
         file = request.files['file']
@@ -210,6 +212,8 @@ def strata_cover_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
     if 'file' not in request.files:
         return jsonify_error_message("No file part in the request."), 400
     file = request.files['file']
@@ -283,6 +287,61 @@ def stem_data():
         print(traceback.format_exc())
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
+
+@app.route("/taxon-interpretations", methods=['POST'])
+def taxon_interpretations():
+    """
+    Upload taxon interpretations from a Parquet file.
+
+    This function handles HTTP POST requests to upload taxon interpretations.
+    It expects a Parquet file containing taxon interpretations in the request.
+    Uploads data to the taxon interpretation table. If the upload is successful,
+    it returns a JSON response indicating success. If there are any errors
+    during the upload process, it returns an appropriate error message.
+
+    Query Parameters:
+        dry_run (str, optional): If set to 'true', the upload will be
+            simulated without committing changes to the database.
+            Defaults to 'false'.
+
+    POST Parameters: 
+        file (FileStorage): The uploaded Parquet file containing taxon
+            interpretations.
+
+    Returns:
+        flask.Response: A JSON response indicating success or failure of
+            the upload operation.
+    """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+    print("Dry Run: " + str(dry_run))
+
+    taxon_observation_operator = TaxonObservation(params)
+    to_return = None
+    try:
+        with connect(**params, row_factory=dict_row) as conn:
+            to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
+            if dry_run:
+                conn.rollback()
+                message = "Dry run - rolling back transaction."
+                return jsonify({
+                    "message": message,
+                    "dry_run_data": to_return
+                })
+        conn.close()
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
+    return jsonify(to_return)
 
 @app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<cl_code>", methods=['GET'])
