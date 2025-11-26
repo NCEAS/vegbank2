@@ -8,7 +8,7 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, convert_to_parquet, allowed_file
+from utilities import jsonify_error_message, allowed_file
 from operators import (
     TaxonObservation,
     PlotObservation,
