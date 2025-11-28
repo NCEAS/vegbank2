@@ -13,6 +13,22 @@ from psycopg import ClientCursor
 from psycopg.rows import dict_row
 from utilities import jsonify_error_message, QueryParameterError
 
+table_code_lookup = {
+    'community-classifications': 'cl',
+    'community-concepts': 'cc',
+    'community-interpretations': 'ci',
+    'cover-methods': 'cm',
+    'parties': 'py',
+    'plant-concepts': 'pc',
+    'plot-observations': 'ob',
+    'projects': 'pj',
+    'references': 'rf',
+    'stratum-methods': 'sm',
+    'taxon-interpretations': 'ti',
+    'taxon-observations': 'to',
+}
+
+
 class Operator:
     """
     Generic operator responsible for interacting with the VegBank database
@@ -313,24 +329,37 @@ class Operator:
         print(params)
         return sql, params
 
-    def get_vegbank_resources(self, request, vb_code=None, table_code=None):
+    def get_vegbank_resources(self, request, vb_code=None):
         """
         Retrieve either an individual VegBank resource or a collection.
 
-        If a valid vb_code is provided with prefix matching `self.table_code`,
-        returns the corresponding record of type `self.name` if one exists. If
-        no vb_code is provided, returns the full collection of records with
-        pagination and field scope controlled by query parameters.
+        If this is a single-resource query with a valid vb_code (i.e., prefix
+        matches `self.table_code`), returns the corresponding record of type
+        `self.name` if one exists.
+            - E.g.: '/plot-observations/ob.123' returns plot observation ob.123
+
+        If no vb_code is provided, returns the full collection of records with
+        pagination, along with the full collection count.
+            - Example: '/plot-observations' returns all plot observations
+
+        If this is a cross-resource query with a valid vb_code for the scoping
+        resource (i.e., prefix matches the table code derived from the query
+        scope), returns the collection of target resource records associated
+        with the scoping resource, again with pagination and a count of the
+        (scoped) collection:
+            - Example: '/projects/pj.456/plot-observations' returns all plot
+              observations associated with project pj.456
 
         Parameters:
             request (flask.Request): The Flask request object containing query
                 parameters.
             vb_code (str or None): The unique identifier for the VegBank
-                resource being retrieved. If None, retrieves all records.
-            table_code (str or None): String table code associated with
-                the vb_code. If none, the class default will be used.
+                resource being retrieved or for the resource used to scope the
+                collection of resources being retrieved. If None, retrieves all
+                records.
 
         Query Parameters:
+            count (optional): If present, only return the collection count.
             detail (str, optional): Level of detail for the response.
                 Can always be 'full', sometimes 'minimal'. Defaults to 'full'.
             with_nested (str, optional): Include nested fields?
@@ -378,15 +407,27 @@ class Operator:
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
-        # If no table_code was passed in when routing, then it should come from
-        # the target operator attribute
-        table_code = table_code or self.table_code
+        # Get the table code associated with the current query scope, which may
+        # be different from the table code associated with the target resource
+        # (defined by self.table_code).
+        #
+        # E.g., if the route is '/plot-observations', then the query scope and
+        # target resource both use table code 'ob'. However, if the route is
+        # `/projects/pj.123/plot-observations`, then the query scope is table
+        # code `pj` (a project) even though the target resource is associated
+        # with table code 'ob' (observations).
+        resource_type = request.path.split('/')[1]
+        table_code = table_code_lookup[resource_type]
 
+        # Are we limiting our query of the target resource type (e.g., plot
+        # observations) to records associated with a member of some other
+        # resource type (e.g., a project)?
+        is_cross_resource_query = table_code != self.table_code
         # Are we querying based on some specific vb_code?
         querying_by_code = vb_code is not None
         # Are we paginating? Yes whenever we might be pulling multiple records,
         # which is true except when querying a resource directly by its vb_code
-        paginating = not querying_by_code
+        paginating = is_cross_resource_query or not querying_by_code
         # Are we sorting? Yes always, if we might pull multiple records
         sort = paginating
         # Are we searching? Yes if asked, unless we're getting a single record,
@@ -407,7 +448,7 @@ class Operator:
                                              paginating=paginating, sort=paginating)
         data = [params.get(val) for val in placeholders]
 
-        using_record_count = querying_by_code
+        using_record_count = querying_by_code and not is_cross_resource_query
         with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
             # In sql_debug mode, just return the generated SQL
             if self.query_mode == 'sql_debug':

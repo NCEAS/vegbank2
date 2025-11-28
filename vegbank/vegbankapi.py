@@ -438,25 +438,31 @@ def plant_concepts(pc_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/parties", defaults={'py_code': None}, methods=['GET', 'POST'])
-@app.route("/parties/<py_code>", methods=['GET'])
-def parties(py_code):
+@app.route("/parties", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/parties/<vb_code>", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/parties", methods=['GET'])
+@app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
+@app.route("/projects/<vb_code>/parties", methods=['GET'])
+def parties(vb_code):
     """
     Retrieve either an individual party or a collection.
 
-    This function handles HTTP requests for parties. It currently
-    supports only the GET method to retrieve parties. If a POST
-    request is made, it returns an error message indicating that POST is
-    not supported. For any other HTTP method, it returns a 405 error.
+    This function handles HTTP requests for parties. It currently supports only
+    the GET method to retrieve parties. If a POST request is made, it returns an
+    error message indicating that POST is not supported. For any other HTTP
+    method, it returns a 405 error.
 
-    If a valid py_code is provided, returns the corresponding record if it
-    exists. If no py_code is provided, returns the full collection of
-    concept records with pagination and field scope controlled by query
-    parameters.
+    GET: If a valid party code is provided, returns the corresponding record
+    if it exists. If a valid code for a different supported resource type is
+    provided, returns the collection of party records associated with that
+    resource. If no vb_code is provided, returns the full collection of party
+    records. Collection responses may be further mediated by pagination
+    parameters and other filtering query parameters.
 
     Parameters:
-        py_code (str or None): The unique identifier for the party
-            being retrieved. If None, retrieves all parties.
+        vb_code (str or None): The unique identifier for the party being
+            retrieved, or for a resource of a different type used to focus
+            party retrieval. If None, retrieves all parties.
 
     GET Query Parameters:
         search (str, optional): Party name/organization search query.
@@ -482,7 +488,7 @@ def parties(py_code):
         return jsonify_error_message(
             "POST method is not supported for parties."), 405
     elif request.method == 'GET':
-        return party_operator.get_vegbank_resources(request, py_code)
+        return party_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
