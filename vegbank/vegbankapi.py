@@ -48,24 +48,38 @@ def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
 
 
-@app.route("/plot-observations", defaults={'ob_code': None}, methods=['GET', 'POST'])
-@app.route("/plot-observations/<ob_code>", methods=['GET'])
-def plot_observations(ob_code):
+@app.route("/plot-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/plot-observations/<vb_code>", methods=['GET'])
+@app.route("/projects/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/parties/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/plant-concepts/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/community-concepts/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
+def plot_observations(vb_code):
     """
     Retrieve either an individual plot observation or a collection, or
     upload a new set of plot observations.
 
-    This function handles HTTP requests for plot observations. For GET requests,
-    it retrieves plot observation details associated with a specified plot
-    observation code (e.g., `ob.1`) or a paginated collection of all plot
-    observations if no code is provided; see below for query parameters to
-    support pagination and detail. For POST requests, it facilitates uploading
-    of new plot observations if permitted via an environment variable. For any
-    other HTTP method, it returns a 405 error.
+    This function handles HTTP requests for plot observations, currently
+    supporting POST and GET methods. For any other HTTP method, it returns a 405
+    error.
+
+    POST: Facilitates uploading of new plot observations as an attached Parquet
+    file, if permitted via an environment variable.
+
+    GET: If a valid plot observation code is provided (e.g., ob.1), returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of plot observation
+    records associated with that resource. If no vb_code is provided, returns
+    the full collection of plot observation records. Collection responses may be
+    further mediated by pagination parameters and other filtering query
+    parameters.
 
     Parameters (for GET requests only):
-        ob_code (str or None): The unique identifier for the plot observation
-            being retrieved. If None, retrieves all plot observations.
+        vb_code (str or None): The unique identifier for the plot observation
+            being retrieved, or for a resource of a different type used to focus
+            plot observation retrieval. If None, retrieves all plot observations.
 
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
@@ -100,7 +114,7 @@ def plot_observations(ob_code):
         else:
             return plot_observation_operator.upload_plot_observations(request, params)
     elif request.method == 'GET':
-        return plot_observation_operator.get_vegbank_resources(request, ob_code)
+        return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
