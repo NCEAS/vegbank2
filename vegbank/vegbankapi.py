@@ -309,27 +309,33 @@ def taxon_interpretations():
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return jsonify(to_return)
 
-@app.route("/community-classifications", defaults={'cl_code': None}, methods=['GET', 'POST'])
-@app.route("/community-classifications/<cl_code>", methods=['GET'])
-def community_classifications(cl_code):
+@app.route("/community-classifications", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/community-classifications/<vb_code>", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
+@app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
+def community_classifications(vb_code):
     """
     Retrieve either an individual community classification or a collection.
 
-    This function handles HTTP requests for community classifications.
-    It currently supports only the GET method to retrieve community
+    This function handles HTTP requests for community classifications. It
+    currently supports only the GET method to retrieve community
     classifications. If a POST request is made, it returns an error message
-    indicating that POST is not supported. For any other HTTP method, it
-    returns a 405 error.
+    indicating that POST is not supported. For any other HTTP method, it returns
+    a 405 error.
 
-    If a valid cl_code is provided, returns the corresponding record if it
-    exists. If no cl_code is provided, returns the full collection of
-    classification records with pagination and field scope controlled by
-    query parameters.
+    GET: If a valid community classification code is provided, returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of community
+    classification records associated with that resource. If no vb_code is
+    provided, returns the full collection of community classification records.
+    Collection responses may be further mediated by pagination parameters and
+    other filtering query parameters.
 
     Parameters:
-        cl_code (str or None): The unique identifier for the community
-            classification being retrieved. If None, retrieves all
-            classifications.
+        vb_code (str or None): The unique identifier for the community
+            classification being retrieved, or for a resource of a different
+            type used to focus community classification retrieval. If None,
+            retrieves all community classifications.
 
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
@@ -356,7 +362,8 @@ def community_classifications(cl_code):
         return jsonify_error_message(
             "POST method is not supported for community_classifications."), 405
     elif request.method == 'GET':
-        return community_classification_operator.get_vegbank_resources(request, cl_code)
+        return community_classification_operator.get_vegbank_resources(request,
+                                                                       vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
