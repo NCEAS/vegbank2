@@ -138,6 +138,18 @@ class CommunityConcept(Operator):
                     'sql': "cc.commconcept_id = %s",
                     'params': ['vb_id']
                 },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              JOIN commclass cl USING (commclass_id)
+                              JOIN observation ob USING (observation_id)
+                              WHERE cc.commconcept_id = ci.commconcept_id
+                                AND observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                }
             },
             'order_by': {
                 'sql': order_by_sql,

@@ -354,25 +354,31 @@ def community_classifications(cl_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-concepts", defaults={'cc_code': None}, methods=['GET', 'POST'])
-@app.route("/community-concepts/<cc_code>")
-def community_concepts(cc_code):
+@app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/community-concepts/<vb_code>")
+@app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
+def community_concepts(vb_code):
     """
     Retrieve either an individual community concept or a collection.
 
     This function handles HTTP requests for community concepts. It currently
     supports only the GET method to retrieve community concepts. If a POST
-    request is made, it returns an error message indicating that POST is
-    not supported. For any other HTTP method, it returns a 405 error.
+    request is made, it returns an error message indicating that POST is not
+    supported. For any other HTTP method, it returns a 405 error.
 
-    If a valid cc_code is provided, returns the corresponding record if it
-    exists. If no cc_code is provided, returns the full collection of
-    concept records with pagination and field scope controlled by query
+    GET: If a valid community concept code is provided, returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of community concept
+    records associated with that resource. If no vb_code is provided, returns
+    the full collection of community concept records. Collection responses may
+    be further mediated by pagination parameters and other filtering query
     parameters.
 
     Parameters:
-        cc_code (str or None): The unique identifier for the community concept
-            being retrieved. If None, retrieves all community concepts.
+        vb_code (str or None): The unique identifier for the community concept
+            being retrieved, or for a resource of a different type used to focus
+            community concept retrieval. If None, retrieves all community
+            concepts.
 
     GET Query Parameters:
         search (str, optional): Community name search query.
@@ -398,7 +404,7 @@ def community_concepts(cc_code):
         return jsonify_error_message(
             "POST method is not supported for community concepts."), 405
     elif request.method == 'GET':
-        return community_concept_operator.get_vegbank_resources(request, cc_code)
+        return community_concept_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
