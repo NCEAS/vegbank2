@@ -403,25 +403,30 @@ def community_concepts(cc_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/plant-concepts", defaults={'pc_code': None}, methods=['GET', 'POST'])
-@app.route("/plant-concepts/<pc_code>")
-def plant_concepts(pc_code):
+@app.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/plant-concepts/<vb_code>")
+@app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
+def plant_concepts(vb_code):
     """
     Retrieve either an individual plant concept or a collection.
 
     This function handles HTTP requests for plant concepts. It currently
-    supports only the GET method to retrieve plant concepts. If a POST
-    request is made, it returns an error message indicating that POST is
-    not supported. For any other HTTP method, it returns a 405 error.
+    supports only the GET method to retrieve plant concepts. If a POST request
+    is made, it returns an error message indicating that POST is not supported.
+    For any other HTTP method, it returns a 405 error.
 
-    If a valid pc_code is provided, returns the corresponding record if it
-    exists. If no pc_code is provided, returns the full collection of
-    concept records with pagination and field scope controlled by query
-    parameters.
+    GET: If a valid plant concept code is provided, returns the corresponding
+    record if it exists. If a valid code for a different supported resource type
+    is provided, returns the collection of plant concept records associated with
+    that resource. If no vb_code is provided, returns the full collection of
+    plant concept records. Collection responses may be further mediated by
+    pagination parameters and other filtering query parameters.
 
     Parameters:
-        pc_code (str or None): The unique identifier for the plant concept
-            being retrieved. If None, retrieves all plant concepts.
+        vb_code (str or None): The unique identifier for the plant
+            concept being retrieved, or for a resource of a different type used
+            to focus plant concept retrieval. If None, retrieves all plant
+            concepts.
 
     GET Query Parameters:
         search (str, optional): Plant name search query.
@@ -447,7 +452,7 @@ def plant_concepts(pc_code):
         return jsonify_error_message(
             "POST method is not supported for plant concepts."), 405
     elif request.method == 'GET':
-        return plant_concept_operator.get_vegbank_resources(request, pc_code)
+        return plant_concept_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
