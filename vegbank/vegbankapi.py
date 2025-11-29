@@ -140,29 +140,36 @@ def get_observation_details(ob_code):
     return plot_observation_operator.get_observation_details(ob_code)
 
 
-@app.route("/taxon-observations", defaults={'to_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-observations/<to_code>", methods=['GET'])
-def taxon_observations(to_code):
+@app.route("/taxon-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-observations/<vb_code>", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
+@app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
+def taxon_observations(vb_code):
     """
-    Retrieve either an individual taxon observation or a collection.
+    Retrieve an individual taxon observation or a collection, or upload a new
+    set of taxon observations.
 
-    This function handles HTTP requests for taxon observations. It currently
-    supports only the GET method to retrieve taxon observations. If a POST
-    request is made, it returns an error message indicating that POST is not
-    supported. For any other HTTP method, it returns a 405 error.
+    This function handles HTTP requests for taxon observations, currently
+    supporting POST and GET methods. For any other HTTP method, it returns a 405
+    error.
 
-    If a valid to_code is provided, returns the corresponding record if it
-    exists. If no to_code is provided, returns the full collection of
-    taxon observation records with pagination and field scope controlled by
-    query parameters.
+    POST: Facilitates uploading of new taxon observations as an attached Parquet
+    file, if permitted via an environment variable.
+
+    GET: If a valid taxon observation code is provided, returns the corresponding
+    record if it exists. If a valid code for a different supported resource type
+    is provided, returns the collection of taxon observation records associated with
+    that resource. If no vb_code is provided, returns the full collection of
+    taxon observation records. Collection responses may be further mediated by
+    pagination parameters and other filtering query parameters.
 
     Parameters:
-        to_code (str or None): The unique identifier for the taxon observation
-            being retrieved. If None, retrieves all taxon observations.
+        vb_code (str or None): The unique identifier for the taxon
+            observation concept being retrieved, or for a resource of a
+            different type used to focus taxon observation retrieval. If
+            None, retrieves all taxon observations.
 
     GET Query Parameters:
-        num_taxa (int, optional): Number of taxa to return per plot observation,
-            in descending order of max cover. Defaults to 5.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         limit (int, optional): Maximum number of records to return.
@@ -201,7 +208,7 @@ def taxon_observations(to_code):
             return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
         return to_return
     elif request.method == 'GET':
-        return taxon_observation_operator.get_vegbank_resources(request, to_code)
+        return taxon_observation_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
