@@ -7,10 +7,12 @@ dbUser: vegbank
 
 ## @section CNPG Init - Recover from a Scheduled Backup
 init:
-  ## @param init.enabled Set this to true to enable recovery from a volumeSnapshot via `ScheduledBackups`
+  ## @param init.enabled Set this to 'true' to enable recovery from a volumeSnapshot via `ScheduledBackups`
   enabled: false
   method: recovery
   ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
+  ## If you do not see a new pod launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7',
+  ## You can execute the command 'kubectl describe cluster vegbankenabledtest' to begin debugging
   recoverFromBackup: vegbankdb-scheduled-backup-placeholder
 
 resources:
