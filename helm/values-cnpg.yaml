@@ -5,6 +5,14 @@ dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
 
+## @section CNPG Init - Recover from a Scheduled Backup
+init:
+  ## @param init.enabled Set this to true to enable recovery from a volumeSnapshot via `ScheduledBackups`
+  enabled: false
+  method: recovery
+  ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
+  recoverFromBackup: vegbankdb-scheduled-backup-placeholder
+
 resources:
   requests:
     cpu: 750m
