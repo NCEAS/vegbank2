@@ -140,6 +140,18 @@ class PlantConcept(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              JOIN taxonobservation txo USING (taxonobservation_id)
+                              JOIN observation ob USING (observation_id)
+                              WHERE pc.plantconcept_id = txi.plantconcept_id
+                                AND observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql,

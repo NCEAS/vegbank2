@@ -27,6 +27,10 @@ class CommunityConcept(Operator):
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(cc.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         main_columns['full'] = {
             'cc_code': "'cc.' || cc.commconcept_id",
@@ -110,6 +114,10 @@ class CommunityConcept(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
                 'sql': "  FROM commconcept AS cc",
@@ -120,10 +128,28 @@ class CommunityConcept(Operator):
                     'sql': None,
                     'params': []
                 },
+                'search': {
+                    'sql': """\
+                         cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
+                },
                 "cc": {
                     'sql': "cc.commconcept_id = %s",
                     'params': ['vb_id']
                 },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              JOIN commclass cl USING (commclass_id)
+                              JOIN observation ob USING (observation_id)
+                              WHERE cc.commconcept_id = ci.commconcept_id
+                                AND observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                }
             },
             'order_by': {
                 'sql': order_by_sql,
@@ -133,6 +159,10 @@ class CommunityConcept(Operator):
         self.query['select'] = {
             "always": {
                 'columns': main_columns[self.detail],
+                'params': []
+            },
+            'search': {
+                'columns': {'search_rank': 'cc.search_rank'},
                 'params': []
             },
         }
@@ -164,4 +194,9 @@ class CommunityConcept(Operator):
             raise QueryParameterError("When provided, 'detail' must be 'full'.")
 
         # now dispatch to the base validation method
-        return super().validate_query_params(request_args)
+        params = super().validate_query_params(request_args)
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
+
+        return params

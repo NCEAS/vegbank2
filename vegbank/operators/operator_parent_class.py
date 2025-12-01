@@ -6,10 +6,28 @@ from flask import jsonify, send_file
 import psycopg
 import pandas as pd
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import convert_to_parquet, jsonify_error_message, QueryParameterError
+from utilities import jsonify_error_message, QueryParameterError
+
+table_code_lookup = {
+    'community-classifications': 'cl',
+    'community-concepts': 'cc',
+    'community-interpretations': 'ci',
+    'cover-methods': 'cm',
+    'parties': 'py',
+    'plant-concepts': 'pc',
+    'plot-observations': 'ob',
+    'projects': 'pj',
+    'references': 'rf',
+    'stratum-methods': 'sm',
+    'taxon-interpretations': 'ti',
+    'taxon-observations': 'to',
+}
+
 
 class Operator:
     """
@@ -29,10 +47,16 @@ class Operator:
         - Executing read queries and returning data as Parquet
 
     Attributes:
-        QUERIES_FOLDER (str): Path where SQL query files are stored.
         ROOT_QUERIES_FOLDER (str): Root path where SQL query files are stored.
             This is for queries that are shared across multiple operators.
-        default_detail (str): Default detail level for responses.
+        QUERIES_FOLDER (str): Path where SQL query files are stored.
+        detail_options (str): Accepted detail param values. This should
+            be overridden by operator implementations as needed.
+        default_detail (str): Default detail value.
+        nested_options (str): Accepted with_nested param values. This should
+            be overridden by operator implementations as needed.
+        default_nested (str): Default with_nested value.
+        default_create_parquet (str): Default create_parquet value.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
         default_offset (str): Default offset for number of records to skip.
@@ -61,7 +85,11 @@ class Operator:
         """
         self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
+        self.detail_options = ["full"]
         self.default_detail = "full"
+        self.nested_options = ["false"]
+        self.default_nested = "false"
+        self.default_create_parquet = "false"
         self.default_limit = "1000"
         self.default_offset = "0"
         self.params = params
@@ -107,8 +135,37 @@ class Operator:
             select_dict.pop('*')
         return 'SELECT ' + ',\n       '.join(select_list)
 
-    def build_query(self, by=None, detail="full", count=False, searching=False,
-                    sort=False, paginating=False):
+    def process_integer_param(self, param_name, param_value):
+        err_msg = f"When provided, {param_name} must be a non-negative integer."
+        try:
+            param_value = int(param_value)
+        except ValueError:
+            raise QueryParameterError(err_msg)
+        if param_value < 0:
+            raise QueryParameterError(err_msg)
+        return param_value
+
+    def process_option_param(self, param_name, param_value, options):
+        param_value = param_value.lower()
+        # Retun the lower-cased parameter if its valid
+        if param_value in options:
+            return param_value
+        # ... otherwise raise an informative error message
+        q_options = [f"'{option}'" for option in options]
+        if len(q_options) == 0:
+            err_msg = f"Unhandled parameter '{param_name}'."
+        else:
+            if len(q_options) == 1:
+                option_str = q_options[0]
+            elif len(q_options) == 2:
+                option_str = ' or '.join(q_options)
+            elif 2 < len(q_options):
+                option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
+            err_msg = f"When provided, '{param_name}' must be {option_str}."
+        raise QueryParameterError(err_msg)
+
+    def build_query(self, by=None, count=False, searching=False, sort=False,
+                    paginating=False):
         """
         Helper method to construct the full SQL query for retrieving data
 
@@ -119,7 +176,6 @@ class Operator:
         Parameters:
             by (str): A vb table code (e.g., "ob"), or None. Used to inject the
                 relevant sql snippets for matching to a given record type.
-            detail: (default "full")
             count (bool): Apply COUNT(1) rather than returning actual table
                 fields? (default False)
             searching (bool): Inject fulltext search? (default False)
@@ -136,7 +192,6 @@ class Operator:
         # Preliminaries
         args = locals().copy()
         del args['self']
-        self.detail = detail
         self.configure_query(**args)
 
         # Start with empty list of query placeholders, to be built out as we go
@@ -274,26 +329,41 @@ class Operator:
         print(params)
         return sql, params
 
-    def get_vegbank_resources(self, request, vb_code=None, table_code=None):
+    def get_vegbank_resources(self, request, vb_code=None):
         """
         Retrieve either an individual VegBank resource or a collection.
 
-        If a valid vb_code is provided with prefix matching `self.table_code`,
-        returns the corresponding record of type `self.name` if one exists. If
-        no vb_code is provided, returns the full collection of records with
-        pagination and field scope controlled by query parameters.
+        If this is a single-resource query with a valid vb_code (i.e., prefix
+        matches `self.table_code`), returns the corresponding record of type
+        `self.name` if one exists.
+            - E.g.: '/plot-observations/ob.123' returns plot observation ob.123
+
+        If no vb_code is provided, returns the full collection of records with
+        pagination, along with the full collection count.
+            - Example: '/plot-observations' returns all plot observations
+
+        If this is a cross-resource query with a valid vb_code for the scoping
+        resource (i.e., prefix matches the table code derived from the query
+        scope), returns the collection of target resource records associated
+        with the scoping resource, again with pagination and a count of the
+        (scoped) collection:
+            - Example: '/projects/pj.456/plot-observations' returns all plot
+              observations associated with project pj.456
 
         Parameters:
             request (flask.Request): The Flask request object containing query
                 parameters.
             vb_code (str or None): The unique identifier for the VegBank
-                resource being retrieved. If None, retrieves all records.
-            table_code (str or None): String table code associated with
-                the vb_code. If none, the class default will be used.
+                resource being retrieved or for the resource used to scope the
+                collection of resources being retrieved. If None, retrieves all
+                records.
 
         Query Parameters:
+            count (optional): If present, only return the collection count.
             detail (str, optional): Level of detail for the response.
-                Can be either 'minimal' or 'full'. Defaults to 'full'.
+                Can always be 'full', sometimes 'minimal'. Defaults to 'full'.
+            with_nested (str, optional): Include nested fields?
+                Can always be 'false', sometimes 'true'. Defaults to 'false'.
             limit (int, optional): Maximum number of records to return.
                 Defaults to 1000.
             offset (int, optional): Number of records to skip before starting
@@ -307,7 +377,7 @@ class Operator:
             flask.Response: A Flask response object containing:
                 - For individual records: Data as JSON or Parquet
                 - For collection records: Data as JSON or Parquet, with
-                  associated record count if JSON
+                  associated record count if provided
                 - For invalid parameters: JSON error message with 400 status code
         """
 
@@ -332,25 +402,39 @@ class Operator:
 
         try:
             params = self.validate_query_params(request.args)
+            self.detail = params['detail']
+            self.with_nested = params['with_nested']
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
-        # If no table_code was passed in when routing, then it should come from
-        # the target operator attribute
-        table_code = table_code or self.table_code
+        # Get the table code associated with the current query scope, which may
+        # be different from the table code associated with the target resource
+        # (defined by self.table_code).
+        #
+        # E.g., if the route is '/plot-observations', then the query scope and
+        # target resource both use table code 'ob'. However, if the route is
+        # `/projects/pj.123/plot-observations`, then the query scope is table
+        # code `pj` (a project) even though the target resource is associated
+        # with table code 'ob' (observations).
+        resource_type = request.path.split('/')[1]
+        table_code = table_code_lookup[resource_type]
 
+        # Are we limiting our query of the target resource type (e.g., plot
+        # observations) to records associated with a member of some other
+        # resource type (e.g., a project)?
+        is_cross_resource_query = table_code != self.table_code
         # Are we querying based on some specific vb_code?
-        is_query_by_code = vb_code is not None
+        querying_by_code = vb_code is not None
         # Are we paginating? Yes whenever we might be pulling multiple records,
         # which is true except when querying a resource directly by its vb_code
-        paginating = not is_query_by_code
+        paginating = is_cross_resource_query or not querying_by_code
         # Are we sorting? Yes always, if we might pull multiple records
         sort = paginating
         # Are we searching? Yes if asked, unless we're getting a single record,
         # in which case *we will ignore the search condition*
         searching = (params.get('search') is not None) and paginating
 
-        if is_query_by_code:
+        if querying_by_code:
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
@@ -360,21 +444,52 @@ class Operator:
         else:
             by = None
 
-        sql, placeholders = self.build_query(by=by, detail=params['detail'],
-            searching=searching, paginating=paginating, sort=paginating)
+        sql, placeholders = self.build_query(by=by, searching=searching,
+                                             paginating=paginating, sort=paginating)
         data = [params.get(val) for val in placeholders]
 
-        if (not is_query_by_code and self.include_full_count):
-            count_sql, placeholders = self.build_query(by=by, count=True,
-                searching=searching, sort=False)
-        else:
-            count_sql, placeholders = None, ()
-        count_data = [params.get(val) for val in placeholders]
-
-        if params['create_parquet']:
-            return self.create_parquet_response(sql, data)
-        else:
-            return self.create_json_response(sql, data, count_sql, count_data)
+        using_record_count = querying_by_code and not is_cross_resource_query
+        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
+            # In sql_debug mode, just return the generated SQL
+            if self.query_mode == 'sql_debug':
+                with conn.cursor() as cur:
+                    return cur.mogrify(sql, data)
+            # Otherwise, deal with counting before proceeding to actual queries
+            if not self.include_full_count:
+                if self.query_mode == 'sql_debug_count':
+                    return jsonify("/*-- No count performed --*/")
+                # Setting to None means no count will be reported later
+                count = None
+                if self.query_mode == 'count':
+                    return jsonify({'count': count})
+            elif using_record_count:
+                if self.query_mode == 'sql_debug_count':
+                    return jsonify("/*-- Using actual record count --*/")
+                # Setting to -1 means count will be based on actual record count
+                count = -1
+                if self.query_mode == 'count':
+                    # Note: with query_mode set to 'count', this method will
+                    # only query for and report counts, not the full data
+                    return self.create_json_response(conn, sql, data, count)
+            else:
+                count_sql, placeholders = self.build_query(by=by, count=True,
+                    searching=searching, sort=False)
+                count_data = [params.get(val) for val in placeholders]
+                if self.query_mode == 'sql_debug_count':
+                    with conn.cursor() as cur:
+                        return cur.mogrify(count_sql, count_data)
+                # In this case, count is based on full record count
+                with conn.cursor() as cur:
+                    count = cur.execute(count_sql, count_data).fetchone()[0]
+                if self.query_mode == 'count':
+                    return jsonify({'count': count})
+            # Now query for data (if we didn't already return SQL or a count),
+            # passing in the count as set above to one of: the full count, -1 as
+            # an indicator to use the record count, or None to skip counting
+            if params['create_parquet']:
+                return self.create_parquet_response(conn, sql, data, count)
+            else:
+                return self.create_json_response(conn, sql, data, count)
 
     def get_vegbank_resources_old(self, request, vb_code=None):
         """
@@ -480,92 +595,91 @@ class Operator:
         """
         params = {}
         params['create_parquet'] = request_args.get("create_parquet",
-                                                    "false").lower() == "true"
-        params['detail'] = request_args.get("detail", self.default_detail)
-        if params['detail'] not in ("minimal", "full"):
-            raise QueryParameterError(
-                "When provided, 'detail' must be 'minimal' or 'full'."
-            )
-        try:
-            params['limit'] = int(request_args.get("limit",
-                                                   self.default_limit))
-            params['offset'] = int(request_args.get("offset",
-                                                    self.default_offset))
-        except ValueError:
-            raise QueryParameterError(
-                "When provided, 'offset' and 'limit' must be non-negative integers."
-            )
-        if params['limit'] < 0 or params['offset'] < 0:
-            raise QueryParameterError(
-                "When provided, 'offset' and 'limit' must be non-negative integers."
-            )
+            self.default_create_parquet).lower() == "true"
+
+        params['detail'] = self.process_option_param('detail',
+            request_args.get('detail', self.default_detail),
+            self.detail_options)
+        params['with_nested'] = self.process_option_param('with_nested',
+            request_args.get('with_nested', self.default_nested),
+            self.nested_options)
+        params['limit'] = self.process_integer_param('limit',
+            request_args.get('limit', self.default_limit))
+        params['offset'] = self.process_integer_param('offset',
+            request_args.get('offset', self.default_offset))
+
         return params
 
-    def create_json_response(self, sql, data, count_sql, count_data=None):
+    def create_json_response(self, conn, sql, data, count=None):
         """
         Execute a database query and return results as a JSON response
 
-        If count_sql is provided, an additional query will be executed to
-        obtain a record count along with the actual data records.
+        If count is None, no count will reported. If count is -1
+        (sentinel value), the number of records in the query result set
+        will be reported as the count. Otherwise, the provided count
+        value will be reported along with the response. When reported,
+        counts are provided as a top-level JSON element with key 'count'.
 
         Parameters:
+            conn (psycopg.Connection): Active database connection.
             sql (str): Main SQL query to retrieve data records.
             data (tuple): Query parameters to be substituted into the SQL query.
-            count_sql (str or None): Optional SQL query to count total records.
-                If None, count is determined from the length of returned data.
+            count (int): Total record count, or None if not available.
 
         Returns:
             flask.Response: A Flask JSON response containing:
                 - data (list): List of database records as dictionaries
-                - count (int): Total record count (from count_sql or len(data))
+                - count (int): Total record count (from count or len(data)),
+                      omitted if count is None
         """
         to_return = {}
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
-            conn.row_factory = dict_row
-            with conn.cursor() as cur:
-                if (self.debug):
-                    generated_sql = cur.mogrify(sql, data)
-                    if self.query_mode == 'sql_debug':
-                        return generated_sql
-                    print(generated_sql)
-                if count_sql is not None:
-                    if self.query_mode == 'sql_debug_count':
-                        generated_sql = cur.mogrify(count_sql, count_data)
-                        return generated_sql
-                    cur.execute(count_sql, count_data)
-                    to_return["count"] = cur.fetchall()[0]["count"]
-                    if self.query_mode == 'count':
-                        return jsonify(to_return)
-                cur.execute(sql, data)
-                results = cur.fetchall()
-                if count_sql is None:
-                    to_return["count"] = len(results)
-                    if self.query_mode == 'count':
-                        return jsonify(to_return)
-                    elif self.query_mode == 'sql_debug_count':
-                        return jsonify("/*-- No count performed --*/")
+        conn.row_factory = dict_row
+        with conn.cursor() as cur:
+            cur.execute(sql, data)
+            results = cur.fetchall()
+            if count == -1:
+                count = len(results)
+            if count is not None:
+                to_return["count"] = count
+            if self.query_mode == 'normal':
                 to_return["data"] = results
-
         return jsonify(to_return)
 
-    def create_parquet_response(self, sql, data):
+    def create_parquet_response(self, conn, sql, data, count=None):
         """
         Execute a database query and return results as a Parquet response
 
+        If count is None, no count will reported. If count is -1
+        (sentinel value), the number of records in the query result set
+        will be reported as the count. Otherwise, the provided count
+        value will be reported along with the response. When reported,
+        counts are embedded in Parquet as metadata with key 'vb_count'.
+
         Parameters:
+            conn (psycopg.Connection): Active database connection.
             sql (str): Main SQL query to retrieve data records.
             data (tuple): Query parameters to be substituted into the SQL query.
+            count (int): Full record count, or None if not available
 
         Returns:
-            flask.Response: A Flask Parquet response containing the data
+            flask.Response: A Flask Parquet response containing the data,
+                including with a custom metadata field with key 'vb_count'
+                containing the reported record count (omitted if count is None)
         """
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
-            df_parquet = convert_to_parquet(sql, data, conn)
-        return send_file(io.BytesIO(df_parquet),
+        with conn.cursor() as cur:
+            df = pd.read_sql(cur.mogrify(sql, data), conn)
+        if count is -1:
+            count = len(df)
+        arrow_tbl = pa.Table.from_pandas(df)
+        if count is not None:
+            arrow_tbl = arrow_tbl.replace_schema_metadata({'vb_count': str(count)})
+        buffer = io.BytesIO()
+        pq.write_table(arrow_tbl, buffer)
+        buffer.seek(0)
+        return send_file(buffer,
                          mimetype='application/octet-stream',
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
-    
 
     def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
         """
@@ -595,6 +709,12 @@ class Operator:
         table_df = table_df.drop_duplicates()
         table_df.replace({pd.NaT: None, np.nan: None}, inplace=True)
 
+        join_field_name = 'user_' + insert_table_code + '_code' 
+        duplicate_user_codes = table_df[join_field_name].duplicated()
+        if duplicate_user_codes.any():
+            duplicated_codes = table_df.loc[duplicate_user_codes, join_field_name].tolist()
+            raise ValueError(f"The following user codes are duplicated in the upload data for table {insert_table_name}: {duplicated_codes}")
+        
         table_inputs = list(table_df.itertuples(index=False, name=None))
         with conn.cursor() as cur:
             sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
@@ -631,7 +751,6 @@ class Operator:
 
             new_codes_list = id_pairs_df[insert_table_id].tolist()
 
-            join_field_name = 'user_' + insert_table_code + '_code' 
             joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
             
             new_codes_df = pd.DataFrame()

@@ -24,6 +24,10 @@ class Party(Operator):
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(py.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         main_columns['full'] = {
             'py_code': "'py.' || py.party_id",
@@ -33,6 +37,7 @@ class Party(Operator):
             'surname': "py.surname",
             'organization_name': "py.organizationname",
             'contact_instructions': "py.contactinstructions",
+            'obs_count': "d_obscount",
         }
         from_sql = "FROM py"
         order_by_sql = """\
@@ -48,6 +53,10 @@ class Party(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
                 'sql': "FROM party AS py",
@@ -58,8 +67,44 @@ class Party(Operator):
                     'sql': "partypublic IS NOT false",
                     'params': []
                 },
+                'search': {
+                    'sql': """\
+                         py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
+                },
                 "py": {
                     'sql': "py.party_id = %s",
+                    'params': ['vb_id']
+                },
+                'cl': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT clc.party_id
+                              FROM classcontributor clc
+                              WHERE py.party_id = clc.party_id
+                                AND clc.commclass_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT obp.party_id
+                              FROM observationcontributor obp
+                              WHERE py.party_id = obp.party_id
+                                AND obp.observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pj': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT pjc.party_id
+                              FROM projectcontributor pjc
+                              WHERE py.party_id = pjc.party_id
+                                AND pjc.project_id = %s)
+                        """,
                     'params': ['vb_id']
                 },
             },
@@ -73,6 +118,10 @@ class Party(Operator):
                 'columns': main_columns[self.detail],
                 'params': []
             },
+            'search': {
+                'columns': {'search_rank': 'py.search_rank'},
+                'params': []
+            },
         }
         self.query['from'] = {
             'sql': from_sql,
@@ -83,9 +132,8 @@ class Party(Operator):
         """
         Validate query parameters and apply defaults to missing parameters.
 
-        This only applies validations specific to parties, then
-        dispatches to the parent validation method for more general (and more
-        permissive) validations.
+        This only applies validations specific to parties, while dispatching
+        to the parent validation method for common validations.
 
         Parameters:
             request_args (ImmutableMultiDict): Query parameters provided
@@ -101,5 +149,10 @@ class Party(Operator):
         if request_args.get("detail", self.default_detail) not in ("full"):
             raise QueryParameterError("When provided, 'detail' must be 'full'.")
 
-        # now dispatch to the base validation method
-        return super().validate_query_params(request_args)
+        # dispatch to the base validation method
+        params = super().validate_query_params(request_args)
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
+
+        return params

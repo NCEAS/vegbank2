@@ -202,3 +202,33 @@ stratum = [
     'stratum_height', 
     'stratum_cover'
 ]
+
+taxon_interpretation = [
+    'user_ti_code',
+    'user_to_code',
+    'vb_to_code',
+    'vb_pc_code',
+    'interpretation_date',
+    'user_py_code',
+    'vb_py_code',
+    'user_ro_code',
+    'vb_ro_code',
+    'interpretation_type',
+    'user_rf_code',
+    'vb_rf_code',
+    'original_interpretation',
+    'current_interpretation',
+    'taxon_fit',
+    'taxon_confidence',
+    'user_collector_rf_code',
+    'vb_collector_rf_code', #Currently always null
+    'collection_number',
+    'collection_date',
+    'user_museum_rf_code',
+    'vb_museum_rf_code', #Currently always null
+    'museum_accession_number',
+    'group_type',
+    'notes',
+    'notes_public',
+    'notes_mgt'   
+]

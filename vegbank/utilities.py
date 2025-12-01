@@ -3,26 +3,6 @@ import pandas as pd
 
 ALLOWED_EXTENSIONS = 'parquet'
 
-def convert_to_parquet(query, data, conn):
-    '''
-    Runs a provided SQL query with provided data against a provided database connection,
-    then converts the resulting dataframe to a parquet file and returns it. 
-    
-    Parameters:
-        query (str): The SQL query to be executed.
-        data (tuple): The data to be used in the SQL query.
-        conn (psycopg.Connection): The database connection object.
-    Returns:
-        bytes: The resulting dataframe converted to a parquet file in bytes format.
-    '''
-    dataframe = None
-    with conn.cursor() as cur:
-        SQLString = cur.mogrify(query, data)
-        print(SQLString)
-        dataframe = pd.read_sql(SQLString, conn)
-    df_parquet = dataframe.to_parquet()
-    return df_parquet
-
 def allowed_file(filename):
     '''
     Checks if the provided filename has an allowed extension. 
@@ -72,8 +52,10 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
     for field in required_fields:
         if field not in df.columns:
             missing_fields.append(field)
+        elif df[field].isnull().any():
+            missing_fields.append(field)
     if 0 < len(missing_fields):
-            error_string += "The following required columns are missing from the uploaded " + file_name + ": " + ", ".join(missing_fields) + ". "
+            error_string += "The following required columns in the " + file_name + " file must be present with no null values : " + ", ".join(missing_fields) + ". "
 
     # Checking if the user submitted any unsupported columns
     extra_fields = set(df.columns)
