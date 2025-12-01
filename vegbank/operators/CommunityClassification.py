@@ -138,6 +138,20 @@ class CommunityClassification(Operator):
                     'sql': "cl.commclass_id = %s",
                     'params': ['vb_id']
                 },
+                'ob': {
+                    'sql': "cl.observation_id = %s",
+                    'params': ['vb_id']
+                },
+                'cc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              WHERE cl.commclass_id = ci.commclass_id
+                                AND commconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql,

@@ -353,6 +353,53 @@ class PlotObservation(Operator):
                     'sql': "ob.observation_id = %s",
                     'params': ['vb_id']
                 },
+                'cc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM commclass cl
+                              JOIN comminterpretation ci USING (commclass_id)
+                              JOIN commconcept cc USING (commconcept_id)
+                              WHERE ob.observation_id = cl.observation_id
+                                AND commconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM taxonobservation txo
+                              JOIN taxoninterpretation txi USING (taxonobservation_id)
+                              JOIN plantconcept pc USING (plantconcept_id)
+                              WHERE ob.observation_id = txo.observation_id
+                                AND plantconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pj': {
+                    'sql': "project_id = %s",
+                    'params': ['vb_id']
+                },
+                # This gets *all* contributors, not just observationcontributors
+                'py': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT py.observation_id
+                             FROM view_browseparty_all py
+                             WHERE ob.observation_id = py.observation_id
+                               AND py.party_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'cm': {
+                    'sql': "covermethod_id = %s",
+                    'params': ['vb_id']
+                },
+                'sm': {
+                    'sql': "stratummethod_id = %s",
+                    'params': ['vb_id']
+                }
             },
             'order_by': {
                 'sql': order_by_sql,

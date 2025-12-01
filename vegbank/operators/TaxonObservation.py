@@ -129,6 +129,20 @@ class TaxonObservation(Operator):
                     'sql': "txo.taxonobservation_id = %s",
                     'params': ['vb_id']
                 },
+                "ob": {
+                    'sql': "txo.observation_id = %s",
+                    'params': ['vb_id']
+                },
+                'pc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              WHERE txo.taxonobservation_id = txi.taxonobservation_id
+                                AND plantconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql,

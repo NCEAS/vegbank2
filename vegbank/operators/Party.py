@@ -77,6 +77,36 @@ class Party(Operator):
                     'sql': "py.party_id = %s",
                     'params': ['vb_id']
                 },
+                'cl': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT clc.party_id
+                              FROM classcontributor clc
+                              WHERE py.party_id = clc.party_id
+                                AND clc.commclass_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT obp.party_id
+                              FROM observationcontributor obp
+                              WHERE py.party_id = obp.party_id
+                                AND obp.observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pj': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT pjc.party_id
+                              FROM projectcontributor pjc
+                              WHERE py.party_id = pjc.party_id
+                                AND pjc.project_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql,
