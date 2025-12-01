@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
+from utilities import jsonify_error_message, allowed_file
 
 
 class PlotObservation(Operator):
@@ -707,59 +707,3 @@ class PlotObservation(Operator):
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
-
-    def get_observation_details(self, ob_code):
-        """
-        Retrieves observation details for a given observation code.
-
-        This method connects to the VegBank database and executes SQL queries
-        to fetch plot observation details, associated taxon observations, and
-        community classifications, returning the results in a JSON format.
-
-        Parameters (for GET requests only):
-            ob_code (str): The unique identifier for the plot observation.
-        Returns:
-            flask.Response: A Flask response object containing the observation
-                details in JSON format.
-        Raises:
-            Exception: If there is an error in executing the SQL queries
-                or connecting to the database.
-        """
-        to_return = {}
-        with psycopg.connect(**self.params, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                # Prepare to query for a single resource based on its code
-                try:
-                    ob_id = self.extract_id_from_vb_code(ob_code)
-                except QueryParameterError as e:
-                    return jsonify_error_message(e.message), e.status_code
-                sql_file = os.path.join(self.QUERIES_FOLDER,
-                                        f'get_observation_details.sql')
-                with open(sql_file, "r") as file:
-                    sql = file.read()
-                data = (ob_id, )
-                cur.execute(sql, data)
-                to_return["data"] = cur.fetchall()
-                to_return["count"] = len(to_return["data"])
-                print(to_return)
-                if(len(to_return["data"]) != 0):
-                    taxa = []
-                    sql_file = os.path.join(self.QUERIES_FOLDER,
-                                            f'get_taxa_for_observation.sql')
-                    with open(sql_file, "r") as file:
-                        sql = file.read()
-                    data = (ob_id, )
-                    cur.execute(sql, data)
-                    taxa = cur.fetchall()
-                    to_return["data"][0].update({"taxa": taxa})
-                    communities = []
-                    sql_file = os.path.join(self.QUERIES_FOLDER,
-                                            f'get_community_for_observation.sql')
-                    with open(sql_file, "r") as file:
-                        sql = file.read()
-                    data = (ob_id, )
-                    cur.execute(sql, data)
-                    communities = cur.fetchall()
-                    to_return["data"][0].update({"communities": communities})
-            conn.close()
-        return jsonify(to_return)
