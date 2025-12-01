@@ -188,6 +188,24 @@ $ helm upgrade vegbankapi . --set ingress.enabled=false
     filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
   ```
 
+# Recovering from a ScheduledBackup
+
+If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by changing the `init.enabled` section in `values.yaml` to `true`. Note, you will also need to provide a specific volumesnapshot to recover from for `init.recoverFromBackup`.
+
+Note - if you are redeploying after a disaster, you will need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true`.
+
+Friendly reminder, you can see what backups are available by executing:
+
+```sh
+$ kubectl get backups
+```
+
+Once you've updated your values, please install your `cnpg` `helm` chart as you would normally. Example below for quick reference:
+
+```sh
+$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f '/Users/doumok/Code/vegbank2/helm/values-cnpg.yaml' --debug
+```
+
 # Connecting to API via kubectl port forwarding
 
 Once you're in the k8s dev-vegbank context, you can find the name of the API pod via the following command: 
