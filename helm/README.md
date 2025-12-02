@@ -194,9 +194,12 @@ The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resou
 
 ## Recovering from a ScheduledBackup
 
-If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by changing the `init.enabled` section in `values.yaml` to `true`. Note, you will also need to provide a specific volumesnapshot to recover from for `init.recoverFromBackup`.
+If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by:
+- Changing the `init.enabled` section in `values.yaml` to `true`
+- Changing the `init.method` section to `recovery`
+- Providing a specific volumesnapshot to recover from for `init.recoverFromBackup`.
 
-If you are redeploying after a disaster, you will need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true`.
+Important Note: if you are redeploying after a disaster, you will also need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true`.
 
 Friendly Note: You can check if there is an existing `ScheduledBackup` by executing the following:
 
@@ -214,7 +217,7 @@ Friendly Note #2: You can check for specific backups/volumesnapshots by executin
 $ kubectl get backups -n vegbank-dev
 ```
 
-Once you've updated your values, please install your `cnpg` `helm` chart as you would normally. Example below for quick reference:
+Once you've updated your configuration, please install your `cnpg` `helm` chart as you would normally. Example below for quick reference:
 
 ```sh
 $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f '/Users/doumok/Code/vegbank2/helm/values-cnpg.yaml' --debug
