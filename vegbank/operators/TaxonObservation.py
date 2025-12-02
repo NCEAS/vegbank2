@@ -219,7 +219,7 @@ class TaxonObservation(Operator):
         df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.stem_location, table_defs_config.stem_count]
-        required_fields = ['user_sc_code', 'user_tm_code', 'stem_count', 'user_sl_code']
+        required_fields = ['user_sc_code', 'user_tm_code', 'vb_tm_code', 'stem_count', 'user_sl_code']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "stem data")
         if validation['has_error']:
             raise ValueError(validation['error'])
