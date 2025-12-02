@@ -587,6 +587,8 @@ def cover_methods(cm_code):
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -637,6 +639,8 @@ def stratum_methods(sm_code):
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
