@@ -6,17 +6,19 @@ dbUser: vegbank
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
 init:
   ## @param init.enabled Set this to 'true' to enable init options, for example: 'recovery', 'initdb' and 'pgbasebackup'
-  ## By default the init section will create an empty postgres cluster with
-  ## supplied secret. The dbUser must match the username of the secret.
+  ## This is set to 'false' by default to prevent conflicts when upgrading an existing deployment
   enabled: false
   ## @param init.method
-  ## By default, this method is set to 'initdb' to initialize an empty cnpg cluster
-  ## To recover from a volumeSnapshot via `ScheduledBackups`, set this value to 'recovery'
+  ## By default, this method is set to 'initdb' to initialize an empty `cnpg` cluster
+  ## Note - the dbUser must match the username of the secret.
+  ## Set this value to 'recovery' to recover from a volumeSnapshot via `ScheduledBackups`, 
   ## To learn more, see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
   method: initdb
   ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
-  ## If you do not see a new pod launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7',
-  ## You can execute the command 'kubectl describe cluster vegbankenabledtest' to begin debugging
+  ## This param will not be utilized unless 'method' is set to 'recovery'.
+  ## After installing the cluster with the `recovery` option, and if you do not see a new pod
+  ## launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7', you can execute
+  ## the command 'kubectl describe cluster vegbankenabledtest' to begin debugging.
   recoverFromBackup: vegbankdb-scheduled-backup-placeholder
 
 ## @section backup - Enabled `ScheduledBackup` functionality to create volume snappshots 
@@ -39,9 +41,7 @@ persistence:
 
 postgresql:
   parameters:
-    max_wal_senders: 16  # must match bitnami for replication to work
-
-  ## metacat override to allow password auth:
+    max_wal_senders: 16
   pg_hba:
     # TYPE        DATABASE      USER          ADDRESS         METHOD
     - host        vegbank       vegbank       0.0.0.0/0       password
