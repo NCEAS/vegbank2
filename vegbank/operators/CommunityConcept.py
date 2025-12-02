@@ -23,9 +23,14 @@ class CommunityConcept(Operator):
         self.name = "community_concept"
         self.table_code = "cc"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.nested_options = ("true", "false")
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
+        query_type = self.detail
+        if self.with_nested == 'true':
+            query_type += "_nested"
+
         base_columns = {'*': "*"}
         base_columns_search = {
             'search_rank': "TS_RANK(cc.search_vector, " +
@@ -41,7 +46,6 @@ class CommunityConcept(Operator):
             'concept_rf_name': "rf_cc.shortname",
             'status_rf_code': "'rf.' || cs.reference_id",
             'status_rf_name': "rf_cs.shortname",
-            'usages': "cn.usages",
             'obs_count': "cc.d_obscount",
             'comm_level': "cs.commlevel",
             'status': "cs.commconceptstatus",
@@ -54,21 +58,15 @@ class CommunityConcept(Operator):
             'comm_party_comments': "cs.commpartycomments",
             'parent_cc_code': "'cc.' || cs.commparent_id",
             'parent_name': "pa.commname",
+        }
+        main_columns['full_nested'] = main_columns['full'] | {
+            'usages': "cn.usages",
             'children': "children",
             'correlations': "px_group.correlations",
         }
-        from_sql = """\
+        from_sql = {}
+        from_sql['full'] = """\
             FROM cc
-            LEFT JOIN LATERAL (
-              SELECT JSON_OBJECT_AGG(classsystem,
-                                     RTRIM(commname)) ->> 'Code' AS comm_code,
-                     JSON_AGG(JSON_BUILD_OBJECT(
-                         'class_system', classsystem,
-                         'comm_name', RTRIM(commname),
-                         'status', commnamestatus)) AS usages
-                FROM commusage
-                WHERE commconcept_id = cc.commconcept_id
-            ) cn ON true
             LEFT JOIN LATERAL (
               SELECT *
                 FROM commstatus
@@ -80,6 +78,18 @@ class CommunityConcept(Operator):
             LEFT JOIN reference rf_cc ON cc.reference_id = rf_cc.reference_id
             LEFT JOIN reference rf_cs ON cs.reference_id = rf_cs.reference_id
             LEFT JOIN party py ON py.party_id = cs.party_id
+            LEFT JOIN LATERAL (
+              SELECT JSON_OBJECT_AGG(classsystem,
+                                     RTRIM(commname)) ->> 'Code' AS comm_code,
+                     JSON_AGG(JSON_BUILD_OBJECT(
+                         'class_system', classsystem,
+                         'comm_name', RTRIM(commname),
+                         'status', commnamestatus)) AS usages
+                FROM commusage
+                WHERE commconcept_id = cc.commconcept_id
+            ) cn ON true
+            """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'cc_code', 'cc.' || ch_cc.commconcept_id,
@@ -120,11 +130,11 @@ class CommunityConcept(Operator):
                 },
             },
             'from': {
-                'sql': "  FROM commconcept AS cc",
+                'sql': "FROM commconcept AS cc",
                 'params': []
             },
             'conditions': {
-                "always": {
+                'always': {
                     'sql': None,
                     'params': []
                 },
@@ -158,7 +168,7 @@ class CommunityConcept(Operator):
         }
         self.query['select'] = {
             "always": {
-                'columns': main_columns[self.detail],
+                'columns': main_columns[query_type],
                 'params': []
             },
             'search': {
@@ -167,7 +177,7 @@ class CommunityConcept(Operator):
             },
         }
         self.query['from'] = {
-            'sql': from_sql,
+            'sql': from_sql[query_type],
             'params': []
         }
 
@@ -189,10 +199,6 @@ class CommunityConcept(Operator):
         Raises:
             QueryParameterError: If any supplied parameters are invalid.
         """
-        # specifically require detail to be "full" for community concepts
-        if request_args.get("detail", self.default_detail) not in ("full"):
-            raise QueryParameterError("When provided, 'detail' must be 'full'.")
-
         # now dispatch to the base validation method
         params = super().validate_query_params(request_args)
 
