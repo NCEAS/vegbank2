@@ -190,13 +190,13 @@ $ helm upgrade vegbankapi . --set ingress.enabled=false
 
 # Recovery & Backup
 
-The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resource. To learn more about this, view our cnpg operator documentation [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
+The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resource. To learn more about this, view our `cnpg` operator documentation [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
 
 ## Recovering from a ScheduledBackup
 
 If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by changing the `init.enabled` section in `values.yaml` to `true`. Note, you will also need to provide a specific volumesnapshot to recover from for `init.recoverFromBackup`.
 
-Note - if you are redeploying after a disaster, you will need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true`.
+If you are redeploying after a disaster, you will need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true`.
 
 Friendly Note: You can check if there is an existing `ScheduledBackup` by executing the following:
 
