@@ -1,15 +1,19 @@
 ## @section CNPG PostgresQL
-## Omitting the init section will create an empty postgres cluster with
-## supplied secret. The dbUser must match the username of the secret.
 dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
 
-## @section CNPG Init - Recover from a Scheduled Backup
+## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
 init:
-  ## @param init.enabled Set this to 'true' to enable recovery from a volumeSnapshot via `ScheduledBackups`
+  ## @param init.enabled Set this to 'true' to enable init options, for example: 'recovery', 'initdb' and 'pgbasebackup'
+  ## By default the init section will create an empty postgres cluster with
+  ## supplied secret. The dbUser must match the username of the secret.
   enabled: false
-  method: recovery
+  ## @param init.method
+  ## By default, this method is set to 'initdb' to initialize an empty cnpg cluster
+  ## To recover from a volumeSnapshot via `ScheduledBackups`, set this value to 'recovery'
+  ## To learn more, see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
+  method: initdb
   ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
   ## If you do not see a new pod launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7',
   ## You can execute the command 'kubectl describe cluster vegbankenabledtest' to begin debugging
