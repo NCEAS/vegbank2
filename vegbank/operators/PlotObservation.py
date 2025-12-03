@@ -42,6 +42,10 @@ class PlotObservation(Operator):
             nesting = True
 
         base_columns = {'ob.*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(ob.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
@@ -336,6 +340,10 @@ class PlotObservation(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
                 'sql': """\
@@ -348,6 +356,12 @@ class PlotObservation(Operator):
                 'always': {
                     'sql': "pl.confidentialitystatus < 4",
                     'params': []
+                },
+                'search': {
+                    'sql': """\
+                         ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
                 },
                 'ob': {
                     'sql': "ob.observation_id = %s",
@@ -411,6 +425,10 @@ class PlotObservation(Operator):
                 'columns': main_columns[query_type],
                 'params': []
             },
+            'search': {
+                'columns': {'search_rank': 'ob.search_rank'},
+                'params': []
+            },
         }
         self.query['from'] = {
             'sql': from_sql[query_type],
@@ -442,6 +460,9 @@ class PlotObservation(Operator):
             request_args.get('num_taxa', self.default_num_taxa))
         params['num_comms'] = self.process_integer_param('num_comms',
             request_args.get('num_comms', self.default_num_comms))
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
 
         return params
 

@@ -82,6 +82,7 @@ def plot_observations(vb_code):
             plot observation retrieval. If None, retrieves all plot observations.
 
     GET Query Parameters:
+        search (str, optional): Plot observation search query.
         detail (str, optional): Level of detail for the response.
             Can be either 'minimal' or 'full'. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
