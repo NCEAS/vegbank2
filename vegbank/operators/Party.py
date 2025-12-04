@@ -1,6 +1,8 @@
 import os
 from operators import Operator
-from utilities import QueryParameterError
+from utilities import QueryParameterError, validate_required_and_missing_fields
+from operators import table_defs_config
+import pandas as pd
 
 
 class Party(Operator):
@@ -156,3 +158,23 @@ class Party(Operator):
         params['search'] = request_args.get('search')
 
         return params
+    
+    def upload_parties(self, file, conn):
+        """
+        takes a parquet file of parties and uploads it to the party table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing parties.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        table_defs = [table_defs_config.party]
+        required_fields = ['user_py_code']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "parties")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        new_strata =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn)
+        return new_strata

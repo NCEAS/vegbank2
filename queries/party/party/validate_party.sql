@@ -1,0 +1,1 @@
+SELECT * FROM party_temp where 1=0;
