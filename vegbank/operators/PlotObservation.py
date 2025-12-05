@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file
+from utilities import jsonify_error_message, allowed_file, validate_required_and_missing_fields
 
 
 class PlotObservation(Operator):
@@ -466,7 +466,7 @@ class PlotObservation(Operator):
 
         return params
 
-    def upload_plot_observations(self, request, params):
+    def upload_plot_observations_deprecated(self, request, params):
         """
         Uploads plot and observation data from a file, validates it, and inserts it into the database.
         Parameters:
@@ -728,3 +728,53 @@ class PlotObservation(Operator):
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+        
+    def upload_plot_observations(self, file, conn):
+        """
+        takes a parquet file in the plot observation data format from the loader module and uploads it to the plot and observation tables. 
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing plots and observations.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        table_defs = [table_defs_config.plot, table_defs_config.observation]
+        required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "plot observations")
+        
+        if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
+            validation['error'] += "Rows cannot have both a vb_pl_code and a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
+            validation['has_error'] = True
+        if not df[(df['user_pl_code'].isnull()) & (df['vb_pl_code'].isnull())].empty:
+            validation['error'] += "All rows must have either a vb_pl_code or a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
+            validation['has_error'] = True
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+        
+        df['user_pl_code'] = df['user_pl_code'].astype(str)
+        new_plots_df = df.dropna(subset=['user_pl_code'])
+        print("user_pl_code not null plots --------------------------------------------")
+        print(new_plots_df)
+        plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
+        
+        pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
+        pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
+
+        df = df.merge(pl_codes_df, on='user_pl_code', how='left')
+
+        df['user_ob_code'] = df['user_ob_code'].astype(str)
+        observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
+
+        to_return = {
+            'resources':{
+                'pl': plot_codes['resources']['pl'],
+                'ob': observation_codes['resources']['ob']
+            },
+            'counts':{
+                'pl': plot_codes['counts']['pl'],
+                'ob': observation_codes['counts']['ob']
+            }
+        }
+        return to_return
