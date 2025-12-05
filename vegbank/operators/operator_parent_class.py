@@ -274,8 +274,6 @@ class Operator:
                 '\n'.join([block for block in base_sql_parts
                            if block is not None]), '  ')
             if (count):
-                print(base_sql)
-                print(params)
                 return base_sql, params
             base_sql = f"WITH {base.get('alias')} AS (\n{base_sql}\n)"
 
@@ -327,8 +325,6 @@ class Operator:
                          if block is not None])
 
         # Return the SQL and associated ordered list of placeholder names
-        print(sql)
-        print(params)
         return sql, params
 
     def get_vegbank_resources(self, request, vb_code=None):
