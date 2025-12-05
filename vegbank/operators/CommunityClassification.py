@@ -131,7 +131,9 @@ class CommunityClassification(Operator):
             },
             'conditions': {
                 'always': {
-                    'sql': None,
+                    'sql': [
+                        "emb_commclass < 6",
+                    ],
                     'params': []
                 },
                 "cl": {
