@@ -227,7 +227,9 @@ class Operator:
             # Load base WHERE (and update params)
             base_conditions = base.get('conditions', {})
             if base_conditions.get('always') is not None:
-                base_condition_list = [base_conditions.get('always')['sql']]
+                base_condition_list = base_conditions.get('always')['sql']
+                if not isinstance(base_condition_list, list):
+                    base_condition_list = [base_condition_list]
                 params.extend(base_conditions.get('always')['params'])
             else:
                 base_condition_lists = []
@@ -245,7 +247,7 @@ class Operator:
             base_condition_list = list(filter(None, base_condition_list))
             base_condition_list = [textwrap.dedent(sql).rstrip() for
                                    sql in base_condition_list]
-            base_where_sql = f"  WHERE {'\n  AND '.join(base_condition_list)}" \
+            base_where_sql = f"  WHERE {'\n    AND '.join(base_condition_list)}" \
                 if base_condition_list else None
             base_sql_parts.append(base_where_sql)
 

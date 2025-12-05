@@ -1,4 +1,5 @@
 import os
+import textwrap
 from flask import jsonify
 import psycopg
 from psycopg import ClientCursor
@@ -55,15 +56,30 @@ class PlotObservation(Operator):
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
-            'confidentiality_reason': "pl.confidentialityreason",
-            'latitude': "pl.latitude",
-            'longitude': "pl.longitude",
-            'author_e': "pl.authore",
-            'author_n': "pl.authorn",
-            'author_zone': "pl.authorzone",
-            'author_datum': "pl.authordatum",
-            'author_location': "pl.authorlocation",
-            'location_narrative': "pl.locationnarrative",
+            'latitude': f"({textwrap.dedent("""\
+                CASE WHEN 4 <= confidentialitystatus THEN NULL
+                             ELSE pl.latitude END""")})",
+            'longitude': f"({textwrap.dedent("""\
+                CASE WHEN 4 <= confidentialitystatus THEN NULL
+                             ELSE pl.longitude END""")})",
+            'author_e': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authore END""")})",
+            'author_n': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorn END""")})",
+            'author_zone': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorzone END""")})",
+            'author_datum': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authordatum END""")})",
+            'author_location': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorlocation END""")})",
+            'location_narrative': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.locationnarrative END""")})",
             'azimuth': "pl.azimuth",
             'dsg_poly': "pl.dsgpoly",
             'shape': "pl.shape",
@@ -166,7 +182,6 @@ class PlotObservation(Operator):
             'ob_notes_public': "ob.notespublic",
             'ob_notes_mgt': "ob.notesmgt",
             'ob_revisions': "ob.revisions",
-            'emb_observation': "ob.emb_observation",
             'interp_orig_ci_code': "'ci.' || ob.interp_orig_ci_id",
             'interp_orig_cc_code': "'cc.' || ob.interp_orig_cc_id",
             'interp_orig_sciname': "ob.interp_orig_sciname",
@@ -346,15 +361,14 @@ class PlotObservation(Operator):
                 },
             },
             'from': {
-                'sql': """\
-                    FROM observation AS ob
-                    JOIN plot AS pl USING (plot_id)
-                    """,
+                'sql': "FROM observation AS ob",
                 'params': []
             },
             'conditions': {
                 'always': {
-                    'sql': "pl.confidentialitystatus < 4",
+                    'sql': [
+                        "emb_observation < 6",
+                    ],
                     'params': []
                 },
                 'search': {
