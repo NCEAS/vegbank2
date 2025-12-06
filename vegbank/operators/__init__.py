@@ -2,6 +2,7 @@ from .operator_parent_class import Operator
 
 from .CommunityClassification import CommunityClassification
 from .CommunityConcept import CommunityConcept
+from .CommunityInterpretation import CommunityInterpretation
 from .CoverMethod import CoverMethod
 from .Party import Party
 from .PlantConcept import PlantConcept

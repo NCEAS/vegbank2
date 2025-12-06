@@ -16,6 +16,7 @@ from operators import (
     Party,
     PlantConcept,
     CommunityClassification,
+    CommunityInterpretation,
     CommunityConcept,
     CoverMethod,
     Project,
@@ -389,6 +390,65 @@ def community_classifications(vb_code):
             "POST method is not supported for community_classifications."), 405
     elif request.method == 'GET':
         return community_classification_operator.get_vegbank_resources(request,
+                                                                       vb_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/community-interpretations/<vb_code>", methods=['GET'])
+@app.route("/community-classifications/<vb_code>/community-interpretations", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/community-interpretations", methods=['GET'])
+@app.route("/community-concepts/<vb_code>/community-interpretations", methods=['GET'])
+def community_interpretations(vb_code):
+    """
+    Retrieve either an individual community interpretation or a collection.
+
+    This function handles HTTP requests for community interpretations.
+    It currently supports only the GET method to retrieve community
+    interpretations. If a POST request is made, it returns an error message
+    indicating that POST is not supported. For any other HTTP method, it
+    returns a 405 error.
+
+    GET: If a valid community interpretation code is provided, returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of community interpretation
+    records associated with that resource. If no vb_code is provided, returns
+    the full collection of community interpretation records. Collection
+    responses may be further mediated by pagination parameters.
+
+    Parameters:
+        vb_code (str or None): The unique identifier for the community
+            interpretation being retrieved, or for a resource of a different
+            type used to focus community interpretation retrieval. If None,
+            retrieves all community interpretations.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved community interpretation(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    community_interpretation_operator = CommunityInterpretation(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for community_interpretations."), 405
+    elif request.method == 'GET':
+        return community_interpretation_operator.get_vegbank_resources(request,
                                                                        vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
