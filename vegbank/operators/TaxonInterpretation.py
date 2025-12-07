@@ -18,25 +18,28 @@ class TaxonInterpretation(Operator):
         super().__init__(params)
         self.name = "taxon_interpretation"
         self.table_code = "ti"
+        self.detail_options = ("minimal", "full")
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
         base_columns = {'txi.*': "*"}
         main_columns = {}
+        # identify full columns
         main_columns['full'] = {
             'ti_code': "'ti.' || txi.taxoninterpretation_id",
-            'ob_code': "'ob.' || ob.observation_id",
+            'to_code': "'to.' || txi.taxonobservation_id",
+            'pc_code': "'pc.' || txi.plantconcept_id",
+            'ob_code': "'ob.' || txo.observation_id",
             'author_obs_code': "ob.authorobscode",
-            'to_code': "'to.' || txo.taxonobservation_id",
             'author_plant_name': "txo.authorplantname",
-            'pc_code': "'pc.' || pc.plantconcept_id",
-            'plant_concept_name': "pc.plantname",
-            'plant_concept_label': "pc.plantconcept_id_transl",
-            'interpretation_date': "txi.interpretationdate",
-            'interpretation_type': "txi.interpretationtype",
-            'py_code': "'py.' || party_id",
+            'plant_code': "code.plantname",
+            'plant_name': "pc.plantname",
+            'plant_label': "pc.plantconcept_id_transl",
+            'py_code': "'py.' || txi.party_id",
             'party': "py.party_id_transl",
             'role': "ar.rolecode",
+            'interpretation_date': "txi.interpretationdate",
+            'interpretation_type': "txi.interpretationtype",
             'taxon_fit': "txi.taxonfit",
             'taxon_confidence': "txi.taxonconfidence",
             'collection_number': "txi.collectionnumber",
@@ -48,12 +51,31 @@ class TaxonInterpretation(Operator):
             'is_orig': "txi.originalinterpretation",
             'is_curr': "txi.currentinterpretation",
         }
+        # identify minimal columns
+        main_columns['minimal'] = {alias:col for alias, col in
+            main_columns['full'].items() if alias in [
+                'ti_code', 'to_code', 'pc_code', 'interpretation_date',
+                'interpretation_type', 'py_code', 'taxon_fit',
+                'taxon_confidence', 'collection_number', 'group_type', 'notes',
+                'notes_public', 'notes_mgt', 'is_orig', 'is_curr'
+            ]}
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM txi
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
             JOIN taxonobservation txo USING (taxonobservation_id)
             JOIN observation ob USING (observation_id)
             JOIN view_plantconcept_transl pc USING (plantconcept_id)
+            LEFT JOIN LATERAL (
+              SELECT pcode.plantname
+                FROM plantusage pu
+                JOIN plantname pcode ON pcode.plantname_id = pu.plantname_id
+               WHERE pu.plantconcept_id = pc.plantconcept_id
+                 AND pu.classsystem = 'Code'
+               ORDER BY pu.usagestart DESC NULLS LAST
+               LIMIT 1
+            ) code ON true
             LEFT JOIN view_party_transl py USING (party_id)
             LEFT JOIN aux_role ar USING (role_id)
             """
