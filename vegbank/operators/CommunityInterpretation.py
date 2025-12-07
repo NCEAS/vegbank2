@@ -32,12 +32,15 @@ class CommunityInterpretation(Operator):
         # identify full shallow columns
         main_columns['full'] = {
             'ci_code': "'ci.' || ci.comminterpretation_id",
-            'ob_code': "'ob.' || ob.observation_id",
+            'cl_code': "'cl.' || ci.commclass_id",
+            'cc_code': "'cc.' || ci.commconcept_id",
+            'ob_code': "'ob.' || cl.observation_id",
             'author_obs_code': "ob.authorobscode",
-            'cl_code': "'cl.' || cl.commclass_id",
-            'cc_code': "'cc.' || cc.commconcept_id",
-            'comm_concept_name': "cc.commname",
-            'comm_concept_label': "cc.commconcept_id_transl",
+            'comm_code': "code.commname",
+            'comm_name': "cc.commname",
+            'comm_label': "cc.commconcept_id_transl",
+            'comm_authority_rf_code': "'rf.' || ci.commauthority_id",
+            'comm_authority_name': "rf.reference_id_transl",
             'class_start_date': "cl.classStartDate",
             'class_stop_date': "cl.classStopDate",
             'inspection': "cl.inspection",
@@ -49,8 +52,6 @@ class CommunityInterpretation(Operator):
             'comm_level': "cl.commLevel",
             'class_fit': "ci.classfit",
             'class_confidence': "ci.classConfidence",
-            'comm_authority_rf_code': "'rf.' || ci.commauthority_id",
-            'comm_authority_name': "rf.reference_id_transl",
             'notes': "ci.notes",
             'type': "ci.type",
             'nomenclatural_type': "ci.nomenclaturaltype",
@@ -62,21 +63,31 @@ class CommunityInterpretation(Operator):
         # identify minimal columns
         main_columns['minimal'] = {alias:col for alias, col in
             main_columns['full'].items() if alias in [
-                'ci_code', 'cl_code', 'ob_code', 'cc_code', 'comm_name',
-                'class_fit', 'class_confidence', 'comm_authority_rf_code',
-                'comm_authority_name', 'notes', 'type', 'nomenclatural_type'
+                'ci_code', 'cl_code', 'cc_code', 'class_fit',
+                'class_confidence', 'comm_authority_rf_code',
+                'notes', 'type', 'nomenclatural_type'
             ]}
         # identify minimal columns with nesting
         main_columns['minimal_nested'] = main_columns['minimal']
         from_sql = {}
         from_sql['minimal'] = """\
             FROM ci
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
             JOIN commclass cl USING (commclass_id)
             JOIN observation ob USING (observation_id)
             JOIN view_commconcept_transl cc USING (commconcept_id)
+            LEFT JOIN LATERAL (
+              SELECT ccode.commname
+                FROM commusage cu
+                JOIN commname ccode ON ccode.commname_id = cu.commname_id
+               WHERE cu.commconcept_id = cc.commconcept_id
+                 AND cu.classsystem = 'Code'
+               ORDER BY cu.usagestart DESC NULLS LAST
+               LIMIT 1
+            ) code ON true
             LEFT JOIN view_reference_transl rf ON rf.reference_id = ci.commauthority_id
             """
-        from_sql['full'] = from_sql['minimal']
         from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
