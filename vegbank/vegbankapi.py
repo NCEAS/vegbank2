@@ -350,6 +350,7 @@ def community_classifications(vb_code):
 
 @app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<vb_code>")
+@app.route("/community-classifications/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
 def community_concepts(vb_code):
     """
@@ -407,6 +408,7 @@ def community_concepts(vb_code):
 
 @app.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/plant-concepts/<vb_code>")
+@app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
 def plant_concepts(vb_code):
     """
