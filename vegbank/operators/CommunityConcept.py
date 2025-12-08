@@ -24,6 +24,7 @@ class CommunityConcept(Operator):
         self.table_code = "cc"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
+        self.sort_options = ["default", "comm_name", "obs_count"]
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
@@ -111,9 +112,17 @@ class CommunityConcept(Operator):
                   AND ccorr.correlationstop IS NULL
             ) px_group ON true
             """
-        order_by_sql = """\
-            ORDER BY cc.commname,
-                     cc.commconcept_id
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY cc.commconcept_id {self.direction}
+            """
+        order_by_sql['comm_name'] = f"""\
+            ORDER BY cc.commname {self.direction},
+                     cc.commconcept_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY COALESCE(cc.d_obscount, 0) {self.direction},
+                     cc.commconcept_id {self.direction}
             """
 
         self.query = {}
@@ -173,7 +182,7 @@ class CommunityConcept(Operator):
                 },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }
