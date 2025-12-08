@@ -120,11 +120,11 @@ observation = [
 ]
 
 project = [
-    'projectname', 
-    'projectdescription', 
-    'startdate', 
-    'stopdate', 
-    'pj_code'
+    'user_pj_code',
+    'project_name', 
+    'project_description', 
+    'start_date', 
+    'stop_date'
 ]
 
 #Adding soiltaxon fields now even though we're not uploading them yet, just in case. 

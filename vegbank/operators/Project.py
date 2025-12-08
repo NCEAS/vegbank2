@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
+from utilities import jsonify_error_message, allowed_file, QueryParameterError, validate_required_and_missing_fields
 
 
 class Project(Operator):
@@ -133,7 +133,7 @@ class Project(Operator):
         return params
 
 
-    def upload_project(self, request, params):
+    def upload_project_deprecated(self, request, params):
         """
         Uploads project data from a file, validates it, and inserts it into the database.
         Parameters:
@@ -255,3 +255,26 @@ class Project(Operator):
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+
+    def upload_project(self, file, conn):
+        """
+        takes a parquet file of projects and uploads it to the project table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing projects.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        table_defs = [table_defs_config.project]
+        required_fields = ['user_pj_code', 'project_name']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "projects")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        df['interpretation_date'] = pd.Timestamp.now()
+
+        df['user_pj_code'] = df['user_pj_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
+        new_projects =  super().upload_to_table("project", 'pj', table_defs_config.project, 'project_id', df, True, conn, validate=False)
+        return new_projects
