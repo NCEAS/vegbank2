@@ -550,6 +550,10 @@ def plant_concepts(vb_code):
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
             Can be 'true' or 'false'. Defaults to 'false'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'plant_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
