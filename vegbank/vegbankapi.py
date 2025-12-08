@@ -613,6 +613,11 @@ def parties(vb_code):
         search (str, optional): Party name/organization search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'surname', 'organization_name', or
+            'obs_count', all of which can be prepended with a '-' to
+            sort in descending order (e.g., '-obs_count'). Defaults to
+            'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
