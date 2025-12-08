@@ -48,8 +48,7 @@ plot = [
 
 observation = [
     'user_ob_code',
-    'vb_pl_code',
-    'user_pl_code',                                      
+    'vb_pl_code',                                    
     'user_pj_code',  
     'vb_pj_code',             
     'author_obs_code',            
@@ -116,9 +115,7 @@ observation = [
     'growthform_3_cover',         
     'total_cover',                   
     'ob_notes_public',              
-    'ob_notes_mgt',                 
-    'ob_revisions',                
-    'emb_observation',                    
+    'ob_notes_mgt',                   
     'has_observation_synonym'
 ]
 

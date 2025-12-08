@@ -1,4 +1,9 @@
-INSERT INTO  observation(
+MERGE INTO observation dst
+USING observation_temp src
+ON FALSE
+WHEN MATCHED THEN DO NOTHING
+WHEN NOT MATCHED THEN
+  INSERT (
     plot_id,
     project_id,
     authorobscode,
@@ -17,7 +22,6 @@ INSERT INTO  observation(
     stemsamplemethod,
     originaldata,
     effortlevel,
-    plotvalidationlevel,
     floristicquality,
     bryophytequality,
     lichenquality,
@@ -25,10 +29,8 @@ INSERT INTO  observation(
     landscapenarrative,
     homogeneity,
     phenologicaspect,
-    representativeness,
     standmaturity,
     successionalstatus,
-    numberoftaxa,
     basalarea,
     hydrologicregime,
     soilmoistureregime,
@@ -67,24 +69,21 @@ INSERT INTO  observation(
     growthform2cover,
     growthform3cover,
     totalcover,
-    notesPublic,
-    notesMgt,
-    revisions,
-    emb_observation,
+    notespublic,
+    notesmgt,
     hasobservationsynonym
-)
-SELECT 
-    CAST(SUBSTRING(pl_code, 4, LENGTH(pl_code) - 3) AS INT) AS plot_id,
-    CAST(SUBSTRING(pj_code, 4, LENGTH(pj_code) - 3) AS INT) AS project_id,
+  ) VALUES (
+    CAST(SUBSTRING(vb_pl_code, 4) AS INT),
+    CAST(SUBSTRING(vb_pj_code, 4) AS INT),
     authorobscode,
     obsstartdate,
     obsenddate,
     dateaccuracy,
     dateentered,
-    CAST(SUBSTRING(cm_code, 4, LENGTH(cm_code) - 3) AS INT) AS covermethod_id,
+    CAST(SUBSTRING(vb_cm_code, 4) AS INT),
     coverdispersion,
     autotaxoncover,
-    CAST(SUBSTRING(sm_code, 4, LENGTH(sm_code) - 3) AS INT) AS stratummethod_id,
+    CAST(SUBSTRING(vb_sm_code, 4) AS INT),
     methodnarrative,
     taxonobservationarea,
     stemsizelimit,
@@ -92,7 +91,6 @@ SELECT
     stemsamplemethod,
     originaldata,
     effortlevel,
-    plotvalidationlevel,
     floristicquality,
     bryophytequality,
     lichenquality,
@@ -100,10 +98,8 @@ SELECT
     landscapenarrative,
     homogeneity,
     phenologicaspect,
-    representativeness,
     standmaturity,
     successionalstatus,
-    numberoftaxa,
     basalarea,
     hydrologicregime,
     soilmoistureregime,
@@ -113,7 +109,7 @@ SELECT
     shoredistance,
     soildepth,
     organicdepth,
-    CAST(SUBSTRING(st_code, 4, LENGTH(st_code) - 3) AS INT) AS soiltaxon_id,
+    CAST(SUBSTRING(vb_so_code, 4) AS INT),
     soiltaxonsrc,
     percentbedrock,
     percentrockgravel,
@@ -144,8 +140,9 @@ SELECT
     totalcover,
     ob_notes_public,
     ob_notes_mgt,
-    ob_revisions,
-    emb_observation,
     hasobservationsynonym
-FROM observation_temp
-RETURNING observation_id, 'ob.' || observation_id AS ob_code, authorobscode;
+  )
+RETURNING merge_action(),
+          src.user_ob_code,
+          dst.observation_id,
+          'ob.' || dst.observation_id AS vb_ob_code;

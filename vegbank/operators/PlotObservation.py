@@ -741,7 +741,7 @@ class PlotObservation(Operator):
         df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude']
+        required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude', 'vb_pj_code']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "plot observations")
         
         if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
@@ -754,16 +754,19 @@ class PlotObservation(Operator):
             raise ValueError(validation['error'])
         
         df['user_pl_code'] = df['user_pl_code'].astype(str)
-        new_plots_df = df.dropna(subset=['user_pl_code'])
-        print("user_pl_code not null plots --------------------------------------------")
-        print(new_plots_df)
+        new_plots_df = df[df['user_pl_code'] != "None"] # We only insert plots where the user only provided a vb_pl_code
         plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
         
         pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
         pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
 
         df = df.merge(pl_codes_df, on='user_pl_code', how='left')
+        df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
+        df.drop(columns=['vb_pl_code_y'], inplace=True)
+        #df = df.merge(pl_codes_df, on='user_pl_code', how='left')
 
+        print("Final observation df to upload --------------------------------------------")
+        print(df)
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
 
