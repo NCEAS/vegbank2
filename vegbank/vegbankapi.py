@@ -113,7 +113,23 @@ def plot_observations(vb_code):
         if (allow_uploads is False):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
-            return plot_observation_operator.upload_plot_observations(request, params)
+            try:
+                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+                file = request.files['file']
+                with connect(**params, row_factory=dict_row) as conn:
+                    to_return = plot_observation_operator.upload_plot_observations(file, conn)
+                    if dry_run:
+                        conn.rollback()
+                        message = "Dry run - rolling back transaction."
+                        return jsonify({
+                            "message": message,
+                            "dry_run_data": to_return
+                        })
+                conn.close()
+            except Exception as e:
+                print(traceback.format_exc())
+                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+            return jsonify(to_return)
     elif request.method == 'GET':
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
