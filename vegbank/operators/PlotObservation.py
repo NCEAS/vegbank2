@@ -32,6 +32,7 @@ class PlotObservation(Operator):
         self.full_get_parameters = ('limit', 'offset')
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
+        self.sort_options = ("default", "author_obs_code")
         self.default_num_taxa = 5
         self.default_num_comms = 5
 
@@ -343,8 +344,13 @@ class PlotObservation(Operator):
                         FROM returned_taxon_observations) AS taxon_importance_count_returned
             ) AS txo ON true
             """
-        order_by_sql = """\
-            ORDER BY ob.observation_id ASC
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY ob.observation_id {self.direction}
+            """
+        order_by_sql['author_obs_code'] = f"""\
+            ORDER BY ob.authorobscode {self.direction},
+                     ob.observation_id {self.direction}
             """
 
         self.query = {}
@@ -430,7 +436,7 @@ class PlotObservation(Operator):
                 }
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }

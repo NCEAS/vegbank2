@@ -92,6 +92,8 @@ class Operator:
         self.default_create_parquet = "false"
         self.default_limit = "1000"
         self.default_offset = "0"
+        self.sort_options = ["default"]
+        self.default_sort = "default"
         self.params = params
         self.name = "vegbank"
         self.table_code = "vb"
@@ -402,6 +404,8 @@ class Operator:
             params = self.validate_query_params(request.args)
             self.detail = params['detail']
             self.with_nested = params['with_nested']
+            self.order_by = params['sort']
+            self.direction = params['direction']
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
@@ -605,6 +609,16 @@ class Operator:
             request_args.get('limit', self.default_limit))
         params['offset'] = self.process_integer_param('offset',
             request_args.get('offset', self.default_offset))
+
+        sort = request_args.get('sort', self.default_sort)
+        params['direction'] = 'ASC'
+        if sort.startswith('+'):
+            sort = sort[1:]
+        elif sort.startswith('-'):
+            sort = sort[1:]
+            params['direction'] = 'DESC'
+        params['sort'] = self.process_option_param('sort',
+            sort, self.sort_options)
 
         return params
 

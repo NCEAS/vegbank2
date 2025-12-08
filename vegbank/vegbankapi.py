@@ -94,6 +94,10 @@ def plot_observations(vb_code):
             alphabetical order by plant name if detail=full. Defaults to 5.
         num_comms (int, optional): Number of communities to return per
             plot observation, ordered by commclass_id. Defaults to 5.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID) or 'author_obs_code', and both values
+            can be prepended with a '-' to sort in descending order
+            (e.g., '-author_obs_code'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
