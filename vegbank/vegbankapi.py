@@ -94,6 +94,10 @@ def plot_observations(vb_code):
             alphabetical order by plant name if detail=full. Defaults to 5.
         num_comms (int, optional): Number of communities to return per
             plot observation, ordered by commclass_id. Defaults to 5.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID) or 'author_obs_code', and both values
+            can be prepended with a '-' to sort in descending order
+            (e.g., '-author_obs_code'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -489,6 +493,10 @@ def community_concepts(vb_code):
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
             Can be 'true' or 'false'. Defaults to 'false'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'comm_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -546,6 +554,10 @@ def plant_concepts(vb_code):
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
             Can be 'true' or 'false'. Defaults to 'false'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'plant_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -601,6 +613,11 @@ def parties(vb_code):
         search (str, optional): Party name/organization search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'surname', 'organization_name', or
+            'obs_count', all of which can be prepended with a '-' to
+            sort in descending order (e.g., '-obs_count'). Defaults to
+            'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -648,6 +665,10 @@ def projects(pj_code):
         search (str, optional): Project name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'project_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting

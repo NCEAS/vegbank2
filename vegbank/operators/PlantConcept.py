@@ -24,6 +24,7 @@ class PlantConcept(Operator):
         self.table_code = "pc"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
+        self.sort_options = ["default", "plant_name", "obs_count"]
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
@@ -111,9 +112,17 @@ class PlantConcept(Operator):
                   AND pcorr.correlationstop IS NULL
             ) px_group ON true
             """
-        order_by_sql = """\
-            ORDER BY pc.plantname,
-                     pc.plantconcept_id
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['plant_name'] = f"""\
+            ORDER BY pc.plantname {self.direction},
+                     pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY COALESCE(pc.d_obscount, 0) {self.direction},
+                     pc.plantconcept_id {self.direction}
             """
 
         self.query = {}
@@ -173,7 +182,7 @@ class PlantConcept(Operator):
                 },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }
