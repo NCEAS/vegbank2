@@ -249,12 +249,14 @@ class PlotObservation(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'cl_code', 'cl.' || commclass_id,
+                         'ci_code', 'ci.' || comminterpretation_id,
                          'cc_code', 'cc.' || commconcept_id,
                          'comm_name', comm_name,
                          'comm_code', comm_code
                        )) AS top_classifications
                 FROM (
                   SELECT cl.commclass_id,
+                         ci.comminterpretation_id,
                          cc.commconcept_id,
                          cc.commname as comm_name,
                          cu.commname as comm_code
