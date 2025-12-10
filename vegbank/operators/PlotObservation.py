@@ -476,10 +476,15 @@ class PlotObservation(Operator):
                 along with the number of new records and the newly created keys. 
         """
         df = pd.read_parquet(file)
+        if 'user_pl_code' not in df.columns:
+            df['user_pl_code'] = None
+        if 'vb_pl_code' not in df.columns:
+            df['vb_pl_code'] = None
 
-        table_defs = [table_defs_config.plot, table_defs_config.observation]
-        required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude', 'vb_pj_code']
-        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "plot observations")
+        validation = {
+            'error': "",
+            'has_error': False
+        }
         
         if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
             validation['error'] += "Rows cannot have both a vb_pl_code and a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
@@ -487,23 +492,33 @@ class PlotObservation(Operator):
         if not df[(df['user_pl_code'].isnull()) & (df['vb_pl_code'].isnull())].empty:
             validation['error'] += "All rows must have either a vb_pl_code or a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
             validation['has_error'] = True
+        
+        new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()] 
+        old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()] 
+
+        table_defs = [table_defs_config.plot, table_defs_config.observation]
+        new_pl_required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude', 'user_ob_code', 'vb_pj_code']
+        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
+        new_validation = validate_required_and_missing_fields(new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
+        old_validation = validate_required_and_missing_fields(old_plots_df, old_pl_required_fields, table_defs, "observations on existing plots")
+
+        validation['error'] += new_validation['error'] + old_validation['error']
+        validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
+
         if validation['has_error']:
             raise ValueError(validation['error'])
-        
+
         df['user_pl_code'] = df['user_pl_code'].astype(str)
-        new_plots_df = df[df['user_pl_code'] != "None"] # We only insert plots where the user only provided a vb_pl_code
-        plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
-        
-        pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
-        pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
+        if not new_plots_df.empty:
+            plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
+            
+            pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
+            pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
 
-        df = df.merge(pl_codes_df, on='user_pl_code', how='left')
-        df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
-        df.drop(columns=['vb_pl_code_y'], inplace=True)
-        #df = df.merge(pl_codes_df, on='user_pl_code', how='left')
+            df = df.merge(pl_codes_df, on='user_pl_code', how='left')
+            df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
+            df.drop(columns=['vb_pl_code_y'], inplace=True)
 
-        print("Final observation df to upload --------------------------------------------")
-        print(df)
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
 
