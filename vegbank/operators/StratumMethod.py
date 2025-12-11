@@ -31,7 +31,6 @@ class StratumMethod(Operator):
         self.table_code = "sm"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail

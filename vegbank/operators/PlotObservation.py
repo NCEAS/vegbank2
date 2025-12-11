@@ -29,7 +29,6 @@ class PlotObservation(Operator):
         self.name = "plot_observation"
         self.table_code = "ob"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")

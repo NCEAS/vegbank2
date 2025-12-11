@@ -26,7 +26,6 @@ class CommunityClassification(Operator):
         self.name = "community_classification"
         self.table_code = "cl"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
         self.nested_options = ("true", "false")
         self.detail_options = ("minimal", "full")
 

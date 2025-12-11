@@ -21,7 +21,6 @@ class Party(Operator):
         self.table_code = "py"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.sort_options = ["default", "surname", "organization_name", "obs_count"]
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}

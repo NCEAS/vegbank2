@@ -25,7 +25,6 @@ class PlantConcept(Operator):
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "plant_name", "obs_count"]
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
