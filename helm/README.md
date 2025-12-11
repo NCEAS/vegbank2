@@ -292,6 +292,127 @@ From here, we can get a dump file, mount it to a path, and use the existing step
 $ pg_dump -h localhost -U vegbank -d vegbank -Fc -f vegbank_20251105.dump
 ```
 
+## Recover a deleted snapshot via `velero`
+
+We are currently using `velero` to take daily backups of our Kubernetes resources. If you have accidentally deleted, or need to recover a specific backup point, you can use a `velero` backup and recover a specific `cnpg` backup resource.
+
+To see the available `velero` backups, run the following command:
+
+```sh
+$ velero backup get
+...
+full-backup-20251203030015           PartiallyFailed   1        2          2025-12-02 19:00:15 -0800 PST   87d       default            <none>
+...
+```
+
+After you've found the `velero` backup you wish to restore from, you can recover the `cnpg` backup/snapshot like this:
+
+```sh
+# velero restore create [give_your_restore_a_name]
+$ velero restore create restore-cnpg-bkup-dou-test \                                                                                               
+  --from-backup full-backup-20251203030015 \
+  --include-resources=backups.postgresql.cnpg.io \
+  --include-namespaces=dev-vegbank-dev
+Restore request "restore-cnpg-bkup-dou-test" submitted successfully.
+Run `velero restore describe restore-cnpg-bkup-dou-test` or `velero restore logs restore-cnpg-bkup-dou-test` for more details.
+```
+
+Check whether the backup worked, by running the following command:
+
+```sh
+$ velero restore get                                                                                                                               
+NAME                         BACKUP                       STATUS       STARTED                         COMPLETED   ERRORS   WARNINGS   CREATED                         SELECTOR
+restore-cnpg-bkup-dou-test   full-backup-20251203030015   InProgress   2025-12-05 13:19:23 -0800 PST   <nil>       0        0          2025-12-05 13:19:23 -0800 PST   <none>
+
+$ velero restore get 
+NAME                         BACKUP                       STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
+restore-cnpg-bkup-dou-test   full-backup-20251203030015   Completed   2025-12-05 13:19:23 -0800 PST   2025-12-05 13:25:30 -0800 PST   0        0          2025-12-05 13:19:23 -0800 PST   <none>
+```
+
+Finally, use the specific resource you backed up by updating the required values in `values-cnpg.yaml` and use `helm install` to finish thre restoration process. Example of this process below:
+
+Using the following modifications to `values-cnpg.yaml` to the `init` section:
+```
+## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
+init:
+  enabled: true
+  method: recovery
+  recoverFromBackup: vegbankdb-scheduled-backup-20251205210000
+
+backup:
+  enabled: true
+```
+
+Then install the updated chart:
+
+```sh
+$ helm install vegbankvelero oci://ghcr.io/dataoneorg/charts/cnpg -f '/Users/doumok/Code/vegbank2/helm/values-cnpg.yaml' --debug -n dev-vegbank-dev
+```
+
+Check to see that the process has begun by executing the following, and looking for the `snapshot` pod:
+```sh
+$ kubectl get pods -n dev-vegbank-dev
+NAME                                           READY   STATUS    RESTARTS      AGE
+vegbankapi-54b85649c6-2pwcm                    1/1     Running   0             4d19h
+vegbankdb-cnpg-1                               1/1     Running   2             52d
+vegbankdb-cnpg-2                               1/1     Running   1 (16d ago)   52d
+vegbankdb-cnpg-3                               1/1     Running   1 (16d ago)   52d
+vegbankvelero-cnpg-1-snapshot-recovery-pqsl9   0/1     Pending   0             2s
+```
+
+It takes approximately 10 minutes for the pods to be assigned, after which the recovery process will begin. For example:
+```sh
+$ kubectl describe pod vegbankvelero-cnpg-1-snapshot-recovery-pqsl9 -n dev-vegbank-dev
+...
+Events:
+  Type     Reason            Age                    From               Message
+  ----     ------            ----                   ----               -------
+  Warning  FailedScheduling  12m                    default-scheduler  0/6 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling..
+  Warning  FailedScheduling  2m46s (x2 over 7m46s)  default-scheduler  0/6 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling..
+  Normal   Scheduled         67s                    default-scheduler  Successfully assigned vegbank-dev/vegbankvelero-cnpg-1-snapshot-recovery-pqsl9 to k8s-dev-node-4
+  Normal   Pulled            64s                    kubelet            Container image "ghcr.io/cloudnative-pg/cloudnative-pg:1.27.0" already present on machine
+  Normal   Created           63s                    kubelet            Created container bootstrap-controller
+  Normal   Started           63s                    kubelet            Started container bootstrap-controller
+  Normal   Pulled            59s                    kubelet            Container image "ghcr.io/cloudnative-pg/postgresql:17.5" already present on machine
+  Normal   Created           58s                    kubelet            Created container snapshot-recovery
+  Normal   Started           57s                    kubelet            Started container snapshot-recovery
+```
+
+To watch the process execute, you can run `watch kubectl get pods`
+
+```sh
+$ watch kubectl get pods -n dev-vegbank-dev
+NAME                                           READY   STATUS      RESTARTS      AGE
+vegbankapi-54b85649c6-2pwcm                    1/1     Running     0             4d19h
+vegbankdb-cnpg-1                               1/1     Running     2             52d
+vegbankdb-cnpg-2                               1/1     Running     1 (16d ago)   52d
+vegbankdb-cnpg-3                               1/1     Running     1 (16d ago)   52d
+vegbankvelero-cnpg-1                           1/1     Running     0             6m25s
+vegbankvelero-cnpg-1-snapshot-recovery-pqsl9   0/1     Completed   0             18m
+vegbankvelero-cnpg-2                           1/1     Running     0             105s
+vegbankvelero-cnpg-2-join-dhq22                0/1     Completed   0             5m58s
+vegbankvelero-cnpg-3-join-swdfb                1/1     Running     0             81s
+
+$ kubectl get pods - n dev-vegbank-dev
+NAME                          READY   STATUS    RESTARTS      AGE
+vegbankapi-54b85649c6-2pwcm   1/1     Running   0             4d19h
+vegbankdb-cnpg-1              1/1     Running   2             52d
+vegbankdb-cnpg-2              1/1     Running   1 (16d ago)   52d
+vegbankdb-cnpg-3              1/1     Running   1 (16d ago)   52d
+vegbankvelero-cnpg-1          1/1     Running   0             9m37s
+vegbankvelero-cnpg-2          1/1     Running   0             4m57s
+vegbankvelero-cnpg-3          1/1     Running   0             78s
+```
+
+And then finally, to confirm that `ScheduledBackups` are being run once again:
+
+```sh
+$ kubectl get backup -n dev-vegbank-dev
+...
+vegbankdb-scheduled-backup-20251207210000       22h     vegbankdb-cnpg       volumeSnapshot   completed   
+vegbankvelero-scheduled-backup-20251208192351   2m20s   vegbankvelero-cnpg   volumeSnapshot   completed  
+```
+
 # Connecting to API via kubectl port forwarding
 
 Once you're in the k8s dev-vegbank context, you can find the name of the API pod via the following command: 
