@@ -92,6 +92,8 @@ class Operator:
         self.default_create_parquet = "false"
         self.default_limit = "1000"
         self.default_offset = "0"
+        self.sort_options = ["default"]
+        self.default_sort = "default"
         self.params = params
         self.name = "vegbank"
         self.table_code = "vb"
@@ -227,7 +229,9 @@ class Operator:
             # Load base WHERE (and update params)
             base_conditions = base.get('conditions', {})
             if base_conditions.get('always') is not None:
-                base_condition_list = [base_conditions.get('always')['sql']]
+                base_condition_list = base_conditions.get('always')['sql']
+                if not isinstance(base_condition_list, list):
+                    base_condition_list = [base_condition_list]
                 params.extend(base_conditions.get('always')['params'])
             else:
                 base_condition_lists = []
@@ -245,7 +249,7 @@ class Operator:
             base_condition_list = list(filter(None, base_condition_list))
             base_condition_list = [textwrap.dedent(sql).rstrip() for
                                    sql in base_condition_list]
-            base_where_sql = f"  WHERE {'\n  AND '.join(base_condition_list)}" \
+            base_where_sql = f"  WHERE {'\n    AND '.join(base_condition_list)}" \
                 if base_condition_list else None
             base_sql_parts.append(base_where_sql)
 
@@ -272,8 +276,6 @@ class Operator:
                 '\n'.join([block for block in base_sql_parts
                            if block is not None]), '  ')
             if (count):
-                print(base_sql)
-                print(params)
                 return base_sql, params
             base_sql = f"WITH {base.get('alias')} AS (\n{base_sql}\n)"
 
@@ -325,8 +327,6 @@ class Operator:
                          if block is not None])
 
         # Return the SQL and associated ordered list of placeholder names
-        print(sql)
-        print(params)
         return sql, params
 
     def get_vegbank_resources(self, request, vb_code=None):
@@ -404,6 +404,8 @@ class Operator:
             params = self.validate_query_params(request.args)
             self.detail = params['detail']
             self.with_nested = params['with_nested']
+            self.order_by = params['sort']
+            self.direction = params['direction']
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
@@ -607,6 +609,16 @@ class Operator:
             request_args.get('limit', self.default_limit))
         params['offset'] = self.process_integer_param('offset',
             request_args.get('offset', self.default_offset))
+
+        sort = request_args.get('sort', self.default_sort)
+        params['direction'] = 'ASC'
+        if sort.startswith('+'):
+            sort = sort[1:]
+        elif sort.startswith('-'):
+            sort = sort[1:]
+            params['direction'] = 'DESC'
+        params['sort'] = self.process_option_param('sort',
+            sort, self.sort_options)
 
         return params
 

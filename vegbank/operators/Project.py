@@ -25,6 +25,7 @@ class Project(Operator):
         self.name = "project"
         self.table_code = "pj"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.sort_options = ["default", "project_name", "obs_count"]
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
@@ -47,6 +48,18 @@ class Project(Operator):
         order_by_sql = """\
             ORDER BY projectname,
                      project_id
+            """
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY project_id {self.direction}
+            """
+        order_by_sql['project_name'] = f"""\
+            ORDER BY projectname {self.direction},
+                     project_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY d_obscount {self.direction},
+                     project_id {self.direction}
             """
 
         self.query = {}
@@ -83,7 +96,7 @@ class Project(Operator):
                 },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }

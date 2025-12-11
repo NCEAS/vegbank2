@@ -20,6 +20,7 @@ class Party(Operator):
         self.name = "party"
         self.table_code = "py"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.sort_options = ["default", "surname", "organization_name", "obs_count"]
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
@@ -40,9 +41,21 @@ class Party(Operator):
             'obs_count': "d_obscount",
         }
         from_sql = "FROM py"
-        order_by_sql = """\
-            ORDER BY COALESCE(surname, organizationname),
-                     party_id
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY party_id {self.direction}
+            """
+        order_by_sql['surname'] = f"""\
+            ORDER BY surname {self.direction},
+                     party_id {self.direction}
+            """
+        order_by_sql['organization_name'] = f"""\
+            ORDER BY organizationname {self.direction},
+                     party_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY d_obscount {self.direction},
+                     party_id {self.direction}
             """
 
         self.query = {}
@@ -109,7 +122,7 @@ class Party(Operator):
                 },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }

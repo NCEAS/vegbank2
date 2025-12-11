@@ -30,22 +30,32 @@ class CoverMethod(Operator):
         self.name = "cover_method"
         self.table_code = "cm"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.nested_options = ("true", "false")
         self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
+        query_type = self.detail
+        if self.with_nested == 'true':
+            query_type += "_nested"
+
         base_columns = {'*': "*"}
         main_columns = {}
         main_columns['full'] = {
             'cm_code': "'cm.' || cm.covermethod_id",
             'cover_type': "cm.covertype",
             'cover_estimation_method': "cm.coverestimationmethod",
-            'cover_indexes': "cv.cover_indexes",
             'rf_code': "'rf.' || rf.reference_id",
             'rf_name': "rf.shortname",
         }
-        from_sql = """\
+        main_columns['full_nested'] = main_columns['full'] | {
+            'cover_indexes': "cv.cover_indexes",
+        }
+        from_sql = {}
+        from_sql['full'] = """\
             FROM cm
             LEFT JOIN reference rf USING (reference_id)
+            """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                       'cv_code', 'cv.' || coverindex_id,
@@ -97,39 +107,14 @@ class CoverMethod(Operator):
         }
         self.query['select'] = {
             "always": {
-                'columns': main_columns[self.detail],
+                'columns': main_columns[query_type],
                 'params': []
             },
         }
         self.query['from'] = {
-            'sql': from_sql,
+            'sql': from_sql[query_type],
             'params': []
         }
-
-    def validate_query_params(self, request_args):
-        """
-        Validate query parameters and apply defaults to missing parameters.
-
-        This only applies validations specific to cover methods, then
-        dispatches to the parent validation method for more general (and more
-        permissive) validations.
-
-        Parameters:
-            request_args (ImmutableMultiDict): Query parameters provided
-                as part of the request.
-
-        Returns:
-            dict: A dictionary of validated parameters with defaults applied.
-
-        Raises:
-            QueryParameterError: If any supplied parameters are invalid.
-        """
-        # specifically require detail to be "full" for cover methods
-        if request_args.get("detail", self.default_detail) not in ("full"):
-            raise QueryParameterError("When provided, 'detail' must be 'full'.")
-
-        # now dispatch to the base validation method
-        return super().validate_query_params(request_args)
 
     def upload_cover_method(self, request, params):
         """

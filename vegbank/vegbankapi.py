@@ -10,11 +10,13 @@ import traceback
 import os
 from utilities import jsonify_error_message, allowed_file
 from operators import (
+    TaxonInterpretation,
     TaxonObservation,
     PlotObservation,
     Party,
     PlantConcept,
     CommunityClassification,
+    CommunityInterpretation,
     CommunityConcept,
     CoverMethod,
     Project,
@@ -82,6 +84,7 @@ def plot_observations(vb_code):
             plot observation retrieval. If None, retrieves all plot observations.
 
     GET Query Parameters:
+        search (str, optional): Plot observation search query.
         detail (str, optional): Level of detail for the response.
             Can be either 'minimal' or 'full'. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
@@ -91,6 +94,10 @@ def plot_observations(vb_code):
             alphabetical order by plant name if detail=full. Defaults to 5.
         num_comms (int, optional): Number of communities to return per
             plot observation, ordered by commclass_id. Defaults to 5.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID) or 'author_obs_code', and both values
+            can be prepended with a '-' to sort in descending order
+            (e.g., '-author_obs_code'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -233,60 +240,107 @@ def strata_cover_data():
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
 
-@app.route("/taxon-interpretations", methods=['POST'])
-def taxon_interpretations():
+
+@app.route("/taxon-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-interpretations/<vb_code>", methods=['GET'])
+@app.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
+@app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
+def taxon_interpretations(vb_code):
     """
-    Upload taxon interpretations from a Parquet file.
+    Retrieve either an individual taxon interpretation or a collection, or
+    upload a new set of taxon interpretations.
 
-    This function handles HTTP POST requests to upload taxon interpretations.
-    It expects a Parquet file containing taxon interpretations in the request.
-    Uploads data to the taxon interpretation table. If the upload is successful,
-    it returns a JSON response indicating success. If there are any errors
-    during the upload process, it returns an appropriate error message.
+    This function handles HTTP requests for taxon interpretations, currently
+    supporting POST and GET methods. For any other HTTP method, it returns a 405
+    error.
 
-    Query Parameters:
+    POST: Facilitates uploading of new taxon interpretations as an attached
+    Parquet file, if permitted via an environment variable. If the upload is
+    successful, it returns a JSON response indicating success. If there are any
+    errors during the upload process, it returns an appropriate error message.
+
+    GET: If a valid taxon interpretation code is provided (e.g., ti.1), returns
+    the corresponding record if it exists. If a valid code for a different
+    supported resource type is provided, returns the collection of taxon
+    interpretation records associated with that resource. If no vb_code is
+    provided, returns the full collection of taxon interpretation records.
+    Collection responses may be further mediated by pagination parameters and
+    other filtering query parameters.
+
+    Parameters (for GET requests only):
+        vb_code (str or None): The unique identifier for the plot observation
+            being retrieved, or for a resource of a different type used to focus
+            plot observation retrieval. If None, retrieves all plot observations.
+
+    POST Query Parameters:
         dry_run (str, optional): If set to 'true', the upload will be
             simulated without committing changes to the database.
             Defaults to 'false'.
 
-    POST Parameters: 
+    POST Payload:
         file (FileStorage): The uploaded Parquet file containing taxon
             interpretations.
 
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
     Returns:
-        flask.Response: A JSON response indicating success or failure of
-            the upload operation.
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved taxon interpretation(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+            - 500: Invalid data upload
     """
-    if allow_uploads is False:
-        return jsonify_error_message("Uploads not allowed."), 403
-    if 'file' not in request.files:
-        return jsonify_error_message("No file part in the request."), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify_error_message("No selected file."), 400
-    if not allowed_file(file.filename):
-        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+    taxon_interpretation_operator = TaxonInterpretation(params)
+    if request.method == 'POST':
+        if allow_uploads is False:
+            return jsonify_error_message("Uploads not allowed."), 403
+        if 'file' not in request.files:
+            return jsonify_error_message("No file part in the request."), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify_error_message("No selected file."), 400
+        if not allowed_file(file.filename):
+            return jsonify_error_message(
+                "File type not allowed. Only Parquet files are accepted."), 400
 
-    dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-    print("Dry Run: " + str(dry_run))
+        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+        print("Dry Run: " + str(dry_run))
 
-    taxon_observation_operator = TaxonObservation(params)
-    to_return = None
-    try:
-        with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
-            if dry_run:
-                conn.rollback()
-                message = "Dry run - rolling back transaction."
-                return jsonify({
-                    "message": message,
-                    "dry_run_data": to_return
-                })
-        conn.close()
-    except Exception as e:
-        print(traceback.format_exc())
-        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
-    return jsonify(to_return)
+        taxon_observation_operator = TaxonObservation(params)
+        to_return = None
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
+                if dry_run:
+                    conn.rollback()
+                    message = "Dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(
+                f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
+    elif request.method == 'GET':
+        return taxon_interpretation_operator.get_vegbank_resources(request, vb_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
 
 @app.route("/community-classifications", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/community-classifications/<vb_code>", methods=['GET'])
@@ -347,8 +401,68 @@ def community_classifications(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
+@app.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/community-interpretations/<vb_code>", methods=['GET'])
+@app.route("/community-classifications/<vb_code>/community-interpretations", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/community-interpretations", methods=['GET'])
+@app.route("/community-concepts/<vb_code>/community-interpretations", methods=['GET'])
+def community_interpretations(vb_code):
+    """
+    Retrieve either an individual community interpretation or a collection.
+
+    This function handles HTTP requests for community interpretations.
+    It currently supports only the GET method to retrieve community
+    interpretations. If a POST request is made, it returns an error message
+    indicating that POST is not supported. For any other HTTP method, it
+    returns a 405 error.
+
+    GET: If a valid community interpretation code is provided, returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of community interpretation
+    records associated with that resource. If no vb_code is provided, returns
+    the full collection of community interpretation records. Collection
+    responses may be further mediated by pagination parameters.
+
+    Parameters:
+        vb_code (str or None): The unique identifier for the community
+            interpretation being retrieved, or for a resource of a different
+            type used to focus community interpretation retrieval. If None,
+            retrieves all community interpretations.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Can be either 'minimal' or 'full'. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved community interpretation(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    community_interpretation_operator = CommunityInterpretation(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for community_interpretations."), 405
+    elif request.method == 'GET':
+        return community_interpretation_operator.get_vegbank_resources(request,
+                                                                       vb_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
 @app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<vb_code>")
+@app.route("/community-classifications/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
 def community_concepts(vb_code):
     """
@@ -377,6 +491,12 @@ def community_concepts(vb_code):
         search (str, optional): Community name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'comm_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -404,6 +524,7 @@ def community_concepts(vb_code):
 
 @app.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/plant-concepts/<vb_code>")
+@app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
 def plant_concepts(vb_code):
     """
@@ -431,6 +552,12 @@ def plant_concepts(vb_code):
         search (str, optional): Plant name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'plant_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -486,6 +613,11 @@ def parties(vb_code):
         search (str, optional): Party name/organization search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'surname', 'organization_name', or
+            'obs_count', all of which can be prepended with a '-' to
+            sort in descending order (e.g., '-obs_count'). Defaults to
+            'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -533,6 +665,10 @@ def projects(pj_code):
         search (str, optional): Project name search query.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        sort (str, optional): Sort order for returned records. Can be
+            'default' (sort by ID), 'project_name', or 'obs_count', all of
+            which can be prepended with a '-' to sort in descending
+            order (e.g., '-obs_count'). Defaults to 'default'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -583,6 +719,8 @@ def cover_methods(cm_code):
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting
@@ -633,6 +771,8 @@ def stratum_methods(sm_code):
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
         limit (int, optional): Maximum number of records to return.
             Defaults to 1000.
         offset (int, optional): Number of records to skip before starting

@@ -122,7 +122,9 @@ class TaxonObservation(Operator):
             },
             'conditions': {
                 'always': {
-                    'sql': "emb_taxonobservation < 6",
+                    'sql': [
+                        "emb_taxonobservation < 6",
+                    ],
                     'params': []
                 },
                 "to": {
