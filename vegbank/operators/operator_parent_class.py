@@ -56,11 +56,14 @@ class Operator:
         nested_options (str): Accepted with_nested param values. This should
             be overridden by operator implementations as needed.
         default_nested (str): Default with_nested value.
-        default_create_parquet (str): Default create_parquet value.
+        sort_options (str): Accepted sort param values. This should
+            be overridden by operator implementations as needed.
+        default_sort (str): Default sort value.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
         default_offset (str): Default offset for number of records to skip.
             Used for paginating collection responses.
+        default_create_parquet (str): Default create_parquet value.
         params (dict): Database connection parameters.
         name (str): Simple name used in SQL file paths and returned file names.
         table_code (str): String code to be set for a specific resource
@@ -78,8 +81,8 @@ class Operator:
     def __init__(self, params=None):
         """
         Initialize common default values for all operators. Several, including
-        `name`, `table_code`, and `full_get_parameters`, must be overridden by
-        child classes to reflect their specific resource and querying details.
+        `name` and `table_code`, must be overridden by child classes to
+        reflect their specific resource and querying details.
         """
         self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
@@ -87,11 +90,11 @@ class Operator:
         self.default_detail = "full"
         self.nested_options = ["false"]
         self.default_nested = "false"
-        self.default_create_parquet = "false"
-        self.default_limit = "1000"
-        self.default_offset = "0"
         self.sort_options = ["default"]
         self.default_sort = "default"
+        self.default_limit = "1000"
+        self.default_offset = "0"
+        self.default_create_parquet = "false"
         self.params = params
         self.name = "vegbank"
         self.table_code = "vb"
