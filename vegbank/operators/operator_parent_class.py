@@ -65,8 +65,6 @@ class Operator:
         name (str): Simple name used in SQL file paths and returned file names.
         table_code (str): String code to be set for a specific resource
             type, serving as the `vb_code` prefix in the VegBank database.
-        full_get_parameters (tuple): Names of query parameters to be passed to
-            the full GET query, in the order of placeholders in the SQL file.
         include_full_count (bool): If True, query the database and send the
             full count of records. If False, simply return the count of records
             in the response.
@@ -97,7 +95,6 @@ class Operator:
         self.params = params
         self.name = "vegbank"
         self.table_code = "vb"
-        self.full_get_parameters = None
         self.include_full_count = True
         self.debug = True
         self.query_mode = 'normal'

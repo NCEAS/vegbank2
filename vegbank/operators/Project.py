@@ -26,7 +26,6 @@ class Project(Operator):
         self.table_code = "pj"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.sort_options = ["default", "project_name", "obs_count"]
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
