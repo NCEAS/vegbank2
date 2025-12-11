@@ -394,12 +394,6 @@ class Operator:
         else:
             self.query_mode = 'normal'
 
-        # ** TEMPORARY -- WILL BE REMOVED IN THE NEAR FUTURE **
-        # If an operator uses the "old style" logic or if we directly ask for it
-        # in the API request, redirect to the old method for getting data
-        if not hasattr(self, 'configure_query') or request.args.get('old') is not None:
-            return self.get_vegbank_resources_old(request, vb_code)
-
         try:
             params = self.validate_query_params(request.args)
             self.detail = params['detail']
@@ -492,85 +486,6 @@ class Operator:
                 return self.create_parquet_response(conn, sql, data, count)
             else:
                 return self.create_json_response(conn, sql, data, count)
-
-    def get_vegbank_resources_old(self, request, vb_code=None):
-        """
-        Retrieve either an individual VegBank resource or a collection.
-
-        If a valid vb_code is provided with prefix matching `self.table_code`,
-        returns the corresponding record of type `self.name` if one exists. If
-        no vb_code is provided, returns the full collection of records with
-        pagination and field scope controlled by query parameters.
-
-        Parameters:
-            request (flask.Request): The Flask request object containing query
-                parameters.
-            vb_code (str or None): The unique identifier for the VegBank
-                resource being retrieved. If None, retrieves all records.
-
-        Query Parameters:
-            detail (str, optional): Level of detail for the response.
-                Can be either 'minimal' or 'full'. Defaults to 'full'.
-            limit (int, optional): Maximum number of records to return.
-                Defaults to 1000.
-            offset (int, optional): Number of records to skip before starting
-                to return records. Defaults to 0.
-            create_parquet (str, optional): Whether to return data as Parquet
-                rather than JSON. Accepts 'true' or 'false' (case-insensitive).
-                Defaults to 'false'.
-            ... Subclasses may provide additional parameters.
-
-        Returns:
-            flask.Response: A Flask response object containing:
-                - For individual records: Data as JSON or Parquet
-                - For collection records: Data as JSON or Parquet, with
-                  associated record count if JSON
-                - For invalid parameters: JSON error message with 400 status code
-        """
-        try:
-            params = self.validate_query_params(request.args)
-        except QueryParameterError as e:
-            return jsonify_error_message(e.message), e.status_code
-
-        if vb_code is None:
-            # Prepare to query for a collection of resources
-            # Load collection query string
-            detail = params.get('detail', 'full')
-            sql_file = os.path.join(self.QUERIES_FOLDER,
-                                    f'get_{self.name}_{detail}.sql')
-            with open(sql_file, "r") as file:
-                sql = file.read()
-            if (self.include_full_count):
-                # Load collection count query string
-                sql_file_count = os.path.join(self.QUERIES_FOLDER,
-                                              f'get_{self.name}_count.sql')
-                with open(sql_file_count, "r") as file:
-                    count_sql = file.read()
-            else:
-                count_sql = None
-            # Extract param values to pass to the database query, matching the
-            # placeholders contained in the associated SQL statement
-            if self.full_get_parameters is None:
-                raise ValueError("The 'full_get_parameters' attribute must be set.")
-            data = tuple(params[k] for k in self.full_get_parameters)
-        else:
-            # Prepare to query for a single resource based on its code
-            try:
-                vb_id = self.extract_id_from_vb_code(vb_code)
-            except QueryParameterError as e:
-                return jsonify_error_message(e.message), e.status_code
-            # Load individual resource query string
-            sql_file = os.path.join(self.QUERIES_FOLDER,
-                                    f'get_{self.name}_by_id.sql')
-            with open(sql_file, "r") as file:
-                sql = file.read()
-            count_sql = None
-            data = (vb_id, )
-
-        if params['create_parquet']:
-            return self.create_parquet_response(sql, data)
-        else:
-            return self.create_json_response(sql, data, count_sql)
 
     def validate_query_params(self, request_args):
         """
