@@ -43,6 +43,7 @@ databaseRestore:
 
 Before we deploy this Vegbank API helm chart, we must ensure that postgres is available. So we first deploy the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready before proceeding to deploy the Vegbank API helm chart.
 - Note: Double check that the postgres image in the `databaseRestore.postgres_image` section in `values.yaml` has the same major version as the `cnpg`. Postgres major versions must match otherwise the restore process will not be able to proceed with connecting and restoring.
+- Note #2: The `cnpg` deployment has default values which can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). When you install the vegbank `values-cnpg.yaml` configuration file, these default values get overridden by what is defined in `values-cnpg.yaml`.
 
 ```sh
 # IMPORTANT: The chart name we will use to be consistent is `vegbankdb`.
@@ -191,6 +192,8 @@ $ helm upgrade vegbankapi . --set ingress.enabled=false
 # Recovery & Backup
 
 The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resource. To learn more about this, view our `cnpg` operator documentation [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
+
+The default values for the backups generated can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). For example, if you do not define 'schedule' in `values-cnpg.yaml` - it will default to "0 0 21 * * *" which is 9PM UTC Daily (1PM PST). 
 
 ## Recovering from a ScheduledBackup
 
