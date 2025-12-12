@@ -43,9 +43,9 @@ class CommunityConcept(Operator):
             'comm_code': "cn.comm_code",
             'comm_description': "cc.commdescription",
             'concept_rf_code': "'rf.' || cc.reference_id",
-            'concept_rf_name': "rf_cc.shortname",
+            'concept_rf_label': "rf_cc.reference_id_transl",
             'status_rf_code': "'rf.' || cs.reference_id",
-            'status_rf_name': "rf_cs.shortname",
+            'status_rf_label': "rf_cs.reference_id_transl",
             'obs_count': "cc.d_obscount",
             'comm_level': "cs.commlevel",
             'status': "cs.commconceptstatus",
@@ -75,8 +75,8 @@ class CommunityConcept(Operator):
                 LIMIT 1
             ) cs ON true
             LEFT JOIN commconcept pa ON (pa.commconcept_id = cs.commparent_id)
-            LEFT JOIN reference rf_cc ON cc.reference_id = rf_cc.reference_id
-            LEFT JOIN reference rf_cs ON cs.reference_id = rf_cs.reference_id
+            LEFT JOIN view_reference_transl rf_cc ON cc.reference_id = rf_cc.reference_id
+            LEFT JOIN view_reference_transl rf_cs ON cs.reference_id = rf_cs.reference_id
             LEFT JOIN party py ON py.party_id = cs.party_id
             LEFT JOIN LATERAL (
               SELECT JSON_OBJECT_AGG(classsystem,

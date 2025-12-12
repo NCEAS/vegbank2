@@ -44,7 +44,7 @@ class CoverMethod(Operator):
             'cover_type': "cm.covertype",
             'cover_estimation_method': "cm.coverestimationmethod",
             'rf_code': "'rf.' || rf.reference_id",
-            'rf_name': "rf.shortname",
+            'rf_label': "rf.reference_id_transl",
         }
         main_columns['full_nested'] = main_columns['full'] | {
             'cover_indexes': "cv.cover_indexes",
@@ -52,7 +52,7 @@ class CoverMethod(Operator):
         from_sql = {}
         from_sql['full'] = """\
             FROM cm
-            LEFT JOIN reference rf USING (reference_id)
+            LEFT JOIN view_reference_transl rf USING (reference_id)
             """
         from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (

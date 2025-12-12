@@ -43,9 +43,9 @@ class PlantConcept(Operator):
             'plant_code': "pn.plant_code",
             'plant_description': "pc.plantdescription",
             'concept_rf_code': "'rf.' || pc.reference_id",
-            'concept_rf_name': "rf_pc.shortname",
+            'concept_rf_label': "rf_pc.reference_id_transl",
             'status_rf_code': "'rf.' || ps.reference_id",
-            'status_rf_name': "rf_ps.shortname",
+            'status_rf_label': "rf_ps.reference_id_transl",
             'obs_count': "pc.d_obscount",
             'plant_level': "ps.plantlevel",
             'status': "ps.plantconceptstatus",
@@ -75,8 +75,8 @@ class PlantConcept(Operator):
                 LIMIT 1
             ) ps ON true
             LEFT JOIN plantconcept pa ON (pa.plantconcept_id = ps.plantparent_id)
-            LEFT JOIN reference rf_pc ON pc.reference_id = rf_pc.reference_id
-            LEFT JOIN reference rf_ps ON ps.reference_id = rf_ps.reference_id
+            LEFT JOIN view_reference_transl rf_pc ON pc.reference_id = rf_pc.reference_id
+            LEFT JOIN view_reference_transl rf_ps ON ps.reference_id = rf_ps.reference_id
             LEFT JOIN party py ON py.party_id = ps.party_id
             LEFT JOIN LATERAL (
               SELECT JSON_OBJECT_AGG(classsystem,
