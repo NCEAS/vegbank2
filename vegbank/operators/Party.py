@@ -31,6 +31,7 @@ class Party(Operator):
         main_columns = {}
         main_columns['full'] = {
             'py_code': "'py.' || py.party_id",
+            'party_label': "pyt.party_id_transl",
             'salutation': "py.salutation",
             'given_name': "py.givenname",
             'middle_name': "py.middlename",
@@ -39,7 +40,10 @@ class Party(Operator):
             'contact_instructions': "py.contactinstructions",
             'obs_count': "d_obscount",
         }
-        from_sql = "FROM py"
+        from_sql = """\
+            FROM py
+            LEFT JOIN view_party_transl pyt USING (party_id)
+            """
         order_by_sql = {}
         order_by_sql['default'] = f"""\
             ORDER BY party_id {self.direction}
@@ -157,10 +161,6 @@ class Party(Operator):
         Raises:
             QueryParameterError: If any supplied parameters are invalid.
         """
-        # specifically require detail to be "full" for parties
-        if request_args.get("detail", self.default_detail) not in ("full"):
-            raise QueryParameterError("When provided, 'detail' must be 'full'.")
-
         # dispatch to the base validation method
         params = super().validate_query_params(request_args)
 

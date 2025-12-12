@@ -53,8 +53,8 @@ class PlantConcept(Operator):
             'stop_date': "ps.stopdate",
             'current_accepted': ("(ps.stopdate IS NULL OR now() < ps.stopdate)"
                                  " AND LOWER(ps.plantconceptstatus) = 'accepted'"),
-            'py_code': "'py.' || py.party_id",
-            'party': "COALESCE(py.surname, py.organizationname)",
+            'py_code': "'py.' || ps.party_id",
+            'party_label': "py.party_id_transl",
             'plant_party_comments': "ps.plantpartycomments",
             'parent_pc_code': "'pc.' || ps.plantparent_id",
             'parent_name': "pa.plantname",
@@ -77,7 +77,7 @@ class PlantConcept(Operator):
             LEFT JOIN plantconcept pa ON (pa.plantconcept_id = ps.plantparent_id)
             LEFT JOIN view_reference_transl rf_pc ON pc.reference_id = rf_pc.reference_id
             LEFT JOIN view_reference_transl rf_ps ON ps.reference_id = rf_ps.reference_id
-            LEFT JOIN party py ON py.party_id = ps.party_id
+            LEFT JOIN view_party_transl py ON py.party_id = ps.party_id
             LEFT JOIN LATERAL (
               SELECT JSON_OBJECT_AGG(classsystem,
                                      RTRIM(plantname)) ->> 'Code' AS plant_code,
