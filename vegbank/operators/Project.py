@@ -149,8 +149,6 @@ class Project(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
 
-        df['interpretation_date'] = pd.Timestamp.now()
-
         df['user_pj_code'] = df['user_pj_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
         new_projects =  super().upload_to_table("project", 'pj', table_defs_config.project, 'project_id', df, True, conn, validate=False)
         return new_projects
