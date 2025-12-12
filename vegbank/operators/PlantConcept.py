@@ -23,9 +23,14 @@ class PlantConcept(Operator):
         self.name = "plant_concept"
         self.table_code = "pc"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
+        self.nested_options = ("true", "false")
+        self.sort_options = ["default", "plant_name", "obs_count"]
 
     def configure_query(self, *args, **kwargs):
+        query_type = self.detail
+        if self.with_nested == 'true':
+            query_type += "_nested"
+
         base_columns = {'*': "*"}
         base_columns_search = {
             'search_rank': "TS_RANK(pc.search_vector, " +
@@ -41,7 +46,6 @@ class PlantConcept(Operator):
             'concept_rf_name': "rf_pc.shortname",
             'status_rf_code': "'rf.' || ps.reference_id",
             'status_rf_name': "rf_ps.shortname",
-            'usages': "pn.usages",
             'obs_count': "pc.d_obscount",
             'plant_level': "ps.plantlevel",
             'status': "ps.plantconceptstatus",
@@ -54,10 +58,14 @@ class PlantConcept(Operator):
             'plant_party_comments': "ps.plantpartycomments",
             'parent_pc_code': "'pc.' || ps.plantparent_id",
             'parent_name': "pa.plantname",
+        }
+        main_columns['full_nested'] = main_columns['full'] | {
+            'usages': "pn.usages",
             'children': "children",
             'correlations': "px_group.correlations",
         }
-        from_sql = """\
+        from_sql = {}
+        from_sql['full'] = """\
             FROM pc
             LEFT JOIN LATERAL (
               SELECT *
@@ -80,6 +88,8 @@ class PlantConcept(Operator):
                 FROM plantusage
                 WHERE plantconcept_id = pc.plantconcept_id
             ) pn ON true
+            """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'pc_code', 'pc.' || ch_pc.plantconcept_id,
@@ -101,9 +111,17 @@ class PlantConcept(Operator):
                   AND pcorr.correlationstop IS NULL
             ) px_group ON true
             """
-        order_by_sql = """\
-            ORDER BY pc.plantname,
-                     pc.plantconcept_id
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['plant_name'] = f"""\
+            ORDER BY pc.plantname {self.direction},
+                     pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY COALESCE(pc.d_obscount, 0) {self.direction},
+                     pc.plantconcept_id {self.direction}
             """
 
         self.query = {}
@@ -135,20 +153,41 @@ class PlantConcept(Operator):
                     'params': ['search']
                 },
                 "pc": {
+                    'sql': "pc.plantconcept_id = %s",
+                    'params': ['vb_id']
+                },
+                'ob': {
                     'sql': """\
-                        pc.plantconcept_id = %s
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              JOIN taxonobservation txo USING (taxonobservation_id)
+                              JOIN observation ob USING (observation_id)
+                              WHERE pc.plantconcept_id = txi.plantconcept_id
+                                AND observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'to': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              JOIN taxonobservation txo USING (taxonobservation_id)
+                              WHERE pc.plantconcept_id = txi.plantconcept_id
+                                AND taxonobservation_id = %s)
                         """,
                     'params': ['vb_id']
                 },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }
         self.query['select'] = {
             "always": {
-                'columns': main_columns[self.detail],
+                'columns': main_columns[query_type],
                 'params': []
             },
             'search': {
@@ -157,7 +196,7 @@ class PlantConcept(Operator):
             },
         }
         self.query['from'] = {
-            'sql': from_sql,
+            'sql': from_sql[query_type],
             'params': []
         }
 
@@ -179,10 +218,6 @@ class PlantConcept(Operator):
         Raises:
             QueryParameterError: If any supplied parameters are invalid.
         """
-        # specifically require detail to be "full" for plant concepts
-        if request_args.get("detail", self.default_detail) not in ("full"):
-            raise QueryParameterError("When provided, 'detail' must be 'full'.")
-
         # now dispatch to the base validation method
         params = super().validate_query_params(request_args)
 

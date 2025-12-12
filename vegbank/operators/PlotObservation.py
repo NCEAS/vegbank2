@@ -1,4 +1,5 @@
 import os
+import textwrap
 from flask import jsonify
 import psycopg
 from psycopg import ClientCursor
@@ -7,7 +8,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
+from utilities import jsonify_error_message, allowed_file
 
 
 class PlotObservation(Operator):
@@ -28,9 +29,9 @@ class PlotObservation(Operator):
         self.name = "plot_observation"
         self.table_code = "ob"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
+        self.sort_options = ("default", "author_obs_code")
         self.default_num_taxa = 5
         self.default_num_comms = 5
 
@@ -42,6 +43,10 @@ class PlotObservation(Operator):
             nesting = True
 
         base_columns = {'ob.*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(ob.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
@@ -51,15 +56,30 @@ class PlotObservation(Operator):
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
-            'confidentiality_reason': "pl.confidentialityreason",
-            'latitude': "pl.latitude",
-            'longitude': "pl.longitude",
-            'author_e': "pl.authore",
-            'author_n': "pl.authorn",
-            'author_zone': "pl.authorzone",
-            'author_datum': "pl.authordatum",
-            'author_location': "pl.authorlocation",
-            'location_narrative': "pl.locationnarrative",
+            'latitude': f"({textwrap.dedent("""\
+                CASE WHEN 4 <= confidentialitystatus THEN NULL
+                             ELSE pl.latitude END""")})",
+            'longitude': f"({textwrap.dedent("""\
+                CASE WHEN 4 <= confidentialitystatus THEN NULL
+                             ELSE pl.longitude END""")})",
+            'author_e': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authore END""")})",
+            'author_n': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorn END""")})",
+            'author_zone': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorzone END""")})",
+            'author_datum': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authordatum END""")})",
+            'author_location': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.authorlocation END""")})",
+            'location_narrative': f"({textwrap.dedent("""\
+                CASE WHEN 1 <= confidentialitystatus THEN '<confidential>'
+                             ELSE pl.locationnarrative END""")})",
             'azimuth': "pl.azimuth",
             'dsg_poly': "pl.dsgpoly",
             'shape': "pl.shape",
@@ -162,7 +182,6 @@ class PlotObservation(Operator):
             'ob_notes_public': "ob.notespublic",
             'ob_notes_mgt': "ob.notesmgt",
             'ob_revisions': "ob.revisions",
-            'emb_observation': "ob.emb_observation",
             'interp_orig_ci_code': "'ci.' || ob.interp_orig_ci_id",
             'interp_orig_cc_code': "'cc.' || ob.interp_orig_cc_id",
             'interp_orig_sciname': "ob.interp_orig_sciname",
@@ -229,12 +248,14 @@ class PlotObservation(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'cl_code', 'cl.' || commclass_id,
+                         'ci_code', 'ci.' || comminterpretation_id,
                          'cc_code', 'cc.' || commconcept_id,
                          'comm_name', comm_name,
                          'comm_code', comm_code
                        )) AS top_classifications
                 FROM (
                   SELECT cl.commclass_id,
+                         ci.comminterpretation_id,
                          cc.commconcept_id,
                          cc.commname as comm_name,
                          cu.commname as comm_code
@@ -324,8 +345,13 @@ class PlotObservation(Operator):
                         FROM returned_taxon_observations) AS taxon_importance_count_returned
             ) AS txo ON true
             """
-        order_by_sql = """\
-            ORDER BY ob.observation_id ASC
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY ob.observation_id {self.direction}
+            """
+        order_by_sql['author_obs_code'] = f"""\
+            ORDER BY ob.authorobscode {self.direction},
+                     ob.observation_id {self.direction}
             """
 
         self.query = {}
@@ -336,32 +362,92 @@ class PlotObservation(Operator):
                     'columns': base_columns,
                     'params': []
                 },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
             },
             'from': {
-                'sql': """\
-                    FROM observation AS ob
-                    JOIN plot AS pl USING (plot_id)
-                    """,
+                'sql': "FROM observation AS ob",
                 'params': []
             },
             'conditions': {
                 'always': {
-                    'sql': "pl.confidentialitystatus < 4",
+                    'sql': [
+                        "emb_observation < 6",
+                    ],
                     'params': []
+                },
+                'search': {
+                    'sql': """\
+                         ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                    """,
+                    'params': ['search']
                 },
                 'ob': {
                     'sql': "ob.observation_id = %s",
                     'params': ['vb_id']
                 },
+                'cc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM commclass cl
+                              JOIN comminterpretation ci USING (commclass_id)
+                              JOIN commconcept cc USING (commconcept_id)
+                              WHERE ob.observation_id = cl.observation_id
+                                AND commconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM taxonobservation txo
+                              JOIN taxoninterpretation txi USING (taxonobservation_id)
+                              JOIN plantconcept pc USING (plantconcept_id)
+                              WHERE ob.observation_id = txo.observation_id
+                                AND plantconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pj': {
+                    'sql': "project_id = %s",
+                    'params': ['vb_id']
+                },
+                # This gets *all* contributors, not just observationcontributors
+                'py': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT py.observation_id
+                             FROM view_browseparty_all py
+                             WHERE ob.observation_id = py.observation_id
+                               AND py.party_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'cm': {
+                    'sql': "covermethod_id = %s",
+                    'params': ['vb_id']
+                },
+                'sm': {
+                    'sql': "stratummethod_id = %s",
+                    'params': ['vb_id']
+                }
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }
         self.query['select'] = {
             "always": {
                 'columns': main_columns[query_type],
+                'params': []
+            },
+            'search': {
+                'columns': {'search_rank': 'ob.search_rank'},
                 'params': []
             },
         }
@@ -395,6 +481,9 @@ class PlotObservation(Operator):
             request_args.get('num_taxa', self.default_num_taxa))
         params['num_comms'] = self.process_integer_param('num_comms',
             request_args.get('num_comms', self.default_num_comms))
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
 
         return params
 
@@ -660,59 +749,3 @@ class PlotObservation(Operator):
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
-
-    def get_observation_details(self, ob_code):
-        """
-        Retrieves observation details for a given observation code.
-
-        This method connects to the VegBank database and executes SQL queries
-        to fetch plot observation details, associated taxon observations, and
-        community classifications, returning the results in a JSON format.
-
-        Parameters (for GET requests only):
-            ob_code (str): The unique identifier for the plot observation.
-        Returns:
-            flask.Response: A Flask response object containing the observation
-                details in JSON format.
-        Raises:
-            Exception: If there is an error in executing the SQL queries
-                or connecting to the database.
-        """
-        to_return = {}
-        with psycopg.connect(**self.params, row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                # Prepare to query for a single resource based on its code
-                try:
-                    ob_id = self.extract_id_from_vb_code(ob_code)
-                except QueryParameterError as e:
-                    return jsonify_error_message(e.message), e.status_code
-                sql_file = os.path.join(self.QUERIES_FOLDER,
-                                        f'get_observation_details.sql')
-                with open(sql_file, "r") as file:
-                    sql = file.read()
-                data = (ob_id, )
-                cur.execute(sql, data)
-                to_return["data"] = cur.fetchall()
-                to_return["count"] = len(to_return["data"])
-                print(to_return)
-                if(len(to_return["data"]) != 0):
-                    taxa = []
-                    sql_file = os.path.join(self.QUERIES_FOLDER,
-                                            f'get_taxa_for_observation.sql')
-                    with open(sql_file, "r") as file:
-                        sql = file.read()
-                    data = (ob_id, )
-                    cur.execute(sql, data)
-                    taxa = cur.fetchall()
-                    to_return["data"][0].update({"taxa": taxa})
-                    communities = []
-                    sql_file = os.path.join(self.QUERIES_FOLDER,
-                                            f'get_community_for_observation.sql')
-                    with open(sql_file, "r") as file:
-                        sql = file.read()
-                    data = (ob_id, )
-                    cur.execute(sql, data)
-                    communities = cur.fetchall()
-                    to_return["data"][0].update({"communities": communities})
-            conn.close()
-        return jsonify(to_return)
