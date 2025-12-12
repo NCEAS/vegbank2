@@ -53,6 +53,7 @@ class PlotObservation(Operator):
             'author_plot_code': "pl.authorplotcode",
             'pl_code': "'pl.' || pl.plot_id",
             'rf_code': "'rf.' || pl.reference_id",
+            'rf_label': "rf.reference_id_transl",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
@@ -241,6 +242,7 @@ class PlotObservation(Operator):
             LEFT JOIN plot pl USING (plot_id)
             """
         from_sql['minimal'] = from_sql['geo'].rstrip() + """
+            LEFT JOIN view_reference_transl rf USING (reference_id)
             LEFT JOIN stratummethod sm USING (stratummethod_id)
             """
         from_sql['full'] = from_sql['minimal']
