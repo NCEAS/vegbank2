@@ -110,6 +110,7 @@ class PlotObservation(Operator):
             'ob_code': "'ob.' || ob.observation_id",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
+            'project_name': "pj.projectname",
             'author_obs_code': "ob.authorobscode",
             'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
@@ -117,6 +118,7 @@ class PlotObservation(Operator):
             'date_accuracy': "ob.dateaccuracy",
             'date_entered': "ob.dateentered",
             'cm_code': "'cm.' || ob.covermethod_id",
+            'cover_method_name': "cm.covertype",
             'cover_dispersion': "ob.coverdispersion",
             'auto_taxon_cover': "ob.autotaxoncover",
             'sm_code': "'sm.' || sm.stratummethod_id",
@@ -241,11 +243,13 @@ class PlotObservation(Operator):
             FROM ob
             LEFT JOIN plot pl USING (plot_id)
             """
-        from_sql['minimal'] = from_sql['geo'].rstrip() + """
+        from_sql['minimal'] = from_sql['geo']
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            LEFT JOIN project pj USING (project_id)
             LEFT JOIN view_reference_transl rf USING (reference_id)
             LEFT JOIN stratummethod sm USING (stratummethod_id)
+            LEFT JOIN covermethod cm USING (covermethod_id)
             """
-        from_sql['full'] = from_sql['minimal']
         from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
