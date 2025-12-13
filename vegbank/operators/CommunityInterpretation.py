@@ -92,7 +92,7 @@ class CommunityInterpretation(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'py_code', 'py.' || party_id,
-                         'party', py.party_id_transl,
+                         'party_label', py.party_id_transl,
                          'role', ar.rolecode)) AS class_contributors
                 FROM classcontributor
                 LEFT JOIN view_party_transl py USING (party_id)

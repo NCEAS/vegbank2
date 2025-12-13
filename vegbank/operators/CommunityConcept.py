@@ -53,8 +53,8 @@ class CommunityConcept(Operator):
             'stop_date': "cs.stopdate",
             'current_accepted': ("(cs.stopdate IS NULL OR now() < cs.stopdate)"
                                  " AND LOWER(cs.commconceptstatus) = 'accepted'"),
-            'py_code': "'py.' || py.party_id",
-            'party': "COALESCE(py.surname, py.organizationname)",
+            'py_code': "'py.' || cs.party_id",
+            'party_label': "py.party_id_transl",
             'comm_party_comments': "cs.commpartycomments",
             'parent_cc_code': "'cc.' || cs.commparent_id",
             'parent_name': "pa.commname",
@@ -77,7 +77,7 @@ class CommunityConcept(Operator):
             LEFT JOIN commconcept pa ON (pa.commconcept_id = cs.commparent_id)
             LEFT JOIN view_reference_transl rf_cc ON cc.reference_id = rf_cc.reference_id
             LEFT JOIN view_reference_transl rf_cs ON cs.reference_id = rf_cs.reference_id
-            LEFT JOIN party py ON py.party_id = cs.party_id
+            LEFT JOIN view_party_transl py ON py.party_id = cs.party_id
             LEFT JOIN LATERAL (
               SELECT JSON_OBJECT_AGG(classsystem,
                                      RTRIM(commname)) ->> 'Code' AS comm_code,

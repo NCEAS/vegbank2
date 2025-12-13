@@ -36,7 +36,7 @@ class TaxonInterpretation(Operator):
             'plant_name': "pc.plantname",
             'plant_label': "pc.plantconcept_id_transl",
             'py_code': "'py.' || txi.party_id",
-            'party': "py.party_id_transl",
+            'party_label': "py.party_id_transl",
             'role': "ar.rolecode",
             'rf_code': "txi.reference_id",
             'rf_label': "rf.reference_id_transl",
