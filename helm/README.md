@@ -235,6 +235,7 @@ Once you've updated your configuration, please install your `cnpg` `helm` chart 
 ```sh
 $ helm install vegbankvelero oci://ghcr.io/dataoneorg/charts/cnpg -f '/Users/doumok/Code/vegbank2/helm/values-cnpg.yaml' --debug
 ```
+- Note: You may launch multiple `cnpg` clusters using different release names. In the example you see below, you'll notice that there is an existing `vegbankdb-cnpg` cluster - along with a new `vegbankvelero-cnpg` cluster that's initializing. There should not be any conflicts with the existing services because those configurations were installed with release name specific settings. For example, the existing `vegbank` API is set up to communicate with `vegbankdb-cnpg-rw`. If you install a cluster called `vegbankvelero-cnpg` - the respective host would be `vegbankvelero-cnpg-rw`.
 
 Check to see that the process has begun by executing the following, and looking for the `snapshot` pod:
 ```sh
