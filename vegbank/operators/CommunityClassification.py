@@ -26,7 +26,6 @@ class CommunityClassification(Operator):
         self.name = "community_classification"
         self.table_code = "cl"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
         self.nested_options = ("true", "false")
         self.detail_options = ("minimal", "full")
 
@@ -74,7 +73,7 @@ class CommunityClassification(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'py_code', 'py.' || party_id,
-                         'party', py.party_id_transl,
+                         'party_label', py.party_id_transl,
                          'role', ar.rolecode)) AS contributors
                 FROM classcontributor co
                 LEFT JOIN view_party_transl py USING (party_id)

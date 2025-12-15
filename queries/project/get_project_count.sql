@@ -1,4 +1,0 @@
-SELECT
-    count(*) 
-FROM
-    project;

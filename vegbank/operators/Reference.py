@@ -19,13 +19,13 @@ class Reference(Operator):
         self.name = "reference"
         self.table_code = "rf"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
         main_columns = {}
         main_columns['full'] = {
             'rf_code': "'rf.' || rf.reference_id",
+            'rf_label': "rft.reference_id_transl",
             'short_name': "rf.shortname",
             'full_citation': "rf.fulltext",
             'reference_type': "rf.referencetype",
@@ -42,6 +42,7 @@ class Reference(Operator):
         }
         from_sql = """\
             FROM rf
+            LEFT JOIN view_reference_transl rft USING (reference_id)
             LEFT JOIN referencejournal rj USING (referencejournal_id)
             """
         order_by_sql = """\

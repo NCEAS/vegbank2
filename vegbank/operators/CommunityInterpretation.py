@@ -40,7 +40,7 @@ class CommunityInterpretation(Operator):
             'comm_name': "cc.commname",
             'comm_label': "cc.commconcept_id_transl",
             'comm_authority_rf_code': "'rf.' || ci.commauthority_id",
-            'comm_authority_name': "rf.reference_id_transl",
+            'comm_authority_rf_label': "rf.reference_id_transl",
             'class_start_date': "cl.classStartDate",
             'class_stop_date': "cl.classStopDate",
             'inspection': "cl.inspection",
@@ -92,7 +92,7 @@ class CommunityInterpretation(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'py_code', 'py.' || party_id,
-                         'party', py.party_id_transl,
+                         'party_label', py.party_id_transl,
                          'role', ar.rolecode)) AS class_contributors
                 FROM classcontributor
                 LEFT JOIN view_party_transl py USING (party_id)

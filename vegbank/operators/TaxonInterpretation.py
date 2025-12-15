@@ -36,8 +36,10 @@ class TaxonInterpretation(Operator):
             'plant_name': "pc.plantname",
             'plant_label': "pc.plantconcept_id_transl",
             'py_code': "'py.' || txi.party_id",
-            'party': "py.party_id_transl",
+            'party_label': "py.party_id_transl",
             'role': "ar.rolecode",
+            'rf_code': "txi.reference_id",
+            'rf_label': "rf.reference_id_transl",
             'interpretation_date': "txi.interpretationdate",
             'interpretation_type': "txi.interpretationtype",
             'taxon_fit': "txi.taxonfit",
@@ -55,7 +57,7 @@ class TaxonInterpretation(Operator):
         main_columns['minimal'] = {alias:col for alias, col in
             main_columns['full'].items() if alias in [
                 'ti_code', 'to_code', 'pc_code', 'interpretation_date',
-                'interpretation_type', 'py_code', 'taxon_fit',
+                'interpretation_type', 'py_code', 'rf_code', 'taxon_fit',
                 'taxon_confidence', 'collection_number', 'group_type', 'notes',
                 'notes_public', 'notes_mgt', 'is_orig', 'is_curr'
             ]}
@@ -76,6 +78,7 @@ class TaxonInterpretation(Operator):
                ORDER BY pu.usagestart DESC NULLS LAST
                LIMIT 1
             ) code ON true
+            LEFT JOIN view_reference_transl rf ON rf.reference_id = txi.reference_id
             LEFT JOIN view_party_transl py USING (party_id)
             LEFT JOIN aux_role ar USING (role_id)
             """

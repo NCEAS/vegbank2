@@ -29,7 +29,6 @@ class PlotObservation(Operator):
         self.name = "plot_observation"
         self.table_code = "ob"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
-        self.full_get_parameters = ('limit', 'offset')
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")
@@ -54,6 +53,7 @@ class PlotObservation(Operator):
             'author_plot_code': "pl.authorplotcode",
             'pl_code': "'pl.' || pl.plot_id",
             'rf_code': "'rf.' || pl.reference_id",
+            'rf_label': "rf.reference_id_transl",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
@@ -110,6 +110,7 @@ class PlotObservation(Operator):
             'ob_code': "'ob.' || ob.observation_id",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
+            'project_name': "pj.projectname",
             'author_obs_code': "ob.authorobscode",
             'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
@@ -117,6 +118,7 @@ class PlotObservation(Operator):
             'date_accuracy': "ob.dateaccuracy",
             'date_entered': "ob.dateentered",
             'cm_code': "'cm.' || ob.covermethod_id",
+            'cover_method_name': "cm.covertype",
             'cover_dispersion': "ob.coverdispersion",
             'auto_taxon_cover': "ob.autotaxoncover",
             'sm_code': "'sm.' || sm.stratummethod_id",
@@ -241,10 +243,13 @@ class PlotObservation(Operator):
             FROM ob
             LEFT JOIN plot pl USING (plot_id)
             """
-        from_sql['minimal'] = from_sql['geo'].rstrip() + """
+        from_sql['minimal'] = from_sql['geo']
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            LEFT JOIN project pj USING (project_id)
+            LEFT JOIN view_reference_transl rf USING (reference_id)
             LEFT JOIN stratummethod sm USING (stratummethod_id)
+            LEFT JOIN covermethod cm USING (covermethod_id)
             """
-        from_sql['full'] = from_sql['minimal']
         from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
