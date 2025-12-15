@@ -195,6 +195,8 @@ The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resou
 
 The default values or settings for the backups generated can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). For example, if you do not define 'schedule' in `values-cnpg.yaml` - it will default to "0 0 21 * * *" which is 9PM UTC Daily (1PM PST). Note - this may change overtime as improvements are made to the `cnpg` deployment.
 
+Recovering using a `ScheduledBackup` is our preferred method to re-deploy the `vegbank` `cnpg` cluster. This is the quickest and simplest path to get the db back up and running in any disaster scenario or if the database becomes corrupted/unusable. In the event where `kubernetes`/`cnpg` is not available, it is still possible to initialize a database using solely the `postgres` data folder. This is documented below, but not recommended unless you have no other choice.
+
 ## Recovering from a ScheduledBackup
 
 If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by:
