@@ -300,11 +300,49 @@ vegbankdb-scheduled-backup-20251207210000       22h     vegbankdb-cnpg       vol
 vegbankvelero-scheduled-backup-20251208192351   2m20s   vegbankvelero-cnpg   volumeSnapshot   completed  
 ```
 
+### How to recover a deleted `ScheduledBackup` via `velero`
+
+If you have accidentally deleted and need to recover a specific backup, you can use `velero` to do so. `velero` is what we use to back up `kubernetes` resources, which includes `cnpg` resources like `ScheduledBackup`s.
+
+To begin and see the available `velero` backups that we can recover from, run the following command:
+
+```sh
+$ velero backup get
+# You will see a list of available backups that you can select from
+...
+full-backup-20251203030015           PartiallyFailed   1        2          2025-12-02 19:00:15 -0800 PST   87d       default            <none>
+...
+```
+
+After you've found the `velero` backup you wish to restore from, you can recover the `cnpg` backup/snapshot like this:
+
+```sh
+# velero restore create [give_your_restore_a_name]
+$ velero restore create restore-cnpg-bkup-dou-test \                                                                                               
+  --from-backup full-backup-20251203030015 \
+  --include-resources=backups.postgresql.cnpg.io \
+  --include-namespaces=dev-vegbank-dev
+Restore request "restore-cnpg-bkup-dou-test" submitted successfully.
+Run `velero restore describe restore-cnpg-bkup-dou-test` or `velero restore logs restore-cnpg-bkup-dou-test` for more details.
+```
+
+Check whether the backup worked, by running the following command:
+
+```sh
+$ velero restore get                                                                                                                               
+NAME                         BACKUP                       STATUS       STARTED                         COMPLETED   ERRORS   WARNINGS   CREATED                         SELECTOR
+restore-cnpg-bkup-dou-test   full-backup-20251203030015   InProgress   2025-12-05 13:19:23 -0800 PST   <nil>       0        0          2025-12-05 13:19:23 -0800 PST   <none>
+
+$ velero restore get 
+NAME                         BACKUP                       STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
+restore-cnpg-bkup-dou-test   full-backup-20251203030015   Completed   2025-12-05 13:19:23 -0800 PST   2025-12-05 13:25:30 -0800 PST   0        0          2025-12-05 13:19:23 -0800 PST   <none>
+```
+
+Now that we've restored the missing or accidentally deleted backup, you can proceed with the normal recovery process defined above with ScheduledBackups.
+
 ## Recovery using data folders in a file system (Cumbersome, but it works)
 
-TODO: Remove references to Nick, and speak as if we only have a data folder recovered somewhere
-
-If for whatever reason we do not have `ScheduledBackups` available to us after a disaster occurs, and we have literally nothing but a physical directory of the `postgres` data that can be found from Nick's latest folder backup - we can still get a working version of the `postgres` database.
+If for whatever reason we do not have `ScheduledBackups` available to us after a disaster occurs, and we have literally nothing but a physical directory of the `postgres` data that can be found from a backup of physical files on disk - we can still get a working version of the `postgres` database with Docker.
 
 **Step 1: Copy the data folder to your local directory and navigate to it**
 
@@ -313,7 +351,7 @@ To get the `vegbank` db back up and running, we will first copy that postgres da
 doumok@Dou-NCEAS-MBP14.local:~ $ cd /Code/testing/pgrecoverytesting/pgdata
 ```
 
-Now, we modify the following settings because the setup for `cnpg` does not match what we are trying to achieve with a docker instance. 
+Now, we modify the following settings because the setup for `cnpg` does not match what we are trying to achieve with a Docker instance. 
 - Adjust the log directory and create a `log` directory in your `pgdata` folder - or set this folder to another location of your choice. You can choose a new `log_filename` if you desire it
   ```sh
   # custom.conf
@@ -370,45 +408,6 @@ From here, we can get a dump file, mount it to a path, and use the existing step
 ```sh
 $ pg_dump -h localhost -U vegbank -d vegbank -Fc -f vegbank_20251105.dump
 ```
-
-## How to recover a deleted `ScheduledBackup` via `velero`
-
-We are currently using `velero` to take daily backups of our Kubernetes resources. If you have accidentally deleted, or need to recover a specific backup point, you can use a `velero` backup and recover a specific `cnpg` backup resource.
-
-To see the available `velero` backups, run the following command:
-
-```sh
-$ velero backup get
-...
-full-backup-20251203030015           PartiallyFailed   1        2          2025-12-02 19:00:15 -0800 PST   87d       default            <none>
-...
-```
-
-After you've found the `velero` backup you wish to restore from, you can recover the `cnpg` backup/snapshot like this:
-
-```sh
-# velero restore create [give_your_restore_a_name]
-$ velero restore create restore-cnpg-bkup-dou-test \                                                                                               
-  --from-backup full-backup-20251203030015 \
-  --include-resources=backups.postgresql.cnpg.io \
-  --include-namespaces=dev-vegbank-dev
-Restore request "restore-cnpg-bkup-dou-test" submitted successfully.
-Run `velero restore describe restore-cnpg-bkup-dou-test` or `velero restore logs restore-cnpg-bkup-dou-test` for more details.
-```
-
-Check whether the backup worked, by running the following command:
-
-```sh
-$ velero restore get                                                                                                                               
-NAME                         BACKUP                       STATUS       STARTED                         COMPLETED   ERRORS   WARNINGS   CREATED                         SELECTOR
-restore-cnpg-bkup-dou-test   full-backup-20251203030015   InProgress   2025-12-05 13:19:23 -0800 PST   <nil>       0        0          2025-12-05 13:19:23 -0800 PST   <none>
-
-$ velero restore get 
-NAME                         BACKUP                       STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
-restore-cnpg-bkup-dou-test   full-backup-20251203030015   Completed   2025-12-05 13:19:23 -0800 PST   2025-12-05 13:25:30 -0800 PST   0        0          2025-12-05 13:19:23 -0800 PST   <none>
-```
-
-Now that we've restored the missing or accidentally deleted backup, you can proceed with the normal recovery process defined above with ScheduledBackups.
 
 # Connecting to API via kubectl port forwarding
 
