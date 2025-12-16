@@ -1,6 +1,7 @@
 import os
 import traceback
 import pandas as pd
+import numpy as np
 from flask import jsonify
 from psycopg.rows import dict_row
 from psycopg import ClientCursor
@@ -233,24 +234,36 @@ class TaxonObservation(Operator):
                 along with the number of new records and the newly created keys. 
         """
         df = pd.read_parquet(file)
-
-        table_defs = [table_defs_config.stem_location, table_defs_config.stem_count]
-        required_fields = ['user_sc_code', 'user_tm_code', 'vb_tm_code', 'stem_count', 'user_sl_code']
+        stem_location_def_for_validation = table_defs_config.stem_location.copy()
+        stem_location_def_for_validation.remove('vb_sc_code') #we remove the extra vb code because it will be added during the process, but is still required for the insert later on.
+        table_defs = [stem_location_def_for_validation, table_defs_config.stem_count]
+        required_fields = ['user_sc_code', 'user_tm_code', 'vb_tm_code', 'stem_count']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "stem data")
         if validation['has_error']:
             raise ValueError(validation['error'])
         
         df['user_sc_code'] = df['user_sc_code'].astype(str) # Ensure user_sc_code is string for consistent merging
         stem_count_codes = super().upload_to_table("stem_count", 'sc', table_defs_config.stem_count, 'stemcount_id', df, True, conn)
-
         sc_codes_df = pd.DataFrame(stem_count_codes['resources']['sc'])
         sc_codes_df = sc_codes_df[['user_sc_code', 'vb_sc_code']]
 
         df = df.merge(sc_codes_df, on='user_sc_code', how='left')
 
-        df['user_sl_code'] = df['user_sl_code'].astype(str) # Ensure user_sl_code is string for consistent merging
-        stem_location_codes = super().upload_to_table("stem_location", 'sl', table_defs_config.stem_location, 'stemlocation_id', df, True, conn)
-        print(stem_location_codes)
+        stem_location_codes = {'resources':{'sl':[]}, 'counts':{'sl':0}}
+
+        #Normally this step happens in the upload_to_table method, but stem locations are optional, so we do some extra preprocessing here to allow for that. We create a subset dataframe with only the stem location columns, clean it up, and then upload it if there is any data to upload. This throws an error if the user submits location data without a user sl code.
+        sl_df = df[df.columns.intersection(table_defs_config.stem_location)].copy()
+        sl_df = sl_df.reindex(columns=table_defs_config.stem_location)
+        sl_df.replace({pd.NaT: None, np.nan: None}, inplace=True)
+
+        sl_df.dropna(subset=['stem_code', 'stem_x_position', 'stem_y_position', 'stem_health'], inplace=True, how='all') #Drop rows where all stem location fields are null
+        print(sl_df)
+        sl_df_no_code = sl_df[sl_df['user_sl_code'].isnull()] #Check if there are any rows with stem location data but no user_sl_code
+        if not sl_df_no_code.empty:
+            raise ValueError("All stem location records must have a user_sl_code when any stem location fields are provided.")
+        if not sl_df.empty: #If there is any stem location data to upload, proceed with the upload
+            sl_df['user_sl_code'] = sl_df['user_sl_code'].astype(str) # Ensure user_sl_code is string for consistent merging
+            stem_location_codes = super().upload_to_table("stem_location", 'sl', table_defs_config.stem_location, 'stemlocation_id', sl_df, True, conn)
         to_return = {
             'resources':{
                 'sc': stem_count_codes['resources']['sc'],
