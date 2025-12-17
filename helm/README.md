@@ -203,7 +203,7 @@ If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by
 - Changing the `init.enabled` section in `values.yaml` to `true`
 - Changing the `init.method` section to `recovery`
 - Providing a specific volume snapshot/backup to recover from for `init.recoverFromBackup`.
-- Important Note: Please ensure that `ScheduledBackup`s begin to run once again by confirming that `backup.enabled` in `values.yaml` is set to `true` before executing `helm install ...`
+- Important Note: Please double check that `backup.enabled` in `values.yaml` is set to `true` before executing `helm install ...` so that we can ensure that backup volumesnapshots are generating once again via `ScheduledBackup`s.
 
   ```
   ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
@@ -301,6 +301,22 @@ $ kubectl get backup -n dev-vegbank
 ...
 vegbankdb-scheduled-backup-20251207210000       22h     vegbankdb-cnpg       volumeSnapshot   completed   
 vegbankvelero-scheduled-backup-20251208192351   2m20s   vegbankvelero-cnpg   volumeSnapshot   completed  
+```
+
+If you have multiple clusters live, you will need to redeploy the existing `vegbankapi` helm chart with an updated `database` section. Specifically `database.host` needs to be revised. Please see below for an example:
+
+```sh
+database:
+  name: vegbank # The database name should be the same after recovery
+  # Previously, this value would have been 'vegbankdb-cnpg-rw'
+  host: vegbankvelero-cnpg-rw # Update this host
+  port: 5432 # The port should also remain the same
+```
+
+After you have confirmed that the API and related tools are working as you expect, you may uninstall the old, presumably now redundant, cluster.
+
+```sh
+$ helm uninstall vegbankdb
 ```
 
 ### How to recover a deleted `ScheduledBackup` via `velero`
