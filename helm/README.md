@@ -195,7 +195,7 @@ The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resou
 
 The default values or settings for the backups generated can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). For example, if you do not define 'schedule' in `values-cnpg.yaml` - it will default to "0 0 21 * * *" which is 9PM UTC Daily (1PM PST). Note - this may change overtime as improvements are made to the `cnpg` deployment.
 
-Recovering using a `ScheduledBackup` is our preferred method to re-deploy the `vegbank` `cnpg` cluster. This is the quickest and simplest path to get the db back up and running in any disaster scenario or if the database becomes corrupted/unusable. In the event where `kubernetes`/`cnpg` is not available, it is still possible to initialize a database using solely the `postgres` data folder. This is documented below, but not recommended unless you have no other choice.
+Recovering using a `ScheduledBackup` is our preferred method to re-deploy the `vegbank` `cnpg` cluster. This is the quickest and simplest path to get the database back up and running in any disaster scenario or if the database becomes corrupted/unusable. In the event where `kubernetes`/`cnpg` is not available, it is still possible to initialize a database using solely the `postgres` data folder. This is documented below, but not recommended unless you have no other choice.
 
 ## Recovering from a ScheduledBackup
 
@@ -203,7 +203,7 @@ If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by
 - Changing the `init.enabled` section in `values.yaml` to `true`
 - Changing the `init.method` section to `recovery`
 - Providing a specific volume snapshot/backup to recover from for `init.recoverFromBackup`.
-- Important Note: if you are redeploying after a disaster, you will also need to enable the `ScheduledBackup` process to begin creating volume snapshots once again. To do this, change `backup.enabled` in `values.yaml` to `true` before executing `helm install ...`
+- Important Note: Please ensure that `ScheduledBackup`s begin to run once again by confirming that `backup.enabled` in `values.yaml` is set to `true` before executing `helm install ...`
 
   ```
   ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
