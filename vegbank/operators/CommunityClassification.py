@@ -1,6 +1,7 @@
 import os
-from operators import Operator
-from utilities import QueryParameterError
+from operators import Operator, table_defs_config
+from utilities import QueryParameterError, validate_required_and_missing_fields
+import pandas as pd
 
 
 class CommunityClassification(Operator):
@@ -195,3 +196,46 @@ class CommunityClassification(Operator):
             'sql': from_sql[query_type],
             'params': []
         }
+
+    def upload_community_classification(self, file, conn):
+        """
+        takes a parquet file in the Community Classifications format from the loader module and uploads it to the 
+        Community Classification and Community Interpretation tables in the VegBank database. 
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing Community Classifications and Interpretations.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        df = pd.read_parquet(file)
+
+        community_interpretation_def_for_validation = table_defs_config.community_interpretation.copy()
+        community_interpretation_def_for_validation.remove('vb_cl_code')  # vb_cl_code is generated during upload and shouldn't be present in the input file
+
+        table_defs = [table_defs_config.community_classification, community_interpretation_def_for_validation]
+        required_fields = ['user_ob_code', 'vb_ob_code', 'user_cl_code', 'user_ci_code', 'vb_cc_code']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "community classifications")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+        
+        communtiy_classification_codes = super().upload_to_table("community_classification", 'cl', table_defs_config.community_classification, 'commclass_id', df, True, conn)
+        
+
+        cl_codes_df = pd.DataFrame(communtiy_classification_codes['resources']['cl'])
+        cl_codes_df = cl_codes_df[['user_cl_code', 'vb_cl_code']]
+
+        df = df.merge(cl_codes_df, on='user_cl_code', how='left')
+
+        community_interpretation_codes = super().upload_to_table("community_interpretation", 'ci', table_defs_config.community_interpretation, 'comminterpretation_id', df, True, conn)
+        print(community_interpretation_codes)
+        to_return = {
+            'resources':{
+                'cl': communtiy_classification_codes['resources']['cl'],
+                'ci': community_interpretation_codes['resources']['ci']
+            },
+            'counts':{
+                'cl': communtiy_classification_codes['counts']['cl'],
+                'ci': community_interpretation_codes['counts']['ci']
+            }
+        }
+        return to_return

@@ -232,3 +232,27 @@ taxon_interpretation = [
     'notes_public',
     'notes_mgt'   
 ]
+
+community_classification = [
+    'user_ob_code',
+    'vb_ob_code',
+    'user_cl_code',
+    'class_start_date',
+    'class_stop_date',
+    'inspection',
+    'table_analysis',
+    'multivariate_analysis',
+    'expert_system',
+    'class_notes',
+    'user_comm_class_rf_code',
+    'vb_comm_class_rf_code'
+]
+
+community_interpretation = [
+    'user_ci_code',
+    'vb_cl_code',
+    'vb_cc_code',
+    'class_fit',
+    'class_confidence',
+    'interp_notes'
+]
