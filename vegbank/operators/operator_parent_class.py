@@ -608,7 +608,7 @@ class Operator:
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
 
-    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn, validate = True):
         """
         Execute a series of insert statements that upload data for a specified table.
 
@@ -654,19 +654,20 @@ class Operator:
             with open(sql_file_temp_insert, "r") as file:
                 sql = file.read()
             cur.executemany(sql, table_inputs)
-            sql_file_validate = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/validate_{insert_table_name}.sql')
-            with open(sql_file_validate, "r") as file:
-                sql = file.read()
-            cur.execute(sql)
-            validation_results = cur.fetchall()
-            while cur.nextset():
-                next_validation = cur.fetchall()
-                if next_validation:
-                    validation_results = validation_results + next_validation
-            validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
-            if validation_results:
-                raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
+            if validate:
+                sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/validate_{insert_table_name}.sql')
+                with open(sql_file_validate, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                validation_results = cur.fetchall()
+                while cur.nextset():
+                    next_validation = cur.fetchall()
+                    if next_validation:
+                        validation_results = validation_results + next_validation
+                validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                if validation_results:
+                    raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
 
             sql_file_insert = os.path.join(self.QUERIES_FOLDER,
                                 f'{insert_table_name}/insert_{insert_table_name}.sql')

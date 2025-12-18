@@ -180,6 +180,7 @@ class TaxonObservation(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
         
+        df['user_to_code'] = df['user_to_code'].astype(str)
         taxon_observation_codes = super().upload_to_table("taxon_observation", 'to', table_defs_config.taxon_observation, 'taxonobservation_id', df, True, conn)
         
 
@@ -188,6 +189,7 @@ class TaxonObservation(Operator):
 
         df = df.merge(to_codes_df, on='user_to_code', how='left')
 
+        df['user_tm_code'] = df['user_tm_code'].astype(str)
         taxon_importance_codes = super().upload_to_table("taxon_importance", 'tm', table_defs_config.taxon_importance, 'taxonimportance_id', df, True, conn)
         print(taxon_importance_codes)
         to_return = {
@@ -219,6 +221,7 @@ class TaxonObservation(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
 
+        df['user_sr_code'] = df['user_sr_code'].astype(str)
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
         return jsonify(new_strata)
     

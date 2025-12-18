@@ -1,7 +1,7 @@
 INSERT INTO plot_temp (
+    user_pl_code,
     authorplotcode,
-    pl_code,
-    rf_code,
+    vb_parent_pl_code,
     reallatitude,
     reallongitude,
     locationaccuracy,
@@ -15,7 +15,6 @@ INSERT INTO plot_temp (
     authordatum,
     authorlocation,
     locationnarrative,
-    plotrationalenarrative,
     azimuth,
     dsgpoly,
     shape,
@@ -39,11 +38,21 @@ INSERT INTO plot_temp (
     rocktype,
     stateprovince,
     country,
+    dateentered,
     submitter_surname,
     submitter_givenname,
     submitter_email,
     pl_notes_public,
-    pl_notes_mgt,
-    pl_revisions
+    pl_notes_mgt
     )
-VALUES({});
+VALUES(
+    %s, %s, %s, %s, %s, 
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s
+);
