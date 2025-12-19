@@ -198,6 +198,27 @@ stratum = [
     'stratum_cover'
 ]
 
+stem_location = [
+    'user_sl_code',
+    'vb_sc_code',
+    'stem_code',
+    'stem_x_position',
+    'stem_y_position',
+    'stem_health'
+]
+
+stem_count = [
+    'user_sc_code',
+    'user_tm_code',
+    'vb_tm_code',
+    'stem_count',
+    'stem_diameter',
+    'stem_diameter_accuracy',
+    'stem_height',
+    'stem_height_accuracy',
+    'stem_taxon_area'    
+]
+
 taxon_interpretation = [
     'user_ti_code',
     'user_to_code',
