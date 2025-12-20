@@ -493,7 +493,7 @@ class PlotObservation(Operator):
 
         return params
         
-    def upload_plot_observations(self, file, conn):
+    def upload_plot_observations(self, df, conn):
         """
         takes a parquet file in the plot observation data format from the loader module and uploads it to the plot and observation tables. 
         Parameters:
@@ -502,7 +502,6 @@ class PlotObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
         if 'user_pl_code' not in df.columns:
             df['user_pl_code'] = None
         if 'vb_pl_code' not in df.columns:

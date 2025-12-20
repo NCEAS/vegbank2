@@ -8,7 +8,7 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, allowed_file
+from utilities import jsonify_error_message, allowed_file, validate_file, dry_run_check
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -120,17 +120,13 @@ def plot_observations(vb_code):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
             try:
-                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-                file = request.files['file']
+                file = validate_file('file', request)
+                if file is None:
+                    return jsonify_error_message("No file part in the request."), 400
+                pl_df = pd.read_parquet(file)
                 with connect(**params, row_factory=dict_row) as conn:
-                    to_return = plot_observation_operator.upload_plot_observations(file, conn)
-                    if dry_run:
-                        conn.rollback()
-                        message = "Dry run - rolling back transaction."
-                        return jsonify({
-                            "message": message,
-                            "dry_run_data": to_return
-                        })
+                    to_return = plot_observation_operator.upload_plot_observations(pl_df, conn)
+                    to_return = dry_run_check(conn, to_return, request)
                 conn.close()
             except Exception as e:
                 print(traceback.format_exc())
@@ -761,17 +757,13 @@ def projects(pj_code):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
             try:
-                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-                file = request.files['file']
+                file = validate_file('file', request)
+                if file is None:
+                    return jsonify_error_message("No file part in the request."), 400
                 with connect(**params, row_factory=dict_row) as conn:
-                    to_return = project_operator.upload_project(file, conn)
-                    if dry_run:
-                        conn.rollback()
-                        message = "Dry run - rolling back transaction."
-                        return jsonify({
-                            "message": message,
-                            "dry_run_data": to_return
-                        })
+                    pj_df = pd.read_parquet(file)
+                    to_return = project_operator.upload_project(pj_df, conn)
+                    to_return = dry_run_check(conn, to_return, request)
                 conn.close()
             except Exception as e:
                 print(traceback.format_exc())
@@ -937,27 +929,53 @@ def references(rf_code):
 
 @app.route("/bulk-upload", methods=['POST'])
 def bulk_upload():
-    ''' This is an example endpoint for uploads with multiple parquet files. '''
-    if 'files[]' not in request.files:
-        return jsonify_error_message("No file part in the request."), 400
+    ''' 
+    Upload a series of files from the loader schema and return the new codes 
+    and counts of new records based on the types of new records created. 
 
-    files = request.files.getlist('files[]')
-    response = {}
-    for file in files:
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-
-        try:
-            df = pd.read_parquet(file)
-            print(f"DataFrame loaded with {len(df)} records.")
-            # Here you would typically save the DataFrame to a database or process it further.
-            response[file.filename] = {"message": "File uploaded successfully.", "num_records": len(df)}
-        except Exception as e:
-            response[file.filename] = {"error": f"An error occurred while processing the file: {str(e)}"}
-    return jsonify(response), 200
-
+    POST Parameters:
+        plot_observations (FileStorage, optional): Parquet file containing plot
+            observation data.
+        projects (FileStorage, optional): Parquet file containing project data.
+    
+    All post parameters are optional, but at least one must be provided.
+    '''
+    plot_observations_file = validate_file('plot_observations', request)
+    projects_file = validate_file('projects', request)
+    new_pj_codes = []
+    try:
+        with connect(**params, row_factory=dict_row) as conn:
+            if projects_file:
+                project_operator = Project(params)
+                pj_df = pd.read_parquet(projects_file)
+                new_pj_codes = project_operator.upload_project(pj_df, conn)
+                new_pj_codes_df = pd.DataFrame(new_pj_codes['resources']['pj'])
+                new_pj_codes_df = new_pj_codes_df[['user_pj_code', 'vb_pj_code']]
+            if plot_observations_file:
+                plot_observation_operator = PlotObservation(params)
+                pl_df = pd.read_parquet(plot_observations_file)
+                if projects_file:
+                    pl_df = pl_df.merge(new_pj_codes_df, on='user_pj_code', how='left')
+                    pl_df['vb_pj_code'] = pl_df['vb_pj_code_x'].combine_first(pl_df['vb_pj_code_y'])
+                    pl_df.drop(columns=['vb_pj_code_y'], inplace=True)
+                    pl_df.drop(columns=['vb_pj_code_x'], inplace=True)
+                new_plot_codes = plot_observation_operator.upload_plot_observations(pl_df, conn)
+            to_return = {
+                "resources":{
+                    "pj": new_pj_codes['resources']['pj'] if projects_file else [],
+                    "pl": new_plot_codes['resources']['pl'] if plot_observations_file else []
+                },
+                "counts":{
+                    "pj": new_pj_codes['counts']['pj'] if projects_file else 0,
+                    "pl": new_plot_codes['counts']['pl'] if plot_observations_file else 0
+                }
+            }
+            to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true    
+        conn.close()
+        return jsonify(to_return)
+    except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during project upload: {str(e)}"), 500                
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)

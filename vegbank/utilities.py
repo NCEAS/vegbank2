@@ -70,6 +70,27 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
     
     return to_return
 
+def validate_file(file_name_input, request):
+    if file_name_input not in request.files:
+        return None
+    file = request.files[file_name_input]
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message(
+            "File type not allowed. Only Parquet files are accepted."), 400
+    return file
+
+def dry_run_check(conn, data, request):
+    if request.args.get('dry_run', 'false').lower() == 'true':  
+        conn.rollback()
+        return {
+            "message": "dry run, transaction was rolled back",
+            "dry run data" : data
+        }
+    else:
+        return data
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
