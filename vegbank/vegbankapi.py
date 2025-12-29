@@ -119,7 +119,23 @@ def plot_observations(vb_code):
         if (allow_uploads is False):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
-            return plot_observation_operator.upload_plot_observations(request, params)
+            try:
+                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+                file = request.files['file']
+                with connect(**params, row_factory=dict_row) as conn:
+                    to_return = plot_observation_operator.upload_plot_observations(file, conn)
+                    if dry_run:
+                        conn.rollback()
+                        message = "Dry run - rolling back transaction."
+                        return jsonify({
+                            "message": message,
+                            "dry_run_data": to_return
+                        })
+                conn.close()
+            except Exception as e:
+                print(traceback.format_exc())
+                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+            return jsonify(to_return)
     elif request.method == 'GET':
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -240,6 +256,60 @@ def strata_cover_data():
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
 
+@app.route("/stem-data", methods=['POST'])
+def stem_data():
+    """
+    Upload stem location data from a Parquet file.
+
+    This function handles HTTP POST requests to upload stem data.
+    It expects a Parquet file containing stem data in the request.
+    Uploads data to the stem location and stem count tables..
+    If the upload is successful, it returns a JSON response indicating
+    success. If there are any errors during the upload process, it returns
+    an appropriate error message.
+
+    Query Parameters:
+        dry_run (str, optional): If set to 'true', the upload will be
+            simulated without committing changes to the database.
+            Defaults to 'false'.
+
+    POST Parameters: 
+        file (FileStorage): The uploaded Parquet file containing stem data.
+
+    Returns:
+        flask.Response: A JSON response indicating success or failure of
+            the upload operation.
+    """
+    if allow_uploads is False:
+        return jsonify_error_message("Uploads not allowed."), 403
+    if 'file' not in request.files:
+        return jsonify_error_message("No file part in the request."), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify_error_message("No selected file."), 400
+    if not allowed_file(file.filename):
+        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+
+    dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+    print("Dry Run: " + str(dry_run))
+
+    taxon_observation_operator = TaxonObservation(params)
+    to_return = None
+    try:
+        with connect(**params, row_factory=dict_row) as conn:
+            to_return = taxon_observation_operator.upload_stem_data(file, conn)
+            if dry_run:
+                conn.rollback()
+                message = "Dry run - rolling back transaction."
+                return jsonify({
+                    "message": message,
+                    "dry_run_data": to_return
+                })
+        conn.close()
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
+    return to_return
 
 @app.route("/taxon-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-interpretations/<vb_code>", methods=['GET'])
@@ -690,7 +760,23 @@ def projects(pj_code):
         if (allow_uploads is False):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
-            return project_operator.upload_project(request, params)
+            try:
+                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+                file = request.files['file']
+                with connect(**params, row_factory=dict_row) as conn:
+                    to_return = project_operator.upload_project(file, conn)
+                    if dry_run:
+                        conn.rollback()
+                        message = "Dry run - rolling back transaction."
+                        return jsonify({
+                            "message": message,
+                            "dry_run_data": to_return
+                        })
+                conn.close()
+            except Exception as e:
+                print(traceback.format_exc())
+                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+            return jsonify(to_return)
     elif request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
+from utilities import jsonify_error_message, allowed_file, QueryParameterError, validate_required_and_missing_fields
 
 
 class Project(Operator):
@@ -144,126 +144,23 @@ class Project(Operator):
 
         return params
 
-
-    def upload_project(self, request, params):
+    def upload_project(self, file, conn):
         """
-        Uploads project data from a file, validates it, and inserts it into the database.
+        takes a parquet file of projects and uploads it to the project table.
         Parameters:
-            request (Request): The incoming request containing the file to be uploaded.
-            params (dict): Database connection parameters.
-            Set via env variable in vegbankapi.py. Keys are: 
-                dbname, user, host, port, password
+            file (FileStorage): The uploaded parquet file containing projects.
         Returns:
-            Response: A JSON response containing the results of the upload operation, including 
-                      inserted and matched records, or an error message if the operation fails.
-        Raises:
-            ValueError: If there are unsupported columns in the uploaded data, if references do not 
-                        exist in the database, or if there are no new projects to insert.
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
         """
+        df = pd.read_parquet(file)
 
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-        
-        project_fields = table_defs_config.project
-        to_return = {}
+        table_defs = [table_defs_config.project]
+        required_fields = ['user_pj_code', 'project_name']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "projects")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
 
-        try:
-            df = pd.read_parquet(file)
-            print(f"DataFrame loaded with {len(df)} records.")
-
-            df.columns = map(str.lower, df.columns)
-            #Checking if the user submitted any unsupported columns
-            additional_columns = set(df.columns) - set(project_fields)
-            if(len(additional_columns) > 0):
-                return jsonify_error_message(f"Your data must only contain fields included in the project schema. The following fields are not supported: {additional_columns} ")
-
-            df.replace({pd.NaT: None}, inplace=True)
-            df.replace({np.nan: None}, inplace=True)
-            
-            project_df = df[project_fields]
-
-            inputs = list(project_df.itertuples(index=False, name=None))
-
-            with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
-                
-                with conn.cursor() as cur:
-                    with conn.transaction():
-                        
-                        with open(self.QUERIES_FOLDER + "/project/create_project_temp_table.sql", "r") as file:
-                            sql = file.read() 
-                        cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/project/insert_projects_to_temp_table.sql", "r") as file:
-                            sql = file.read()
-                        cur.executemany(sql, inputs)
-
-                        print("about to run validate projects")
-                        with open(self.QUERIES_FOLDER + "/project/validate_projects.sql", "r") as file:
-                            sql = file.read() 
-                        cur.execute(sql)
-                        existing_records = cur.fetchall()
-                        print("existing records: " + str(existing_records))
-
-                        with open(self.QUERIES_FOLDER + "/project/insert_projects_from_temp_table_to_permanent.sql", "r") as file:
-                            sql = file.read()
-                        cur.execute(sql)
-                        inserted_records = cur.fetchall()
-                        print("inserted records: " + str(inserted_records))
-
-                        project_ids = []
-                        for record in inserted_records:
-                            project_ids.append(record['project_id'])
-                        print("project_ids: " + str(project_ids))
-
-                        print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/project/create_project_accession_codes.sql", "r") as file:
-                            sql = file.read()
-                        cur.execute(sql, (project_ids, ))
-                        new_pj_codes = cur.fetchall()
-
-                        pj_codes_df = pd.DataFrame(new_pj_codes)
-                        print("pj_codes_df" + str(pj_codes_df))
-                        df['projectname'] = df['projectname'].astype(str)
-                        pj_codes_df['projectname'] = pj_codes_df['projectname'].astype(str)
-                        print("project name type: " + str(df['projectname'].dtype))
-                        print("pj_code project name type: " + str(pj_codes_df['projectname'].dtype))
-
-                        joined_df = pd.merge(df, pj_codes_df, on='projectname')
-                        print("----------------------------------------")
-                        print(str(joined_df))
-
-
-                        to_return_projects = []
-                        for index, record in joined_df.iterrows():
-                            to_return_projects.append({
-                                "user_code": record['pj_code'], 
-                                "pj_code": record['accessioncode'],
-                                "projectname": record['projectname'],
-                                "action":"inserted"
-                            })
-                        for record in existing_records:
-                            to_return_projects.append({
-                                "user_code": record["pj_code"],
-                                "pj_code": record['pj_code'],
-                                "projectname": record['projectname'],
-                                "action":"matched"
-                            })
-                        to_return["resources"] = {
-                            "pj": to_return_projects
-                        }
-                        to_return["counts"] = {
-                            "pj":{
-                                "inserted": len(joined_df),
-                                "matched": len(existing_records)
-                            }
-                        }
-            conn.close()      
-
-            return jsonify(to_return)
-        except Exception as e:
-            traceback.print_exc()
-            return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+        df['user_pj_code'] = df['user_pj_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
+        new_projects =  super().upload_to_table("project", 'pj', table_defs_config.project, 'project_id', df, True, conn, validate=False)
+        return new_projects

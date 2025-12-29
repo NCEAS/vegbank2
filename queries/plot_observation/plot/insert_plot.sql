@@ -1,7 +1,11 @@
-INSERT INTO plot 
-(
+MERGE INTO plot dst
+USING plot_temp src
+ON FALSE
+WHEN MATCHED THEN DO NOTHING
+WHEN NOT MATCHED THEN
+  INSERT (
     authorplotcode,
-    reference_id,
+    parent_id,
     reallatitude,
     reallongitude,
     locationaccuracy,
@@ -15,7 +19,6 @@ INSERT INTO plot
     authordatum,
     authorlocation,
     locationnarrative,
-    plotrationalenarrative,
     azimuth,
     dsgpoly,
     shape,
@@ -44,12 +47,10 @@ INSERT INTO plot
     submitter_givenname,
     submitter_email,
     notespublic,
-    notesmgt,
-    revisions
-)
-SELECT 
+    notesmgt
+  ) VALUES (
     authorplotcode,
-    CAST(SUBSTRING(rf_code, 4, LENGTH(rf_code) - 3) AS INT) AS reference_id,
+    CAST(SUBSTRING(vb_parent_pl_code, 4) AS INT),
     reallatitude,
     reallongitude,
     locationaccuracy,
@@ -63,7 +64,6 @@ SELECT
     authordatum,
     authorlocation,
     locationnarrative,
-    plotrationalenarrative,
     azimuth,
     dsgpoly,
     shape,
@@ -92,7 +92,9 @@ SELECT
     submitter_givenname,
     submitter_email,
     pl_notes_public,
-    pl_notes_mgt,
-    pl_revisions
-FROM plot_temp
-RETURNING plot_id, 'pl.' || plot_id AS pl_code, authorplotcode;
+    pl_notes_mgt
+  )
+RETURNING merge_action(),
+          src.user_pl_code,
+          dst.plot_id,
+          'pl.' || dst.plot_id AS vb_pl_code;
