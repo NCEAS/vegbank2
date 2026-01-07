@@ -3,29 +3,49 @@ dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
 
+## @section CNPG image - Override the deffault postgres version
+
+image:
+  ## @param image.enabled Set this to 'true' to enable selecting your own postgres version
+  ##
+  enabled: false
+  ## @param image.postgresImagSpec
+  ## This parameter is used to change the postgres image version deployed.
+  ## If enabled is set to 'true', cnpg will attempt to use the image you specified
+  ## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
+  ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+  ##
+  postgresImageSpec: ghcr.io/cloudnative-pg/postgresql:##
+
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
+
 init:
   ## @param init.enabled Set this to 'true' to enable init options, for example: 'recovery', 'initdb' and 'pgbasebackup'
   ## This is set to 'false' by default to prevent conflicts when upgrading an existing deployment
+  ##
   enabled: false
   ## @param init.method
   ## By default, this method is set to 'initdb' to initialize an empty `cnpg` cluster
   ## Note - the dbUser must match the username of the secret.
   ## Set this value to 'recovery' to recover from a volumeSnapshot via `ScheduledBackups`, 
   ## To learn more, see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
+  ##
   method: initdb
   ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
   ## This param will not be utilized unless 'method' is set to 'recovery'.
   ## After installing the cluster with the `recovery` option, and if you do not see a new pod
   ## launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7', you can execute
   ## the command 'kubectl describe cluster vegbankenabledtest' to begin debugging.
+  ##
   recoverFromBackup: vegbankdb-scheduled-backup-placeholder
 
-## @section backup - Enabled `ScheduledBackup` functionality to create volume snappshots 
+## @section backup - Enabled `ScheduledBackup` functionality to create volume snappshots
+
 backup:
   ## @param backup.enabled - Set to 'true' to begin creating volumesnapshots upon installation
   ## of the 'cnpg' postgres cluster. For more information,
   ## see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md#scheduled-backup
+  ##
   enabled: true
 
 resources:
