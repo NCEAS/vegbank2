@@ -205,7 +205,7 @@ class TaxonObservation(Operator):
         }
         return jsonify(to_return)
 
-    def upload_strata_definitions(self, file, conn):
+    def upload_strata_definitions(self, df, conn):
         """
         takes a parquet file of strata definitions and uploads it to the stratum table.
         Parameters:
@@ -214,7 +214,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.stratum]
         required_fields = ['vb_ob_code', 'user_ob_code', 'user_sr_code', 'vb_sy_code']
@@ -224,7 +223,7 @@ class TaxonObservation(Operator):
 
         df['user_sr_code'] = df['user_sr_code'].astype(str)
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
-        return jsonify(new_strata)
+        return new_strata
     
     def upload_stem_data(self, file, conn):
         """

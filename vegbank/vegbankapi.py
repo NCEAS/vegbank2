@@ -200,7 +200,8 @@ def taxon_observations(vb_code):
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
-                    to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
+                    df = pd.read_parquet(file)
+                    to_return = taxon_observation_operator.upload_strata_definitions(df, conn)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())

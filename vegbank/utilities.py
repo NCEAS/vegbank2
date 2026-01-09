@@ -99,23 +99,27 @@ class QueryParameterError(Exception):
         super().__init__(self.message)
 
 
-def bulk_file_upload(operator_upload_method, table_code, df, conn):
-    new_codes = operator_upload_method(df, conn)
-    new_codes_df = pd.DataFrame(new_codes['resources'][table_code])
-    new_codes_df = new_codes_df[['user_' + table_code + '_code', 'vb_' + table_code + '_code']]
+def bulk_file_upload(operator_upload_method, df, conn):
+    objects = operator_upload_method(df, conn)
+    new_codes = objects['resources']
+    counts = objects['counts']
+    new_codes_df = {}
+    for key in new_codes:
+        new_codes_df[key] = pd.DataFrame(new_codes[key], columns=['vb_' + key + '_code', 'user_' + key + '_code'])
     to_return = {
         "new_codes": new_codes,
+        "counts": counts,
         "new_codes_df": new_codes_df
     }
     return to_return
 
 def merge_df_on_field(base_df, merge_df, table_code):
+    print("merging on ", table_code)
     field_name = 'user_' + table_code + '_code'
     vb_field_name = 'vb_' + table_code + '_code'
     base_df = base_df.merge(merge_df, on=field_name, how='left')
     merged_name_x = vb_field_name + '_x'
     merged_name_y = vb_field_name + '_y'
-    print("checking for ", merged_name_x)
     if(merged_name_x in base_df.columns):
         base_df[vb_field_name] = base_df[merged_name_x].combine_first(base_df[merged_name_y])
         base_df = base_df.drop(columns=[merged_name_x, merged_name_y])
