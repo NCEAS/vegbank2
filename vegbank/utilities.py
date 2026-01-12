@@ -41,7 +41,10 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
         dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
     '''
     df.columns = map(str.lower, df.columns)
-
+    print("Table Defs in utility")
+    print(table_defs)
+    print("Required Fields in utility")
+    print(required_fields)
     to_return = {
         'has_error': False,
         'error': ""
@@ -62,6 +65,7 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
     for insert_table_def in table_defs:
         extra_fields = extra_fields - set(insert_table_def)
     if 0 < len(extra_fields):
+            print("Found a bunch of extra fields: ", extra_fields)
             error_string += "The following columns are not supported for " + file_name + ": " + ", ".join(extra_fields) + ". "
 
     if error_string != "":

@@ -26,8 +26,13 @@ class Project(Operator):
         self.table_code = "pj"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.sort_options = ["default", "project_name", "obs_count"]
-        self.table_defs = [table_defs_config.project]
-        self.required_fields = ['user_pj_code', 'project_name']
+        self.table_defs = {
+            'projects': [table_defs_config.project],
+        }
+        
+        self.required_fields = {
+            'projects': ['user_pj_code', 'project_name']
+        }
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -156,7 +161,7 @@ class Project(Operator):
                 along with the number of new records and the newly created keys. 
         """
 
-        validation = validate_required_and_missing_fields(df, self.required_fields, self.table_defs, "projects")
+        validation = validate_required_and_missing_fields(df, self.required_fields.get('projects'), self.table_defs.get('projects'), "projects")
         if validation['has_error']:
             raise ValueError(validation['error'])
 

@@ -34,7 +34,7 @@ class PlotObservation(Operator):
         self.sort_options = ("default", "author_obs_code")
         self.default_num_taxa = 5
         self.default_num_comms = 5
-        self.table_defs = [table_defs_config.plot, table_defs_config.observation]
+        self.bulk_required_fields = ['user_ob_code', 'vb_pj_code']
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -503,7 +503,7 @@ class PlotObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        if 'user_pl_code' not in df.columns:
+        """ if 'user_pl_code' not in df.columns:
             df['user_pl_code'] = None
         if 'vb_pl_code' not in df.columns:
             df['vb_pl_code'] = None
@@ -533,7 +533,12 @@ class PlotObservation(Operator):
         validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
 
         if validation['has_error']:
+            raise ValueError(validation['error']) """ 
+        validation = self.validate(df)
+        if validation['has_error']:
             raise ValueError(validation['error'])
+        new_plots_df = validation['new_plots_df']
+        old_plots_df = validation['old_plots_df']
 
         df['user_pl_code'] = df['user_pl_code'].astype(str)
         if not new_plots_df.empty:
@@ -561,7 +566,8 @@ class PlotObservation(Operator):
         }
         return to_return
     
-    def validate(self, df):
+    def validate(self, df, bulk=False):
+        print("Validating Plot Observations")
         if 'user_pl_code' not in df.columns:
             df['user_pl_code'] = None
         if 'vb_pl_code' not in df.columns:
@@ -569,7 +575,9 @@ class PlotObservation(Operator):
 
         validation = {
             'error': "",
-            'has_error': False
+            'has_error': False,
+            'new_plots_df': pd.DataFrame(),
+            'old_plots_df': pd.DataFrame()
         }
         
         if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
@@ -582,11 +590,17 @@ class PlotObservation(Operator):
         new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()] 
         old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()] 
 
-        
+        validation['new_plots_df'] = new_plots_df
+        validation['old_plots_df'] = old_plots_df
+
+        table_defs = [table_defs_config.plot, table_defs_config.observation]
         new_pl_required_fields = ['author_plot_code', 'real_latitude', 'real_longitude', 'confidentiality_status', 'latitude', 'longitude', 'user_ob_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code']
-        new_validation = validate_required_and_missing_fields(new_plots_df, new_pl_required_fields, self.table_defs, "observations on new plots")
-        old_validation = validate_required_and_missing_fields(old_plots_df, old_pl_required_fields, self.table_defs, "observations on existing plots")
+        if not bulk:
+            new_pl_required_fields.append('vb_pj_code')
+            old_pl_required_fields.append('vb_pj_code')
+        new_validation = validate_required_and_missing_fields(new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
+        old_validation = validate_required_and_missing_fields(old_plots_df, old_pl_required_fields, table_defs, "observations on existing plots")
 
         validation['error'] += new_validation['error'] + old_validation['error']
         validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
