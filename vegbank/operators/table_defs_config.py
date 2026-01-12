@@ -248,3 +248,11 @@ taxon_interpretation = [
     'notes_public',
     'notes_mgt'   
 ]
+
+reference = [
+    'user_rf_code',
+    'doi',
+    'short_name',
+    'full_text',
+    'url'
+]

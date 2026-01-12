@@ -927,8 +927,27 @@ def references(rf_code):
     """
     reference_operator = Reference(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for references."), 405
+        file = request.files['file']
+        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+        print("Dry Run: " + str(dry_run))
+
+        to_return = None
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = reference_operator.upload_references(file, conn)
+                if dry_run:
+                    conn.rollback()
+                    message = "Dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(
+                f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
     elif request.method == 'GET':
         return reference_operator.get_vegbank_resources(request, rf_code)
     else:
