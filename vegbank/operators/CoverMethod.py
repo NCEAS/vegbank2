@@ -170,15 +170,15 @@ class CoverMethod(Operator):
                 with conn.cursor() as cur:
                     with conn.transaction():
                         
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/create_cover_method_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_temp_table.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/insert_cover_methods_to_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_to_temp_table.sql", "r") as file:
                             sql = file.read()
                         cur.executemany(sql, cover_method_inputs)
                         
                         print("about to run validate cover methods")
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/validate_cover_methods.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/validate_cover_methods.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
                         existing_records = cur.fetchall()
@@ -191,7 +191,7 @@ class CoverMethod(Operator):
                         if(len(new_references) > 0):
                             raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new cover methods.")
 
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql)
                         inserted_cover_method_records = cur.fetchall()
@@ -207,14 +207,14 @@ class CoverMethod(Operator):
                         cover_index_df = cover_index_df[cover_index_fields]
                         cover_index_inputs = list(cover_index_df.itertuples(index=False, name=None))
 
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/create_cover_index_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_index/create_cover_index_temp_table.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/insert_cover_indices_to_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_index/insert_cover_indices_to_temp_table.sql", "r") as file:
                             sql = file.read()
                         cur.executemany(sql, cover_index_inputs)
 
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql)
                         inserted_cover_index_records = cur.fetchall()
@@ -226,7 +226,7 @@ class CoverMethod(Operator):
                         print("covermethod_ids: " + str(covermethod_ids))
 
                         print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/cover_method/cover_method/create_cover_method_accession_codes.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_accession_codes.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql, (covermethod_ids, ))
                         new_cm_codes = cur.fetchall()
