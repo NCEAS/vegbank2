@@ -56,17 +56,18 @@ class Operator:
         nested_options (str): Accepted with_nested param values. This should
             be overridden by operator implementations as needed.
         default_nested (str): Default with_nested value.
-        default_create_parquet (str): Default create_parquet value.
+        sort_options (str): Accepted sort param values. This should
+            be overridden by operator implementations as needed.
+        default_sort (str): Default sort value.
         default_limit (str): Default limit for number of records to return.
             Used for paginating collection responses.
         default_offset (str): Default offset for number of records to skip.
             Used for paginating collection responses.
+        default_create_parquet (str): Default create_parquet value.
         params (dict): Database connection parameters.
         name (str): Simple name used in SQL file paths and returned file names.
         table_code (str): String code to be set for a specific resource
             type, serving as the `vb_code` prefix in the VegBank database.
-        full_get_parameters (tuple): Names of query parameters to be passed to
-            the full GET query, in the order of placeholders in the SQL file.
         include_full_count (bool): If True, query the database and send the
             full count of records. If False, simply return the count of records
             in the response.
@@ -80,8 +81,8 @@ class Operator:
     def __init__(self, params=None):
         """
         Initialize common default values for all operators. Several, including
-        `name`, `table_code`, and `full_get_parameters`, must be overridden by
-        child classes to reflect their specific resource and querying details.
+        `name` and `table_code`, must be overridden by child classes to
+        reflect their specific resource and querying details.
         """
         self.ROOT_QUERIES_FOLDER = "queries/"
         self.QUERIES_FOLDER = "queries/"
@@ -89,13 +90,14 @@ class Operator:
         self.default_detail = "full"
         self.nested_options = ["false"]
         self.default_nested = "false"
-        self.default_create_parquet = "false"
+        self.sort_options = ["default"]
+        self.default_sort = "default"
         self.default_limit = "1000"
         self.default_offset = "0"
+        self.default_create_parquet = "false"
         self.params = params
         self.name = "vegbank"
         self.table_code = "vb"
-        self.full_get_parameters = None
         self.include_full_count = True
         self.debug = True
         self.query_mode = 'normal'
@@ -227,7 +229,9 @@ class Operator:
             # Load base WHERE (and update params)
             base_conditions = base.get('conditions', {})
             if base_conditions.get('always') is not None:
-                base_condition_list = [base_conditions.get('always')['sql']]
+                base_condition_list = base_conditions.get('always')['sql']
+                if not isinstance(base_condition_list, list):
+                    base_condition_list = [base_condition_list]
                 params.extend(base_conditions.get('always')['params'])
             else:
                 base_condition_lists = []
@@ -245,7 +249,7 @@ class Operator:
             base_condition_list = list(filter(None, base_condition_list))
             base_condition_list = [textwrap.dedent(sql).rstrip() for
                                    sql in base_condition_list]
-            base_where_sql = f"  WHERE {'\n  AND '.join(base_condition_list)}" \
+            base_where_sql = f"  WHERE {'\n    AND '.join(base_condition_list)}" \
                 if base_condition_list else None
             base_sql_parts.append(base_where_sql)
 
@@ -272,8 +276,6 @@ class Operator:
                 '\n'.join([block for block in base_sql_parts
                            if block is not None]), '  ')
             if (count):
-                print(base_sql)
-                print(params)
                 return base_sql, params
             base_sql = f"WITH {base.get('alias')} AS (\n{base_sql}\n)"
 
@@ -325,8 +327,6 @@ class Operator:
                          if block is not None])
 
         # Return the SQL and associated ordered list of placeholder names
-        print(sql)
-        print(params)
         return sql, params
 
     def get_vegbank_resources(self, request, vb_code=None):
@@ -394,16 +394,12 @@ class Operator:
         else:
             self.query_mode = 'normal'
 
-        # ** TEMPORARY -- WILL BE REMOVED IN THE NEAR FUTURE **
-        # If an operator uses the "old style" logic or if we directly ask for it
-        # in the API request, redirect to the old method for getting data
-        if not hasattr(self, 'configure_query') or request.args.get('old') is not None:
-            return self.get_vegbank_resources_old(request, vb_code)
-
         try:
             params = self.validate_query_params(request.args)
             self.detail = params['detail']
             self.with_nested = params['with_nested']
+            self.order_by = params['sort']
+            self.direction = params['direction']
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
 
@@ -491,85 +487,6 @@ class Operator:
             else:
                 return self.create_json_response(conn, sql, data, count)
 
-    def get_vegbank_resources_old(self, request, vb_code=None):
-        """
-        Retrieve either an individual VegBank resource or a collection.
-
-        If a valid vb_code is provided with prefix matching `self.table_code`,
-        returns the corresponding record of type `self.name` if one exists. If
-        no vb_code is provided, returns the full collection of records with
-        pagination and field scope controlled by query parameters.
-
-        Parameters:
-            request (flask.Request): The Flask request object containing query
-                parameters.
-            vb_code (str or None): The unique identifier for the VegBank
-                resource being retrieved. If None, retrieves all records.
-
-        Query Parameters:
-            detail (str, optional): Level of detail for the response.
-                Can be either 'minimal' or 'full'. Defaults to 'full'.
-            limit (int, optional): Maximum number of records to return.
-                Defaults to 1000.
-            offset (int, optional): Number of records to skip before starting
-                to return records. Defaults to 0.
-            create_parquet (str, optional): Whether to return data as Parquet
-                rather than JSON. Accepts 'true' or 'false' (case-insensitive).
-                Defaults to 'false'.
-            ... Subclasses may provide additional parameters.
-
-        Returns:
-            flask.Response: A Flask response object containing:
-                - For individual records: Data as JSON or Parquet
-                - For collection records: Data as JSON or Parquet, with
-                  associated record count if JSON
-                - For invalid parameters: JSON error message with 400 status code
-        """
-        try:
-            params = self.validate_query_params(request.args)
-        except QueryParameterError as e:
-            return jsonify_error_message(e.message), e.status_code
-
-        if vb_code is None:
-            # Prepare to query for a collection of resources
-            # Load collection query string
-            detail = params.get('detail', 'full')
-            sql_file = os.path.join(self.QUERIES_FOLDER,
-                                    f'get_{self.name}_{detail}.sql')
-            with open(sql_file, "r") as file:
-                sql = file.read()
-            if (self.include_full_count):
-                # Load collection count query string
-                sql_file_count = os.path.join(self.QUERIES_FOLDER,
-                                              f'get_{self.name}_count.sql')
-                with open(sql_file_count, "r") as file:
-                    count_sql = file.read()
-            else:
-                count_sql = None
-            # Extract param values to pass to the database query, matching the
-            # placeholders contained in the associated SQL statement
-            if self.full_get_parameters is None:
-                raise ValueError("The 'full_get_parameters' attribute must be set.")
-            data = tuple(params[k] for k in self.full_get_parameters)
-        else:
-            # Prepare to query for a single resource based on its code
-            try:
-                vb_id = self.extract_id_from_vb_code(vb_code)
-            except QueryParameterError as e:
-                return jsonify_error_message(e.message), e.status_code
-            # Load individual resource query string
-            sql_file = os.path.join(self.QUERIES_FOLDER,
-                                    f'get_{self.name}_by_id.sql')
-            with open(sql_file, "r") as file:
-                sql = file.read()
-            count_sql = None
-            data = (vb_id, )
-
-        if params['create_parquet']:
-            return self.create_parquet_response(sql, data)
-        else:
-            return self.create_json_response(sql, data, count_sql)
-
     def validate_query_params(self, request_args):
         """
         Validate query parameters and apply defaults to missing parameters.
@@ -607,6 +524,16 @@ class Operator:
             request_args.get('limit', self.default_limit))
         params['offset'] = self.process_integer_param('offset',
             request_args.get('offset', self.default_offset))
+
+        sort = request_args.get('sort', self.default_sort)
+        params['direction'] = 'ASC'
+        if sort.startswith('+'):
+            sort = sort[1:]
+        elif sort.startswith('-'):
+            sort = sort[1:]
+            params['direction'] = 'DESC'
+        params['sort'] = self.process_option_param('sort',
+            sort, self.sort_options)
 
         return params
 
@@ -681,7 +608,7 @@ class Operator:
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
 
-    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn):
+    def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn, validate = True):
         """
         Execute a series of insert statements that upload data for a specified table.
 
@@ -727,19 +654,20 @@ class Operator:
             with open(sql_file_temp_insert, "r") as file:
                 sql = file.read()
             cur.executemany(sql, table_inputs)
-            sql_file_validate = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/validate_{insert_table_name}.sql')
-            with open(sql_file_validate, "r") as file:
-                sql = file.read()
-            cur.execute(sql)
-            validation_results = cur.fetchall()
-            while cur.nextset():
-                next_validation = cur.fetchall()
-                if next_validation:
-                    validation_results = validation_results + next_validation
-            validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
-            if validation_results:
-                raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
+            if validate:
+                sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                                    f'{insert_table_name}/validate_{insert_table_name}.sql')
+                with open(sql_file_validate, "r") as file:
+                    sql = file.read()
+                cur.execute(sql)
+                validation_results = cur.fetchall()
+                while cur.nextset():
+                    next_validation = cur.fetchall()
+                    if next_validation:
+                        validation_results = validation_results + next_validation
+                validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                if validation_results:
+                    raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
 
             sql_file_insert = os.path.join(self.QUERIES_FOLDER,
                                 f'{insert_table_name}/insert_{insert_table_name}.sql')

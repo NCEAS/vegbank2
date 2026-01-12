@@ -31,7 +31,6 @@ class StratumMethod(Operator):
         self.table_code = "sm"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
-        self.full_get_parameters = ('limit', 'offset')
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -46,7 +45,7 @@ class StratumMethod(Operator):
             'stratum_method_description': "sm.stratummethoddescription",
             'stratum_assignment': "sm.stratumassignment",
             'rf_code': "'rf.' || rf.reference_id",
-            'rf_name': "rf.shortname",
+            'rf_label': "rf.reference_id_transl",
         }
         main_columns['full_nested'] = main_columns['full'] | {
             'stratum_types': "sy.stratum_types",
@@ -54,7 +53,7 @@ class StratumMethod(Operator):
         from_sql = {}
         from_sql['full'] = """\
             FROM sm
-            LEFT JOIN reference rf USING (reference_id)
+            LEFT JOIN view_reference_transl rf USING (reference_id)
             """
         from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (

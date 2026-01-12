@@ -24,7 +24,7 @@ class PlantConcept(Operator):
         self.table_code = "pc"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
-        self.full_get_parameters = ('limit', 'offset')
+        self.sort_options = ["default", "plant_name", "obs_count"]
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -43,9 +43,9 @@ class PlantConcept(Operator):
             'plant_code': "pn.plant_code",
             'plant_description': "pc.plantdescription",
             'concept_rf_code': "'rf.' || pc.reference_id",
-            'concept_rf_name': "rf_pc.shortname",
+            'concept_rf_label': "rf_pc.reference_id_transl",
             'status_rf_code': "'rf.' || ps.reference_id",
-            'status_rf_name': "rf_ps.shortname",
+            'status_rf_label': "rf_ps.reference_id_transl",
             'obs_count': "pc.d_obscount",
             'plant_level': "ps.plantlevel",
             'status': "ps.plantconceptstatus",
@@ -53,8 +53,8 @@ class PlantConcept(Operator):
             'stop_date': "ps.stopdate",
             'current_accepted': ("(ps.stopdate IS NULL OR now() < ps.stopdate)"
                                  " AND LOWER(ps.plantconceptstatus) = 'accepted'"),
-            'py_code': "'py.' || py.party_id",
-            'party': "COALESCE(py.surname, py.organizationname)",
+            'py_code': "'py.' || ps.party_id",
+            'party_label': "py.party_id_transl",
             'plant_party_comments': "ps.plantpartycomments",
             'parent_pc_code': "'pc.' || ps.plantparent_id",
             'parent_name': "pa.plantname",
@@ -75,9 +75,9 @@ class PlantConcept(Operator):
                 LIMIT 1
             ) ps ON true
             LEFT JOIN plantconcept pa ON (pa.plantconcept_id = ps.plantparent_id)
-            LEFT JOIN reference rf_pc ON pc.reference_id = rf_pc.reference_id
-            LEFT JOIN reference rf_ps ON ps.reference_id = rf_ps.reference_id
-            LEFT JOIN party py ON py.party_id = ps.party_id
+            LEFT JOIN view_reference_transl rf_pc ON pc.reference_id = rf_pc.reference_id
+            LEFT JOIN view_reference_transl rf_ps ON ps.reference_id = rf_ps.reference_id
+            LEFT JOIN view_party_transl py ON py.party_id = ps.party_id
             LEFT JOIN LATERAL (
               SELECT JSON_OBJECT_AGG(classsystem,
                                      RTRIM(plantname)) ->> 'Code' AS plant_code,
@@ -111,9 +111,17 @@ class PlantConcept(Operator):
                   AND pcorr.correlationstop IS NULL
             ) px_group ON true
             """
-        order_by_sql = """\
-            ORDER BY pc.plantname,
-                     pc.plantconcept_id
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['plant_name'] = f"""\
+            ORDER BY pc.plantname {self.direction},
+                     pc.plantconcept_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY COALESCE(pc.d_obscount, 0) {self.direction},
+                     pc.plantconcept_id {self.direction}
             """
 
         self.query = {}
@@ -160,9 +168,20 @@ class PlantConcept(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'to': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              JOIN taxonobservation txo USING (taxonobservation_id)
+                              WHERE pc.plantconcept_id = txi.plantconcept_id
+                                AND taxonobservation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
-                'sql': order_by_sql,
+                'sql': order_by_sql[self.order_by],
                 'params': []
             },
         }
