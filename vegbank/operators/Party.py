@@ -188,5 +188,5 @@ class Party(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
 
-        new_strata =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn)
+        new_strata =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
         return new_strata
