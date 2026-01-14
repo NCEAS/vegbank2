@@ -39,14 +39,18 @@ params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
-# TODO: Confirm which key this is, the key to the app? The key to the DB?
-params['FLASK_SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
-
 # Add OpenID Connect Config File
+# TODO: Confirm which key this is, the key to the app? The key to the DB? Keycloak password?
+## Does this vegbank app have a password?
+params['FLASK_SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
 app.config.update({
     'OIDC_CLIENT_SECRETS': './client_secrets.json',
     'SECRET_KEY': params['FLASK_SECRET_KEY']
 })
+# TODO: Confirm client name for client_secrets - do I add this to keycloak?
+# TODO: Confirm 'issuer' in client_secrets.json - can this be used temporarily?
+## Set 'client_secrets' when setting up vegbank API using ENV variables?
+# TODO: Review keycloak setup and docs, see if new specific realm has to be set up
 
 allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
 
