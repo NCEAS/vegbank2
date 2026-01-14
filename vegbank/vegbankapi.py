@@ -38,6 +38,15 @@ params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
+# TODO: Confirm which key this is, the key to the app? The key to the DB?
+params['FLASK_SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
+
+# Add OpenID Connect Config File
+app.config.update({
+    'OIDC_CLIENT_SECRETS': './client_secrets.json',
+    'SECRET_KEY': params['FLASK_SECRET_KEY']
+})
+
 allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
 
 default_detail = "full"
