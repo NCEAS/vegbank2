@@ -114,7 +114,7 @@ class Reference(Operator):
         # now dispatch to the base validation method
         return super().validate_query_params(request_args)
 
-    def upload_references(self, file, conn):
+    def upload_references(self, df, conn):
         """
         takes a parquet file of references and uploads it to the reference table.
         Parameters:
@@ -123,8 +123,6 @@ class Reference(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
-
         table_defs = [table_defs_config.reference]
         required_fields = ['user_rf_code']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "references")

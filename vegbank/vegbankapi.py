@@ -913,7 +913,8 @@ def references(rf_code):
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
-                to_return = reference_operator.upload_references(file, conn)
+                rf_df = pd.read_parquet(file)
+                to_return = reference_operator.upload_references(rf_df, conn)
                 if dry_run:
                     conn.rollback()
                     message = "Dry run - rolling back transaction."
