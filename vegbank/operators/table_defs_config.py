@@ -248,3 +248,14 @@ taxon_interpretation = [
     'notes_public',
     'notes_mgt'   
 ]
+
+party = [
+    'user_py_code',
+    'surname',
+    'given_name',
+    'middle_name',
+    'organization_name',
+    'email',
+    'orcid',
+    'ror'
+]
