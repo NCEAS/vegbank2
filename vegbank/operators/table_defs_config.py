@@ -249,6 +249,17 @@ taxon_interpretation = [
     'notes_mgt'   
 ]
 
+party = [
+    'user_py_code',
+    'surname',
+    'given_name',
+    'middle_name',
+    'organization_name',
+    'email',
+    'orcid',
+    'ror'
+]
+
 reference = [
     'user_rf_code',
     'doi',

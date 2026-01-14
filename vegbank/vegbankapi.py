@@ -44,7 +44,16 @@ default_detail = "full"
 default_limit = 1000
 default_offset = 0
 
-
+@app.before_request
+def before_request():
+    """
+    Log the incoming request method and path, and check if uploads are allowed for POST requests.
+    """
+    print( f"Received {request.method} request for {request.path}" ) # This will eventually be a log statement
+    if request.method == 'POST':
+        if allow_uploads is False:
+            return jsonify_error_message("Uploads not allowed."), 403
+        
 @app.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
@@ -116,26 +125,23 @@ def plot_observations(vb_code):
     """
     plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        if (allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            try:
-                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-                file = request.files['file']
-                with connect(**params, row_factory=dict_row) as conn:
-                    to_return = plot_observation_operator.upload_plot_observations(file, conn)
-                    if dry_run:
-                        conn.rollback()
-                        message = "Dry run - rolling back transaction."
-                        return jsonify({
-                            "message": message,
-                            "dry_run_data": to_return
-                        })
-                conn.close()
-            except Exception as e:
-                print(traceback.format_exc())
-                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-            return jsonify(to_return)
+        try:
+            dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+            file = request.files['file']
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = plot_observation_operator.upload_plot_observations(file, conn)
+                if dry_run:
+                    conn.rollback()
+                    message = "Dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
     elif request.method == 'GET':
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -191,16 +197,8 @@ def taxon_observations(vb_code):
     """
     taxon_observation_operator = TaxonObservation(params)
     if request.method == 'POST':
-        if allow_uploads is False:
-            return jsonify_error_message("Uploads not allowed."), 403
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
         to_return = None
+        file = request.files['file']
         try:
             with connect(**params, row_factory=dict_row) as conn:
                     to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
@@ -235,18 +233,9 @@ def strata_cover_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
-    if allow_uploads is False:
-        return jsonify_error_message("Uploads not allowed."), 403
-    if 'file' not in request.files:
-        return jsonify_error_message("No file part in the request."), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify_error_message("No selected file."), 400
-    if not allowed_file(file.filename):
-        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
+    file = request.files['file']
     try:
         with connect(**params, row_factory=dict_row) as conn:
             to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
@@ -280,21 +269,12 @@ def stem_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
-    if allow_uploads is False:
-        return jsonify_error_message("Uploads not allowed."), 403
-    if 'file' not in request.files:
-        return jsonify_error_message("No file part in the request."), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify_error_message("No selected file."), 400
-    if not allowed_file(file.filename):
-        return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-
     dry_run = request.args.get('dry_run', 'false').lower() == 'true'
     print("Dry Run: " + str(dry_run))
 
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
+    file = request.files['file']
     try:
         with connect(**params, row_factory=dict_row) as conn:
             to_return = taxon_observation_operator.upload_stem_data(file, conn)
@@ -374,22 +354,12 @@ def taxon_interpretations(vb_code):
     """
     taxon_interpretation_operator = TaxonInterpretation(params)
     if request.method == 'POST':
-        if allow_uploads is False:
-            return jsonify_error_message("Uploads not allowed."), 403
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message(
-                "File type not allowed. Only Parquet files are accepted."), 400
-
         dry_run = request.args.get('dry_run', 'false').lower() == 'true'
         print("Dry Run: " + str(dry_run))
 
         taxon_observation_operator = TaxonObservation(params)
         to_return = None
+        file = request.files['file']
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
@@ -705,8 +675,26 @@ def parties(vb_code):
     """
     party_operator = Party(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for parties."), 405
+        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+        print("Dry Run: " + str(dry_run))
+        file = request.files['file']
+        to_return = None
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                py_df = pd.read_parquet(file)
+                to_return = party_operator.upload_parties(py_df, conn)
+                if dry_run:
+                    conn.rollback()
+                    message = "Dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
+        return jsonify(to_return)
     elif request.method == 'GET':
         return party_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -757,26 +745,23 @@ def projects(pj_code):
     """
     project_operator = Project(params)
     if request.method == 'POST':
-        if (allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            try:
-                dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-                file = request.files['file']
-                with connect(**params, row_factory=dict_row) as conn:
-                    to_return = project_operator.upload_project(file, conn)
-                    if dry_run:
-                        conn.rollback()
-                        message = "Dry run - rolling back transaction."
-                        return jsonify({
-                            "message": message,
-                            "dry_run_data": to_return
-                        })
-                conn.close()
-            except Exception as e:
-                print(traceback.format_exc())
-                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-            return jsonify(to_return)
+        try:
+            dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+            file = request.files['file']
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = project_operator.upload_project(file, conn)
+                if dry_run:
+                    conn.rollback()
+                    message = "Dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
     elif request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:
@@ -825,10 +810,7 @@ def cover_methods(cm_code):
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            return cover_method_operator.upload_cover_method(request, params)
+        return cover_method_operator.upload_cover_method(request, params)
     elif request.method == 'GET':
         return cover_method_operator.get_vegbank_resources(request, cm_code)
     else:
@@ -877,10 +859,7 @@ def stratum_methods(sm_code):
     """
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
-        if(allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            return stratum_method_operator.upload_stratum_method(request, params)
+        return stratum_method_operator.upload_stratum_method(request, params)
     elif request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
     else:
