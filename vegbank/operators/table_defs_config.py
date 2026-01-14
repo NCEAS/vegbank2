@@ -259,3 +259,11 @@ party = [
     'orcid',
     'ror'
 ]
+
+reference = [
+    'user_rf_code',
+    'doi',
+    'short_name',
+    'full_citation',
+    'url'
+]
