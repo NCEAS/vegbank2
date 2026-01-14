@@ -681,7 +681,7 @@ def parties(vb_code):
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
-                to_return = party_operator.upload_parties(file, conn)
+                py_df = pd.read_parquet(file)
                 to_return = party_operator.upload_parties(py_df, conn)
                 if dry_run:
                     conn.rollback()
