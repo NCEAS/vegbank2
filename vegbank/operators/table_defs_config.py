@@ -264,6 +264,6 @@ reference = [
     'user_rf_code',
     'doi',
     'short_name',
-    'full_text',
+    'full_citation',
     'url'
 ]
