@@ -171,7 +171,7 @@ class Party(Operator):
 
         return params
     
-    def upload_parties(self, file, conn):
+    def upload_parties(self, df, conn):
         """
         takes a parquet file of parties and uploads it to the party table.
         Parameters:
@@ -180,13 +180,11 @@ class Party(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
-
         table_defs = [table_defs_config.party]
         required_fields = ['user_py_code']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "parties")
         if validation['has_error']:
             raise ValueError(validation['error'])
 
-        new_strata =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
-        return new_strata
+        new_parties =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
+        return new_parties

@@ -46,17 +46,13 @@ default_offset = 0
 
 @app.before_request
 def before_request():
+    """
+    Log the incoming request method and path, and check if uploads are allowed for POST requests.
+    """
     print( f"Received {request.method} request for {request.path}" ) # This will eventually be a log statement
     if request.method == 'POST':
         if allow_uploads is False:
             return jsonify_error_message("Uploads not allowed."), 403
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
         
 @app.route("/")
 def welcome_page():
@@ -686,6 +682,7 @@ def parties(vb_code):
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 to_return = party_operator.upload_parties(file, conn)
+                to_return = party_operator.upload_parties(py_df, conn)
                 if dry_run:
                     conn.rollback()
                     message = "Dry run - rolling back transaction."
