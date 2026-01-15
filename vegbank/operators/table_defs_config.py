@@ -188,6 +188,70 @@ taxon_observation = [
     'taxon_inference_area' #This and inference area are actually different in the data even though they sound similar
 ]
 
+# system added:
+# - 'user_cn_code'
+comm_name = [
+    'name'
+]
+
+# system added:
+# - 'vb_cn_code'
+comm_concept = [
+    'user_cc_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'name',
+    'description'
+]
+
+# system added:
+# - 'user_cs_code'
+# - 'vb_cc_code'
+comm_status = [
+    'user_cc_code',
+    'vb_status_rf_code',
+    'user_status_rf_code',
+    'comm_concept_status',
+    'vb_parent_cc_code',
+    'user_parent_cc_code',
+    'comm_level',
+    'start_date',
+    'stop_date',
+    'comm_party_comments',
+    'vb_status_py_code',
+    'user_status_py_code'
+]
+
+# system added:
+# - 'vb_cn_code'
+# - 'user_cu_code'
+comm_usage = [
+    'user_cc_code',
+    'name',
+    'name_type',
+    'name_status',
+    'usage_start',
+    'usage_stop',
+    'vb_usage_py_code',
+    'user_usage_py_code',
+    # generated upstream during the multi-part upload flow
+    'vb_cc_code',
+    'vb_cs_code'
+]
+
+comm_correlation = [
+    # user-supplied
+    'user_cc_code',
+    'vb_correlated_cc_code',
+    'user_correlated_cc_code',
+    'convergence_type',
+    'correlation_start',
+    'correlation_stop',
+    # generated during the multi-part upload flow
+    #'vb_cc_code',
+    #'user_cx_code'
+]
+
 stratum = [
     'vb_ob_code',
     'user_ob_code',
