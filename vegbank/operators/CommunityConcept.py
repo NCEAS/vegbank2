@@ -476,3 +476,81 @@ class CommunityConcept(Operator):
             }
         }
         return to_return
+
+    def upload_community_correlations(self, df, conn):
+        """
+        Take the Community Correlations loader DataFrame and insert its contents
+        into the commcorrelation table.
+
+        Preconditions:
+        - Every vb_cc_code matches an existing plant concept record
+        - Every vb_correlated_cc_code matches a concept referenced by at least
+          one existing plant status record
+        Step 1: (*) INSERT INTO commcorrelation:
+                commstatus_id <- using vb_correlated_cc_code (custom logic)
+                commconcept_id <- from vb_cc_code (upstream)
+                commconvergence <- convergence_type
+                correlationstart <- correlation_start
+                correlationstop <- correlation_stop
+                RETURNING commcorrelation_id -> vb_cx_code
+
+        Parameters:
+            df (pandas.DataFrame): Community correlations data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cx": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cx": [{"action": "inserted",
+                                "user_cx_code": "new_concept_1->cc.999",
+                                "vb_cx_code": "cx.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'community_correlation')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_comm_correlation = table_defs_config.comm_correlation[:]
+        table_defs = [config_comm_correlation]
+        # TODO: finalize this here, unless/until we move this to configuration
+        # e.g. what about vb_cc_code? required to *run*, but not required from
+        # (or even wanted from!!) the user
+        required_fields = ['vb_correlated_cc_code',
+                           'convergence_type', 'correlation_start']
+
+        # TODO: Why do we do this here, but not in other upload methods?
+        config_comm_correlation.append('vb_cc_code')
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "community correlations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert correlations into commcorrelation table
+        #
+
+        print("--- UPLOADING COMM CORRELATIONS ---")
+        df['user_cx_code'] = df['user_cc_code'] + '->' + df['vb_correlated_cc_code']
+        config_comm_correlation.append('user_cx_code')
+        cx_actions = super().upload_to_table("comm_correlation", 'cx',
+            config_comm_correlation, 'commcorrelation_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'cx': cx_actions['resources']['cx'],
+            },
+            'counts':{
+                'cx': cx_actions['counts']['cx'],
+            }
+        }
+        return to_return

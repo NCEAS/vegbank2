@@ -239,6 +239,19 @@ comm_usage = [
     'vb_cs_code'
 ]
 
+comm_correlation = [
+    # user-supplied
+    'user_cc_code',
+    'vb_correlated_cc_code',
+    'user_correlated_cc_code',
+    'convergence_type',
+    'correlation_start',
+    'correlation_stop',
+    # generated during the multi-part upload flow
+    #'vb_cc_code',
+    #'user_cx_code'
+]
+
 stratum = [
     'vb_ob_code',
     'user_ob_code',
