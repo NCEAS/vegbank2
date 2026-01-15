@@ -70,6 +70,19 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
     
     return to_return
 
+def merge_vb_codes(inserted_codes, df, mapping):
+    #mapping = {
+    #    "user_py_code": "user_status_py_code",
+    #    "vb_py_code": "vb_status_py_code"
+    #}
+    codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
+    user_col, vb_col = list(mapping.values())
+    df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
+    if f'{vb_col}_x' in df:
+        df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
+        df.drop(columns=[f'{vb_col}_x', f'{vb_col}_y'], inplace=True)
+    return df
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):

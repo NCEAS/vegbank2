@@ -1,6 +1,10 @@
 import os
 from operators import Operator
-from utilities import QueryParameterError
+from operators import table_defs_config
+from utilities import (
+    validate_required_and_missing_fields,
+    merge_vb_codes,
+)
 
 
 class CommunityConcept(Operator):
@@ -225,3 +229,145 @@ class CommunityConcept(Operator):
         params['search'] = request_args.get('search')
 
         return params
+
+    def upload_community_concepts(self, df, conn):
+        """
+        Take the Community Concepts loader DataFrame and insert its contents
+        into the commname, commconcept, and commstatus tables.
+
+        Preconditions:
+        - Every vb_rf_code matches an existing reference record
+        - Every vb_status_rf_code matches an existing reference record
+        - Every vb_status_py_code matches an existing party record
+        - One record per user_cc_code (corollary: only one status per cc)
+        Step 1: INSERT INTO commname:
+                commname <- name
+                RETURNING commname_id -> vb_cn_code
+                ... correlate vb_cn_code with name
+        Step 2: INSERT INTO commconcept:
+                commname_id <- from vb_cn_code (Step 1)
+                commname <- name
+                reference_id <- from vb_rf_code (user or upstream)
+                commdescription <- description
+                RETURNING commconcept_id -> vb_cc_code
+                ...correlate vb_cc_code with user_cc_code
+        Step 3: INSERT INTO commconcept:
+                commconcept_id <- from vb_cc_code (Step 2)
+                reference_id <- from vb_status_rf_code (user or upstream)
+                party_id <- from vb_status_py_code (user or upstream)
+                commconceptstatus <- comm_concept_status
+                commparent <- from vb_parent_cc_code (Step 2)
+                commlevel <- comm_level
+                startdate <- start_date
+                stopdate <- stop_date
+                commpartycomments <- comm_party_comments
+                RETURNING commstatus_id -> vb_cs_code
+        Step TODO: Set d_currentaccepted
+        Step TODO: Set d_obscount
+
+        Parameters:
+            df (pandas.DataFrame): Community concept data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cc": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cc": [{"action": "inserted",
+                                "user_cc_code": "my_new_concept_1",
+                                "vb_cc_code": "cc.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_comm_name = table_defs_config.comm_name[:]
+        config_comm_concept = table_defs_config.comm_concept[:]
+        config_comm_status = table_defs_config.comm_status[:]
+        table_defs = [config_comm_name,
+                      config_comm_concept,
+                      config_comm_status]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['user_cc_code', 'name', 'vb_rf_code',
+                           'comm_concept_status', 'vb_status_py_code']
+
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "community concepts")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Upsert names into commnames table
+        #
+
+        print("--- UPLOADING COMM NAMES ---")
+        df['user_cn_code'] = df['name']
+        config_comm_name.append('user_cn_code')
+
+        cn_actions = super().upload_to_table("comm_name", 'cn',
+            config_comm_name, 'commname_id', df, False, conn,
+            validate = False)
+
+        # ... merge in newly created vb_cn_codes
+        df = merge_vb_codes(
+            cn_actions['resources']['cn'], df,
+            {"user_cn_code": "user_cn_code",
+             "vb_cn_code": "vb_cn_code"})
+        config_comm_concept.append('vb_cn_code')
+
+        #
+        # Insert concepts into commconcept table
+        #
+
+        print("--- UPLOADING COMM CONCEPTS ---")
+        df['user_cc_code'] = df['user_cc_code'].astype(str)
+        cc_actions = super().upload_to_table("comm_concept", 'cc',
+            config_comm_concept, 'commconcept_id', df, True, conn)
+
+        #
+        # Insert status into commstatus table
+        #
+
+        print("--- UPLOADING COMM STATUSES ---")
+        df['user_cs_code'] = df['user_cc_code']
+        config_comm_status.append('user_cs_code')
+
+        # ... merge in newly created vb_cc_codes
+        df = merge_vb_codes(
+            cc_actions['resources']['cc'], df,
+            {"user_cc_code": "user_cc_code",
+             "vb_cc_code": "vb_cc_code"})
+        config_comm_status.append('vb_cc_code')
+
+        # ... merge in newly created vb_cc_codes
+        df = merge_vb_codes(
+            cc_actions['resources']['cc'], df,
+            {"user_cc_code": "user_parent_cc_code",
+             "vb_cc_code": "vb_parent_cc_code"})
+
+        cs_actions = super().upload_to_table("comm_status", 'cs',
+            config_comm_status, 'commstatus_id', df, True, conn)
+
+        # TODO: decide which ones we actually want to return to the user -
+        # probably only `cc`?
+        to_return = {
+            'resources':{
+                'cn': cn_actions['resources']['cn'],
+                'cc': cc_actions['resources']['cc'],
+                'cs': cs_actions['resources']['cs']
+            },
+            'counts':{
+                'cn': cn_actions['counts']['cn'],
+                'cc': cc_actions['counts']['cc'],
+                'cs': cs_actions['counts']['cs']
+            }
+        }
+        return to_return
