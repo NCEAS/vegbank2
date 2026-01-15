@@ -222,6 +222,23 @@ comm_status = [
     'user_status_py_code'
 ]
 
+# system added:
+# - 'vb_cn_code'
+# - 'user_cu_code'
+comm_usage = [
+    'user_cc_code',
+    'name',
+    'name_type',
+    'name_status',
+    'usage_start',
+    'usage_stop',
+    'vb_usage_py_code',
+    'user_usage_py_code',
+    # generated upstream during the multi-part upload flow
+    'vb_cc_code',
+    'vb_cs_code'
+]
+
 stratum = [
     'vb_ob_code',
     'user_ob_code',

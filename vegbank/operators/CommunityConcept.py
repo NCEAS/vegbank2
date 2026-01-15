@@ -371,3 +371,108 @@ class CommunityConcept(Operator):
             }
         }
         return to_return
+
+    def upload_community_names(self, df, conn):
+        """
+        Take the Community Names loader DataFrame and insert its contents
+        into the commname and commusage tables.
+
+        Preconditions:
+        - Every vb_cc_code matches an existing concept record
+        - Every vb_cs_code matches an existing status record
+        - Every vb_usage_py_code matches an existing party record
+        Step 1: INSERT INTO commname:
+                commname <- name
+                RETURNING commname_id -> vb_cn_code
+                ... correlate vb_cn_code with name
+        Step 2: INSERT INTO commusage:
+                commname_id <- from vb_cn_code (Step 1)
+                commname <- name
+                commconcept_id <- from vb_cc_code (upstream)
+                usagestart <- usage_start
+                usagestop <- usage_stop
+                commnamestatus <- name_status
+                classsystem <- name_type
+                party_id <- from vb_usage_py_code (upstream)
+                commstatus_id <- from vb_cs_code (upstream)
+                RETURNING commusage_id -> vb_cu_code
+
+        Parameters:
+            df (pandas.DataFrame): Community names data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cu": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cu": [{"action": "inserted",
+                                "user_cu_code": "concept_1",
+                                "vb_cu_code": "cu.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'community_name')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_comm_name = table_defs_config.comm_name[:]
+        config_comm_usage = table_defs_config.comm_usage[:]
+        table_defs = [config_comm_name,
+                      config_comm_usage]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['user_cc_code', 'vb_cc_code', 'name',
+                           'name_type', 'name_status']
+
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "community names")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Upsert names into commnames table
+        #
+
+        print("--- UPLOADING COMM NAMES ---")
+        df['user_cn_code'] = df['name']
+        config_comm_name.append('user_cn_code')
+
+        cn_actions = super().upload_to_table("comm_name", 'cn',
+            config_comm_name, 'commname_id', df, False, conn,
+            validate = False)
+
+        #
+        # Insert usages into commusage table
+        #
+
+        print("--- UPLOADING COMM USAGES ---")
+        # ... merge in newly created vb_cn_codes
+        df = merge_vb_codes(
+            cn_actions['resources']['cn'], df,
+            {"user_cn_code": "user_cn_code",
+             "vb_cn_code": "vb_cn_code"})
+        config_comm_usage.append('vb_cn_code')
+
+        df['user_cu_code'] = df['user_cc_code'] + ' ' + df['name_type']
+        config_comm_usage.append('user_cu_code')
+        cu_actions = super().upload_to_table("comm_usage", 'cu',
+            config_comm_usage, 'commusage_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'cun': cn_actions['resources']['cn'],
+                'cu': cu_actions['resources']['cu'],
+            },
+            'counts':{
+                'cun': cn_actions['counts']['cn'],
+                'cu': cu_actions['counts']['cu'],
+            }
+        }
+        return to_return
