@@ -1,9 +1,16 @@
 import os
 from operators import Operator
+from psycopg.rows import dict_row
+from psycopg import connect
 from operators import table_defs_config
+from flask import jsonify
 from utilities import (
+    read_parquet_file,
+    UploadDataError,
     validate_required_and_missing_fields,
     merge_vb_codes,
+    combine_json_return,
+    jsonify_error_message
 )
 
 
@@ -229,6 +236,116 @@ class CommunityConcept(Operator):
         params['search'] = request_args.get('search')
 
         return params
+
+    def upload_all(self, request):
+        """
+        Orchestrate the insertion of client-provided Community Concept data into
+        VegBank, starting with the Flask request containing the uploaded data
+        files.
+
+        Parameters:
+            request (flask.Request): The incoming Flask request object
+                containing Parquet files with Community Concept data to be
+                loaded into VegBank
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cc": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cc": [{"action": "inserted",
+                                "user_cc_code": "my_new_concept_1",
+                                "vb_cc_code": "cc.123"}],
+                    }
+                }
+        Raises:
+            QueryParameterError: If any supplied code does not match the
+                expected pattern.
+        """
+        # Define the expected data inputs and whether or not they are required
+        # TODO: Think about whether we want anything other information here, and
+        # likely factor this out some sort of configuration object
+        upload_files = {
+            'cc': {
+                'file_name': 'community_concepts',
+                'required': True
+            },
+            'cn': {
+                'file_name': 'community_names',
+                'required': False
+            },
+            'cx': {
+                'file_name': 'community_correlations',
+                'required': False
+            },
+        }
+        # Read each Parquet file from the request into a Pandas DataFrame
+        data = {}
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required'])
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
+
+        # Run the upload pipeline!
+        try:
+            to_return = None
+            with connect(**self.params, row_factory=dict_row) as conn:
+                # Prep & insert all new community concepts
+                cc_actions = self.upload_community_concepts(data['cc'], conn)
+                to_return = combine_json_return(to_return, cc_actions)
+
+                # Prep & insert any new community names
+                if data['cn'] is not None:
+                    # ... merge in newly created vb_cc_codes
+                    data['cn'] = merge_vb_codes(
+                        cc_actions['resources']['cc'], data['cn'],
+                        {"user_cc_code": "user_cc_code",
+                         "vb_cc_code": "vb_cc_code"})
+                    # ... merge in newly created usage vb_cs_codes
+                    # Note oddball case: we're joining on user_cc_code because
+                    # users don't supply user_cs_code, but because concepts are
+                    # 1:1 with statuses in our loader schema, we can treat the
+                    # user_cc_code as an alias for the implicit user_cs_code
+                    data['cn'] = merge_vb_codes(
+                        cc_actions['resources']['cs'], data['cn'],
+                        {"user_cs_code": "user_cc_code",
+                         "vb_cs_code": "vb_cs_code"})
+                    cn_actions = self.upload_community_names(data['cn'], conn)
+                    to_return = combine_json_return(to_return, cn_actions)
+                else:
+                    cn_actions = None
+
+                # Prep & insert any new community correlations
+                if data['cx'] is not None:
+                    # ... merge in newly created vb_cc_codes
+                    data['cx'] = merge_vb_codes(
+                        cc_actions['resources']['cc'], data['cx'],
+                        {"user_cc_code": "user_cc_code",
+                         "vb_cc_code": "vb_cc_code"})
+                    cx_actions = self.upload_community_correlations(data['cx'], conn)
+                    to_return = combine_json_return(to_return, cx_actions)
+                else:
+                    cx_actions = None
+
+                # If this is a dry-run upload, roll back transaction and embed
+                # the informational JSON response in a dry-run wrapper message
+                if request.args.get('dry_run', 'false').lower() == 'true':
+                    conn.rollback()
+                    message = "dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            return jsonify_error_message(
+                f"an error occurred here during upload: {str(e)}"), 500
+        return jsonify(to_return)
 
     def upload_community_concepts(self, df, conn):
         """
