@@ -555,8 +555,7 @@ def community_concepts(vb_code):
     """
     community_concept_operator = CommunityConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for community concepts."), 405
+        return community_concept_operator.upload_all(request)
     elif request.method == 'GET':
         return community_concept_operator.get_vegbank_resources(request, vb_code)
     else:
