@@ -1,5 +1,7 @@
 import os
 from operators import Operator
+from .Party import Party
+from .Reference import Reference
 from psycopg.rows import dict_row
 from psycopg import connect
 from operators import table_defs_config
@@ -269,6 +271,14 @@ class CommunityConcept(Operator):
         # TODO: Think about whether we want anything other information here, and
         # likely factor this out some sort of configuration object
         upload_files = {
+            'py': {
+                'file_name': 'parties',
+                'required': False
+            },
+            'rf': {
+                'file_name': 'references',
+                'required': False
+            },
             'cc': {
                 'file_name': 'community_concepts',
                 'required': True
@@ -295,7 +305,38 @@ class CommunityConcept(Operator):
         try:
             to_return = None
             with connect(**self.params, row_factory=dict_row) as conn:
+                # Insert any new parties
+                if data['py'] is not None:
+                    py_actions = Party(self.params).upload_parties(data['py'], conn)
+                    to_return = combine_json_return(to_return, py_actions)
+                else:
+                    py_actions = None
+
+                # Insert any new references
+                if data['rf'] is not None:
+                    rf_actions = Reference(self.params).upload_references(data['rf'], conn)
+                    to_return = combine_json_return(to_return, rf_actions)
+                else:
+                    rf_actions = None
+
                 # Prep & insert all new community concepts
+                if py_actions is not None:
+                    # ... merge in newly created vb_py_codes
+                    data['cc'] = merge_vb_codes(
+                        py_actions['resources']['py'], data['cc'],
+                        {"user_py_code": "user_status_py_code",
+                         "vb_py_code": "vb_status_py_code"})
+                if rf_actions is not None:
+                    # ... merge in newly created concept vb_rf_codes
+                    data['cc'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['cc'],
+                        {"user_rf_code": "user_rf_code",
+                         "vb_rf_code": "vb_rf_code"})
+                    # ... merge in newly created status vb_rf_codes
+                    data['cc'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['cc'],
+                        {"user_rf_code": "user_status_rf_code",
+                         "vb_rf_code": "vb_status_rf_code"})
                 cc_actions = self.upload_community_concepts(data['cc'], conn)
                 to_return = combine_json_return(to_return, cc_actions)
 
@@ -315,6 +356,12 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cs'], data['cn'],
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
+                    # ... merge in newly created usage vb_py_codes
+                    if py_actions is not None:
+                        data['cn'] = merge_vb_codes(
+                            py_actions['resources']['py'], data['cn'],
+                            {"user_py_code": "user_usage_py_code",
+                             "vb_py_code": "vb_usage_py_code"})
                     cn_actions = self.upload_community_names(data['cn'], conn)
                     to_return = combine_json_return(to_return, cn_actions)
                 else:
