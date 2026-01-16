@@ -272,10 +272,11 @@ def stem_data():
 
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
-    file = request.files['file']
+    
     try:
+        sd_df = read_parquet_file(request, 'file', required=True)
         with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_stem_data(file, conn)
+            to_return = taxon_observation_operator.upload_stem_data(sd_df, conn)
             if dry_run:
                 conn.rollback()
                 message = "Dry run - rolling back transaction."
@@ -747,7 +748,6 @@ def projects(pj_code):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
             try:
-                file = validate_file('file', request)
                 pj_df = read_parquet_file(request, 'file', required=True)
                 with connect(**params, row_factory=dict_row) as conn:
                     to_return = project_operator.upload_project(pj_df, conn)

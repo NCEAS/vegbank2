@@ -142,5 +142,15 @@ def bulk_manager_upload(request, conn, params):
             )
         tis = TaxonObservation(params).upload_taxon_interpretations(data['ti'], conn)
         to_return = combine_json_return(to_return, tis)
-  
+    if data['sd'] is not None:
+        if scs is not None:
+            data['sd'] = merge_vb_codes(
+                scs['resources']['tm'], data['sd'],
+                {
+                    'user_tm_code': 'user_tm_code',
+                    'vb_tm_code': 'vb_tm_code'
+                }
+            )
+        sds = TaxonObservation(params).upload_stem_data(data['sd'], conn)
+        to_return = combine_json_return(to_return, sds)
     return to_return               
