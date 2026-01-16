@@ -101,10 +101,6 @@ class Operator:
         self.include_full_count = True
         self.debug = True
         self.query_mode = 'normal'
-        self.table_defs = []
-        self.required_fields = []
-        self.bulk_required_fields = []
-        self.bulk_table_defs = []
 
     def extract_id_from_vb_code(self, vb_code, table_code = None):
         """
@@ -724,11 +720,3 @@ class Operator:
 
             return to_return
     
-    def validate(self, df, file_name, bulk=False):
-        if bulk:
-            validate_table_defs = self.bulk_table_defs.get(file_name)
-            validate_required_fields = self.bulk_required_fields.get(file_name)
-        else:
-            validate_table_defs = self.table_defs.get(file_name)
-            validate_required_fields = self.required_fields.get(file_name)
-        return validate_required_and_missing_fields(df, validate_required_fields, validate_table_defs, file_name)

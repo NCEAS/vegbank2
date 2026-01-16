@@ -34,7 +34,6 @@ class PlotObservation(Operator):
         self.sort_options = ("default", "author_obs_code")
         self.default_num_taxa = 5
         self.default_num_comms = 5
-        self.bulk_required_fields = ['user_ob_code', 'vb_pj_code']
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail

@@ -36,18 +36,6 @@ class TaxonObservation(Operator):
         self.table_code = "to"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.nested_options = ("true", "false")
-        self.table_defs = {
-            "strata_cover_data": [table_defs_config.taxon_observation, table_defs_config.taxon_importance],
-            "strata_definitions": [table_defs_config.stratum],
-            "stem_data": [table_defs_config.stem_location, table_defs_config.stem_count],
-            "taxon_interpretations": [table_defs_config.taxon_interpretation]
-        }
-        self.required_fields = {
-            "strata_cover_data": ['user_to_code', 'user_ob_code', 'author_plant_name', 'user_tm_code'],
-            "strata_definitions": ['vb_ob_code', 'user_ob_code', 'user_sr_code', 'vb_sy_code'],
-            "stem_data": ['user_sc_code', 'user_tm_code', 'vb_tm_code', 'stem_count'],
-            "taxon_interpretations": ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']
-        }
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
