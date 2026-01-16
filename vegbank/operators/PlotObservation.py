@@ -2,13 +2,25 @@ import os
 import textwrap
 from flask import jsonify
 import psycopg
-from psycopg import ClientCursor
+from psycopg import connect
 from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, validate_required_and_missing_fields
+from .Party import Party
+from .Project import Project
+from .Reference import Reference
+from .TaxonObservation import TaxonObservation 
+from utilities import( 
+    jsonify_error_message, 
+    allowed_file, 
+    validate_required_and_missing_fields,read_parquet_file, 
+    UploadDataError, 
+    merge_vb_codes, 
+    combine_json_return, 
+    dry_run_check
+                      )
 
 
 class PlotObservation(Operator):
@@ -559,3 +571,147 @@ class PlotObservation(Operator):
             }
         }
         return to_return
+    
+    def upload_all_plot_observations(self, request):
+        upload_files = {
+            'pj': {
+                'file_name': 'projects',
+                'required': False
+            },
+            'py': {
+                'file_name': 'parties',
+                'required': False
+            },
+            'rf': {
+                'file_name': 'references',
+                'required': False
+            },
+            'pl': {
+                'file_name': 'plot_observations',
+                'required': True
+            },
+            'sr': {
+                'file_name': 'strata',
+                'required': False
+            },
+            'sc': {
+                'file_name': 'strata_cover_data',
+                'required': False
+            },
+            'sd': {
+                'file_name': 'stem_data',
+                'required': False
+            },
+            'ti': {
+                'file_name': 'taxon_interpretations',
+                'required': False
+            }
+        }
+        data = {}
+        to_return = None
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required'])
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
+
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                if data['pj'] is not None:
+                    pjs = Project(self.params).upload_project(data['pj'], conn)
+                    to_return = combine_json_return(to_return, pjs)
+                if data['py'] is not None:
+                    pys = Party(self.params).upload_parties(data['py'], conn)
+                    to_return = combine_json_return(to_return, pys)
+                if data['rf'] is not None:
+                    rfs = Reference(self.params).upload_references(data['rf'], conn)
+                    to_return = combine_json_return(to_return, rfs)
+
+                if data['pl'] is not None:
+                    if data['pj'] is not None:
+                        data['pl'] = merge_vb_codes(
+                            pjs['resources']['pj'], data['pl'],
+                            {
+                                'user_pj_code': 'user_pj_code',
+                                'vb_pj_code': 'vb_pj_code'
+                            }
+                        )
+
+                    pls = PlotObservation(self.params).upload_plot_observations(data['pl'], conn)
+                    to_return = combine_json_return(to_return, pls)
+                if data['sr'] is not None:
+                    if data['pl'] is not None:
+                        data['sr'] = merge_vb_codes(
+                            pls['resources']['ob'], data['sr'],
+                            {
+                                'user_ob_code': 'user_ob_code',
+                                'vb_ob_code': 'vb_ob_code'
+                            }
+                        )
+                    srs = TaxonObservation(self.params).upload_strata_definitions(data['sr'], conn)
+                    to_return = combine_json_return(to_return, srs)
+                if data['sc'] is not None:
+                    if data['pl'] is not None:
+                        data['sc'] = merge_vb_codes(
+                            pls['resources']['ob'], data['sc'],
+                            {
+                                'user_ob_code': 'user_ob_code',
+                                'vb_ob_code': 'vb_ob_code'
+                            }
+                        )
+                    if data['sr'] is not None:
+                        data['sc'] = merge_vb_codes(
+                            srs['resources']['sr'], data['sc'],
+                            {
+                                'user_sr_code': 'user_sr_code',
+                                'vb_sr_code': 'vb_sr_code'
+                            }
+                        )
+                    scs = TaxonObservation(self.params).upload_strata_cover_data(data['sc'], conn)
+                    to_return = combine_json_return(to_return, scs)
+
+                if data['ti'] is not None:
+                    if data['rf'] is not None:
+                        data['ti'] = merge_vb_codes(
+                            rfs['resources']['rf'], data['ti'],
+                            {
+                                'user_rf_code': 'user_rf_code',
+                                'vb_rf_code': 'vb_rf_code'
+                            }
+                        )
+                    if data['py'] is not None:
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {
+                                'user_py_code': 'user_py_code',
+                                'vb_py_code': 'vb_py_code'
+                            }
+                        )
+                    if data['sc'] is not None:
+                        data['ti'] = merge_vb_codes(
+                            scs['resources']['to'], data['ti'],
+                            {
+                                'user_to_code': 'user_to_code',
+                                'vb_to_code': 'vb_to_code'
+                            }
+                        )
+                    tis = TaxonObservation(self.params).upload_taxon_interpretations(data['ti'], conn)
+                    to_return = combine_json_return(to_return, tis)
+                if data['sd'] is not None:
+                    if data['sc'] is not None:
+                        data['sd'] = merge_vb_codes(
+                            scs['resources']['tm'], data['sd'],
+                            {
+                                'user_tm_code': 'user_tm_code',
+                                'vb_tm_code': 'vb_tm_code'
+                            }
+                        )
+                    sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
+                    to_return = combine_json_return(to_return, sds)
+                to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
+            conn.close()
+            return jsonify(to_return)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify_error_message(str(e)), 500              

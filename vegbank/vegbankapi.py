@@ -21,8 +21,7 @@ from operators import (
     CoverMethod,
     Project,
     StratumMethod,
-    Reference,
-    BulkManager
+    Reference
 )
 
 
@@ -942,9 +941,7 @@ def bulk_upload():
     
     All post parameters are optional, but at least one must be provided.
     '''
-    if allow_uploads is False:
-        return jsonify_error_message("Uploads not allowed."), 403
-    return BulkManager.bulk_manager_upload(request, params)
+    return PlotObservation(params).upload_all_plot_observations(request)
     
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
