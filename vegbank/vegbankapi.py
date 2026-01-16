@@ -8,7 +8,7 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, allowed_file, validate_file, dry_run_check, bulk_file_upload, merge_df_on_field
+from utilities import jsonify_error_message, dry_run_check, read_parquet_file
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -130,10 +130,7 @@ def plot_observations(vb_code):
             return jsonify_error_message("Uploads not allowed."), 403
         else:
             try:
-                file = validate_file('file', request)
-                if file is None:
-                    return jsonify_error_message("No file part in the request."), 400
-                pl_df = pd.read_parquet(file)
+                pl_df = read_parquet_file(request, 'file', required=True)
                 with connect(**params, row_factory=dict_row) as conn:
                     to_return = plot_observation_operator.upload_plot_observations(pl_df, conn)
                     to_return = dry_run_check(conn, to_return, request)
@@ -360,10 +357,11 @@ def taxon_interpretations(vb_code):
 
         taxon_observation_operator = TaxonObservation(params)
         to_return = None
-        file = request.files['file']
+        
         try:
+            ti_df = read_parquet_file(request, 'file', required=True)
             with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
+                to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
                 if dry_run:
                     conn.rollback()
                     message = "Dry run - rolling back transaction."
@@ -750,10 +748,8 @@ def projects(pj_code):
         else:
             try:
                 file = validate_file('file', request)
-                if file is None:
-                    return jsonify_error_message("No file part in the request."), 400
+                pj_df = read_parquet_file(request, 'file', required=True)
                 with connect(**params, row_factory=dict_row) as conn:
-                    pj_df = pd.read_parquet(file)
                     to_return = project_operator.upload_project(pj_df, conn)
                     to_return = dry_run_check(conn, to_return, request)
                 conn.close()
@@ -959,4 +955,4 @@ def bulk_upload():
         return jsonify_error_message(f"An error occurred during bulk upload: {str(e)}"), 500 
     
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=80,debug=True)
+    app.run(host='0.0.0.0',port=81,debug=True)

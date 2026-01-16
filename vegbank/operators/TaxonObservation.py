@@ -289,7 +289,7 @@ class TaxonObservation(Operator):
         }
         return to_return
     
-    def upload_taxon_interpretations(self, file, conn):
+    def upload_taxon_interpretations(self, df, conn):
         """
         takes a parquet file of taxon interpretations and uploads it to the taxon interpretation table.
         Parameters:
@@ -298,7 +298,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.taxon_interpretation]
         required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']

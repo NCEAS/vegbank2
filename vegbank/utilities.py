@@ -176,17 +176,6 @@ def combine_json_return(main_dict, new_dict):
                        **new_dict.get(key, {})}
     return result
 
-def validate_file(file_name_input, request):
-    if file_name_input not in request.files:
-        return None
-    file = request.files[file_name_input]
-    if file.filename == '':
-        return jsonify_error_message("No selected file."), 400
-    if not allowed_file(file.filename):
-        return jsonify_error_message(
-            "File type not allowed. Only Parquet files are accepted."), 400
-    return file
-
 def dry_run_check(conn, data, request):
     if request.args.get('dry_run', 'false').lower() == 'true':  
         conn.rollback()
@@ -211,29 +200,3 @@ class UploadDataError(Exception):
         self.status_code = status_code
         super().__init__(self.message)
 
-
-def bulk_file_upload(operator_upload_method, df, conn):
-    objects = operator_upload_method(df, conn)
-    new_codes = objects['resources']
-    counts = objects['counts']
-    new_codes_df = {}
-    for key in new_codes:
-        new_codes_df[key] = pd.DataFrame(new_codes[key], columns=['vb_' + key + '_code', 'user_' + key + '_code'])
-    to_return = {
-        "new_codes": new_codes,
-        "counts": counts,
-        "new_codes_df": new_codes_df
-    }
-    return to_return
-
-def merge_df_on_field(base_df, merge_df, table_code):
-    print("merging on ", table_code)
-    field_name = 'user_' + table_code + '_code'
-    vb_field_name = 'vb_' + table_code + '_code'
-    base_df = base_df.merge(merge_df, on=field_name, how='left')
-    merged_name_x = vb_field_name + '_x'
-    merged_name_y = vb_field_name + '_y'
-    if(merged_name_x in base_df.columns):
-        base_df[vb_field_name] = base_df[merged_name_x].combine_first(base_df[merged_name_y])
-        base_df = base_df.drop(columns=[merged_name_x, merged_name_y])
-    return base_df
