@@ -11,7 +11,7 @@ import pyarrow.parquet as pq
 import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import jsonify_error_message, QueryParameterError, validate_required_and_missing_fields
+from utilities import jsonify_error_message, QueryParameterError
 
 table_code_lookup = {
     'community-classifications': 'cl',
@@ -719,4 +719,3 @@ class Operator:
             }
 
             return to_return
-    
