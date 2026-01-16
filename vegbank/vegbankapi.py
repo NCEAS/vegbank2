@@ -944,15 +944,7 @@ def bulk_upload():
     '''
     if allow_uploads is False:
         return jsonify_error_message("Uploads not allowed."), 403
-    try:
-        with connect(**params, row_factory=dict_row) as conn:
-            to_return = BulkManager.bulk_manager_upload(request, conn, params)
-            to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
-        conn.close()
-        return jsonify(to_return)
-    except Exception as e:
-        print(traceback.format_exc())
-        return jsonify_error_message(f"An error occurred during bulk upload: {str(e)}"), 500 
+    return BulkManager.bulk_manager_upload(request, params)
     
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
