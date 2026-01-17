@@ -905,6 +905,14 @@ def bulk_upload():
         plot_observations (FileStorage, optional): Parquet file containing plot
             observation data.
         projects (FileStorage, optional): Parquet file containing project data.
+        parties (FileStorage, optional): Parquet file containing party data.
+        references (FileStorage, optional): Parquet file containing reference data.
+        strata (FileStorage, optional): Parquet file containing strata
+            definition data.
+        strata_cover_data (FileStorage, optional): Parquet file containing taxon 
+            observations and taxon importances.
+        taxon_interpretations (FileStorage, optional): Parquet file containing taxon 
+            interpretation data.
     
     All post parameters are optional, but at least one must be provided.
     '''

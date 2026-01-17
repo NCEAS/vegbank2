@@ -172,6 +172,13 @@ def combine_json_return(main_dict, new_dict):
     return result
 
 def dry_run_check(conn, data, request):
+    """
+    Check if the request is a dry run and roll back the transaction if so.
+    Parameters:
+        conn: The database connection object.
+        data: The data resulting from the upload request.
+        request: The Flask request object containing query parameters.
+    """
     if request.args.get('dry_run', 'false').lower() == 'true':  
         conn.rollback()
         return {

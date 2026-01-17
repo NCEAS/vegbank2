@@ -573,6 +573,41 @@ class PlotObservation(Operator):
         return to_return
     
     def upload_all_plot_observations(self, request):
+        """
+        Orchestrate the insertion of client-provided Plot Observation data into
+        VegBank, starting with the Flask request containing the uploaded data
+        files.
+
+        Parameters:
+            request (flask.Request): The incoming Flask request object
+                containing Parquet files with Plot Observation data to be
+                loaded into VegBank
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "pj": {"inserted": 1},
+                        "pl": {"inserted": 1},
+                        "ob": {"inserted": 1}
+                    },
+                    "resources": {
+                        "pj": [{"action": "inserted",
+                                "user_pj_code": "user_pj_1",
+                                "vb_pj_code": "pj.123"}],
+                        "pl": [{"action": "inserted",
+                                "user_pl_code": "user_pl_1",
+                                "vb_pl_code": "pl.456"}],
+                        "ob": [{"action": "inserted",
+                                "user_ob_code": "user_ob_1",
+                                "vb_ob_code": "ob.789"}]
+                    }
+                }
+        Raises:
+            QueryParameterError: If any supplied code does not match the
+                expected pattern.
+        """
         upload_files = {
             'pj': {
                 'file_name': 'projects',
