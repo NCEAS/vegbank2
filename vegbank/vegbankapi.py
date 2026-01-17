@@ -199,6 +199,7 @@ def taxon_observations(vb_code):
             with connect(**params, row_factory=dict_row) as conn:
                     df = pd.read_parquet(file)
                     to_return = taxon_observation_operator.upload_strata_definitions(df, conn)
+                    to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -232,10 +233,11 @@ def strata_cover_data():
     """
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
-    file = request.files['file']
     try:
+        scd_df = read_parquet_file(request, 'file', required=True)
         with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
+            to_return = taxon_observation_operator.upload_strata_cover_data(scd_df, conn)
+            to_return = dry_run_check(conn, to_return, request)
         conn.close()
     except Exception as e:
         print(traceback.format_exc())
