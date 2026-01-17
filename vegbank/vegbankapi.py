@@ -266,9 +266,6 @@ def stem_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
-    dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-    print("Dry Run: " + str(dry_run))
-
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
     
@@ -276,13 +273,7 @@ def stem_data():
         sd_df = read_parquet_file(request, 'file', required=True)
         with connect(**params, row_factory=dict_row) as conn:
             to_return = taxon_observation_operator.upload_stem_data(sd_df, conn)
-            if dry_run:
-                conn.rollback()
-                message = "Dry run - rolling back transaction."
-                return jsonify({
-                    "message": message,
-                    "dry_run_data": to_return
-                })
+            to_return = dry_run_check(conn, to_return, request)
         conn.close()
     except Exception as e:
         print(traceback.format_exc())
