@@ -343,9 +343,6 @@ def taxon_interpretations(vb_code):
     """
     taxon_interpretation_operator = TaxonInterpretation(params)
     if request.method == 'POST':
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
-
         taxon_observation_operator = TaxonObservation(params)
         to_return = None
         
@@ -353,13 +350,7 @@ def taxon_interpretations(vb_code):
             ti_df = read_parquet_file(request, 'file', required=True)
             with connect(**params, row_factory=dict_row) as conn:
                 to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -664,21 +655,13 @@ def parties(vb_code):
     """
     party_operator = Party(params)
     if request.method == 'POST':
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
         file = request.files['file']
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 py_df = pd.read_parquet(file)
                 to_return = party_operator.upload_parties(py_df, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -892,21 +875,12 @@ def references(rf_code):
     reference_operator = Reference(params)
     if request.method == 'POST':
         file = request.files['file']
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
-
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 rf_df = pd.read_parquet(file)
                 to_return = reference_operator.upload_references(rf_df, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
