@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'api/openapi.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,6 +35,11 @@ jobs:
 
       - name: Build API docs (HTML)
         run: npx @redocly/cli build-docs api/openapi.yml --output public/api/index.html
+
+      - name: Copy assets for GitHub Pages
+        run: |
+          mkdir -p public/api/assets
+          cp -R assets/* public/api/assets/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
