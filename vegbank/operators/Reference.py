@@ -1,6 +1,7 @@
 import os
-from operators import Operator
-from utilities import QueryParameterError
+import pandas as pd
+from operators import Operator, table_defs_config
+from utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class Reference(Operator):
@@ -112,3 +113,22 @@ class Reference(Operator):
 
         # now dispatch to the base validation method
         return super().validate_query_params(request_args)
+
+    def upload_references(self, df, conn):
+        """
+        takes a parquet file of references and uploads it to the reference table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing taxon interpretations.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        table_defs = [table_defs_config.reference]
+        required_fields = ['user_rf_code']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "references")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        df['user_rf_code'] = df['user_rf_code'].astype(str) # Ensure user_rf_codes are strings for consistent merging
+        new_references =  super().upload_to_table("reference", 'rf', table_defs_config.reference, 'reference_id', df, True, conn, validate=False)
+        return new_references
