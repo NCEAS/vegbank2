@@ -1,0 +1,51 @@
+name: Deploy API Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/openapi.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate OpenAPI spec
+        run: npx @redocly/cli lint api/openapi.yml
+
+      - name: Build API docs (HTML)
+        run: npx @redocly/cli build-docs api/openapi.yml --output public/api/index.html
+
+      - name: Copy assets for GitHub Pages
+        run: |
+          mkdir -p public/api/assets
+          cp -R assets/* public/api/assets/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
