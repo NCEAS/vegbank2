@@ -40,16 +40,15 @@ params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
 # Add OpenID Connect Config File
-# Add default for 'FLASK_SECRET_KEY' if it's not available from the environment
+# Add fallback for 'FLASK_SECRET_KEY' if it's not available from the environment
 params['FLASK_SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
+# Keycloak uses the 'client_id' and 'client_secret' to trust the flask app
 app.config.update({
     'OIDC_CLIENT_SECRETS': './client_secrets.json',
     'SECRET_KEY': params['FLASK_SECRET_KEY']
 })
-# TODO: Confirm client name for client_secrets - do I add this to keycloak?
-# TODO: Confirm 'issuer' in client_secrets.json - can this be used temporarily?
-## Set 'client_secrets' when setting up vegbank API using ENV variables?
-# TODO: Review keycloak setup and docs, see if new specific realm has to be set up
+
+# TODO: Implement guard rails for API routes and test auth with keycloak
 
 allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
 
