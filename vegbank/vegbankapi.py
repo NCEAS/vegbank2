@@ -40,8 +40,7 @@ params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
 # Add OpenID Connect Config File
-# TODO: Confirm which key this is, the key to the app? The key to the DB? Keycloak password?
-## Does this vegbank app have a password?
+# Add default for 'FLASK_SECRET_KEY' if it's not available from the environment
 params['FLASK_SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
 app.config.update({
     'OIDC_CLIENT_SECRETS': './client_secrets.json',
