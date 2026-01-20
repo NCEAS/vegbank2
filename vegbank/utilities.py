@@ -183,7 +183,7 @@ def dry_run_check(conn, data, request):
         conn.rollback()
         return {
             "message": "dry run, transaction was rolled back",
-            "dry run data" : data
+            "dry_run_data" : data
         }
     else:
         return data

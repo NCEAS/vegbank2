@@ -76,8 +76,23 @@ def plot_observations(vb_code):
     supporting POST and GET methods. For any other HTTP method, it returns a 405
     error.
 
-    POST: Facilitates uploading of new plot observations as an attached Parquet
-    file, if permitted via an environment variable.
+    POST: Upload a series of files from the loader schema and return the new codes 
+    and counts of new records based on the types of new records created. 
+
+    POST Parameters:
+        plot_observations (FileStorage, optional): Parquet file containing plot
+            observation data.
+        projects (FileStorage, optional): Parquet file containing project data.
+        parties (FileStorage, optional): Parquet file containing party data.
+        references (FileStorage, optional): Parquet file containing reference data.
+        strata (FileStorage, optional): Parquet file containing strata
+            definition data.
+        strata_cover_data (FileStorage, optional): Parquet file containing taxon 
+            observations and taxon importances.
+        taxon_interpretations (FileStorage, optional): Parquet file containing taxon 
+            interpretation data.
+    
+    All post parameters are optional except plot_observations.
 
     GET: If a valid plot observation code is provided (e.g., ob.1), returns the
     corresponding record if it exists. If a valid code for a different supported
@@ -125,19 +140,7 @@ def plot_observations(vb_code):
     """
     plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        if (allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            try:
-                pl_df = read_parquet_file(request, 'file', required=True)
-                with connect(**params, row_factory=dict_row) as conn:
-                    to_return = plot_observation_operator.upload_plot_observations(pl_df, conn)
-                    to_return = dry_run_check(conn, to_return, request)
-                conn.close()
-            except Exception as e:
-                print(traceback.format_exc())
-                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-            return jsonify(to_return)
+        return PlotObservation(params).upload_all(request)
     elif request.method == 'GET':
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -893,30 +896,6 @@ def references(rf_code):
         return reference_operator.get_vegbank_resources(request, rf_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
-
-
-@app.route("/bulk-upload", methods=['POST'])
-def bulk_upload():
-    ''' 
-    Upload a series of files from the loader schema and return the new codes 
-    and counts of new records based on the types of new records created. 
-
-    POST Parameters:
-        plot_observations (FileStorage, optional): Parquet file containing plot
-            observation data.
-        projects (FileStorage, optional): Parquet file containing project data.
-        parties (FileStorage, optional): Parquet file containing party data.
-        references (FileStorage, optional): Parquet file containing reference data.
-        strata (FileStorage, optional): Parquet file containing strata
-            definition data.
-        strata_cover_data (FileStorage, optional): Parquet file containing taxon 
-            observations and taxon importances.
-        taxon_interpretations (FileStorage, optional): Parquet file containing taxon 
-            interpretation data.
-    
-    All post parameters are optional, but at least one must be provided.
-    '''
-    return PlotObservation(params).upload_all_plot_observations(request)
-    
+      
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)

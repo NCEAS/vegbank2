@@ -572,7 +572,7 @@ class PlotObservation(Operator):
         }
         return to_return
     
-    def upload_all_plot_observations(self, request):
+    def upload_all(self, request):
         """
         Orchestrate the insertion of client-provided Plot Observation data into
         VegBank, starting with the Flask request containing the uploaded data
