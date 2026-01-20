@@ -1,0 +1,32 @@
+apis:
+  main:
+    root: ./api/openapi.yml
+
+extends:
+  - recommended
+
+logo:
+  image: ./assets/vegbank-logo.png
+  altText: VegBank API
+  link: "https://github.com/NCEAS/vegbank2"
+  favicon: ./assets/vegbank-favicon.svg
+
+openapi:
+  theme:
+    colors:
+      primary:
+        main: '#2C6E49'
+    typography:
+      fontFamily: 'Inter, Helvetica, Arial, sans-serif'
+      headings:
+        fontFamily: 'Inter, Helvetica, Arial, sans-serif'
+    sidebar:
+      backgroundColor: '#F7F9F8'
+    rightPanel:
+      backgroundColor: '#154a36'
+  hideDownloadButton: true
+  hideLoading: false
+  expandResponses: "200,201"
+  jsonSampleExpandLevel: 5
+  schemaExpansionLevel: 2
+  showExtensions: true

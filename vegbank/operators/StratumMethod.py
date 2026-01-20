@@ -169,15 +169,15 @@ class StratumMethod(Operator):
                 with conn.cursor() as cur:
                     with conn.transaction():
                         
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_method/create_stratum_method_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_method/create_stratum_method_temp_table.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_method/insert_stratum_methods_to_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_method/insert_stratum_methods_to_temp_table.sql", "r") as file:
                             sql = file.read()
                         cur.executemany(sql, stratum_method_inputs)
                         
                         print("about to run validate stratum methods")
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_method/validate_stratum_methods.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_method/validate_stratum_methods.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
                         existing_records = cur.fetchall()
@@ -190,7 +190,7 @@ class StratumMethod(Operator):
                         if(len(new_references) > 0):
                             raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new stratum methods.")
 
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_method/insert_stratum_methods_from_temp_table_to_permanent.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_method/insert_stratum_methods_from_temp_table_to_permanent.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql)
                         inserted_stratum_method_records = cur.fetchall()
@@ -208,14 +208,14 @@ class StratumMethod(Operator):
 
                         print("stratum_type_inputs: " + str(stratum_type_inputs))
 
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_type/create_stratum_type_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_type/create_stratum_type_temp_table.sql", "r") as file:
                             sql = file.read() 
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_type/insert_stratum_types_to_temp_table.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_type/insert_stratum_types_to_temp_table.sql", "r") as file:
                             sql = file.read()
                         cur.executemany(sql, stratum_type_inputs)
 
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_type/insert_stratum_types_from_temp_table_to_permanent.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_type/insert_stratum_types_from_temp_table_to_permanent.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql)
                         inserted_stratum_type_records = cur.fetchall()
@@ -227,7 +227,7 @@ class StratumMethod(Operator):
                         print("stratummethod_ids: " + str(stratummethod_ids))
 
                         print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/stratum_method/stratum_method/create_stratum_method_accession_codes.sql", "r") as file:
+                        with open(self.QUERIES_FOLDER + "/stratum_method/create_stratum_method_accession_codes.sql", "r") as file:
                             sql = file.read()
                         cur.execute(sql, (stratummethod_ids, ))
                         new_sm_codes = cur.fetchall()
