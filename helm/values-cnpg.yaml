@@ -5,17 +5,12 @@ dbUser: vegbank
 
 ## @section CNPG image - Override the deffault postgres version
 
-image:
-  ## @param image.enabled Set this to 'true' to enable selecting your own postgres version
-  ##
-  enabled: false
-  ## @param image.postgresImagSpec
-  ## This parameter is used to change the postgres image version deployed.
-  ## If enabled is set to 'true', cnpg will attempt to use the image you specified
-  ## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
-  ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
-  ##
-  postgresImageSpec: ghcr.io/cloudnative-pg/postgresql:##
+## @param imageOverrideSpec
+## This parameter is used to change or upgrade the postgres image version deployed.
+## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
+## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+##
+imageOverrideSpec: ghcr.io/cloudnative-pg/postgresql:18
 
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
 
