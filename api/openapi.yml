@@ -1,0 +1,4202 @@
+openapi: '3.0.3'
+info:
+  title: VegBankAPI
+  version: '2.0.0-beta'
+  license:
+    name: Apache 2.0
+  x-logo:
+    url: './assets/vegbank-logo.png'
+    altText: VegBank logo
+  description: |
+    Welcome to the official documentation for the VegBank REST API. You
+    can find out more about VegBank at https://github.com/NCEAS/vegbank2.
+
+    ### Introduction
+    The [VegBank](http://vegbank.org) data system provides a community
+    managed data portal for vegetation data, particularly plots, plant
+    taxonomy, and communities. Developed, maintained, and operated by
+    the National Center for Ecological Analysis and Synthesis (NCEAS),
+    VegBank is a product of the Ecological Society of America (ESA)
+    Vegetation Panel, and is affiliated with the National Vegetation
+    Classification (USNVC).
+
+    VegBank provides a common storage system and web portal for accessing:
+    - Plot data
+    - Plant taxonomy data
+    - Community data
+
+    VegBank is an open source, community project. We [welcome
+    contributions](https://github.com/NCEAS/vegbank2/blob/develop/CONTRIBUTING.md)
+    in many forms, including code, graphics, documentation, bug reports,
+    testing, etc.
+
+    Use the [VegBank
+    discussions](https://github.com/NCEAS/vegbank2/discussions) to
+    ask questions, raise issues, or discuss contributions with us.
+
+servers:
+  - url: https://api.vegbank.org
+    description: VegBank Production API
+  - url: https://api-dev.vegbank.org
+    description: VegBank Development API
+security: []
+
+tags:
+- name: Plot observations
+  description: Operations related to plot observations
+- name: Community concepts
+  description: Operations related to community concepts
+- name: Community classifications
+  description: Operations related to community classifications
+- name: Community interpretations
+  description: Operations related to community interpretations
+- name: Plant concepts
+  description: Operations related to plant concepts
+- name: Taxon observations
+  description: Operations related to taxon observations
+- name: Taxon interpretations
+  description: Operations related to taxon interpretations
+- name: Cover methods
+  description: Operations related to cover methods
+- name: Stratum methods
+  description: Operations related to stratum methods
+- name: Parties
+  description: Operations related to parties
+- name: Projects
+  description: Operations related to projects
+- name: References
+  description: Operations related to references
+
+paths:
+  /plot-observations/{ob_code}:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-id
+      summary: Get plot observation
+      description: >
+        Retrieve a single plot observation using its `ob_code`.
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /projects/{pj_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-pj
+      summary: Get plot observations by project
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations associated with the
+        specified project (using its `pj_code`), or a subset thereof
+        based on a specified `search` query.
+      parameters:
+        - name: pj_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pj.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /parties/{py_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-py
+      summary: Get plot observations by party
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations associated with the
+        specified party (using its `py_code`), or a subset thereof
+        based on a specified `search` query.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts/{pc_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-pc
+      summary: Get plot observations by plant concept
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations with taxon observations
+        interpreted to the specified plant concept (using its
+        `pc_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-concepts/{cc_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-cc
+      summary: Get plot observations by community concept
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations with taxon observations
+        interpreted to the specified community concept (using its
+        `cc_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: cc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cc.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /cover-methods/{cm_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-cm
+      summary: Get plot observations by cover method
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations using the specified cover
+        method (using its `cm_code`), or a subset thereof based on a
+        specified `search` query.
+      parameters:
+        - name: cm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cm.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /stratum-methods/{sm_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-sm
+      summary: Get plot observations by stratum method
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations using the specified stratum
+        method (using its `sm_code`), or a subset thereof based on a
+        specified `search` query.
+      parameters:
+        - name: sm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sm.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob
+      summary: Get all plot observations
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations in VegBank, or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post:
+      tags:
+        - Plot observations
+      operationId: upload-ob
+      summary: Upload plot observations
+      x-status: "beta"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /community-concepts/{cc_code}:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-id
+      summary: Get community concept
+      description: >
+        Retrieve a single community concept using its `cc_code`.
+      parameters:
+        - name: cc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cc.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-classifications/{cl_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-cl
+      summary: Get community concepts by cl
+      description: >
+        Retrieve a paginated and sorted collection of community concepts
+        representing all concepts interpreted under the specified
+        community classification (using its `cl_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: cl_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cl.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-ob
+      summary: Get community concepts by ob
+      description: >
+        Retrieve a paginated and sorted collection of community concepts
+        representing all concepts associated with the specified plot
+        observation (using its `ob_code`), or a subset thereof based on
+        a specified `search` query.
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc
+      summary: Get all community concepts
+      description: >
+        Retrieve a paginated and sorted collection of community concepts
+        representing all concepts stored in VegBank, or a subset thereof
+        based on a specified `search` query.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Community concepts
+      operationId: upload-cc
+      summary: Upload community concepts
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /community-classifications/{cl_code}:
+    get:
+      tags:
+        - Community classifications
+      operationId: get-cl-by-id
+      summary: Get community classification
+      description: >
+        Retrieve a single community classification using its `cl_code`.
+      parameters:
+        - name: cl_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cl.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityClassifications"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-concepts/{cc_code}/community-classifications:
+    get:
+      tags:
+        - Community classifications
+      operationId: get-cl-by-cc
+      summary: Get community classifications by cc
+      description: >
+        Retrieve a paginated collection of community classifications
+        using the specified community concept (using its `cc_code`).
+      parameters:
+        - name: cc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cc.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityClassifications"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/community-classifications:
+    get:
+      tags:
+        - Community classifications
+      operationId: get-cl-by-ob
+      summary: Get community classifications by ob
+      description: >
+        Retrieve a paginated collection of community classifications
+        associated with the specified plot observation (using its
+        `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityClassifications"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-classifications:
+    get:
+      tags:
+        - Community classifications
+      operationId: get-cl
+      summary: Get all community classifications
+      description: >
+        Retrieve a paginated collection of all community classifications
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityClassifications"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /community-interpretations/{ci_code}:
+    get:
+      tags:
+        - Community interpretations
+      operationId: get-ci-by-id
+      summary: Get community interpretation
+      description: >
+        Retrieve a single community interpretation using its `ci_code`.
+      parameters:
+        - name: ci_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ci.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-classifications/{cl_code}/community-interpretations:
+    get:
+      tags:
+        - Community interpretations
+      operationId: get-ci-by-cl
+      summary: Get community interpretations by cl
+      description: >
+        Retrieve a paginated collection of community interpretations
+        associated with the specified community classification (using
+        its `cl_code`).
+      parameters:
+        - name: cl_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cl.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/community-interpretations:
+    get:
+      tags:
+        - Community interpretations
+      operationId: get-ci-by-ob
+      summary: Get community interpretations by ob
+      description: >
+        Retrieve a paginated collection of community interpretations
+        associated with the specified plot observation (using its
+        `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-concepts/{cc_code}/community-interpretations:
+    get:
+      tags:
+        - Community interpretations
+      operationId: get-ci-by-cc
+      summary: Get community interpretations by cc
+      description: >
+        Retrieve a paginated collection of community interpretations
+        using the specified community concept (using its `cc_code`).
+      parameters:
+        - name: cc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cc.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-interpretations:
+    get:
+      tags:
+        - Community interpretations
+      operationId: get-ci
+      summary: Get all community interpretations
+      description: >
+        Retrieve a paginated collection of all community interpretations
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /plant-concepts/{pc_code}:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-id
+      summary: Get plant concept
+      description: >
+        Retrieve a single plant concept using its `pc_code`.
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-to
+      summary: Get plant concepts by to
+      description: >
+        Retrieve a paginated and sorted collection of the plant concepts
+        applied via interpretation to the specified taxon observation
+        (using its `to_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-ob
+      summary: Get plant concepts by ob
+      description: >
+        Retrieve a paginated and sorted collection of all plant concepts
+        associated with the specified plot observation (using its
+        `ob_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc
+      summary: Get all plant concepts
+      description: >
+        Retrieve a paginated and sorted collection of plant concepts
+        representing all concepts stored in VegBank, or a subset thereof
+        based on a specified `search` query.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Plant concepts
+      operationId: upload-pc
+      summary: Upload plant concepts
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "planned"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /taxon-observations/{to_code}:
+    get:
+      tags:
+        - Taxon observations
+      operationId: get-to-by-id
+      summary: Get taxon observation
+      description: >
+        Retrieve a single taxon observation using its `to_code`.
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/taxon-observations:
+    get:
+      tags:
+        - Taxon observations
+      operationId: get-to-by-ob
+      summary: Get taxon observations by ob
+      description: >
+        Retrieve a paginated collection of taxon observations
+        associated with the specified plot observation (using its
+        `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts/{pc_code}/taxon-observations:
+    get:
+      tags:
+        - Taxon observations
+      operationId: get-to-by-pc
+      summary: Get taxon observations by pc
+      description: >
+        Retrieve a paginated collection of taxon observations
+        interpreted to the specified plant concept (using its
+        `pc_code`).
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations:
+    get:
+      tags:
+        - Taxon observations
+      operationId: get-to
+      summary: Get all taxon observations
+      description: >
+        Retrieve a paginated collection of all taxon observations
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /taxon-interpretations/{ti_code}:
+    get:
+      tags:
+        - Taxon interpretations
+      operationId: get-ti-by-id
+      summary: Get taxon interpretation
+      description: >
+        Retrieve a single taxon interpretation using its `ti_code`.
+      parameters:
+        - name: ti_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ti.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts/{pc_code}/taxon-interpretations:
+    get:
+      tags:
+        - Taxon interpretations
+      operationId: get-ti-by-pc
+      summary: Get taxon interpretations by pc
+      description: >
+        Retrieve a paginated collection of taxon interpretations
+        using the specified plant concept (using its `pc_code`).
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/taxon-interpretations:
+    get:
+      tags:
+        - Taxon interpretations
+      operationId: get-ti-by-ob
+      summary: Get taxon interpretations by ob
+      description: >
+        Retrieve a paginated collection of taxon interpretations
+        applied to taxa observed in the specified plot observation
+        (using its `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/taxon-interpretations:
+    get:
+      tags:
+        - Taxon interpretations
+      operationId: get-ti-by-to
+      summary: Get taxon interpretations by to
+      description: >
+        Retrieve a paginated collection of taxon interpretations
+        for the specified taxon observation (using its `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-interpretations:
+    get:
+      tags:
+        - Taxon interpretations
+      operationId: get-ti
+      summary: Get all taxon interpretations
+      description: >
+        Retrieve a paginated collection of all taxon interpretations
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonInterpretations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /cover-methods/{cm_code}:
+    get:
+      tags:
+        - Cover methods
+      operationId: get-cm-by-id
+      summary: Get cover method
+      description: >
+        Retrieve a single cover method using its `cm_code`.
+      parameters:
+        - name: cm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cm.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CoverMethods"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /cover-methods:
+    get:
+      tags:
+        - Cover methods
+      operationId: get-cm
+      summary: Get all cover methods
+      description: >
+        Retrieve a paginated collection of all cover methods
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CoverMethods"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Cover methods
+      operationId: upload-cm
+      summary: Upload cover methods
+      x-status: "beta"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /stratum-methods/{sm_code}:
+    get:
+      tags:
+        - Stratum methods
+      operationId: get-sm-by-id
+      summary: Get stratum method
+      description: >
+        Retrieve a single stratum method using its `sm_code`.
+      parameters:
+        - name: sm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sm.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StratumMethods"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /stratum-methods:
+    get:
+      tags:
+        - Stratum methods
+      operationId: get-sm
+      summary: Get all stratum methods
+      description: >
+        Retrieve a paginated collection of all stratum methods
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StratumMethods"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post:
+      tags:
+        - Stratum methods
+      operationId: upload-sm
+      summary: Upload stratum methods
+      x-status: "beta"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /parties/{py_code}:
+    get:
+      tags:
+        - Parties
+      operationId: get-py-by-id
+      summary: Get party
+      description: >
+        Retrieve a single party using its `py_code`.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Parties"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/parties:
+    get:
+      tags:
+        - Parties
+      operationId: get-py-by-ob
+      summary: Get parties by ob
+      description: >
+        Retrieve a paginated and sorted collection of parties associated
+        with the specified plot observation (using its `ob_code`), or a
+        subset thereof based on a specified `search` query.
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/sort_py'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Parties"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /community-classifications/{cl_code}/parties:
+    get:
+      tags:
+        - Parties
+      operationId: get-py-by-cl
+      summary: Get parties by cl
+      description: >
+        Retrieve a paginated and sorted collection of parties associated
+        with the specified community classification (using its
+        `cl_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: cl_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "cl.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/sort_py'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Parties"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /projects/{pj_code}/parties:
+    get:
+      tags:
+        - Parties
+      operationId: get-py-by-pj
+      summary: Get parties by pj
+      description: >
+        Retrieve a paginated and sorted collection of parties associated
+        with the specified project (using its `pj_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: pj_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pj.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/sort_py'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Parties"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /parties:
+    get:
+      tags:
+        - Parties
+      operationId: get-py
+      summary: Get all parties
+      description: >
+        Retrieve a paginated collection of all parties
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/sort_py'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Parties"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Parties
+      operationId: upload-py
+      summary: Upload parties
+      x-status: "beta"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "planned"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /projects/{pj_code}:
+    get:
+      tags:
+        - Projects
+      operationId: get-pj-by-id
+      summary: Get project
+      description: >
+        Retrieve a single project using its `pj_code`.
+      parameters:
+        - name: pj_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pj.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Projects"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /projects:
+    get:
+      tags:
+        - Projects
+      operationId: get-pj
+      summary: Get all projects
+      description: >
+        Retrieve a paginated collection of all projects
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/sort_pj'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Projects"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Projects
+      operationId: upload-pj
+      summary: Upload projects
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /references/{rf_code}:
+    get:
+      tags:
+        - References
+      operationId: get-rf-by-id
+      summary: Get reference
+      description: >
+        Retrieve a single reference using its `rf_code`.
+      parameters:
+        - name: rf_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "rf.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/References"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /references:
+    get:
+      tags:
+        - References
+      operationId: get-rf
+      summary: Get all references
+      description: >
+        Retrieve a paginated collection of all references
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/References"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - References
+      operationId: upload-rf
+      summary: Upload references
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+components:
+  parameters:
+    search:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Search term used for full-text record retrieval
+    detail:
+      name: detail
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [minimal, full]
+        default: full
+      description: |
+        Level of detail for the response:
+        - `minimal`: Returns basic fields only
+        - `full`: Returns more fields
+    detail_ob:
+      name: detail
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [geo, minimal, full]
+        default: full
+      description: |
+        Level of detail for the response:
+        - `geo`: Returns core location fields only
+        - `minimal`: Returns basic fields only
+        - `full`: Returns more fields
+    with_nested:
+      name: with_nested
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: Whether to include nested fields in the response
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of records to skip before starting to return records
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 1000
+      description: Maximum number of records to return
+    create_parquet:
+      name: create_parquet
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: If true, return data payload in binary Parquet format
+    sort_ob:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
+        Ascending order is the default if no prefix is provided.
+
+        Available sort fields:
+        - `default` - Default sort order
+        - `author_obs_code` - Sort by the author-provided plot observation code
+
+        Examples:
+        - `sort=author_obs_code` - Sort by observation code ascending
+        - `sort=-author_obs_code` - Sort by observation code descending
+      schema:
+        type: string
+        enum:
+          - default
+          - +default
+          - -default
+          - author_obs_code
+          - +author_obs_code
+          - -author_obs_code
+        default: default
+      example: -author_obs_code
+    sort_cc:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
+        Ascending order is the default if no prefix is provided.
+
+        Available sort fields:
+        - `default` - Default sort order
+        - `comm_name` - Sort by community name
+        - `obs_count` - Sort by observation count
+
+        Examples:
+        - `sort=comm_name` - Sort by community name ascending
+        - `sort=-obs_count` - Sort by observation count descending
+        - `sort=+comm_name` - Sort by community name ascending (explicit)
+      schema:
+        type: string
+        enum:
+          - default
+          - +default
+          - -default
+          - comm_name
+          - +comm_name
+          - -comm_name
+          - obs_count
+          - +obs_count
+          - -obs_count
+        default: default
+      example: -obs_count
+    sort_pc:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
+        Ascending order is the default if no prefix is provided.
+
+        Available sort fields:
+        - `default` - Default sort order
+        - `plant_name` - Sort by plant name
+        - `obs_count` - Sort by observation count
+
+        Examples:
+        - `sort=plant_name` - Sort by plant name ascending
+        - `sort=-obs_count` - Sort by observation count descending
+        - `sort=+plant_name` - Sort by plant name ascending (explicit)
+      schema:
+        type: string
+        enum:
+          - default
+          - +default
+          - -default
+          - plant_name
+          - +plant_name
+          - -plant_name
+          - obs_count
+          - +obs_count
+          - -obs_count
+        default: default
+      example: -obs_count
+    sort_py:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
+        Ascending order is the default if no prefix is provided.
+
+        Available sort fields:
+        - `default` - Default sort order
+        - `surname` - Sort by surname
+        - `organization_name` - Sort by organization name
+        - `obs_count` - Sort by observation count
+
+        Examples:
+        - `sort=surname` - Sort by surname ascending
+        - `sort=-obs_count` - Sort by observation count descending
+        - `sort=+organization_name` - Sort by organization name ascending (explicit)
+      schema:
+        type: string
+        enum:
+          - default
+          - +default
+          - -default
+          - surname
+          - +surname
+          - -surname
+          - organization_name
+          - +organization_name
+          - -organization_name
+          - obs_count
+          - +obs_count
+          - -obs_count
+        default: default
+      example: -obs_count
+    sort_pj:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
+        Ascending order is the default if no prefix is provided.
+
+        Available sort fields:
+        - `default` - Default sort order
+        - `project_name` - Sort by project name
+        - `obs_count` - Sort by observation count
+
+        Examples:
+        - `sort=project_name` - Sort by project name ascending
+        - `sort=-obs_count` - Sort by observation count descending
+        - `sort=+project_name` - Sort by project name ascending (explicit)
+      schema:
+        type: string
+        enum:
+          - default
+          - +default
+          - -default
+          - project_name
+          - +project_name
+          - -project_name
+          - obs_count
+          - +obs_count
+          - -obs_count
+        default: default
+      example: -obs_count
+    num_taxa_ob:
+      name: num_taxa
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 5
+      description: |
+        Number of taxa to return per plot observation. Sort order depends on detail level:
+        - With `detail=minimal`: Descending order by max cover
+        - With `detail=full`: Alphabetical order by plant name
+    num_comms_ob:
+      name: num_comms
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 5
+      description: Number of communities to return per plot observation, ordered by commclass_id
+
+  responses:
+
+    InvalidParameters:
+      description: Invalid Parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvalidParameters"
+
+    UploadsNotAllowed:
+      description: Uploads not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UploadsNotAllowed"
+
+    InvalidDataUpload:
+      description: Invalid data upload
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvalidDataUpload"
+
+    PlotObservations:
+      description: |
+        Matching plot observation(s), with fields based on parameters:
+        - `detail=geo`: Name, identifier, and lat/lon fields only
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/plot_obs_geo'
+              - $ref: '#/components/schemas/plot_obs_minimal'
+              - $ref: '#/components/schemas/plot_obs_minimal_nested'
+              - $ref: '#/components/schemas/plot_obs_full'
+              - $ref: '#/components/schemas/plot_obs_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    CommunityConcepts:
+      description: |
+        Matching community concept(s), with fields based on parameters:
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/comm_concept_full'
+              - $ref: '#/components/schemas/comm_concept_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    CommunityClassifications:
+      description: |
+        Matching community classification(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/comm_class_minimal'
+              - $ref: '#/components/schemas/comm_class_minimal_nested'
+              - $ref: '#/components/schemas/comm_class_full'
+              - $ref: '#/components/schemas/comm_class_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    CommunityInterpretations:
+      description: |
+        Matching community interpretation(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/comm_interp_minimal'
+              - $ref: '#/components/schemas/comm_interp_minimal_nested'
+              - $ref: '#/components/schemas/comm_interp_full'
+              - $ref: '#/components/schemas/comm_interp_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    PlantConcepts:
+      description: |
+        Matching plant concept(s), with fields based on parameters:
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/plant_concept_full'
+              - $ref: '#/components/schemas/plant_concept_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    TaxonObservations:
+      description: |
+        Matching taxon observation(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/taxon_obs_full'
+              - $ref: '#/components/schemas/taxon_obs_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    TaxonInterpretations:
+      description: |
+        Matching taxon interpretation(s), with fields based on parameters:
+        - `detail=minimal`: Basic fields only
+        - `detail=full`: Extended fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/taxon_interp_minimal'
+              - $ref: '#/components/schemas/taxon_interp_full'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    CoverMethods:
+      description: |
+        Matching cover method(s), with fields based on parameters:
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/cover_method_full'
+              - $ref: '#/components/schemas/cover_method_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    StratumMethods:
+      description: |
+        Matching stratum method(s), with fields based on parameters:
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/stratum_method_full'
+              - $ref: '#/components/schemas/stratum_method_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    Parties:
+      description: Matching party or parties
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/party'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    Projects:
+      description: Matching project(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/project'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    References:
+      description: Matching reference(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/reference'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+  schemas:
+
+    InvalidParameters:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Invalid vb code 'xx.1'."
+
+    UploadsNotAllowed:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Uploads not allowed."
+
+    InvalidDataUpload:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "An error occurred during upload: The following columns are not supported for stem data: foo."
+
+    PlotObservationBase:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank observation identifier"
+          example: "ob.1"
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the plot observation. When a plot has only one observation, this will often equal author_plot_code."
+          example: "YOSE.001"
+        latitude:
+          type: number
+          format: float
+          description: "Latitude of the plot origin in degrees and decimals (datum WGS84), fuzzing applied"
+          example: 42.19
+        longitude:
+          type: number
+          format: float
+          description: "Longitude of the plot origin in degrees and decimals (datum WGS84), fuzzing applied"
+          example: -104.54
+
+    PlotObservationMinimal:
+      type: object
+      properties:
+        area:
+          type: number
+          format: float
+          description: "Total area of the plot in m2. If many subplots, this area includes the subplots and the interstitial space. RESERVED VALUE: -1 is used to indicate that the plot had no boundaries."
+          example: 100
+        author_plot_code:
+          type: string
+          description: "Author's plot number/code, or the original plot number if taken from literature."
+          example: "YOSE.001"
+        country:
+          type: string
+          description: "The name of a country in which a plot is located"
+          example: "United States"
+        elevation:
+          type: number
+          format: float
+          description: "The elevation of the plot origin in meters above sea level."
+          example: 380
+        pl_code:
+          type: string
+          description: "VegBank plot identifier"
+          example: "pl.1"
+        state_province:
+          type: string
+          description: "The name of a state or province in which a plot is located"
+          example: "California"
+        year:
+          type: integer
+          description: "The year of the observation, or of the first day of the observation if it spanned more than one day."
+          example: 1997
+
+    PlotObservationMinimalNested:
+      type: object
+      properties:
+        taxon_count:
+          type: integer
+          description: "Count of taxon observations associated with this plot observation"
+          example: 32
+        taxon_count_returned:
+          type: integer
+          description: "Count of taxon observations returned in the top_taxon_observations field"
+          example: 5
+        top_taxon_observations:
+          type: array
+          items:
+            type: object
+            properties:
+              to_code:
+                type: string
+                description: "VegBank taxon observation identifier"
+                example: "to.1"
+              pc_code:
+                type: string
+                description: "VegBank plant concept identifier"
+                example: "pc.1"
+              name:
+                type: string
+                description: "Name of the observed plant, using the scientific name (without authors) associated with the current taxon interpretation if available, otherwise the author-provided plant name"
+                example: "Acer rubrum"
+              max_cover:
+                type: number
+                format: float
+                description: "Maximum observed cover for this taxon over all recorded strata"
+                example: 0.7
+          description: "Taxon observations"
+        top_classifications:
+          type: array
+          items:
+            type: object
+            properties:
+              cl_code:
+                type: string
+                description: "VegBank community classification identifier"
+                example: "cl.1"
+              ci_code:
+                type: string
+                description: "VegBank community interpretation identifier"
+                example: "ci.1"
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+              comm_code:
+                type: string
+                description: "Code for the community concept, derived from a comm usage record of class system 'Code'"
+                example: "CEGL004549"
+          description: "Community classifications"
+
+    PlotObservationFull:
+      type: object
+      properties:
+        rf_code:
+          type: string
+          description: "VegBank reference identifier"
+          example: "rf.1"
+        rf_label:
+          type: string
+          description: "Label for the observation reference"
+          example: "Peet Dissertation (1975)"
+        parent_pl_code:
+          type: string
+          description: "VegBack identifier of the parent plot when a plot is nested within another plot."
+          example: "pl.1"
+        location_accuracy:
+          type: number
+          format: float
+          description: "Estimated accuracy of the location of the plot. Plot origin has a 95% or greater probability of being within this many meters of the reported location."
+          example: 50.0
+        confidentiality_status:
+          type: integer
+          description: "Are the data to be considered confidential? 0=no, 1= 1km radius, 2=10km radius, 3=100km radius, 4=location embargo, 5=public embargo on all plot data, 6=full embargo on all plot data. This applies also to region."
+          example: 0
+        author_e:
+          type: string
+          description: "Original E-W coordinate as recorded by the author"
+          example: "778426"
+        author_n:
+          type: string
+          description: "Original N-S coordinate as recorded by the author"
+          example: "447670"
+        author_zone:
+          type: string
+          description: "Original UTM zone reported by the author"
+          example: "11"
+        author_datum:
+          type: string
+          description: "Original datum reported by the author"
+          example: "NAD83"
+        author_location:
+          type: string
+          description: "Original location as described by author (e.g. Town-Range-Section)"
+          example: "Island Creek"
+        location_narrative:
+          type: string
+          description: "Text description that provides information useful for plot relocation."
+          example: "1.5 mi w of Payne Lake"
+        azimuth:
+          type: number
+          format: float
+          description: "This element stores the azimuth of the x-axis used to describe the relative coordinate system for plot shape (dsgpoly) and other spatial information about the plot. Typically the azimuth is parallel to the long axis of the plot (in the case of a rectangle)."
+          example: 354
+        dsgpoly:
+          type: string
+          description: "This field is a text string containing the points circumscribing a plot area. These points are anticipated to have been collected using tapes, GPS, or calculated from the plot shape and area. Points are X-Y coordinates in m relative to plot origin."
+          example: "(0,0)(50,0)(50,1)(0,1)(0,0)"
+        shape:
+          type: string
+          description: "Shape of the plot area."
+          example: "Rectangular"
+        stand_size:
+          type: string
+          description: "The extent of this community occurrence in relation to the plot size: very extensive (>1000x plot), extensive (>100x plot), large (10-100x plot), small (3-10x plot), very small (1-3x plot)."
+          example: "large"
+        placement_method:
+          type: string
+          description: "Brief description of strategy for determining plot placement within the stand."
+          example: "Representative"
+        permanence:
+          type: boolean
+          description: "Is the plot monumented so as to assure permanence? If so, this should be described in the layoutNarrative"
+          example: false
+        layout_narrative:
+          type: string
+          description: "Text description of and the rationale for the layout of the plot."
+          example: "10 m x 10 m"
+        elevation_accuracy:
+          type: number
+          format: float
+          description: "The accuracy of the elevation in meters."
+          example: 10
+        elevation_range:
+          type: number
+          format: float
+          description: "Meters of difference in elevations of the high and low points in the plot."
+          example: 0.61
+        slope_aspect:
+          type: number
+          format: float
+          description: "Representative azimuth of slope gradient (0-360 degrees); if too flat to determine = -1; if too irregular to determine = -2."
+          example: 270
+        min_slope_aspect:
+          type: number
+          format: float
+          description: "Minimum azimuth of slope gradient (0-360 degrees), counterclockwise from representative azimuth."
+          example: 0
+        max_slope_aspect:
+          type: number
+          format: float
+          description: "Maximum azimuth of slope gradient (0-360 degrees), clockwise from representative azimuth"
+          example: 359
+        slope_gradient:
+          type: number
+          format: float
+          description: "Representative inclination of slope in degrees; if too irregular to determine, = -1."
+          example: 0
+        min_slope_gradient:
+          type: number
+          format: float
+          description: "Minimum inclination of slope in degrees."
+          example: 25
+        max_slope_gradient:
+          type: number
+          format: float
+          description: "Maximum inclination of slope in degrees."
+          example: 89
+        topo_position:
+          type: string
+          description: "Position of the plot on land surface (e.g., Summit, shoulder, upper slope, middle slope, lower slope, toeslope, no slope, channel bed, dune swale, pond)."
+          example: "Midslope"
+        landform:
+          type: string
+          description: "A recognizable physical feature on the surface of the earth, often including consideration of the natural cause of its formation."
+          example: "valley floor"
+        surficial_deposits:
+          type: string
+          description: "Surficial deposits represent the parent material that are the geologic or organic precursors to the soil. They may either have been deposited by geologic (wind, ice, gravity or water) or biologic (organic) activity, or formed in place more-or-less directly from rocks and minerals below."
+          example: "alluvium"
+        rock_type:
+          type: string
+          description: "RockType values conform to the lithic types in the FGDC Soil Geographic Data Standards, September 1997. http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF (pages 56-59)."
+          example: "sandstone"
+        pl_notes_public:
+          type: boolean
+          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+          example: false
+        pl_notes_mgt:
+          type: boolean
+          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+          example: false
+        pl_revisions:
+          type: boolean
+          description: "TRUE indicates that revisions exist in vegPlot.Revision"
+          example: false
+        previous_obs_id:
+          type: string
+          description: "VegBank observation identifier corresponding to the previous observation of this plot."
+          example: "ob.1"
+        pj_code:
+          type: string
+          description: "VegBank project identifier"
+          example: "pj.1"
+        project_name:
+          type: string
+          description: "Project name"
+          example: "Southwest GAP, Nevada"
+        obs_start_date:
+          type: string
+          format: date
+          description: "The date of the observation, or the first day if the observation spanned more than one day."
+          example: "2006-05-30"
+        obs_end_date:
+          type: string
+          format: date
+          description: "If the observation event spanned more than a single day, this is the last day on which observations were made."
+          example: "2006-05-30"
+        date_accuracy:
+          type: string
+          description: "Estimated accuracy of the observation date."
+          example: "exact"
+        date_entered:
+          type: string
+          format: date
+          description: "Date that the observation was added to VegBank"
+          example: "2006-05-30"
+        cm_code:
+          type: string
+          description: "VegBank cover method code referring to the scale used to estimate taxon cover. The database stores estimated cover to the nearest percent, but the conversion details are recovered by reference to the specific scale employed."
+          example: "cm.1"
+        cover_method_name:
+          type: string
+          description: "Cover method name"
+          example: "Percentage (%)"
+        cover_dispersion:
+          type: string
+          description: "Were cover values for the total taxon list collected from one contiguous area or dispersed subplots?"
+          example: "subplot-contiguous"
+        auto_taxon_cover:
+          type: boolean
+          description: "True indicates that cover value of taxon observations was automatically calculated from the values of stratum_cover in linked strata records"
+          example: False
+        method_narrative:
+          type: string
+          description: "Additional metadata helpful for understanding how the data were collected during the observation event."
+          example: "Selected to be representative of area vegetation."
+        taxon_observation_area:
+          type: number
+          format: float
+          description: "the total surface area (in m^2) used for cover estimates and for which a complete species list is provided. If subplots were used, this would be the total area of the subplots without interstitial space. RESERVED VALUE: -1 is used to indicate the complete list of species had no known boundaries."
+          example: 400
+        stem_size_limit:
+          type: number
+          format: float
+          description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count (stemCount)."
+          example: 10
+        stem_observation_area:
+          type: number
+          format: float
+          description: "the total surface area (in m^2) observed for recording woody stem data. RESERVED VALUE: -1 means no known area."
+          example: 400
+        stem_sample_method:
+          type: string
+          description: "The method used to obtain basal area or tree stem data (e.g., full census, point quarter, random pairs, Bitterlich, other)."
+          example: "Full census"
+        original_data:
+          type: string
+          description: "Location where the hard data reside and any access instructions."
+          example: "California Dept of Fish and Wildlife"
+        effort_level:
+          type: string
+          description: "This is the effort spent making the observations as estimated by the party that submitted the data (e.g., Very thorough, Average, Hurried description)."
+          example: "Thorough"
+        plot_validation_level:
+          type: integer
+          description: "Quality of plot as determined by an automated filter system, including values such as (1) sufficient for determining type occurrence, (2) sufficient for inclusion in a classification revision, and (3) fully compliant with recommendations."
+          example: 1
+        floristic_quality:
+          type: string
+          description: "Subjective assessment of floristic quality by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low)."
+          example: "High"
+        bryophyte_quality:
+          type: string
+          description: "Subjective assessment of the taxonomic quality of the bryophyte data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+          example: "Very incomplete"
+        lichen_quality:
+          type: string
+          description: "Subjective assessment of the taxonomic quality of the lichen data by the party that submitted the plot (e.g., Highest, High, High but incomplete, Moderate, Moderate and incomplete, Low, Very incomplete, absent)."
+          example: "Not examined"
+        observation_narrative:
+          type: string
+          description: "Additional unstructured observations useful for understanding the ecological attributes and significance of the plot observations."
+          example: "stand size: 5X5 ha"
+        landscape_narrative:
+          type: string
+          description: "Unstructured observations on the landscape context of the observed plot."
+          example: "Wetland"
+        homogeneity:
+          type: string
+          description: "How homogeneous was the community (e.g., homogeneous, compositional trend across plot, conspicuous inclusions, irregular mosaic or pattern)."
+          example: "irregular or pattern mosaic"
+        phenologic_aspect:
+          type: string
+          description: "Season expression of the community (e.g., typical growing season, vernal, aestival, wet, autumnal, winter, dry, irregular ephemerals present)."
+          example: "typical growing season"
+        representativeness:
+          type: string
+          description: "How representative was the plot of the stand?"
+          example: "Very good."
+        stand_maturity:
+          type: string
+          description: "How mature is the stand. Could be young, mature but even-aged, old-growth, etc."
+          example: "Mature, even-age"
+        successional_status:
+          type: string
+          description: "Description of the assumed successional status of the plot. This description is of necessity highly subjective."
+          example: "mature"
+        number_of_taxa:
+          type: integer
+          description: "???"
+          example: 1
+        basal_area:
+          type: number
+          format: float
+          description: "Total basal area of woody stems (in m²/ha). 0 should be used to indicate that plots have no stems."
+          example: 4.54009
+        hydrologic_regime:
+          type: string
+          description: "What is the hydrologic regime, which is a reflection of frequency and duration of flooding? List is taken from Cowardin et al. 1979, 1985."
+          example: "temporarily flooded"
+        soil_moisture_regime:
+          type: string
+          description: "How moist was the soil at the sampling event?"
+          example: "mesic"
+        soil_drainage:
+          type: string
+          description: "Identifies the natural drainage conditions of the soil and refers to the frequency and duration of wet periods. The soil drainage classes are defined in terms of (1) actual moisture content (in excess of field moisture capacity) and (2) the extent of the period during which excess water is present in the plant-root zone. Soil drainage class categories conform to the FGDC Soil Geographic Data Standards, September 1997. (http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF.) Definitions are derived from Grossman et al. (1998) and Sims et al. (1997)."
+          example: "moderately well drained"
+        water_salinity:
+          type: string
+          description: "How saline is the water, if a flooded community?"
+          example: "Freshwater"
+        water_depth:
+          type: number
+          format: float
+          description: "For aquatic or marine vegetation, what was the water depth in m."
+          example: 0.3
+        shore_distance:
+          type: number
+          format: float
+          description: "For aquatic or marine vegetation, what was the closest distance to shore in m."
+          example: 10
+        soil_depth:
+          type: number
+          format: float
+          description: "Median depth to bedrock or permafrost in m (usually from averaging multiple probe readings)."
+          example: 0.1
+        organic_depth:
+          type: number
+          format: float
+          description: "Depth of the surficial organic layer, where present, in centimeters."
+          example: 6
+        st_code:
+          type: string
+          description: "VegBank soil taxon identifier referencing a table of soil taxa within the USDA classification hierarchy, including Order, Suborder, Greatgroup, Subgroup, Family and Series."
+          example: "st.1"
+        soil_taxon_src:
+          type: string
+          description: "How was the soil taxon determined (e.g., field observation, map, other sources)?"
+          example: "USDA county soil survey"
+        percent_bed_rock:
+          type: number
+          format: float
+          description: "Percent of surface that is exposed bedrock."
+          example: 5
+        percent_rock_gravel:
+          type: number
+          format: float
+          description: "Percent of surface that is exposed rock and gravel."
+          example: 5
+        percent_wood:
+          type: number
+          format: float
+          description: "Percent of surface that is wood."
+          example: 5
+        percent_litter:
+          type: number
+          format: float
+          description: "Percent of surface that is litter."
+          example: 5
+        percent_bare_soil:
+          type: number
+          format: float
+          description: "Percent of surface that is bare soil."
+          example: 5
+        percent_water:
+          type: number
+          format: float
+          description: "Percent of surface that is water."
+          example: 5
+        percent_other:
+          type: number
+          format: float
+          description: "Percent of surface that belong to an additional itemized category"
+          example: 5
+        name_other:
+          type: string
+          description: "Name of additional itemized ground cover category (e.g., beer cans)."
+          example: "bryophytes and lichens"
+        tree_ht:
+          type: number
+          format: float
+          description: "Height of the tree layer in m."
+          example: 30
+        shrub_ht:
+          type: number
+          format: float
+          description: "Height of the shrub layer in m."
+          example: 1.5
+        field_ht:
+          type: number
+          format: float
+          description: "Height of the field layer in m."
+          example: 0.25
+        nonvascular_ht:
+          type: number
+          format: float
+          description: "Height of the nonvascular layer in m."
+          example: 1
+        submerged_ht:
+          type: number
+          format: float
+          description: "Height of the submerged layer in m."
+          example: 0
+        tree_cover:
+          type: number
+          format: float
+          description: "Total cover of the tree layer in percent. Includes tall trees (single-stemmed woody plants, generally more than 5 m in height or greater at maturity under optimal growing conditions). Very tall shrubs with tree-like form may also be included here, as may other life forms, such as lianas and epiphytes."
+          example: 50
+        shrub_cover:
+          type: number
+          format: float
+          description: "Total cover of the shrub layer in percent. Includes shrubs (multiple-stemmed woody plants, generally less than 5 m in height at maturity under optimal growing conditions) and shorter trees (saplings). As with the tree stratum, other life forms present in this stratum may also be included (however, herbaceous life forms should be excluded, as their stems often die back annually and do not have as consistent a height as woody life forms). Where dwarf-shrubs (i.e. shrubs shorter than 0.5 m) form a distinct stratum (either as part of a series of strata, as in a forest, or as the top stratum of more open vegetation, such as tundra or xeric shrublands), they should be treated as a low version of the shrub stratum (or short shrub substratum). In many vegetation types, dwarf-shrubs may simply occur as one life form component of the herb stratum."
+          example: 30
+        field_cover:
+          type: number
+          format: float
+          description: "Total cover of the field layer in percent. Also referred to as Herb stratum. Includes herbs (plants without woody stems and often dying back annually), often in association with low creeping semi-shrubs, dwarf-shrubs, vines, and non-woody brambles (such as raspberries), as well as tree or shrub seedlings."
+          example: 10
+        nonvascular_cover:
+          type: number
+          format: float
+          description: "Total cover of the nonvascular layer in percent. Also referred to as moss, bryoid, or ground stratum. Defined entirely by mosses, lichens, liverworts, and alga. Ground-creeping vines, prostrate shrubs and herbs should be treated in the herb stratum. Where herbs are entirely absent, it is still possible to recognize this stratum if other very low woody or semi-woody life forms are present."
+          example: 5
+        floating_cover:
+          type: number
+          format: float
+          description: "Total cover of the floating layer in percent. Includes rooted or drifting plants that float on the water surface (e.g., duckweed, water-lily)."
+          example: 1
+        submerged_cover:
+          type: number
+          format: float
+          description: "Total cover of the submerged layer in percent. Includes rooted or drifting plants that by-and-large remain submerged in the water column or on the aquatic bottom (e.g., pondweed). The focus is on the overall strata arrangement of these aquatic plants. Note that emergent plants life forms in a wetland should be placed in above water strata (e.g., cattail or sedges would be placed in the herb stratum, whereas the duckweed would be in the floating aquatic stratum)."
+          example: 0
+        dominant_stratum:
+          type: string
+          description: "Which of the six standard strata is dominant?"
+          example: "Tree"
+        growthform_1_type:
+          type: string
+          description: "The predominant growth form?"
+          example: "Herbs"
+        growthform_2_type:
+          type: string
+          description: "The second-most predominant growthform?"
+          example: "Shrubs"
+        growthform_3_type:
+          type: string
+          description: "The third-most predominant growthform"
+          example: "Moss"
+        growthform_1_cover:
+          type: number
+          format: float
+          description: "Total cover of the predominant growthform?"
+          example: 90
+        growthform_2_cover:
+          type: number
+          format: float
+          description: "Total cover of the second-most predominant growthform?"
+          example: 30
+        growthform_3_cover:
+          type: number
+          format: float
+          description: "Total cover of the third-most predominant growthform?"
+          example: 10
+        total_cover:
+          type: number
+          format: float
+          description: "The total cover, in percent, of all vegetation on the plot."
+          example: 40
+        ob_notes_public:
+          type: boolean
+          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
+          example: false
+        ob_notes_mgt:
+          type: boolean
+          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
+          example: false
+        ob_revisions:
+          type: boolean
+          description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
+          example: false
+        interp_orig_ci_code:
+          type: string
+          description: "VegBank community interpretation code of the original interpretation"
+          example: "ci.1"
+        interp_orig_cc_code:
+          type: string
+          description: "VegBank community concept code of the original interpretation"
+          example: "cc.1"
+        interp_orig_sciname:
+          type: string
+          description: "Scientific name of the original interpreted community concept"
+          example: "Pinus ponderosa Woodland Alliance"
+        interp_orig_code:
+          type: string
+          description: "Communty code of the original interpreted community concept"
+          example: "CEGL006271"
+        interp_orig_py_code:
+          type: string
+          description: "Classification party of the original interpreted community concept"
+          example: "py.1"
+        interp_orig_partyname:
+          type: string
+          description: "Classification party name for the original interpreted community concept"
+          example: "Doe, John"
+        interp_current_ci_code:
+          type: string
+          description: "VegBank community interpretation code of the current interpretation"
+          example: "ci.1"
+        interp_current_cc_code:
+          type: string
+          description: "VegBank community concept code of the current interpretation"
+          example: "cc.1"
+        interp_current_sciname:
+          type: string
+          description: "Scientific name of the current interpreted community concept"
+          example: "Pinus ponderosa Woodland Alliance"
+        interp_current_code:
+          type: string
+          description: "VegBank community concept code of the current interpretation"
+          example: "CEGL006271"
+        interp_current_py_code:
+          type: string
+          description: "Classification party of the current interpreted community concept"
+          example: "py.123"
+        interp_current_partyname:
+          type: string
+          description: "Classification party name for the current interpreted community concept"
+          example: "Doe, John"
+        interp_bestfit_ci_code:
+          type: string
+          description: "VegBank community interpretation code of the best fit interpretation"
+          example: "ci.123"
+        interp_bestfit_cc_code:
+          type: string
+          description: "VegBank community concept code of the best fit interpretation"
+          example: "cc.123"
+        interp_bestfit_sciname:
+          type: string
+          description: "Scientific name of the best fit interpreted community concept"
+          example: "Pinus ponderosa Woodland Alliance"
+        interp_bestfit_code:
+          type: string
+          description: "VegBank community concept code of the best fit interpretation"
+          example: "CEGL006271"
+        interp_bestfit_py_code:
+          type: string
+          description: "Classification party of the best fit interpreted community concept"
+          example: "py.123"
+        interp_bestfit_partyname:
+          type: string
+          description: "Classification party name for the best fit interpreted community concept"
+          example: "Doe, John"
+        top_taxon1_name:
+          type: string
+          description: "Name of the most common observed taxon based on max cover across strata"
+          example: "Artemisia tridentata ssp. wyomingensis"
+        top_taxon2_name:
+          type: string
+          description: "Name of the second most common observed taxon based on max cover across strata"
+          example: "Juniperus osteosperma"
+        top_taxon3_name:
+          type: string
+          description: "Name of the third most common observed taxon based on max cover across strata"
+          example: "Plantae"
+        top_taxon4_name:
+          type: string
+          description: "Name of the fourth most common observed taxon based on max cover across strata"
+          example: "Gutierrezia sarothrae"
+        top_taxon5_name:
+          type: string
+          description: "Name of the fifth most common observed taxon based on max cover across strata"
+          example: "Acer rubrum"
+        has_observation_synonym:
+          type: boolean
+          description: "Does this observation have an observation synonym record?"
+          example: true
+
+    PlotObservationFullNested:
+      type: object
+      properties:
+        taxon_count:
+          type: integer
+          description: "Count of taxon observations associated with this plot observation"
+          example: 32
+        taxon_importance_count:
+          type: integer
+          description: "Count of taxon importance records associated with this plot observation"
+          example: 54
+        taxon_importance_count_returned:
+          type: integer
+          description: "Count of taxon importance records returned in the top_taxon_observations field"
+          example: 5
+        top_taxon_observations:
+          type: array
+          items:
+            type: object
+            properties:
+              to_code:
+                type: string
+                description: "VegBank taxon observation identifier"
+                example: "to.1"
+              tm_code:
+                type: string
+                description: "VegBank taxon importance identifier"
+                example: "tm.1"
+              pc_code:
+                type: string
+                description: "VegBank plant concept identifier"
+                example: "pc.1"
+              plant_name:
+                type: string
+                description: "Name of the observed plant, using the scientific name (without authors) associated with the current taxon interpretation if available, otherwise the author-provided plant name"
+                example: "Acer rubrum"
+              sr_code:
+                type: string
+                description: "VegBank stratum identifier"
+                example: "sr.1"
+              stratum_name:
+                type: string
+                description: "Stratum name, or '-all-' if sr_code is null"
+                example: "herb"
+              cover:
+                type: number
+                format: float
+                description: "Observed cover for this taxon in the referenced stratum (or overall, if no stratum provided)"
+                example: 0.7
+          description: "Taxon observations"
+        top_classifications:
+          type: array
+          items:
+            type: object
+            properties:
+              cl_code:
+                type: string
+                description: "VegBank community classification identifier"
+                example: "cl.1"
+              ci_code:
+                type: string
+                description: "VegBank community interpretation identifier"
+                example: "ci.1"
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+              comm_code:
+                type: string
+                description: "Code for the community concept, derived from a comm usage record of class system 'Code'"
+                example: "CEGL004549"
+          description: "Community classifications"
+
+    record_count:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Total matching record count
+          example: 115000
+
+    plot_obs_geo:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlotObservationBase'
+
+    plot_obs_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlotObservationBase'
+                  - $ref: '#/components/schemas/PlotObservationMinimal'
+
+    plot_obs_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlotObservationBase'
+                  - $ref: '#/components/schemas/PlotObservationMinimal'
+                  - $ref: '#/components/schemas/PlotObservationMinimalNested'
+
+    plot_obs_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlotObservationBase'
+                  - $ref: '#/components/schemas/PlotObservationMinimal'
+                  - $ref: '#/components/schemas/PlotObservationFull'
+                  - $ref: '#/components/schemas/StratumMethodBase'
+
+    plot_obs_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlotObservationBase'
+                  - $ref: '#/components/schemas/PlotObservationMinimal'
+                  - $ref: '#/components/schemas/PlotObservationFull'
+                  - $ref: '#/components/schemas/StratumMethodBase'
+                  - $ref: '#/components/schemas/PlotObservationFullNested'
+
+    CommConceptFull:
+      type: object
+      properties:
+        cc_code:
+          type: string
+          description: "VegBank community concept identifier"
+          example: "cc.1"
+        comm_name:
+          type: string
+          description: "Community name, as recorded on the community concept"
+          example: "Muhlenbergia rigens Wet Meadow"
+        comm_code:
+          type: string
+          description: "Code for the community concept, derived from a community usage record of class system 'Code'"
+          example: "CEGL005306"
+        comm_description:
+          type: string
+          description: "Description of the community concept by the party contributing the concept"
+          example: "This herbaceous bunchgrass association has been documented in..."
+        concept_rf_code:
+          type: string
+          description: "VegBank identifier for the reference in which the community was identified by a name."
+          example: "rf.1"
+        concept_rf_label:
+          type: string
+          description: "Name/label for the reference in which the community was identified by a name."
+          example: "NatureServe Biotics 2019"
+        status_rf_code:
+          type: string
+          description: "VegBank identifier for the reference in which the status was reported"
+          example: "rf.1"
+        status_rf_label:
+          type: string
+          description: "Name/label for the reference in which the status was reported"
+          example: "NatureServe Biotics 2019"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this entity"
+          example: 17
+        comm_level:
+          type: string
+          description: "Level in the taxonomic hierarchy to which a class belongs. This is an open list with the possible values defined by the classification system employed. If the party responsible for the record is using the U.S. National Vegetation Classification, the acceptable levels are defined in the Vegetation Classification Standard of the Federal Geographic Data Committee as adopted June 1997. The standard is available at http://biology.usgs.gov/fgdc.veg/standards/vegstd.htm and the allowable entries for each of the physiognomic levels are listed in the appendix (see http://www.fgdc.gov/standards/documents/standards/vegetation/tables19-41.pdf). If the Braun-Blanquet classification system is employed, the acceptable values are defined in the International Code of Phytosociological Nomenclature (Weber, H.E., Moravec, J. Theurillat, J.-P. 2000. Journal of Vegetation Science. 11: 739-769)"
+          example: "Association"
+        status:
+          type: string
+          description: "Status of the concept by the party (accepted, not accepted, undetermined)"
+          example: "accepted"
+        start_date:
+          type: string
+          format: date
+          description: "Date for which the status assignment by the party started."
+          example: "2006-05-30"
+        stop_date:
+          type: string
+          format: date
+          description: "Date for which the status assignment by the party ended."
+          example: "2006-05-30"
+        current_accepted:
+          type: boolean
+          description: "Is this concept currently accepted by at least one party?"
+          example: True
+        py_code:
+          type: string
+          description: "VegBank identifier for the party that made the status assignment"
+          example: "py.1"
+        party_label:
+          type: string
+          description: "Name/label for the party that made the status assignment"
+          example: "NatureServe (organization)"
+        comm_party_comments:
+          type: string
+          description: "Comments by party providing rationale for status assignment"
+          example: "This association is the result of..."
+        parent_cc_code:
+          type: string
+          description: "VegBank identifier of the parent concept in the classification hierarchy. For example, if this concept were at the association level, the parent would be a concept that is the parent alliance type."
+          example: "cc.1"
+        parent_name:
+          type: string
+          description: "Name of the parent concept in the classification hierarchy"
+          example: "Leymus cinereus - Leymus triticoides Alkaline Wet Meadow Alliance"
+
+    CommConceptFullNested:
+      type: object
+      properties:
+        usages:
+          type: array
+          items:
+            type: object
+            properties:
+              class_system:
+                type: string
+                description: "The name of the classification system wherein the name is applied (e.g., Scientific, Spanish common)"
+                example: "Scientific"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Acer rubrum Swamp Woodland Alliance"
+              status:
+                type: string
+                description: "Status of the concept by the party (accepted, not accepted, undetermined)"
+                example: "accepted"
+          description: "Name usages for this community concept"
+        children:
+          type: array
+          items:
+            type: object
+            properties:
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Acer rubrum"
+          description: "Hierarchical children of this community concept"
+        correlations:
+          type: array
+          items:
+            type: object
+            properties:
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Acer rubrum"
+              convergence:
+                type: string
+                description: "Descriptive attribute used to relate the congruence between this concept and each correlated concepts, generally expressed as either greater than, less than, or equal to. For example, if the current concept has been split, the convergence would be 'greater than' (i.e., the old concept is 'greater than' the new concept)."
+                example: "undetermined"
+          description: "Other (newer, valid) concepts correlated to this (older, no longer valid) community concept"
+
+    comm_concept_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommConceptFull'
+
+    comm_concept_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommConceptFull'
+                  - $ref: '#/components/schemas/CommConceptFullNested'
+
+    CommClassMinimal:
+      type: object
+      properties:
+        cl_code:
+          type: string
+          description: "VegBank community classification identifier"
+          example: "cl.1"
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        class_start_date:
+          type: string
+          format: date
+          description: "Start date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "2006-05-30"
+        class_stop_date:
+          type: string
+          format: date
+          description: "Stop date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "2006-05-30"
+        inspection:
+          type: boolean
+          description: "Was the classification informed by simple inspection of data?"
+          example: false
+        table_analysis:
+          type: boolean
+          description: "Was the classification informed by inspection of floristic composition tables?"
+          example: false
+        multivariate_analysis:
+          type: boolean
+          description: "Was the classification informed by use of multivariate numerical tools?"
+          example: false
+        expert_system:
+          type: string
+          description: "Description of any automated expert system used in classification"
+          example: "DCA, UPGMA"
+        class_publication_rf_code:
+          type: string
+          description: "VegBank reference identifier for the publication wherein the observation was classified"
+          example: "rf.1"
+        class_publication_rf_label:
+          type: string
+          description: "Reference label for the publication wherein the observation was classified"
+          example: "NVC 2004"
+        class_notes:
+          type: string
+          description: "Notes about the classification event by the parties participating in the event. This might include the purpose or rationale for the classification."
+          example: "Abies Grandis Alliance"
+
+    CommClassMinimalNested:
+      type: object
+      properties:
+        interpretations:
+          type: array
+          items:
+            type: object
+            properties:
+              ci_code:
+                type: string
+                description: "VegBank community interpretation identifier"
+                example: "ci.1"
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_code:
+                type: string
+                description: "Code for the community concept, derived from a comm usage record of class system 'Code'"
+                example: "CEGL004549"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+          description: "Basic details about the community interpretations made as part of this classification"
+        contributors:
+          type: array
+          items:
+            type: object
+            properties:
+              py_code:
+                type: string
+                description: "VegBank party identifier for the classification contributor"
+                example: "py.1"
+              party_label:
+                type: string
+                description: "Party label for the classification contributor"
+                example: "Doe, John"
+              role:
+                type: string
+                description: "Role descriptor for the classification contributor"
+                example: "Classifier"
+          description: "Contributors to this community classification"
+
+    CommClassFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation."
+          example: "YOSE.001"
+
+    CommClassFullNested:
+      type: object
+      properties:
+        interpretations:
+          type: array
+          items:
+            type: object
+            properties:
+              ci_code:
+                type: string
+                description: "VegBank community interpretation identifier"
+                example: "ci.1"
+              cc_code:
+                type: string
+                description: "VegBank community concept identifier"
+                example: "cc.1"
+              comm_code:
+                type: string
+                description: "Code for the community concept, derived from a comm usage record of class system 'Code'"
+                example: "CEGL004549"
+              comm_name:
+                type: string
+                description: "Community name, as recorded on the community concept"
+                example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+              comm_label:
+                type: string
+                description: "Community label, derived from the community concept name and reference"
+                example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+              class_fit:
+                type: string
+                description: "Degree of fit with the community concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188"
+                example: "Reasonable or acceptable answer"
+              class_confidence:
+                type: string
+                description: "Degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the classification or the sufficiency of information about the plot (e.g., High, Moderate, Low)"
+                example: "High"
+              comm_authority_rf_code:
+                type: string
+                description: "VegBank reference identifier for the reference from which information on the community concept was obtained during the classification event"
+                example: "rf.1"
+              comm_authority_name:
+                type: string
+                description: "Reference label for the publication wherein the observation was classified"
+                example: "Keeler-Wolf and Evens 2006"
+              notes:
+                type: string
+                description: "Notes pertaining to the classification analysis and decision"
+                example: "no confidence associated with this classification"
+              type:
+                type: boolean
+                description: "Is this assignment the type description for the community concept, as indicated in the publication referenced in community classification class_publication?"
+                example: false
+              nomenclatural_type:
+                type: boolean
+                description: "Is this a typal plot for the Braun-Blanquet community name?"
+                example: false
+          description: "Extended details about the community interpretations made as part of this classification"
+        contributors:
+          type: array
+          items:
+            type: object
+            properties:
+              py_code:
+                type: string
+                description: "VegBank party identifier for the classification contributor"
+                example: "py.1"
+              party_label:
+                type: string
+                description: "Party label for the classification contributor"
+                example: "Doe, John"
+              role:
+                type: string
+                description: "Role descriptor for the classification contributor"
+                example: "Classifier"
+          description: "Contributors to this community classification"
+
+    comm_class_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommClassMinimal'
+    comm_class_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommClassMinimal'
+                  - $ref: '#/components/schemas/CommClassMinimalNested'
+    comm_class_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommClassMinimal'
+                  - $ref: '#/components/schemas/CommClassFull'
+    comm_class_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommClassMinimal'
+                  - $ref: '#/components/schemas/CommClassFull'
+                  - $ref: '#/components/schemas/CommClassFullNested'
+
+    CommInterpMinimal:
+      type: object
+      properties:
+        ci_code:
+          type: string
+          description: "VegBank community interpretation identifier"
+          example: "ci.1"
+        cl_code:
+          type: string
+          description: "VegBank community classification identifier"
+          example: "cl.1"
+        cc_code:
+          type: string
+          description: "VegBank community concept identifier"
+          example: "cc.1"
+        class_fit:
+          type: string
+          description: "Indicates the degree of fit with the community concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188"
+          example: "Reasonable or acceptable answer"
+        class_confidence:
+          type: string
+          description: "Indicates the degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the classification or the sufficiency of information about the plot (e.g., High, Moderate, Low)"
+          example: "High"
+        comm_authority_rf_code:
+          type: string
+          description: "VegBank reference identifier for the reference from which information on the interpreted community concept was obtained during the classification event"
+          example: "rf.1"
+        notes:
+          type: string
+          description: "Notes pertaining to the classification analysis and decision"
+          example: "no confidence associated with this classification"
+        type:
+          type: boolean
+          description: "Is this assignment the type description for the community concept, as indicated in the publication referenced in community classification class_publication?"
+          example: false
+        nomenclatural_type:
+          type: boolean
+          description: "Is this a typal plot for the Braun-Blanquet community name?"
+          example: false
+
+    CommInterpFull:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation."
+          example: "YOSE.001"
+        comm_code:
+          type: string
+          description: "Code for the interpreted community concept, derived from a comm usage record of class system 'Code'"
+          example: "CEGL004549"
+        comm_name:
+          type: string
+          description: "Community name, as recorded on the interpreted community concept"
+          example: "Fagus grandifolia - Quercus spp. / Kalmia latifolia - Hamamelis virginiana / Galax urceolata Forest"
+        comm_label:
+          type: string
+          description: "Label for the interpreted community concept"
+          example: "Muhlenbergia rigens Wet Meadow [NatureServe Biotics 2019]"
+        comm_authority_rf_label:
+          type: string
+          description: "Reference label for the publication wherein the observation was classified"
+          example: "Keeler-Wolf and Evens 2006"
+        class_start_date:
+          type: string
+          format: date
+          description: "Start date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "2006-05-30"
+        class_stop_date:
+          type: string
+          format: date
+          description: "Stop date for the application of a vegetation class to a plot observation by one or more parties."
+          example: "2006-05-30"
+        inspection:
+          type: boolean
+          description: "Was the classification informed by simple inspection of data?"
+          example: false
+        table_analysis:
+          type: boolean
+          description: "Was the classification informed by inspection of floristic composition tables?"
+          example: false
+        multivariate_analysis:
+          type: boolean
+          description: "Was the classification informed by use of multivariate numerical tools?"
+          example: false
+        expert_system:
+          type: string
+          description: "Description of any automated expert system used in classification"
+          example: "DCA, UPGMA"
+        class_notes:
+          type: string
+          description: "Notes about the classification event by the parties participating in the event. This might include the purpose or rationale for the classification."
+          example: "Abies Grandis Alliance"
+        comm_framework:
+          type: string
+          description: "Community framework"
+        comm_level:
+          type: string
+          description: "Community level"
+
+    CommInterpFullNested:
+      type: object
+      properties:
+        class_contributors:
+          type: array
+          items:
+            type: object
+            properties:
+              py_code:
+                type: string
+                description: "VegBank party identifier for the classification contributor"
+                example: "py.1"
+              party_label:
+                type: string
+                description: "Party label for the classification contributor"
+                example: "Doe, John"
+              role:
+                type: string
+                description: "Role descriptor for the classification contributor"
+                example: "Classifier"
+          description: "Contributors to this community classification"
+
+    comm_interp_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommInterpMinimal'
+    comm_interp_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommInterpMinimal'
+    comm_interp_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommInterpMinimal'
+                  - $ref: '#/components/schemas/CommInterpFull'
+    comm_interp_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CommInterpMinimal'
+                  - $ref: '#/components/schemas/CommInterpFull'
+                  - $ref: '#/components/schemas/CommInterpFullNested'
+
+    PlantConceptFull:
+      type: object
+      properties:
+        pc_code:
+          type: string
+          description: "VegBank plant concept identifier"
+          example: "pc.1"
+        plant_name:
+          type: string
+          description: "Plant name, as recorded on the plant concept"
+          example: "Acer rubrum"
+        plant_code:
+          type: string
+          description: "Code for the plant concept, derived from a plant usage record of class system 'Code'"
+          example: "ACRU"
+        plant_description:
+          type: string
+          description: "Description of the plant concept by the party contributing the concept"
+          example: "Named for the Cahaba River"
+        concept_rf_code:
+          type: string
+          description: "VegBank identifier for the reference in which the plant was identified by a name."
+          example: "rf.1"
+        concept_rf_label:
+          type: string
+          description: "Name/label for the reference in which the plant was identified by a name."
+          example: "USDA Plants 2002"
+        status_rf_code:
+          type: string
+          description: "VegBank identifier for the reference in which the status was reported"
+          example: "rf.1"
+        status_rf_label:
+          type: string
+          description: "Name/label for the reference in which the status was reported"
+          example: "USDA Plants 2002"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this entity"
+          example: 17
+        plant_level:
+          type: string
+          description: "Level in the taxonomic hierarchy to which the plant concept belongs."
+          example: "Genus"
+        status:
+          type: string
+          description: "Status of the concept by the party (accepted, not accepted, undetermined)"
+          example: "accepted"
+        start_date:
+          type: string
+          format: date
+          description: "Date for which the status assignment by the party started."
+          example: "2006-05-30"
+        stop_date:
+          type: string
+          format: date
+          description: "Date for which the status assignment by the party ended."
+          example: "2006-05-30"
+        current_accepted:
+          type: boolean
+          description: "Is this concept currently accepted by at least one party?"
+          example: True
+        py_code:
+          type: string
+          description: "VegBank identifier for the party that made the status assignment"
+          example: "py.1"
+        party_label:
+          type: string
+          description: "Name/label for the party that made the status assignment"
+          example: "USDA-NRCS-PLANTS (organization)"
+        plant_party_comments:
+          type: string
+          description: "Comments by party providing rationale for status assignment"
+          example: "present at plants.usda.gov as a higher level taxon"
+        parent_pc_code:
+          type: string
+          description: "VegBank identifier of the parent concept in the taxonomic hierarchy. For example, if this concept were at the species level, the parent would be a concept that is the parent genus level."
+          example: "pc.1"
+        parent_name:
+          type: string
+          description: "Name of the parent concept in the taxonomic hierarchy."
+          example: "Acer"
+
+    PlantConceptFullNested:
+      type: object
+      properties:
+        usages:
+          type: array
+          items:
+            type: object
+            properties:
+              class_system:
+                type: string
+                description: "The name of the classification system wherein the name is applied (e.g., Scientific, Spanish common)"
+                example: "Scientific"
+              plant_name:
+                type: string
+                description: "Plant name, as recorded on the plant concept"
+                example: "Acer rubrum"
+              status:
+                type: string
+                description: "Status of the concept by the party (accepted, not accepted, undetermined)"
+                example: "accepted"
+          description: "Name usages for this plant concept"
+        children:
+          type: array
+          items:
+            type: object
+            properties:
+              pc_code:
+                type: string
+                description: "VegBank plant concept identifier"
+                example: "pc.1"
+              plant_name:
+                type: string
+                description: "Plant name, as recorded on the plant concept"
+                example: "Acer rubrum"
+          description: "Hierarchical children of this plant concept"
+        correlations:
+          type: array
+          items:
+            type: object
+            properties:
+              pc_code:
+                type: string
+                description: "VegBank plant concept identifier"
+                example: "pc.1"
+              plant_name:
+                type: string
+                description: "Plant name, as recorded on the plant concept"
+                example: "Acer rubrum"
+              convergence:
+                type: string
+                description: "Descriptive attribute used to relate the congruence between this concept and each correlated concepts, generally expressed as either greater than, less than, or equal to. For example, if the current concept has been split, the convergence would be 'greater than' (i.e., the old concept is 'greater than' the new concept)."
+                example: "undetermined"
+          description: "Other (newer, valid) concepts correlated to this (older, no longer valid) plant concept"
+
+    plant_concept_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlantConceptFull'
+
+    plant_concept_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/PlantConceptFull'
+                  - $ref: '#/components/schemas/PlantConceptFullNested'
+
+    TaxonObsFull:
+      type: object
+      properties:
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        int_curr_plant_code:
+          type: string
+          description: "Plant code for the current interpreted plant concept"
+          example: "QUTU2"
+        int_curr_plant_common:
+          type: string
+          description: "Common name for the current interpreted plant concept"
+          example: "Sonoran scrub oak"
+        int_curr_pc_code:
+          type: string
+          description: "VegBank identifier for the current interpreted plant concept"
+          example: "pc.1"
+        int_curr_plant_sci_full:
+          type: string
+          description: "Scientific name (with authors) for the current interpreted plant concept"
+          example: "Quercus turbinella Greene"
+        int_curr_plant_sci_name_no_auth:
+          type: string
+          description: "Scientific name (without authors) for the current interpreted plant concept"
+          example: "Quercus turbinella"
+        int_orig_plant_code:
+          type: string
+          description: "Plant code for the original interpreted plant concept"
+          example: "QUTU2"
+        int_orig_plant_common:
+          type: string
+          description: "Common name for the original interpreted plant concept"
+          example: "Sonoran scrub oak"
+        int_orig_pc_code:
+          type: string
+          description: "VegBank identifier for the original interpreted plant concept"
+          example: "pc.1"
+        int_orig_plant_sci_full:
+          type: string
+          description: "Scientific name (with authors) for the original interpreted plant concept"
+          example: "Quercus turbinella Greene"
+        int_orig_plant_sci_name_no_auth:
+          type: string
+          description: "Scientific name (without authors) for the original interpreted plant concept"
+          example: "Quercus turbinella"
+        taxon_inference_area:
+          type: number
+          format: float
+          description: "Area in m2 used to infer the presence of a given taxon. Generally this should be equal to the plot-observation taxon_inference_area, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
+          example: 405
+        rf_code:
+          type: string
+          description: "VegBank identifier for the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
+          example: "rf.1"
+        rf_label:
+          type: string
+          description: "Name/label of the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
+          example: "USDA Plants 2002"
+
+    TaxonObsFullNested:
+      type: object
+      properties:
+        taxon_importance:
+          type: array
+          items:
+            type: object
+            properties:
+              tm_code:
+                type: string
+                description: "VegBank taxon importance identifier"
+                example: "tm.1"
+              sr_code:
+                type: string
+                description: "VegBank identifier for the specific stratum to which this taxon importance record applies; if null, this record speaks to the importance of the taxon across all strata"
+                example: "sr.1"
+              stratum_name:
+                type: string
+                description: "Name of the specific stratum to which this taxon importance record applies; if '<All>', this record speaks to the importance of the taxon across all strata"
+                example: "trees"
+              cover:
+                type: number
+                format: float
+                description: "Cover, in percent, of the taxon (potentially limited to one stratum if sr_cide has a value)"
+                example: 5
+              cover_code:
+                type: string
+                description: "The original cover code used by the author in the Cover Method for the plot"
+                example: "1-9"
+              basal_area:
+                type: number
+                format: float
+                description: "Total basal area of the species in m2/ha (potentially limited to one stratum if sr_code has a value)"
+                example: 2.18
+              biomass:
+                type: number
+                format: float
+                description: "biomass of the taxon in g/m2 (potentially limited to one stratum if sr_cide has a value)"
+                example: 810
+              inference_area:
+                type: number
+                format: float
+                description: "Area in m2 used to infer the importance values (i.e. cover, biomass, basal area) in this record; RESERVED VALUE: -1 is used to indicate no plot boundaries were used when estimating importance values"
+                example: 1000
+              stratum_base:
+                type: number
+                format: float
+                description: "Base of the stratum in meters."
+                example: 35
+              stratum_height:
+                type: number
+                format: float
+                description: "Tallest part of the Stratum in meters."
+                example: 50
+          description: "Extended details about taxon importance"
+
+    taxon_obs_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsFull'
+    taxon_obs_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsFull'
+                  - $ref: '#/components/schemas/TaxonObsFullNested'
+
+    TaxonInterpMinimal:
+      type: object
+      properties:
+        ti_code:
+          type: string
+          description: "VegBank taxon interpretation identifier"
+          example: "ti.1"
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        pc_code:
+          type: string
+          description: "VegBank plant concept identifier"
+          example: "pc.1"
+        interpretation_date:
+          type: string
+          format: date
+          description: "Date when the interpretation was made."
+          example: "2006-05-30"
+        interpretation_type:
+          type: string
+          description: "Categories for the interpretation (e.g.,  uthor, computer generated, simplified for comparative analysis, correction, finer resolution)"
+          example: "Author"
+        py_code:
+          type: string
+          description: "VegBank identifier for the party making the interpretation"
+          example: "py.1"
+        rf_code:
+          type: string
+          description: "VegBank Reference identifier for the publication in which the interpretation was formally made, or in which the plot was used in a formal analysis"
+          example: "rf.1"
+        taxon_fit:
+          type: string
+          description: "Degree of fit with the plant concept being assigned. Values derive from Gopal, S., and Woodcock, C. (1994), Theory and methods for accuracy assessment of thematic maps using fuzzy sets. Photogrammetric Engineering and Remote Sensing 60(2):181-188."
+          example: "Reasonable or acceptable answer"
+        taxon_confidence:
+          type: string
+          description: "Degree of confidence of the interpreter(s) in the interpretation made. This can reflect the level of familiarity with the taxon or the sufficiency of information about the plant (e.g., High, Moderate, Low)"
+          example: "High"
+        collection_number:
+          type: string
+          description: "The collector's identification code for the voucher"
+          example: "091907F"
+        group_type:
+          type: string
+          description: "The type of group formed for this taxon interpretation"
+          example: "union"
+        notes:
+          type: string
+          description: "Notes that the interpreter has included with the interpretation (generally, the reason for the interpretation)"
+          example: "Identified from specimen"
+        notes_public:
+          type: boolean
+          description: "Have public notes pertaining to this plot been recorded in Vegbank?"
+          example: False
+        notes_mgt:
+          type: boolean
+          description: "Have non-public management notes pertaining to this plot been recorded in Vegbank?"
+          example: False
+        is_orig:
+          type: boolean
+          description: "Is this the original interpretation?"
+          example: True
+        is_curr:
+          type: boolean
+          description: "Is this the current interpretation?"
+          example: True
+
+    TaxonInterpFull:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation."
+          example: "YOSE.001"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        plant_code:
+          type: string
+          description: "Code for the plant concept, derived from a plant usage record of class system 'Code'"
+          example: "ACRU"
+        plant_name:
+          type: string
+          description: "Plant name, as recorded on the plant concept"
+          example: "Acer rubrum"
+        plant_label:
+          type: string
+          description: "Label for the interpreted plant concept"
+          example: "Lichen [USDA Plants 2002]"
+        party_label:
+          type: string
+          description: "Name/label for the party making the interpretation"
+          example: "py.1"
+        role:
+          type: string
+          description: "Role of the party making the interpretation"
+          example: "Plot author"
+        rf_label:
+          type: string
+          description: "Reference label for the publication in which the interpretation was formally made, or in which the plot was used in a formal analysis"
+          example: "Keeler-Wolf and Evens 2006"
+        revisions:
+          type: boolean
+          description: "Do revisions exists in Vegbank?"
+          example: False
+
+    taxon_interp_minimal:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/TaxonInterpMinimal'
+    taxon_interp_full:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/TaxonInterpMinimal'
+                - $ref: '#/components/schemas/TaxonInterpFull'
+
+    CoverMethodFull:
+      type: object
+      properties:
+        cm_code:
+          type: string
+          description: "VegBank cover method identifier"
+          example: "cm.1"
+        cover_type:
+          type: string
+          description: "Name of the coverclass method (e.g., Braun-Blanquet, Barkman, Domin, Daubenmire, Carolina Vegetation Survey, etc.)"
+          example: "Braun-Blanquet"
+        cover_estimation_method:
+          type: string
+          description: "How cover is estimated on the observation"
+          example: "Canopy cover"
+        rf_code:
+          type: string
+          description: "VegBank identifier for the defining cover method reference"
+          example: "rf.1"
+        rf_label:
+          type: string
+          description: "Name/label for the defining cover method reference"
+          example: "TurboVeg1.98a"
+
+    CoverMethodFullNested:
+      type: object
+      properties:
+        cover_indexes:
+          type: array
+          items:
+            type: object
+            properties:
+              cv_code:
+                type: string
+                description: "VegBank cover index identifier"
+                example: "cv.1"
+              cover_code:
+                type: string
+                description: "Name or label used in the cover class scale for this specific cover class."
+                example: "2"
+              lower_limit:
+                type: number
+                format: float
+                description: "Lower limit, in percent, associated with a specific coverCode. Where a cover scale has a non-quantitative lower or upper value, as in the '+' of the Braun-Blanquet scale, this is an approximation with '0' being the lower limit of the bottom-most class."
+                example: 0.1
+              upper_limit:
+                type: number
+                format: float
+                description: "Upper limit, in percent, associated with the specific cover code"
+                example: 1
+              cover_percent:
+                type: number
+                format: float
+                description: "Middle value (usually mean or geometric mean) between the upper_limit and lower_limit for each taxon observation and used for all cover class conversions and interpretations; assigned by the author of the cover class schema"
+                example: 0.505
+              index_description:
+                type: string
+                description: "Description of the specific coverclass; this is particularly helpful in the case that there is no numeric value that can be applied."
+                example: "0-1 percent"
+
+    cover_method_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CoverMethodFull'
+    cover_method_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/CoverMethodFull'
+                  - $ref: '#/components/schemas/CoverMethodFullNested'
+
+    StratumMethodBase:
+      type: object
+      properties:
+        sm_code:
+          type: string
+          description: "VegBank stratum method identifier"
+          example: "sm.1"
+        stratum_method_name:
+          type: string
+          description: "Name of the stratum method (e.g., Braun-Blanquet, TNC-ABI, NC Vegetation Survey #1, NC Vegetation Survey #2, etc.)"
+          example: "TurboVeg"
+        stratum_method_description:
+          type: string
+          description: "Describes the general methods used for strata. For example, this field should distinguish as to whether strata are defined as including all foliage on plants that predominantly occupy the stratum regardless of the height of that foliage, or only the foliage that actually occurs within a specified vertical slice of the community."
+          example: "Standard strata used in the TurboVeg application"
+        stratum_assignment:
+          type: string
+          description: "The way that an individual's cover is assigned to the different stratum. Some methodologies allow an individul to span multiple strata and have stratum cover values in each stratum. Other methodologies require that all cover from an individual be assigned to the upper-most stratum. Further information about the specifics of stratum methodologies that deviate from the standard practice of the stratum method should be described in the plot observation method narrative."
+          example: "predominant stratum"
+
+    StratumMethodFull:
+      type: object
+      properties:
+        rf_code:
+          type: string
+          description: "VegBank reference identifier for the publication that defines the stratum method"
+          example: "rf.1"
+        rf_label:
+          type: string
+          description: "Name/label for the publication that defines the stratum method"
+          example: "TurboVeg1.98a"
+
+    StratumMethodFullNested:
+      type: object
+      properties:
+        stratum_types:
+          type: array
+          items:
+            type: object
+            properties:
+              sy_code:
+                type: string
+                description: "VegBank stratum type identifier"
+                example: "sy.1"
+              stratum_index:
+                type: string
+                description: "Short code used to identify the stratum"
+                example: "H"
+              stratum_name:
+                type: string
+                description: "Name associated with this stratum by the stratum method"
+                example: "Herb"
+              stratum_description:
+                type: string
+                description: "This field describes the specific stratum.  For example, a value of 'F' under stratum_index might have a stratum_name = 'Floating' and a stratum_description = 'foliage floating on or near the surface of water'"
+                example: "Foliage generally less than 0.5m high"
+
+    stratum_method_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/StratumMethodBase'
+                  - $ref: '#/components/schemas/StratumMethodFull'
+    stratum_method_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/StratumMethodBase'
+                  - $ref: '#/components/schemas/StratumMethodFull'
+                  - $ref: '#/components/schemas/StratumMethodFullNested'
+
+    Party:
+      type: object
+      properties:
+        py_code:
+          type: string
+          description: "VegBank party identifier"
+          example: "py.1"
+        party_label:
+          type: string
+          description: "Name/label for the party"
+          example: "NatureServe (organization)"
+        salutation:
+          type: string
+          description: "Salutation used in addressing an individual with a particular title"
+          example: "Dr."
+        given_name:
+          type: string
+          description: "All names, except the surname, of the individual associated with the resource. Possible usages include: first name and middle name, first name and middle initials, first name, etc."
+          example: "Jo R."
+        middle_name:
+          type: string
+          description: "Middle name or initial, if any"
+          example: "R."
+        surname:
+          type: string
+          description: "Name shared in common to identify the members of a family, as distinguished the given name"
+          example: "Smith"
+        organization_name:
+          type: string
+          description: "Full name of the organization, which may be the party itself if this is an organization-type party record, or else is the organization that the party is associated with if this is a person-type party record"
+          example: "NatureServe"
+        contact_instructions:
+          type: string
+          description: "Instructions for contacting a party"
+          example: "contact the contributor at specified email"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this entity"
+          example: 17
+
+    party:
+      $ref: '#/components/schemas/Party'
+
+    Project:
+      type: object
+      properties:
+        pj_code:
+          type: string
+          description: "VegBank project identifier"
+          example: "pj.1"
+        project_name:
+          type: string
+          description: "Project name as defined by the principal investigator"
+          example: "Pawnee Grassland Classification"
+        project_description:
+          type: string
+          description: "Short description of the project including the original purpose for conducting the project"
+          example: "Classification of the Pawnee National Grassland"
+        start_date:
+          type: string
+          format: date
+          description: "Project start date"
+          example: "2006-05-30"
+        stop_date:
+          type: string
+          format: date
+          description: "Project stop date"
+          example: "2006-05-30"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this entity"
+          example: 17
+        last_plot_added_date:
+          type: string
+          format: date
+          description: "Date a plot observation was last added to this project"
+          example: "2006-05-30"
+
+    project:
+      $ref: '#/components/schemas/Project'
+
+    Reference:
+      type: object
+      properties:
+        rf_code:
+          type: string
+          description: "VegBank reference identifier"
+          example: "rf.1"
+        rf_label:
+          type: string
+          description: "Label for the reference"
+          example: "Peet Dissertation (1975)"
+        short_name:
+          type: string
+          description: "Concise or abbreviated name that describes the resource being documented"
+          example: "Anderson, L. et al. 1990."
+        full_citation:
+          type: string
+          description: "Full text of the reference citation"
+          example: "Anderson, L. et al. 1990. Bryologist 93: 448-499."
+        reference_type:
+          type: string
+          description: "Type of reference"
+          example: "Report"
+        title:
+          type: string
+          description: "Formal title given to the work by its author or publisher, providing a description of the resource sufficient to differentiate it from other similar resources"
+          example: "The Biology of Lichens"
+        publication_date:
+          type: string
+          format: date
+          description: "Date that the resource was published"
+          example: "2011-08-25"
+        total_pages:
+          type: integer
+          description: "Total number of pages in the resource being described"
+          example: 17
+        publisher:
+          type: string
+          description: "Organization that physically put together the report and publishes it"
+          example: "NCU Herbarium"
+        publication_place:
+          type: string
+          description: "Location where the work was published"
+          example: "Chapel Hill, NC, USA"
+        degree:
+          type: string
+          description: "Name or degree level for which the thesis was completed"
+          example: "PhD"
+        isbn:
+          type: string
+          description: "The ISBN, or International Standard Book Number that has been assigned to this literature resource"
+          example: "978-1-889878-38-6"
+        url:
+          type: string
+          description: "URL (Uniform Resource Locator) identifying where the resource and/or additional information about it is (or was) available"
+          example: "http://www.algaebase.org"
+        doi:
+          type: string
+          description: "DOI (Digital Object Identifier) serving as the persistent identifier for the resource"
+          example: "10.1000/182"
+        journal:
+          type: string
+          description: "Name of the journal, magazine, etc. in which the article was published"
+          example: "Regnum Vegetabile"
+
+    reference:
+      $ref: '#/components/schemas/Reference'
+
+    #Placeholder for upload schemas
+    tbd:
+      type: object
+
+    #TODO
+    named_place:
+      type: object
+      properties:
+        place_system:
+          type: string
+        place_name:
+          type: string
+        place_code:
+          type: string
+        reference:
+          type: string
+        vb_code:
+          type: string
+
+    stratum:
+      type: object
+      properties:
+        stratum_base:
+          type: number
+          format: float
+          description: "Average height of the bottom of the stratum in meters"
+          example: 0.1
+        stratum_height:
+          type: number
+          format: float
+          description: "Tallest part of the Stratum in meters."
+          example: 1.0
+
+    disturbance_obs:
+      type: object
+      properties:
+        disturbance_type:
+          type: string
+        disturbance_intensity:
+          type: string
+        disturbance_comment:
+          type: string
+
+    soil_taxon:
+      type: object
+      properties:
+        soil_name:
+          type: string
+        soil_level:
+          type: string
+        accession_code:
+          type: string
+
+    reference_party:
+      type: object
+      properties:
+        type:
+          type: string
+        position_name:
+          type: string
+        salutation:
+          type: string
+        given_name:
+          type: string
+        surname:
+          type: string
+        suffix:
+          type: string
+        organization_name:
+          type: string
+        current_name:
+          type: string
+        accession_code:
+          type: string

@@ -1,0 +1,51 @@
+## @section CNPG PostgresQL
+dbName: vegbank
+existingSecret: vegbankdbcreds
+dbUser: vegbank
+
+## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
+init:
+  ## @param init.enabled Set this to 'true' to enable init options, for example: 'recovery', 'initdb' and 'pgbasebackup'
+  ## This is set to 'false' by default to prevent conflicts when upgrading an existing deployment
+  enabled: false
+  ## @param init.method
+  ## By default, this method is set to 'initdb' to initialize an empty `cnpg` cluster
+  ## Note - the dbUser must match the username of the secret.
+  ## Set this value to 'recovery' to recover from a volumeSnapshot via `ScheduledBackups`, 
+  ## To learn more, see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
+  method: initdb
+  ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
+  ## This param will not be utilized unless 'method' is set to 'recovery'.
+  ## After installing the cluster with the `recovery` option, and if you do not see a new pod
+  ## launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7', you can execute
+  ## the command 'kubectl describe cluster vegbankenabledtest' to begin debugging.
+  recoverFromBackup: vegbankdb-scheduled-backup-placeholder
+
+## @section backup - Enabled `ScheduledBackup` functionality to create volume snappshots 
+backup:
+  ## @param backup.enabled - Set to 'true' to begin creating volumesnapshots upon installation
+  ## of the 'cnpg' postgres cluster. For more information,
+  ## see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md#scheduled-backup
+  enabled: true
+
+resources:
+  requests:
+    cpu: 750m
+    memory: 2Gi
+  limits:
+    cpu: 750m
+    memory: 2Gi
+
+persistence:
+  size: 100Gi
+
+postgresql:
+  parameters:
+    max_wal_senders: 16
+  pg_hba:
+    # TYPE        DATABASE      USER          ADDRESS         METHOD
+    - host        vegbank       vegbank       0.0.0.0/0       password
+    - host        vegbank       vegbank       ::0/0           password
+    - local       all           all                           trust
+    - host        all           all           127.0.0.1/32    trust
+    - host        postgres      postgres      0.0.0.0/0       password

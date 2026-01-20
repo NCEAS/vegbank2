@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vegbank.fullname" . }}
+  labels:
+    {{- include "vegbank.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vegbank.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "vegbank.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      volumes:
+      - name: {{ .Release.Name }}-db-files-volume
+        configMap:
+          name: {{ .Release.Name }}-db-files
+          defaultMode: 0644
+      - name: vegbankdb-init-pgdata
+        persistentVolumeClaim:
+          claimName: {{ .Values.databaseRestore.pvc }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vegbank.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
+          image: {{ .Values.databaseRestore.postgresImage }}
+          volumeMounts:
+            # Mount the PVC, this path will contain the directory that's been mounted on knbvm
+            - name: {{ .Values.databaseRestore.pvc }}
+              mountPath: "/tmp/databaseRestore"
+          env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
+            - name: VB_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: VB_DB_PORT
+              value: {{ .Values.database.port | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              until pg_isready -h "$VB_DB_HOST" -p "$VB_DB_PORT" -U postgres; do
+                echo "Waiting for postgres to accept connections";
+                sleep 2;
+              done;
+              echo "CNPG is accepting connections.";
+
+              if [ "{{ .Values.databaseRestore.enabled }}" = "true" ]; then
+                echo "Database Restore Requested, restoring from specific dump file";
+                export PGPASSWORD="$VB_DB_PASS";
+                pg_restore \
+                -h "$VB_DB_HOST" \
+                -p "$VB_DB_PORT" \
+                -U "$VB_DB_USER" \
+                -d "$VB_DB_NAME" \
+                -j 4 "{{ .Values.databaseRestore.mountpath }}/{{ .Values.databaseRestore.filepath }}";
+                echo "## Postgres database has been restored";
+              fi
+        - name: {{ .Chart.Name }}-apply-flyway # Apply migrations
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.flyway.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ .Release.Name }}-db-files-volume
+              mountPath: {{ .Values.flyway.dbpath }}/migrations
+          env:
+            - name: FLYWAY_URL
+              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: FLYWAY_LOCATIONS
+              value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
+          command:
+            - sh
+            - -c
+            - >
+              echo "## Flyway Env";
+              env | grep '^FLYWAY_' || true;
+              echo "## Listing Migrations";
+              ls {{ .Values.flyway.dbpath }}/migrations || true;
+              echo "Applying all migrations in db/migrations";
+              flyway migrate;
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: VB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: password
+            - name: VB_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vegbankdbcreds
+                  key: username
+            - name: VB_DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: VB_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: VB_DB_PORT
+              value: {{ .Values.database.port | quote }}
+            - name: VB_ALLOW_UPLOADS
+              value: {{ .Values.allowUploads | quote }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
