@@ -4,85 +4,102 @@
 
 ## VegBank
 
-- **Authors**: Last, First (ORCID); ...
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/NCEAS/vegbank2)
 - [**Submit Bugs and feature requests**](https://github.com/NCEAS/vegbank2/issues)
 - Contact us: help@vegbank.org
 
-The [VegBank](http://vegbank.org) data system provides a community managed data portal for vegetation data, particularly plots, plant taxonomy, and communities.  It is a product of the Ecological Society of America (ESA) Vegetation Panel, and is affiliated with the National Vegetation Classification (USNVC).
+The [VegBank](http://vegbank.org) data system provides a community managed data portal for
+vegetation plot data, with special emphasis on supporting the U.S. National Vegetation
+Classification (USNVC) and validating standard USNVC vegetation types. VegBank is a product of the
+Ecological Society of America (ESA) [Panel on Vegetation Classification](https://esa.org/vegpanel/)
+and is maintained and operated by the [National Center for Ecological Analysis and
+Synthesis](https://www.nceas.ucsb.edu) (NCEAS).
 
-VegBank provides a common storage system and web portal for accessing:
+VegBank provides a common storage system and services for accessing:
 
 - Plot data
 - Plant taxonomy data
 - Community data
 
-VegBank is an open source, community projects.  We [welcome contributions](./CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc.  Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
+VegBank is an open source, community project. We [welcome contributions](./CONTRIBUTING.md) in many
+forms, including code, graphics, documentation, bug reports, testing, etc. Use the [VegBank
+discussions](https://github.com/NCEAS/vegbank2/discussions) to discuss these contributions with us.
 
 ## Redesign
 
-VegBank was originally designed and implemented in the early 2000's using server technology of the time, particularly as a Java servlet providing access to data that is stored in a backend postgresql database, and using Apache Struts to build a web-based interface for querying and viewing the data.  While the system has served well, most of these technology components have become obsolete, and need to be replaced.  This repository is being used to [redesign VegBank](vegbank2-plans.md), which will be refactored into several standalone components:
+VegBank was originally [designed and implemented](https://github.com/NCEAS/vegbank) in the early
+2000's using server technology of the time, particularly as a Java servlet providing access to data
+that is stored in a backend postgresql database, and using Apache Struts to build a web-based
+interface for querying and viewing the data. While the system has served well, most of these
+technology components have become obsolete, and need to be replaced.
 
-- [vegbank-service](.): the VegBank data system and API access service 
-- [vegbank-web](): the VegBank web application that accesses the service
-- [vegbankr](.): the VegBank R package that accesses the service
+As part of the [VegBank redesign effort](vegbank2-plans.md), the original monolithic system has been
+refactored into multiple standalone components:
 
-### Project deliverables
+- [vegbank-service](.): the VegBank data storage system and REST API (this repository)
+- [vegbankr](https://github.com/NCEAS/vegbankr): the VegBank R package that accesses the service
+- [vegbank-web](https://github.com/NCEAS/vegbank-web): the VegBank web application that accesses the service
 
-#### Task 1: Project Planning and Reporting
+## VegBank REST API
 
-- D-1.1 Project start-up meeting
-- D-1.2 Detailed plan and timeline
-- D-1.3 Establish regular, monthly meetings with CDFW
-- D-1.4 Progress Reports (Quarterly, January 30, April 30, July 30, October 30)
-- D-1.5 Draft and Final Progress Report
-    - Draft Report: prior to end of the contract term (01/05/2026)
-    - Final Progress Report: Due prior to end of contract term (02/01/2026)
+> [!WARNING]
+> The API service is currently in beta. Services are likely to go up and down, features are subject
+> to change, and the returned data do not necessarily reflect the current production VegBank system.
 
-#### Task 2: Improvements to VegBank Data Storage Design
+The VegBank REST API is the primary interface for interacting with the data system. While this
+repository contains the service's source code, most users will interact with the production instance
+hosted and maintained by NCEAS. The API provides a programmatic way to search and retrieve
+vegetation plot records, plant concepts, community types, and other supporting information, as well
+as submit and upload new data to the archive.
 
-- D-2.1 Refactored data model and design plans
-- D-2.2 Deployed and refactored, open-source VegBank
-- D-2.3 Publish an open-source R package for VegBank
-
-#### Task 3: California Vegetation Data Upload into VegBank
-
-- D-3.1 Create tool for inducting California vegetation data
-- D-3.2 Induct California vegetation survey data into VegBank
-
-
-## Documentation
-
-Documentation is a work in progress, and can be found ...
+- **Comprehensive API documentation** (WIP): https://nceas.github.io/vegbank2/api/
+- **Development API**: https://api-dev.vegbank.org
 
 ## Development build
 
 This is a python package, and built using the [Python Poetry](https://python-poetry.org) build tool.
 
-To install locally, create a virtual environment for python 3.12+, 
-install poetry, and then install or build the package with `poetry install` or `poetry build`, respectively.
+To install locally, create a virtual environment for python 3.12+, install poetry, and then install
+or build the package with `poetry install` or `poetry build`, respectively.
 
-To run tests, navigate to the root directory and run `poetry run pytest`. If the test suite contains tests that
-take a longer time to run (e.g., relating to the storage of large files) - mark them as `slow` and to execute all tests, run
-`pytest --run-slow`.
+To run tests, navigate to the root directory and run `poetry run pytest`. If the test suite contains
+tests that take a longer time to run (e.g., relating to the storage of large files) - mark them as
+`slow` and to execute all tests, run `pytest --run-slow`.
 
-The GitHub repository has also been configured to run a [continuous integration build](https://github.com/NCEAS/vegbank2/actions) which executes the `poetry run pytest` command in the standard poetry-maintained virtual environment. To test the action run locally, you can install the `act` commandline client (e.g., `brew install act`) and then execute the actions from the local commandline. This depends on a local docker instance being configured, and the first run will take longer as the initial docker images are pulled. Thereafter, checking the action build before pushing commits can be run, for example, for the mac with:
+The GitHub repository has also been configured to run a [continuous integration
+build](https://github.com/NCEAS/vegbank2/actions) which executes the `poetry run pytest` command in
+the standard poetry-maintained virtual environment. To test the action run locally, you can install
+the `act` commandline client (e.g., `brew install act`) and then execute the actions from the local
+commandline. This depends on a local docker instance being configured, and the first run will take
+longer as the initial docker images are pulled. Thereafter, checking the action build before pushing
+commits can be run, for example, for the mac with:
 
 - `act --container-architecture linux/amd64`
 
-## Usage Example
+## Current Contributors
 
-```py
-from product import Product
+- Matthew B. Jones (jones@nceas.ucsb.edu): [ORCID: 0000-0003-0077-4738](https://orcid.org/0000-0003-0077-4738)
+- Jim Regetz (regetz@nceas.ucsb.edu): [ORCID: 0009-0008-2666-6229](https://orcid.org/0009-0008-2666-6229)
+- Robert Shelton (rshelton@nceas.ucsb.edu)
+- Darian Gill (dgill@nceas.ucsb.edu)
+- Dou Mok (mok@nceas.ucsb.edu): [ORCID: 0000-0002-6076-8092](https://orcid.org/0000-0002-6076-8092)
+- Michael T. Lee
+- Robert K. Peet
 
-# Example code here...
+## Previous Contributors
 
-```
+- Michael D. Jennings
+- Dennis Grossman
+- Marilyn D. Walker
+- Mark Anderson
+- Gabriel Farrell
+- John Harris
+- Chad Berkley
 
 ## License
 ```
-Copyright [2024] [Regents of the University of California]
+Copyright [2026] [Regents of the University of California]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
