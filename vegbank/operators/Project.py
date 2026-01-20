@@ -26,6 +26,7 @@ class Project(Operator):
         self.table_code = "pj"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.sort_options = ["default", "project_name", "obs_count"]
+        
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -144,7 +145,7 @@ class Project(Operator):
 
         return params
 
-    def upload_project(self, file, conn):
+    def upload_project(self, df, conn):
         """
         takes a parquet file of projects and uploads it to the project table.
         Parameters:
@@ -153,10 +154,8 @@ class Project(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
-
-        table_defs = [table_defs_config.project]
         required_fields = ['user_pj_code', 'project_name']
+        table_defs = [table_defs_config.project]
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "projects")
         if validation['has_error']:
             raise ValueError(validation['error'])

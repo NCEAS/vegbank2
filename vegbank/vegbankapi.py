@@ -8,7 +8,7 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, allowed_file
+from utilities import jsonify_error_message, dry_run_check, read_parquet_file
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -21,7 +21,7 @@ from operators import (
     CoverMethod,
     Project,
     StratumMethod,
-    Reference,
+    Reference
 )
 
 
@@ -76,8 +76,23 @@ def plot_observations(vb_code):
     supporting POST and GET methods. For any other HTTP method, it returns a 405
     error.
 
-    POST: Facilitates uploading of new plot observations as an attached Parquet
-    file, if permitted via an environment variable.
+    POST: Upload a series of files from the loader schema and return the new codes 
+    and counts of new records based on the types of new records created. 
+
+    POST Parameters:
+        plot_observations (FileStorage, optional): Parquet file containing plot
+            observation data.
+        projects (FileStorage, optional): Parquet file containing project data.
+        parties (FileStorage, optional): Parquet file containing party data.
+        references (FileStorage, optional): Parquet file containing reference data.
+        strata (FileStorage, optional): Parquet file containing strata
+            definition data.
+        strata_cover_data (FileStorage, optional): Parquet file containing taxon 
+            observations and taxon importances.
+        taxon_interpretations (FileStorage, optional): Parquet file containing taxon 
+            interpretation data.
+    
+    All post parameters are optional except plot_observations.
 
     GET: If a valid plot observation code is provided (e.g., ob.1), returns the
     corresponding record if it exists. If a valid code for a different supported
@@ -125,23 +140,7 @@ def plot_observations(vb_code):
     """
     plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        try:
-            dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-            file = request.files['file']
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = plot_observation_operator.upload_plot_observations(file, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
+        return PlotObservation(params).upload_all(request)
     elif request.method == 'GET':
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -201,7 +200,9 @@ def taxon_observations(vb_code):
         file = request.files['file']
         try:
             with connect(**params, row_factory=dict_row) as conn:
-                    to_return = taxon_observation_operator.upload_strata_definitions(file, conn)
+                    df = pd.read_parquet(file)
+                    to_return = taxon_observation_operator.upload_strata_definitions(df, conn)
+                    to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -235,10 +236,11 @@ def strata_cover_data():
     """
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
-    file = request.files['file']
     try:
+        scd_df = read_parquet_file(request, 'file', required=True)
         with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_strata_cover_data(file, conn)
+            to_return = taxon_observation_operator.upload_strata_cover_data(scd_df, conn)
+            to_return = dry_run_check(conn, to_return, request)
         conn.close()
     except Exception as e:
         print(traceback.format_exc())
@@ -269,22 +271,14 @@ def stem_data():
         flask.Response: A JSON response indicating success or failure of
             the upload operation.
     """
-    dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-    print("Dry Run: " + str(dry_run))
-
     taxon_observation_operator = TaxonObservation(params)
     to_return = None
-    file = request.files['file']
+    
     try:
+        sd_df = read_parquet_file(request, 'file', required=True)
         with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_stem_data(file, conn)
-            if dry_run:
-                conn.rollback()
-                message = "Dry run - rolling back transaction."
-                return jsonify({
-                    "message": message,
-                    "dry_run_data": to_return
-                })
+            to_return = taxon_observation_operator.upload_stem_data(sd_df, conn)
+            to_return = dry_run_check(conn, to_return, request)
         conn.close()
     except Exception as e:
         print(traceback.format_exc())
@@ -354,22 +348,14 @@ def taxon_interpretations(vb_code):
     """
     taxon_interpretation_operator = TaxonInterpretation(params)
     if request.method == 'POST':
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
-
         taxon_observation_operator = TaxonObservation(params)
         to_return = None
-        file = request.files['file']
+        
         try:
+            ti_df = read_parquet_file(request, 'file', required=True)
             with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_taxon_interpretations(file, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -674,21 +660,13 @@ def parties(vb_code):
     """
     party_operator = Party(params)
     if request.method == 'POST':
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
         file = request.files['file']
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 py_df = pd.read_parquet(file)
                 to_return = party_operator.upload_parties(py_df, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -744,23 +722,19 @@ def projects(pj_code):
     """
     project_operator = Project(params)
     if request.method == 'POST':
-        try:
-            dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-            file = request.files['file']
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = project_operator.upload_project(file, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
+        if (allow_uploads is False):
+            return jsonify_error_message("Uploads not allowed."), 403
+        else:
+            try:
+                pj_df = read_parquet_file(request, 'file', required=True)
+                with connect(**params, row_factory=dict_row) as conn:
+                    to_return = project_operator.upload_project(pj_df, conn)
+                    to_return = dry_run_check(conn, to_return, request)
+                conn.close()
+            except Exception as e:
+                print(traceback.format_exc())
+                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+            return jsonify(to_return)
     elif request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:
@@ -906,21 +880,12 @@ def references(rf_code):
     reference_operator = Reference(params)
     if request.method == 'POST':
         file = request.files['file']
-        dry_run = request.args.get('dry_run', 'false').lower() == 'true'
-        print("Dry Run: " + str(dry_run))
-
         to_return = None
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 rf_df = pd.read_parquet(file)
                 to_return = reference_operator.upload_references(rf_df, conn)
-                if dry_run:
-                    conn.rollback()
-                    message = "Dry run - rolling back transaction."
-                    return jsonify({
-                        "message": message,
-                        "dry_run_data": to_return
-                    })
+                to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
@@ -931,31 +896,6 @@ def references(rf_code):
         return reference_operator.get_vegbank_resources(request, rf_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
-
-
-@app.route("/bulk-upload", methods=['POST'])
-def bulk_upload():
-    ''' This is an example endpoint for uploads with multiple parquet files. '''
-    if 'files[]' not in request.files:
-        return jsonify_error_message("No file part in the request."), 400
-
-    files = request.files.getlist('files[]')
-    response = {}
-    for file in files:
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
-
-        try:
-            df = pd.read_parquet(file)
-            print(f"DataFrame loaded with {len(df)} records.")
-            # Here you would typically save the DataFrame to a database or process it further.
-            response[file.filename] = {"message": "File uploaded successfully.", "num_records": len(df)}
-        except Exception as e:
-            response[file.filename] = {"error": f"An error occurred while processing the file: {str(e)}"}
-    return jsonify(response), 200
-
-
+      
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)

@@ -163,7 +163,7 @@ class TaxonObservation(Operator):
             'params': []
         }
 
-    def upload_strata_cover_data(self, file, conn):
+    def upload_strata_cover_data(self, df, conn):
         """
         takes a parquet file in the strata cover data format from the loader module and uploads it to the taxon observation,
         taxon importance, and taxon interpretation tables. 
@@ -173,7 +173,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.taxon_importance, table_defs_config.taxon_observation]
         required_fields = ['user_to_code', 'vb_ob_code', 'author_plant_name', 'user_tm_code']
@@ -203,9 +202,9 @@ class TaxonObservation(Operator):
                 'tm': taxon_importance_codes['counts']['tm']
             }
         }
-        return jsonify(to_return)
+        return to_return
 
-    def upload_strata_definitions(self, file, conn):
+    def upload_strata_definitions(self, df, conn):
         """
         takes a parquet file of strata definitions and uploads it to the stratum table.
         Parameters:
@@ -214,7 +213,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.stratum]
         required_fields = ['vb_ob_code', 'user_ob_code', 'user_sr_code', 'vb_sy_code']
@@ -224,9 +222,9 @@ class TaxonObservation(Operator):
 
         df['user_sr_code'] = df['user_sr_code'].astype(str)
         new_strata =  super().upload_to_table("stratum", 'sr', table_defs_config.stratum, 'stratum_id', df, True, conn)
-        return jsonify(new_strata)
+        return new_strata
     
-    def upload_stem_data(self, file, conn):
+    def upload_stem_data(self, df, conn):
         """
         takes a parquet file in the stem data format from the loader module and uploads it to the stem count
          and stem location tables. 
@@ -236,7 +234,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
         stem_location_def_for_validation = table_defs_config.stem_location.copy()
         stem_location_def_for_validation.remove('vb_sc_code') #we remove the extra vb code because it will be added during the process, but is still required for the insert later on.
         table_defs = [stem_location_def_for_validation, table_defs_config.stem_count]
@@ -279,7 +276,7 @@ class TaxonObservation(Operator):
         }
         return to_return
     
-    def upload_taxon_interpretations(self, file, conn):
+    def upload_taxon_interpretations(self, df, conn):
         """
         takes a parquet file of taxon interpretations and uploads it to the taxon interpretation table.
         Parameters:
@@ -288,7 +285,6 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
-        df = pd.read_parquet(file)
 
         table_defs = [table_defs_config.taxon_interpretation]
         required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']

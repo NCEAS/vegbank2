@@ -41,7 +41,6 @@ def validate_required_and_missing_fields(df, required_fields, table_defs, file_n
         dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
     '''
     df.columns = map(str.lower, df.columns)
-
     to_return = {
         'has_error': False,
         'error': ""
@@ -172,6 +171,23 @@ def combine_json_return(main_dict, new_dict):
                        **new_dict.get(key, {})}
     return result
 
+def dry_run_check(conn, data, request):
+    """
+    Check if the request is a dry run and roll back the transaction if so.
+    Parameters:
+        conn: The database connection object.
+        data: The data resulting from the upload request.
+        request: The Flask request object containing query parameters.
+    """
+    if request.args.get('dry_run', 'false').lower() == 'true':  
+        conn.rollback()
+        return {
+            "message": "dry run, transaction was rolled back",
+            "dry_run_data" : data
+        }
+    else:
+        return data
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
@@ -185,3 +201,4 @@ class UploadDataError(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+
