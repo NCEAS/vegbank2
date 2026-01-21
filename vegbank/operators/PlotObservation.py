@@ -221,6 +221,7 @@ class PlotObservation(Operator):
             'top_taxon4_name': "ob.toptaxon4name",
             'top_taxon5_name': "ob.toptaxon5name",
             'has_observation_synonym': "ob.hasobservationsynonym",
+            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
@@ -261,6 +262,13 @@ class PlotObservation(Operator):
             LEFT JOIN view_reference_transl rf USING (reference_id)
             LEFT JOIN stratummethod sm USING (stratummethod_id)
             LEFT JOIN covermethod cm USING (covermethod_id)
+            LEFT JOIN LATERAL (
+                SELECT primaryobservation_id
+                  FROM observationsynonym
+                  WHERE synonymobservation_id = ob.observation_id
+                  ORDER BY classstartdate DESC
+                  LIMIT 1
+            ) syn ON TRUE
             """
         from_sql_nested = """
             LEFT JOIN LATERAL (
@@ -749,4 +757,4 @@ class PlotObservation(Operator):
             return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
-            return jsonify_error_message(str(e)), 500              
+            return jsonify_error_message(str(e)), 500
