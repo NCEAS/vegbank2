@@ -2653,6 +2653,34 @@ components:
     PlotObservationFullNested:
       type: object
       properties:
+        disturbances:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: "Type of disturbance being reported"
+                example: "Wind event"
+              comment:
+                type: string
+                description: "Description of details of the disturbance and its impact on the vegetation"
+                example: "Hurricane blowdown"
+              intensity:
+                type: string
+                description: "Intensity or degree of the disturbance"
+                example: "Low"
+              age:
+                type: number
+                format: float
+                description: "Estimated time in years since the disturbance event"
+                example: 10
+              extent:
+                type: number
+                format: float
+                description: "Percent of the plot that experienced the event"
+                example: 5
+          description: "Observer estimation of the disturbance history of the plot"
         soils:
           type: array
           items:

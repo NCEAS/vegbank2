@@ -230,6 +230,7 @@ class PlotObservation(Operator):
             'taxon_importance_count_returned': "taxon_importance_count_returned",
             'top_taxon_observations': "top_taxon_observations",
             'top_classifications': "top_classifications",
+            'disturbances': "di.disturbances",
             'soils': "so.soils",
         }
         # identify minimal columns
@@ -371,6 +372,16 @@ class PlotObservation(Operator):
                      (SELECT COUNT(1)
                         FROM returned_taxon_observations) AS taxon_importance_count_returned
             ) AS txo ON true
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'type', disturbancetype,
+                      'comment', disturbancecomment,
+                      'intensity', disturbanceintensity,
+                      'age', disturbanceage,
+                      'extent', disturbanceextent)) AS disturbances
+                FROM disturbanceobs
+                WHERE observation_id = ob.observation_id
+            ) AS di ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                       'description', soildescription,
