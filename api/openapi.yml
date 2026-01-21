@@ -2645,6 +2645,10 @@ components:
           type: boolean
           description: "Does this observation have an observation synonym record?"
           example: true
+        replaced_by_ob_code:
+          type: string
+          description: "VegBank identifier of the current plot observation superseding this plot observation, if this observation has been replaced by a newer record"
+          example: "ob.2"
 
     PlotObservationFullNested:
       type: object
