@@ -3,13 +3,15 @@ dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
 
-## @section CNPG image - Override the deffault postgres version
+## @section CNPG image - Override the default postgres version
 
 ## @param imageOverrideSpec
 ## This parameter is used to change or upgrade the postgres image version deployed.
+## Leaving this blank will default to the `dataone-cnpg` minor-version-auto-update functionality
 ## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
 ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
 ## Example: ghcr.io/cloudnative-pg/postgresql:18
+##
 imageOverrideSpec: ""
 
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
@@ -34,7 +36,7 @@ init:
   ##
   recoverFromBackup: vegbankdb-scheduled-backup-placeholder
 
-## @section backup - Enabled `ScheduledBackup` functionality to create volume snappshots
+## @section backup - Enabled `ScheduledBackup` functionality to create volume snapshots
 
 backup:
   ## @param backup.enabled - Set to 'true' to begin creating volumesnapshots upon installation
