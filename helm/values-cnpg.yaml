@@ -9,8 +9,8 @@ dbUser: vegbank
 ## This parameter is used to change or upgrade the postgres image version deployed.
 ## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
 ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
-##
-imageOverrideSpec: ghcr.io/cloudnative-pg/postgresql:18
+## Example: ghcr.io/cloudnative-pg/postgresql:18
+imageOverrideSpec: ""
 
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
 
