@@ -2653,6 +2653,78 @@ components:
     PlotObservationFullNested:
       type: object
       properties:
+        soils:
+          type: array
+          items:
+            type: object
+            properties:
+              horizon:
+                type: string
+                description: "The horizon to which this soil observation applies"
+                example: "B"
+              depth_top:
+                type: number
+                format: float
+                description: "The depth at which the horizon observation starts"
+                example: 84
+              depth_bottom:
+                type: number
+                format: float
+                description: "The depth at which the horizon observation ends"
+                example: 86
+              color:
+                type: string
+                description: "Soil color (USDA guidelines recommended)"
+                example: "10yr 6/6 brown yellow"
+              organic:
+                type: number
+                format: float
+                description: "Percent organic content of the soil; for methods, see the plot observation methods_narrative"
+                example: 13.37
+              texture:
+                type: string
+                description: "Soil texture class. The texture classes sands, loamy sands, and sandy loams (plural terms) correspond to sand, loamy sand, and sandy loam (singular terms) in the textural triangle."
+                example: "Clay Loam"
+              sand:
+                type: number
+                format: float
+                description: "Percent sand in the soil horizon"
+                example: 15.85
+              silt:
+                type: number
+                format: float
+                description: "Percent silt in the soil horizon"
+                example: 3.47
+              clay:
+                type: number
+                format: float
+                description: "Percent clay in the soil horizon"
+                example: 0.68
+              coarse:
+                type: number
+                format: float
+                description: "Percent coarse fragments in the soil, prior to removal for textural analysis"
+                example: 0.13
+              ph:
+                type: number
+                format: float
+                description: "pH of the soil; for methods, see the plot observation methods_narrative"
+                example: 4.3
+              exchange_capacity:
+                type: number
+                format: float
+                description: "Cation exchange capacity; for methods, see the plot observation methods_narrative"
+                example: 3.68
+              base_saturation:
+                type: number
+                format: float
+                description: "Percent base saturation; for methods, see the plot observation          methods_narrative"
+                example: 32.2
+              description:
+                type: string
+                description: "Text description of the soil"
+                example: "Beige sticky clay with gray clay below"
+          description: "Observations on soil horizons made during the plot observation event"
         taxon_count:
           type: integer
           description: "Count of taxon observations associated with this plot observation"
