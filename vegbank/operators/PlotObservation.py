@@ -230,6 +230,7 @@ class PlotObservation(Operator):
             'taxon_importance_count_returned': "taxon_importance_count_returned",
             'top_taxon_observations': "top_taxon_observations",
             'top_classifications': "top_classifications",
+            'soils': "so.soils",
         }
         # identify minimal columns
         main_columns['minimal'] = {alias:col for alias, col in
@@ -370,6 +371,25 @@ class PlotObservation(Operator):
                      (SELECT COUNT(1)
                         FROM returned_taxon_observations) AS taxon_importance_count_returned
             ) AS txo ON true
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'description', soildescription,
+                      'horizon', soilhorizon,
+                      'depth_top', soildepthtop,
+                      'depth_bottom', soildepthbottom,
+                      'color', soilcolor,
+                      'organic', soilorganic,
+                      'texture', soiltexture,
+                      'sand', soilsand,
+                      'silt', soilsilt,
+                      'clay', soilclay,
+                      'coarse', soilcoarse,
+                      'ph', soilph,
+                      'exchange_capacity', exchangecapacity,
+                      'base_saturation', basesaturation)) AS soils
+                FROM soilobs
+                WHERE observation_id = ob.observation_id
+            ) AS so ON true
             """
         order_by_sql = {}
         order_by_sql['default'] = f"""\
