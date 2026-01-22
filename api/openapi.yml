@@ -2753,6 +2753,28 @@ components:
                 description: "Text description of the soil"
                 example: "Beige sticky clay with gray clay below"
           description: "Observations on soil horizons made during the plot observation event"
+        named_places:
+          type: array
+          items:
+            type: object
+            properties:
+              system:
+                type: string
+                description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"
+                example: "county"
+              name:
+                type: string
+                description: "The name of a place in or at which a plot is located."
+                example: "Marin"
+              description:
+                type: string
+                description: "Description of a named place. For US county names, this field identifies the containing state."
+                example: "California"
+              code:
+                type: string
+                description: "Optional code for location identification"
+                example: "6041"
+          description: "Named places that a plot may have been located in"
         taxon_count:
           type: integer
           description: "Count of taxon observations associated with this plot observation"
