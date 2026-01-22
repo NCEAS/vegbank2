@@ -232,6 +232,7 @@ class PlotObservation(Operator):
             'top_classifications': "top_classifications",
             'disturbances': "di.disturbances",
             'soils': "so.soils",
+            'named_places': "np.places",
         }
         # identify minimal columns
         main_columns['minimal'] = {alias:col for alias, col in
@@ -401,6 +402,17 @@ class PlotObservation(Operator):
                 FROM soilobs
                 WHERE observation_id = ob.observation_id
             ) AS so ON true
+            LEFT JOIN LATERAL (
+              SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'system', placesystem,
+                      'name', placename,
+                      'description', placedescription,
+                      'code', placecode)) AS places
+                FROM plot pl
+                JOIN place USING (plot_id)
+                JOIN namedplace USING (namedplace_id)
+                WHERE plot_id = ob.plot_id
+            ) AS np ON true
             """
         order_by_sql = {}
         order_by_sql['default'] = f"""\
