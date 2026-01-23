@@ -1,7 +1,17 @@
 import os
 from operators import Operator
-from utilities import QueryParameterError
-
+from psycopg.rows import dict_row
+from psycopg import connect
+from operators import table_defs_config
+from flask import jsonify
+from utilities import (
+    read_parquet_file,
+    UploadDataError,
+    validate_required_and_missing_fields,
+    merge_vb_codes,
+    combine_json_return,
+    jsonify_error_message
+)
 
 class CommunityClassification(Operator):
     """
@@ -195,3 +205,191 @@ class CommunityClassification(Operator):
             'sql': from_sql[query_type],
             'params': []
         }
+
+    def upload_community_classifications(self, df, conn):
+        """
+        Take the Community Classifications loader DataFrame and insert its contents
+        into the commclass and comminterpretation tables.
+
+        Preconditions:
+        - Every vb_ob_code matches an existing plot observation record
+        - Every vb_cc_code matches an existing concept record
+        - Any vb_comm_class_rf_code matches an existing reference record
+        - Any vb_authority_rf_code matches an existing party record
+        - Multiple community interpretations for the same classification are
+          implicitly supported by providing multiple records with the same
+          user_cl_code but different vb_cc_codes (i.e., different attached
+          concepts). Multiple interpretations attached to the same concept are
+          not permitted under the same classification.
+        Step 1: INSERT INTO commclass:
+                observationid <- from vb_ob_code (user or upstream)
+                commname <- name
+                classstartdate <- class_start_date
+                classstopdate <- class_stop_date
+                inspection <- inspection
+                tableanalysis <- table_analysis
+                multivariateanalysis <- multivariate_analysis
+                expertsystem <- expert_system
+                classpublication_id <- from vb_comm_class_rf_code (user or upstream)
+                classnotes <- class_notes
+                RETURNING commclass_id -> vb_cl_code
+                ...correlate vb_cl_code with user_cl_code
+        Step 2: INSERT INTO comminterpretation:
+                commclass_id <- from vb_cl_code (Step 1)
+                commconcept_id <- from vb_cc_code
+                classfit <- class_fit
+                classconfidence <- class_confidence
+                commauthority_id <- from vb_authority_rf_code (user or upstream)
+                notes <- interp_notes
+                type <- type
+                nomenclaturaltype <- nomenclatural_type
+                RETURNING comminterpretation_id -> vb_ci_code
+
+        Parameters:
+            df (pandas.DataFrame): Community concept data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cl": {"inserted": 1},
+                        "ci": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cl": [{"action": "inserted",
+                                "user_cl_code": "my_cl_1",
+                                "vb_cl_code": "cl.123"}],
+                        "ci": [{"action": "inserted",
+                                "user_ci_code": "my_cl_1->cc.456",
+                                "vb_ci_code": "ci.234"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_comm_class = table_defs_config.comm_class[:]
+        config_comm_class.append('vb_ob_code')
+        config_comm_interp = table_defs_config.comm_interp[:]
+        table_defs = [config_comm_class,
+                      config_comm_interp]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['user_cl_code', 'vb_ob_code', 'vb_cc_code']
+
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "community classifications")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert records into commclass table
+        #
+
+        df['user_cl_code'] = df['user_cl_code'].astype(str)
+        cl_actions = super().upload_to_table("comm_class", 'cl',
+            config_comm_class, 'commclass_id', df, True, conn)
+
+        #
+        # Insert records into comminterpretation table
+        #
+
+        df['user_ci_code'] = df['user_cl_code'] + '->' + df['vb_cc_code']
+        config_comm_interp.append('user_ci_code')
+
+        # ... merge in newly created vb_cl_codes
+        df = merge_vb_codes(
+            cl_actions['resources']['cl'], df,
+            {"user_cl_code": "user_cl_code",
+             "vb_cl_code": "vb_cl_code"})
+        config_comm_interp.append('vb_cl_code')
+
+        ci_actions = super().upload_to_table("comm_interp", 'ci',
+            config_comm_interp, 'comminterpretation_id', df, True, conn)
+
+        # TODO: decide which ones we actually want to return to the user -
+        # maybe only `cl`? Or maybe both?
+        to_return = {
+            'resources':{
+                'cl': cl_actions['resources']['cl'],
+                'ci': ci_actions['resources']['ci'],
+            },
+            'counts':{
+                'cl': cl_actions['counts']['cl'],
+                'ci': ci_actions['counts']['ci'],
+            }
+        }
+        return to_return
+
+    def upload_all(self, request):
+        """
+        Orchestrate the insertion of client-provided Community Classification
+        data into VegBank, starting with the Flask request containing the
+        uploaded data files.
+
+        Parameters:
+            request (flask.Request): The incoming Flask request object
+                containing Parquet files with Community Concept data to be
+                loaded into VegBank
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "cc": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cc": [{"action": "inserted",
+                                "user_cc_code": "my_new_concept_1",
+                                "vb_cc_code": "cc.123"}],
+                    }
+                }
+        Raises:
+            QueryParameterError: If any supplied code does not match the
+                expected pattern.
+        """
+        # Define the expected data inputs and whether or not they are required
+        # TODO: Bring references table into the upload workflow to allow
+        # users to add new references that they link to in their
+        # classification/intepretation records
+        upload_files = {
+            'cl': {
+                'file_name': 'community_classifications',
+                'required': False
+            },
+        }
+        # Read each Parquet file from the request into a Pandas DataFrame
+        data = {}
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required'])
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
+
+        # Run the upload pipeline!
+        try:
+            to_return = None
+            with connect(**self.params, row_factory=dict_row) as conn:
+                # Prep & insert any new community classifications
+                cl_actions = self.upload_community_classifications(data['cl'], conn)
+                to_return = combine_json_return(to_return, cl_actions)
+
+                # If this is a dry-run upload, roll back transaction and embed
+                # the informational JSON response in a dry-run wrapper message
+                if request.args.get('dry_run', 'false').lower() == 'true':
+                    conn.rollback()
+                    message = "dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            return jsonify_error_message(
+                f"an error occurred here during upload: {str(e)}"), 500
+        return jsonify(to_return)
