@@ -418,8 +418,7 @@ def community_classifications(vb_code):
     """
     community_classification_operator = CommunityClassification(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for community_classifications."), 405
+        return community_classification_operator.upload_all(request)
     elif request.method == 'GET':
         return community_classification_operator.get_vegbank_resources(request,
                                                                        vb_code)
