@@ -737,15 +737,18 @@ class PlotObservation(Operator):
                     # check for it because it's not required in the context of
                     # standalone comm class uploads
                     data['cl']['user_ob_code'] = data['cl']['user_ob_code'].astype(str)
+                    # ... merge in newly created vb_ob_codes
                     data['cl'] = merge_vb_codes(
                         pls['resources']['ob'], data['cl'],
                         {'user_ob_code': 'user_ob_code',
                          'vb_ob_code': 'vb_ob_code'})
                     if data['rf'] is not None:
+                        # ... merge in newly created comm class vb_rf_codes
                         data['cl'] = merge_vb_codes(
                             rfs['resources']['rf'], data['cl'],
                             {'user_rf_code': 'user_comm_class_rf_code',
                              'vb_rf_code': 'vb_comm_class_rf_code'})
+                        # ... merge in newly created interp authority vb_rf_codes
                         data['cl'] = merge_vb_codes(
                             rfs['resources']['rf'], data['cl'],
                             {'user_rf_code': 'user_authority_rf_code',
