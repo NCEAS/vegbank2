@@ -1,7 +1,7 @@
 # Introduction
 
-This document describes how to build and push a docker image file for the `vegbank2` Flask API, and then (re)deploy the `vegbankapi` pod in kubernetes to pick up the changes. This `README.md` is a general summary of this process. To learn in detail, you can visit this link:
-- [Working with a GitHub packages registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+This document describes how to build and push a docker image to the github container registry for the `vegbank2` Flask API, as well as how to (re)deploy the `vegbankapi` pod in kubernetes to pick up the newly added image.
+- Note: This `README.md` is a general summary. To learn in detail, you can visit this link: [Working with a GitHub packages registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 ## Requirements
 
@@ -10,9 +10,12 @@ This document describes how to build and push a docker image file for the `vegba
 
 ## Steps to Deploy A Docker Image
 
-- [1. Get Your Personal Access Token from GitHub](#personal-access-token)
-- [2. Logging into Docker](#docker-login)
-- [3. Update your Dockerfile](#)
+- [1. Log into Docker](#step-1-log-into-docker)
+- [2. Getting your Personal Access Token](#step-2-getting-your-personal-access-token)
+- [3. Creating a new personal access token (classic)](#step-3-creating-a-new-personal-access-token-classic)
+- [4. Update your Dockerfile](#step-4-update-your-dockerfile)
+- [5. Build & push your image](#step-5-build--push-your-image)
+- [6. Re-deploy the kubernetes pod](#step-6-re-deploy-the-kubernetes-pod)
 
 ### Step 1. Log into Docker
 
