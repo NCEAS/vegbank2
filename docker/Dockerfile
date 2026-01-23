@@ -1,6 +1,8 @@
 FROM python:3.13
 
+LABEL org.opencontainers.image.title="vegbank2 Flask API"
 LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
+LABEL org.opencontainers.image.version="0.0.3-develop"
 
 WORKDIR /python-docker
 
