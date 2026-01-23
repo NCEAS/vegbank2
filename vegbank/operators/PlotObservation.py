@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from operators import Operator, table_defs_config
+from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
 from .Reference import Reference
@@ -676,6 +677,10 @@ class PlotObservation(Operator):
                 'file_name': 'plot_observations',
                 'required': True
             },
+            'cl': {
+                'file_name': 'community_classifications',
+                'required': False
+            },
             'sr': {
                 'file_name': 'strata',
                 'required': False
@@ -726,6 +731,28 @@ class PlotObservation(Operator):
 
                     pls = PlotObservation(self.params).upload_plot_observations(data['pl'], conn)
                     to_return = combine_json_return(to_return, pls)
+                if data['cl'] is not None:
+                    # TODO: Need validation to make sure this field exists; the
+                    # underlying comm class upload method called below won't
+                    # check for it because it's not required in the context of
+                    # standalone comm class uploads
+                    data['cl']['user_ob_code'] = data['cl']['user_ob_code'].astype(str)
+                    data['cl'] = merge_vb_codes(
+                        pls['resources']['ob'], data['cl'],
+                        {'user_ob_code': 'user_ob_code',
+                         'vb_ob_code': 'vb_ob_code'})
+                    if data['rf'] is not None:
+                        data['cl'] = merge_vb_codes(
+                            rfs['resources']['rf'], data['cl'],
+                            {'user_rf_code': 'user_comm_class_rf_code',
+                             'vb_rf_code': 'vb_comm_class_rf_code'})
+                        data['cl'] = merge_vb_codes(
+                            rfs['resources']['rf'], data['cl'],
+                            {'user_rf_code': 'user_authority_rf_code',
+                             'vb_rf_code': 'vb_authority_rf_code'})
+                    cls = CommunityClassification(self.params) \
+                        .upload_community_classifications(data['cl'], conn)
+                    to_return = combine_json_return(to_return, cls)
                 if data['sr'] is not None:
                     if data['pl'] is not None:
                         data['sr'] = merge_vb_codes(
