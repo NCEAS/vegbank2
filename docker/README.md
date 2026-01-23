@@ -101,38 +101,38 @@ LABEL org.opencontainers.image.version="#.#.#-unique-name"
 After you've updated the label metadata, you are now ready to push your updated image to the Github container registry. You can do so like such, and be sure to replace the image.version with your specified one in the image metadata:
 
 ```sh
-$ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t ghcr.io/nceas/vegbank:#.#.#-unique-name
+# Example with 0.0.3-develop image version
+$ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t ghcr.io/nceas/vegbank:0.0.3-develop
 
 # Example output
-[+] Building 62.6s (17/17) FINISHED                                                                                                                                                              docker-container:multi-platform-builder
- => [internal] load build definition from Dockerfile                                                                                                                                                                                0.0s
- => => transferring dockerfile: 443B                                                                                                                                                                                                0.0s
- => [internal] load metadata for docker.io/library/python:3.13                                                                                                                                                                      1.0s
- => [internal] load .dockerignore                                                                                                                                                                                                   0.0s
- => => transferring context: 2B                                                                                                                                                                                                     0.0s
- => [ 1/10] FROM docker.io/library/python:3.13@sha256:c8b03b4e98b39cfb180a5ea13ae5ee39039a8f75ccf52fe6d5c216eed6e1be1d                                                                                                              0.0s
- => => resolve docker.io/library/python:3.13@sha256:c8b03b4e98b39cfb180a5ea13ae5ee39039a8f75ccf52fe6d5c216eed6e1be1d                                                                                                                0.0s
- => [internal] load build context                                                                                                                                                                                                   0.0s
- => => transferring context: 9.72kB                                                                                                                                                                                                 0.0s
- => CACHED [ 2/10] WORKDIR /python-docker                                                                                                                                                                                           0.0s
- => CACHED [ 3/10] ADD /vegbank/vegbankapi.py .                                                                                                                                                                                     0.0s
- => CACHED [ 4/10] ADD /vegbank/utilities.py .                                                                                                                                                                                      0.0s
- => CACHED [ 5/10] ADD queries ./queries                                                                                                                                                                                            0.0s
- => CACHED [ 6/10] ADD /vegbank/operators ./operators                                                                                                                                                                               0.0s
- => CACHED [ 7/10] RUN pip install flask                                                                                                                                                                                            0.0s
- => CACHED [ 8/10] RUN pip install psycopg                                                                                                                                                                                          0.0s
- => CACHED [ 9/10] RUN pip install pandas                                                                                                                                                                                           0.0s
- => CACHED [10/10] RUN pip install pyarrow                                                                                                                                                                                          0.0s
- => exporting to image                                                                                                                                                                                                             61.5s
- => => exporting layers                                                                                                                                                                                                             0.0s
- => => exporting manifest sha256:ebce57de6dcd722657b7085e90812aa5e823df00c340bfdc87d5b85bef55808e                                                                                                                                   0.0s
- => => exporting config sha256:73f0bc60e8a604c034bd5deac33ad02c75c7fb82cc3cb38d8963a2b489579761                                                                                                                                     0.0s
- => => exporting attestation manifest sha256:ad402922db46c5c19fdc9b7aa1d5cda641cad004930976312dcfe80a5790dcc6                                                                                                                       0.0s
- => => exporting manifest list sha256:3df3487c033272e3a3712c51385be21f7fa8a6095702bd9de9df5213df0a6eb5                                                                                                                              0.0s
- => => pushing layers                                                                                                                                                                                                              59.8s
- => => pushing manifest for ghcr.io/nceas/vegbank:0.0.3-dev@sha256:3df3487c033272e3a3712c51385be21f7fa8a6095702bd9de9df5213df0a6eb5                                                                                                 1.7s
- => [auth] nceas/vegbank:pull,push token for ghcr.io                                                                                                                                                                                0.0s
- => [auth] nceas/vegbank:pull,push token for ghcr.io                                                                                                                                                                                0.0s
+[+] Building 4.5s (16/16) FINISHED                                                                                                                             docker-container:multi-platform-builder
+ => [internal] load build definition from Dockerfile                                                                                                                                              0.0s
+ => => transferring dockerfile: 556B                                                                                                                                                              0.0s
+ => [internal] load metadata for docker.io/library/python:3.13                                                                                                                                    1.2s
+ => [internal] load .dockerignore                                                                                                                                                                 0.0s
+ => => transferring context: 2B                                                                                                                                                                   0.0s
+ => [ 1/10] FROM docker.io/library/python:3.13@sha256:c8b03b4e98b39cfb180a5ea13ae5ee39039a8f75ccf52fe6d5c216eed6e1be1d                                                                            0.0s
+ => => resolve docker.io/library/python:3.13@sha256:c8b03b4e98b39cfb180a5ea13ae5ee39039a8f75ccf52fe6d5c216eed6e1be1d                                                                              0.0s
+ => [internal] load build context                                                                                                                                                                 0.0s
+ => => transferring context: 9.72kB                                                                                                                                                               0.0s
+ => CACHED [ 2/10] WORKDIR /python-docker                                                                                                                                                         0.0s
+ => CACHED [ 3/10] ADD /vegbank/vegbankapi.py .                                                                                                                                                   0.0s
+ => CACHED [ 4/10] ADD /vegbank/utilities.py .                                                                                                                                                    0.0s
+ => CACHED [ 5/10] ADD queries ./queries                                                                                                                                                          0.0s
+ => CACHED [ 6/10] ADD /vegbank/operators ./operators                                                                                                                                             0.0s
+ => CACHED [ 7/10] RUN pip install flask                                                                                                                                                          0.0s
+ => CACHED [ 8/10] RUN pip install psycopg                                                                                                                                                        0.0s
+ => CACHED [ 9/10] RUN pip install pandas                                                                                                                                                         0.0s
+ => CACHED [10/10] RUN pip install pyarrow                                                                                                                                                        0.0s
+ => exporting to image                                                                                                                                                                            3.2s
+ => => exporting layers                                                                                                                                                                           0.0s
+ => => exporting manifest sha256:127f0cae822871ef55ca2da3742485659b8f1c176a47d865d861195fd4e249a4                                                                                                 0.0s
+ => => exporting config sha256:4bb12eb09ca1f46b1fb718796a7df6c7d6ed281ed033eed3a3a5650d368493e6                                                                                                   0.0s
+ => => exporting attestation manifest sha256:b662b8b186d1be2eb241953233bff79536eb9aee7ab73f832da04885e48d0990                                                                                     0.0s
+ => => exporting manifest list sha256:fa62838f857c8f7c8f2e3c764fda851b4f7878d5d0f79f9cd33155f9b0f4c5c1                                                                                            0.0s
+ => => pushing layers                                                                                                                                                                             2.0s
+ => => pushing manifest for ghcr.io/nceas/vegbank:0.0.3-develop@sha256:fa62838f857c8f7c8f2e3c764fda851b4f7878d5d0f79f9cd33155f9b0f4c5c1                                                           1.2s
+ => [auth] nceas/vegbank:pull,push token for ghcr.io                                                                                                                                              0.0s
 ```
 
 ### Step 6: Re-deploy the kubernetes pod
