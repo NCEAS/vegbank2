@@ -1,12 +1,12 @@
 # Introduction
 
-This document describes how to build and push a docker image to the github container registry for the `vegbank2` Flask API, as well as how to (re)deploy the `vegbankapi` pod in kubernetes to pick up the newly added image.
+This document describes how to build and push a docker image to the github container registry for the `vegbank2` Flask API, as well as how to (re)deploy the `vegbankapi` pod in `kubernetes` to pick up the newly added image.
 - Note: This `README.md` is a general summary. To learn in detail, you can visit this link: [Working with a GitHub packages registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 ## Requirements
 
 - GitHub Account
-- Docker Desktop
+- Docker CLI/Docker Desktop
 
 ## Steps to Deploy A Docker Image
 
@@ -19,20 +19,20 @@ This document describes how to build and push a docker image to the github conta
 
 ### Step 1. Log into Docker
 
-To push a docker image to the `vegbank2` GitHub image registry, you will need to ensure that you have `Docker Desktop` running. If you do not have it installed, you can download it [here](https://www.docker.com/products/docker-desktop/) to get it.
+There are different ways to push an image to the `vegbank2` github container registry - in this `README.md`, we will be using Docker / Docker Desktop. I feel that this is the simplest way to get set quickly. You can install `docker` through the command line, or download Docker Desktop [here](https://www.docker.com/products/docker-desktop/).
 
-Afterwards, you can log into docker like such:
+Afterwards, you can run the following command to log in to docker:
 
 ```sh
 $ docker login ghcr.io -u youremail@domain.com
 # Ex. docker login ghcr.io -u mok@nceas.ucsb.edu
 ```
 
-Upon entering that command, you will be asked to enter a password. The password it is expecting is a personal access token (classic) that you will have to create. You can follow my instructions below to create it - or learn in detail [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+Upon entering that command, you will be asked to enter a password. The password it is expecting is a personal access token (classic) that you will have to create. You can follow my instructions below on how to create one - or learn in detail [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
 ### Step 2. Getting your Personal Access Token
 
-First, navigate to the GitHub website and go to your GitHub Settings / Developer Settings. Click on your profile in the upper-right corner which will trigger a drop-down menu, and then click `Settings`.
+First, navigate to the GitHub website and go to your GitHub Settings / Developer Settings. Click on your profile in the upper-right corner, which will trigger a drop-down menu, and then click `Settings`.
 
 On the lefthand side, scroll all the way down until you see the menu/tab option `<> Developer Settings`.
 
@@ -41,7 +41,7 @@ You will then be brought to a page with 3 options:
 - OAuth Apps
 - Personal Access Tokens
 
-Click `Personal Access Tokens` which will drop down a menu, and then select `Tokens (classic)`. Once you select this, you will be able to see the list of tokens you have created in the past which may or may not be expired. We want to generate a new token - so click the button/tab `Generate new token`, and then `Generate new token (classic) for general use`.
+Click `Personal Access Tokens` which will trigger a dropdown menu, and then select `Tokens (classic)`. Once you select this, you may see the list of tokens you have created in the past (which may or may not be expired) or an empty list. We want to generate a new token - so click the button/tab `Generate new token`, and then `Generate new token (classic) for general use`.
 
 ### Step 3. Creating a new personal access token (classic)
 
@@ -80,7 +80,7 @@ Login Succeeded
 
 Every image we push should have a unique and immutable version number, and this should be recorded in the (docker) image metadata.
 
-So first confirm that you are in the correct github branch that you would like to push an image for, and then go to `docker/Dockerfile` and update the following label:
+So first confirm that you are in the correct github branch that you would like to push an image for, and then go to `docker/Dockerfile` and update the image.version label:
 
 ```sh
 # docker/Dockerfile
@@ -98,7 +98,7 @@ LABEL org.opencontainers.image.version="#.#.#-unique-name"
 
 ### Step 5: Build & push your image
 
-After you've updated the label metadata, you are now ready to push your updated image to the Github container registry. You can do so like such:
+After you've updated the label metadata, you are now ready to push your updated image to the Github container registry. You can do so like such, and be sure to replace the image.version with your specified one in the image metadata:
 
 ```sh
 $ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t ghcr.io/nceas/vegbank:#.#.#-unique-name
@@ -137,7 +137,8 @@ $ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t g
 
 ### Step 6: Re-deploy the kubernetes pod
 
-After the image has been deployed, navigate to your helm's `Chart.yaml` and updated the `appVersion` to your new chart name. In the example below, I used `0.0.3-develop'.
+After the image has been deployed, navigate to your helm's `Chart.yaml` and update the `appVersion` to your new chart name. In the example below, I used `0.0.3-develop'.
+- Note: You can find the different images available for you to select from [here](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank)
 
 ```sh
 # helm/Chart.yaml
@@ -158,7 +159,7 @@ You can check whether your upgrade succeeded by executing the following command:
 $ helm history vegbankapi
 ```
 
-If you notice that the change has been applied, but the pods did not appear to have been updated, you can also restart the pods like such:
+If you notice that the deploymeny has been applied, but the pods did not appear to have been updated, you can also restart the pods like such:
 
 ```sh
 $ kubectl rollout restart deployment vegbankapi
