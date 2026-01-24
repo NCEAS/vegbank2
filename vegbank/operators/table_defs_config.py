@@ -362,3 +362,11 @@ reference = [
     'full_citation',
     'url'
 ]
+
+contributor = [
+    'user_cr_code',
+    'user_py_code',
+    'role',
+    'contributor_type',
+    'record_identifier'
+]
