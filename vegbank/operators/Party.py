@@ -199,7 +199,7 @@ class Party(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys.
         """
-        required_fields = ['vb_py_code', 'role', 'contributor_type', 'record_identifier']
+        required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
         contributor_defs = table_defs_config.contributor.copy()
         contributor_defs.append('vb_record_identifier')
         contributor_defs.append('vb_py_code')

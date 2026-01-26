@@ -366,7 +366,7 @@ reference = [
 contributor = [
     'user_cr_code',
     'user_py_code',
-    'role',
+    'vb_ar_code',
     'contributor_type',
     'record_identifier'
 ]
