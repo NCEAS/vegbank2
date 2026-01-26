@@ -11,7 +11,7 @@ SELECT project_contributor_temp.vb_py_code
   WHERE party.party_id IS NULL;
 
 -- Validate role codes
-SELECT project_contributor_temp.vb_rl_code
+SELECT project_contributor_temp.vb_ar_code
   FROM project_contributor_temp LEFT JOIN aux_role
-    ON project_contributor_temp.vb_rl_code = 'rl.' || aux_role.role_id
+    ON project_contributor_temp.vb_ar_code = 'ar.' || aux_role.role_id
   WHERE aux_role.role_id IS NULL;

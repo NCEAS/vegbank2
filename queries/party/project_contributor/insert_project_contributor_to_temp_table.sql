@@ -2,7 +2,7 @@ INSERT INTO project_contributor_temp
     (
         user_cr_code,
         user_py_code,
-        vb_rl_code,
+        vb_ar_code,
         contributor_type,
         record_identifier,
         vb_record_identifier, 

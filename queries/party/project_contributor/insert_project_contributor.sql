@@ -10,7 +10,7 @@ WHEN NOT MATCHED THEN
   ) VALUES (
     CAST(SUBSTRING(vb_record_identifier, 4)AS INT),
     CAST(SUBSTRING(vb_py_code, 4) AS INT),
-    CAST(SUBSTRING(vb_rl_code, 4) AS INT)
+    CAST(SUBSTRING(vb_ar_code, 4) AS INT)
   )
 RETURNING merge_action(),
           src.user_cr_code,
