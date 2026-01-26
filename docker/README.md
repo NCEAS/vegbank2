@@ -7,6 +7,7 @@ This document describes how to build and push a docker image to the github conta
 
 - GitHub Account
 - Docker CLI/Docker Desktop
+- Helm (Optional - only if you want to deploy the newly uploaded image)
 
 ## Steps to Deploy A Docker Image
 
