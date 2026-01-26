@@ -1324,6 +1324,74 @@ paths:
         '500':
           $ref: "#/components/responses/InvalidDataUpload"
 
+  /roles/{ar_code}:
+    get:
+      tags:
+        - Parties
+      operationId: get-ar-by-id
+      summary: Get role
+      description: >
+        Retrieve a single role using its `ar_code`.
+      parameters:
+        - name: ar_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ar.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Roles"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /roles:
+    get:
+      tags:
+        - Parties
+      operationId: get-ar
+      summary: Get all roles
+      description: >
+        Retrieve a paginated collection of all roles
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Roles"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Parties
+      operationId: upload-ar
+      summary: Upload roles
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "planned"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
   /projects/{pj_code}:
     get:
       tags:
@@ -1906,6 +1974,19 @@ components:
           schema:
             allOf:
               - $ref: '#/components/schemas/party'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    Roles:
+      description: Matching role or roles
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/role'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -4145,6 +4226,25 @@ components:
 
     party:
       $ref: '#/components/schemas/Party'
+
+    Role:
+      type: object
+      properties:
+        ar_code:
+          type: string
+          description: "VegBank role identifier"
+          example: "ar.56"
+        name:
+          type: string
+          description: "Role name/label"
+          example: "Data aggregator"
+        description:
+          type: string
+          description: "Role description"
+          example: "Person who aggregates and directs data from one place or platform to another"
+
+    role:
+      $ref: '#/components/schemas/Role'
 
     Project:
       type: object
