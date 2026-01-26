@@ -127,6 +127,27 @@ project = [
     'stop_date'
 ]
 
+# system added:
+# - 'vb_ob_code'
+soil_obs = [
+    'user_ob_code',
+    'user_so_code',
+    'horizon',
+    'depth_top',
+    'depth_bottom',
+    'color',
+    'organic',
+    'texture',
+    'sand',
+    'silt',
+    'clay',
+    'coarse',
+    'ph',
+    'exchange_capacity',
+    'base_saturation',
+    'description',
+]
+
 #Adding soiltaxon fields now even though we're not uploading them yet, just in case. 
 soiltaxon = [
     'soilcode',
