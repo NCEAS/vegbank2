@@ -160,7 +160,7 @@ You can check whether your upgrade succeeded by executing the following command:
 $ helm history vegbankapi
 ```
 
-If you notice that the deploymeny has been applied, but the pods did not appear to have been updated, you can also restart the pods like such:
+If you notice that the deployment has been applied, but the pods did not appear to have been updated, you can also restart the pods like such:
 
 ```sh
 $ kubectl rollout restart deployment vegbankapi
