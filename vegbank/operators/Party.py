@@ -188,3 +188,66 @@ class Party(Operator):
 
         new_parties =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
         return new_parties
+
+    def upload_contributors(self, df, conn):
+        """
+        takes a parquet file of contributors and uploads it to the observationcontributor, 
+            projectcontributor, and classcontributor tables.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing contributors.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys.
+        """
+        required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
+        contributor_defs = table_defs_config.contributor.copy()
+        contributor_defs.append('vb_record_identifier')
+        contributor_defs.append('vb_py_code')
+        table_defs = [contributor_defs]
+
+        df.columns = map(str.lower, df.columns)
+
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "contributors")
+
+        df['user_cr_code'] = df['user_cr_code'].astype(str) 
+        
+        if 'contributor_type' in df.columns:
+            df['contributor_type'] = df['contributor_type'].astype(str)
+            df['contributor_type'] = df['contributor_type'].str.lower()
+            if df[~df['contributor_type'].isin(['observation', 'project', 'classification'])].empty is False:
+                validation['has_error'] = True
+                validation['error'] += "Invalid contributor_type found. Must be one of 'observation', 'project', or 'classification'. "
+
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        ob_contributor_df = df[df['contributor_type'] == 'observation']
+        pj_contributor_df = df[df['contributor_type'] == 'project'] 
+        cl_contributor_df = df[df['contributor_type'] == 'classification']
+        new_ob_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+        new_pj_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+        new_cl_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+        print(ob_contributor_df)
+        if ob_contributor_df.empty is False:
+            new_ob_contributors = super().upload_to_table("observation_contributor", 'cr', contributor_defs, 'observationcontributor_id', ob_contributor_df, False, conn, validate=True)
+        if pj_contributor_df.empty is False:
+            new_pj_contributors = super().upload_to_table("project_contributor", 'cr', contributor_defs, 'projectcontributor_id', pj_contributor_df, False, conn, validate=True)
+        if cl_contributor_df.empty is False:
+            new_cl_contributors = super().upload_to_table("class_contributor", 'cr', contributor_defs, 'classcontributor_id', cl_contributor_df, False, conn, validate=True)
+
+        new_records = new_ob_contributors['resources']['cr'] + new_pj_contributors['resources']['cr'] + new_cl_contributors['resources']['cr']
+        new_records_count = {
+            'inserted' : int(new_cl_contributors['counts']['cr']['inserted']) + int(new_ob_contributors['counts']['cr']['inserted']) + int(new_pj_contributors['counts']['cr']['inserted'])
+        }
+        to_return = {
+            'resources':{
+                'cr': new_records,
+            },
+            'counts':{
+                'cr': new_records_count,
+            }
+        }
+
+
+
+        return to_return

@@ -696,6 +696,10 @@ class PlotObservation(Operator):
             'ti': {
                 'file_name': 'taxon_interpretations',
                 'required': False
+            },
+            'cr':{
+                'file_name': 'contributors',
+                'required': False
             }
         }
         data = {}
@@ -825,6 +829,41 @@ class PlotObservation(Operator):
                         )
                     sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
                     to_return = combine_json_return(to_return, sds)
+                if data['cr'] is not None:
+                    if data['py'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pys['resources']['py'], data['cr'],
+                            {
+                                'user_py_code': 'user_py_code',
+                                'vb_py_code': 'vb_py_code'
+                            }
+                        )
+                    if data['pl'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pls['resources']['ob'], data['cr'],
+                            {
+                                'user_ob_code': 'record_identifier',
+                                'vb_ob_code': 'vb_record_identifier'
+                            }
+                        )
+                    if data['pj'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pjs['resources']['pj'], data['cr'],
+                            {
+                                'user_pj_code': 'record_identifier',
+                                'vb_pj_code': 'vb_record_identifier'
+                            }
+                        )
+                    if data['cl'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            cls['resources']['cl'], data['cr'],
+                            {
+                                'user_cl_code':'record_identifier',
+                                'vb_cl_code': 'vb_record_identifier'
+                            }
+                        )
+                    crs = Party(self.params).upload_contributors(data['cr'], conn)
+                    to_return = combine_json_return(to_return, crs)
                 to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
             conn.close()
             return jsonify(to_return)
