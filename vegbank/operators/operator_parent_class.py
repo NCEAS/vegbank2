@@ -27,6 +27,7 @@ table_code_lookup = {
     'stratum-methods': 'sm',
     'taxon-interpretations': 'ti',
     'taxon-observations': 'to',
+    'user-datasets': 'ds',
 }
 
 

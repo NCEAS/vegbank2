@@ -13,3 +13,4 @@ from .Role import Role
 from .StratumMethod import StratumMethod
 from .TaxonInterpretation import TaxonInterpretation
 from .TaxonObservation import TaxonObservation
+from .UserDataset import UserDataset

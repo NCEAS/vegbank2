@@ -22,7 +22,8 @@ from operators import (
     Project,
     Role,
     StratumMethod,
-    Reference
+    Reference,
+    UserDataset
 )
 
 
@@ -940,6 +941,55 @@ def roles(ar_code):
             "POST method is not supported for roles."), 405
     elif request.method == 'GET':
         return role_operator.get_vegbank_resources(request, ar_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
+@app.route("/user-datasets/<ds_code>")
+def user_datasets(ds_code):
+    """
+    Retrieve either an individual user dataset listing or a collection.
+
+    This function handles HTTP requests for user-defined datasets. It
+    currently supports only the GET method to retrieve datasets. If a
+    POST request is made, it returns an error message indicating that
+    POST is not supported. For any other HTTP method, it returns a 405
+    error.
+
+    If a valid ds_code is provided, returns the corresponding record if it
+    exists. If no ds_code is provided, returns the full collection of
+    user dataset records with pagination and field scope controlled by
+    query parameters.
+
+    Parameters:
+        ds_code (str or None): The unique identifier for the dataset
+            being retrieved. If None, retrieves all datasets.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved user dataset(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    user_dataset_operator = UserDataset(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for community_interpretations."), 405
+    elif request.method == 'GET':
+        return user_dataset_operator.get_vegbank_resources(request, ds_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
