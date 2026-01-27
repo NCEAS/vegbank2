@@ -66,6 +66,13 @@ tags:
   description: Operations related to projects
 - name: References
   description: Operations related to references
+- name: User Datasets
+  description: |
+    Operations related to VegBank datasets. A dataset is an arbitrary
+    user-defined collection of plot observations, typically defined for
+    some specific analysis or similar activity, and registered in
+    VegBank with a stable identifier that can be used for citing and
+    sharing this defined collection.
 
 paths:
   /plot-observations/{ob_code}:
@@ -1531,6 +1538,75 @@ paths:
         '500':
           $ref: "#/components/responses/InvalidDataUpload"
 
+  /user-datasets/{ds_code}:
+    get:
+      tags:
+        - User Datasets
+      operationId: get-ds-by-id
+      summary: Get a user-defined dataset entry
+      description: >
+        Retrieve the catalog entry for a single public user-defined dataset
+        using its `ds_code`.
+      parameters:
+        - name: ds_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ds.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserDatasets"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /user-datasets:
+    get:
+      tags:
+        - User Datasets
+      operationId: get-ds
+      summary: Get all user-defined datasets entries
+      description: >
+        Retrieve a paginated catalog of all public user-defined datasets
+        registered in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserDatasets"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - User Datasets
+      operationId: upload-ds
+      summary: Upload a new user-defined dataset, which defines a bundle
+        of one or more plot observations
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
 components:
   parameters:
     search:
@@ -2013,6 +2089,19 @@ components:
           schema:
             allOf:
               - $ref: '#/components/schemas/reference'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    UserDatasets:
+      description: Matching user-defined dataset(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/user_dataset'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -4351,6 +4440,55 @@ components:
 
     reference:
       $ref: '#/components/schemas/Reference'
+
+    UserDataset:
+      type: object
+      properties:
+        ds_code:
+          type: string
+          description: "VegBank dataset identifier"
+          example: "ds.1"
+        accession_code:
+          type: string
+          description: "Accession code identifying older VegBank datasets"
+          example: "VB.ds.196904.27074B058D5FD45"
+        start:
+          type: string
+          format: date
+          description: "Dataset creation date"
+          example: "2006-05-30"
+        stop:
+          type: string
+          format: date
+          description: "User-defined dataset expiration date"
+          example: "2006-05-30"
+        name:
+          type: string
+          description: "Dataset name"
+          example: "Example dataset 1"
+        description:
+          type: string
+          description: "Dataset description"
+          example: "Some plots in North Carolina"
+        type:
+          type: string
+          description: "Dataset type"
+          example: "normal"
+        owner_label:
+          type: string
+          description: "Name of the dataset creator/owner"
+          example: "Mary Smith"
+        owner_email:
+          type: string
+          description: "Email address of dataset creator/owner"
+          example: "msmith@university.edu"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this dataset"
+          example: 17
+
+    user_dataset:
+      $ref: '#/components/schemas/UserDataset'
 
     #Placeholder for upload schemas
     tbd:
