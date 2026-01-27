@@ -69,6 +69,7 @@ def welcome_page():
 @app.route("/community-concepts/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
 def plot_observations(vb_code):
     """
     Retrieve either an individual plot observation or a collection, or
