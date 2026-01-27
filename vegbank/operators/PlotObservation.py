@@ -947,7 +947,6 @@ class PlotObservation(Operator):
         # Insert soil observations into soilobs table
         #
 
-        print("--- UPLOADING SOIL OBSERVATIONS ---")
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         df['user_so_code'] = df['user_so_code'].astype(str)
         so_actions = super().upload_to_table("soil_obs", 'so',
