@@ -678,6 +678,10 @@ class PlotObservation(Operator):
                 'file_name': 'soils',
                 'required': False
             },
+            'do': {
+                'file_name': 'disturbances',
+                'required': False
+            },
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False
@@ -744,6 +748,14 @@ class PlotObservation(Operator):
                          'vb_ob_code': 'vb_ob_code'})
                     sos = self.upload_soil(data['so'], conn)
                     to_return = combine_json_return(to_return, sos)
+                if data['do'] is not None:
+                    data['do']['user_ob_code'] = data['do']['user_ob_code'].astype(str)
+                    data['do'] = merge_vb_codes(
+                        pls['resources']['ob'], data['do'],
+                        {'user_ob_code': 'user_ob_code',
+                         'vb_ob_code': 'vb_ob_code'})
+                    dos = self.upload_disturbance(data['do'], conn)
+                    to_return = combine_json_return(to_return, dos)
                 if data['cl'] is not None:
                     # TODO: Need validation to make sure this field exists; the
                     # underlying comm class upload method called below won't
@@ -958,6 +970,79 @@ class PlotObservation(Operator):
             },
             'counts':{
                 'so': so_actions['counts']['so'],
+            }
+        }
+        return to_return
+
+    def upload_disturbance(self, df, conn):
+        """
+        Take the Disturbance loader DataFrame and insert its contents into the
+        disturbanceobs table.
+
+        Preconditions:
+        - Every vb_ob_code matches an existing plot observation record
+        Step 1: (*) INSERT INTO disturbanceobs:
+                observation_id <- from vb_ob_code (upstream)
+                disturbancetype <- type
+                disturbanceintensity <- intensity
+                disturbanceage <- age
+                disturbanceextent <- extent
+                disturbancecomment <- comment
+                RETURNING disturbanceobs_id -> vb_do_code
+
+        Parameters:
+            df (pandas.DataFrame): Disturbance data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "do": {"inserted": 1},
+                    },
+                    "resources": {
+                        "do": [{"action": "inserted",
+                                "user_do_code": "my_disturbanceobs_1",
+                                "vb_do_code": "do.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'disturbance')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_disturbance_obs = table_defs_config.disturbance_obs[:]
+        table_defs = [config_disturbance_obs]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['vb_ob_code', 'user_do_code', 'type']
+
+        # TODO: Why do we do this here, but not in other upload methods?
+        config_disturbance_obs.append('vb_ob_code')
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "disturbance observations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert disturbance observations into disturbanceobs table
+        #
+
+        df['user_ob_code'] = df['user_ob_code'].astype(str)
+        df['user_do_code'] = df['user_do_code'].astype(str)
+        do_actions = super().upload_to_table("disturbance_obs", 'do',
+            config_disturbance_obs, 'disturbanceobs_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'do': do_actions['resources']['do'],
+            },
+            'counts':{
+                'do': do_actions['counts']['do'],
             }
         }
         return to_return
