@@ -148,6 +148,18 @@ soil_obs = [
     'description',
 ]
 
+# system added:
+# - 'vb_ob_code'
+disturbance_obs = [
+    'user_ob_code',
+    'user_do_code',
+    'type',
+    'intensity',
+    'age',
+    'extent',
+    'comment',
+]
+
 #Adding soiltaxon fields now even though we're not uploading them yet, just in case. 
 soiltaxon = [
     'soilcode',
