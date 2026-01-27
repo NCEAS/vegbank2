@@ -455,6 +455,19 @@ class PlotObservation(Operator):
                     'sql': "ob.observation_id = %s",
                     'params': ['vb_id']
                 },
+                'ds': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT itemrecord
+                              FROM userdataset ud
+                              JOIN userdatasetitem udi USING (userdataset_id)
+                              WHERE ud.datasetsharing = 'public'
+                                AND udi.itemtable = 'observation'
+                                AND ob.observation_id = udi.itemrecord
+                                AND ud.userdataset_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
                 'cc': {
                     'sql': """\
                         EXISTS (

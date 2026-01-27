@@ -292,6 +292,38 @@ paths:
           $ref: "#/components/responses/PlotObservations"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+  /user-datasets/{ds_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-ds
+      summary: Get all plot observations included in a user dataset
+      description: >
+        Retrieve a paginated and sorted collection of all plot
+        observations associated with the specified user dataset (using
+        its `ds_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: ds_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ds.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
   /plot-observations:
     get:
       tags:
