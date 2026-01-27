@@ -918,7 +918,7 @@ class PlotObservation(Operator):
                 RETURNING soilobs_id -> vb_so_code
 
         Parameters:
-            df (pandas.DataFrame): Community correlations data
+            df (pandas.DataFrame): Soil data
             conn (psycopg.Connection): Active database connection
         Returns:
             dict: A dictionary containing either error messages in the event of
