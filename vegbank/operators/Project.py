@@ -26,6 +26,12 @@ class Project(Operator):
         self.table_code = "pj"
         self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.sort_options = ["default", "project_name", "obs_count"]
+        self.required_fields = {
+            "projects": ['user_pj_code', 'project_name']
+        }
+        self.table_defs = {
+            "projects": [table_defs_config.project]
+        }
         
 
     def configure_query(self, *args, **kwargs):

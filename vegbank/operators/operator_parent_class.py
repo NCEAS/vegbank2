@@ -11,7 +11,7 @@ import pyarrow.parquet as pq
 import traceback
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import jsonify_error_message, QueryParameterError
+from utilities import jsonify_error_message,validate_required_and_missing_fields, QueryParameterError
 
 table_code_lookup = {
     'community-classifications': 'cl',
@@ -103,6 +103,8 @@ class Operator:
         self.include_full_count = True
         self.debug = True
         self.query_mode = 'normal'
+        self.required_fields = {}
+        self.table_defs = {}
 
     def extract_id_from_vb_code(self, vb_code, table_code = None):
         """
@@ -721,3 +723,6 @@ class Operator:
             }
 
             return to_return
+
+    def validate(self, df, file_name):
+        return validate_required_and_missing_fields(df, self.required_fields[file_name], self.table_defs[file_name], file_name)

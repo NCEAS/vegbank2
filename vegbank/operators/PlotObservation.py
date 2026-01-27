@@ -5,7 +5,7 @@ from psycopg import connect
 from psycopg.rows import dict_row
 import pandas as pd
 import traceback
-from operators import Operator, table_defs_config
+from operators import Operator, table_defs_config, Validator
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
@@ -708,14 +708,26 @@ class PlotObservation(Operator):
             }
         }
         data = {}
+        validation = {
+            "has_error":False,
+            "error": ""
+        }
         to_return = None
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
+                file_validation = Validator.validate(data[name], config['file_name'])
+                print(config['file_name'])
+                print(file_validation)
+                validation['error'] += file_validation['error']
+                validation['has_error'] = file_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
-
+        
+        if validation['has_error']:
+            return jsonify_error_message(validation['error'])
+        
         try:
             with connect(**self.params, row_factory=dict_row) as conn:
                 if data['pj'] is not None:
