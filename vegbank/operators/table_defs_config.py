@@ -127,6 +127,39 @@ project = [
     'stop_date'
 ]
 
+# system added:
+# - 'vb_ob_code'
+soil_obs = [
+    'user_ob_code',
+    'user_so_code',
+    'horizon',
+    'depth_top',
+    'depth_bottom',
+    'color',
+    'organic',
+    'texture',
+    'sand',
+    'silt',
+    'clay',
+    'coarse',
+    'ph',
+    'exchange_capacity',
+    'base_saturation',
+    'description',
+]
+
+# system added:
+# - 'vb_ob_code'
+disturbance_obs = [
+    'user_ob_code',
+    'user_do_code',
+    'type',
+    'intensity',
+    'age',
+    'extent',
+    'comment',
+]
+
 #Adding soiltaxon fields now even though we're not uploading them yet, just in case. 
 soiltaxon = [
     'soilcode',
@@ -186,6 +219,37 @@ taxon_observation = [
     'author_plant_name',
     'vb_rf_code',
     'taxon_inference_area' #This and inference area are actually different in the data even though they sound similar
+]
+
+# system added:
+# - 'vb_ob_code'
+comm_class = [
+    'user_ob_code',
+    'user_cl_code',
+    'class_start_date',
+    'class_stop_date',
+    'inspection',
+    'table_analysis',
+    'multivariate_analysis',
+    'expert_system',
+    'vb_comm_class_rf_code',
+    'user_comm_class_rf_code',
+    'class_notes'
+]
+
+# system added:
+# - 'user_ci_code'
+# - 'vb_cl_code'
+comm_interp = [
+    'user_cl_code',
+    'vb_cc_code',
+    'class_fit',
+    'class_confidence',
+    'vb_authority_rf_code',
+    'user_authority_rf_code',
+    'interp_notes',
+    'type',
+    'nomenclaturaltype'
 ]
 
 # system added:
@@ -330,4 +394,12 @@ reference = [
     'short_name',
     'full_citation',
     'url'
+]
+
+contributor = [
+    'user_cr_code',
+    'user_py_code',
+    'vb_ar_code',
+    'contributor_type',
+    'record_identifier'
 ]

@@ -9,6 +9,8 @@ from .PlantConcept import PlantConcept
 from .PlotObservation import PlotObservation
 from .Project import Project
 from .Reference import Reference
+from .Role import Role
 from .StratumMethod import StratumMethod
 from .TaxonInterpretation import TaxonInterpretation
 from .TaxonObservation import TaxonObservation
+from .UserDataset import UserDataset

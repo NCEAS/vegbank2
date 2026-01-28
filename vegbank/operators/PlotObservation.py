@@ -1,26 +1,24 @@
 import os
 import textwrap
 from flask import jsonify
-import psycopg
 from psycopg import connect
 from psycopg.rows import dict_row
 import pandas as pd
-import numpy as np
 import traceback
 from operators import Operator, table_defs_config
+from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
 from .Reference import Reference
-from .TaxonObservation import TaxonObservation 
-from utilities import( 
-    jsonify_error_message, 
-    allowed_file, 
-    validate_required_and_missing_fields,read_parquet_file, 
-    UploadDataError, 
-    merge_vb_codes, 
-    combine_json_return, 
+from .TaxonObservation import TaxonObservation
+from utilities import(
+    jsonify_error_message,
+    validate_required_and_missing_fields,read_parquet_file,
+    UploadDataError,
+    merge_vb_codes,
+    combine_json_return,
     dry_run_check
-                      )
+)
 
 
 class PlotObservation(Operator):
@@ -457,6 +455,19 @@ class PlotObservation(Operator):
                     'sql': "ob.observation_id = %s",
                     'params': ['vb_id']
                 },
+                'ds': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT itemrecord
+                              FROM userdataset ud
+                              JOIN userdatasetitem udi USING (userdataset_id)
+                              WHERE ud.datasetsharing = 'public'
+                                AND udi.itemtable = 'observation'
+                                AND ob.observation_id = udi.itemrecord
+                                AND ud.userdataset_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
                 'cc': {
                     'sql': """\
                         EXISTS (
@@ -676,6 +687,18 @@ class PlotObservation(Operator):
                 'file_name': 'plot_observations',
                 'required': True
             },
+            'so': {
+                'file_name': 'soils',
+                'required': False
+            },
+            'do': {
+                'file_name': 'disturbances',
+                'required': False
+            },
+            'cl': {
+                'file_name': 'community_classifications',
+                'required': False
+            },
             'sr': {
                 'file_name': 'strata',
                 'required': False
@@ -690,6 +713,10 @@ class PlotObservation(Operator):
             },
             'ti': {
                 'file_name': 'taxon_interpretations',
+                'required': False
+            },
+            'cr':{
+                'file_name': 'contributors',
                 'required': False
             }
         }
@@ -726,6 +753,47 @@ class PlotObservation(Operator):
 
                     pls = PlotObservation(self.params).upload_plot_observations(data['pl'], conn)
                     to_return = combine_json_return(to_return, pls)
+                if data['so'] is not None:
+                    data['so']['user_ob_code'] = data['so']['user_ob_code'].astype(str)
+                    data['so'] = merge_vb_codes(
+                        pls['resources']['ob'], data['so'],
+                        {'user_ob_code': 'user_ob_code',
+                         'vb_ob_code': 'vb_ob_code'})
+                    sos = self.upload_soil(data['so'], conn)
+                    to_return = combine_json_return(to_return, sos)
+                if data['do'] is not None:
+                    data['do']['user_ob_code'] = data['do']['user_ob_code'].astype(str)
+                    data['do'] = merge_vb_codes(
+                        pls['resources']['ob'], data['do'],
+                        {'user_ob_code': 'user_ob_code',
+                         'vb_ob_code': 'vb_ob_code'})
+                    dos = self.upload_disturbance(data['do'], conn)
+                    to_return = combine_json_return(to_return, dos)
+                if data['cl'] is not None:
+                    # TODO: Need validation to make sure this field exists; the
+                    # underlying comm class upload method called below won't
+                    # check for it because it's not required in the context of
+                    # standalone comm class uploads
+                    data['cl']['user_ob_code'] = data['cl']['user_ob_code'].astype(str)
+                    # ... merge in newly created vb_ob_codes
+                    data['cl'] = merge_vb_codes(
+                        pls['resources']['ob'], data['cl'],
+                        {'user_ob_code': 'user_ob_code',
+                         'vb_ob_code': 'vb_ob_code'})
+                    if data['rf'] is not None:
+                        # ... merge in newly created comm class vb_rf_codes
+                        data['cl'] = merge_vb_codes(
+                            rfs['resources']['rf'], data['cl'],
+                            {'user_rf_code': 'user_comm_class_rf_code',
+                             'vb_rf_code': 'vb_comm_class_rf_code'})
+                        # ... merge in newly created interp authority vb_rf_codes
+                        data['cl'] = merge_vb_codes(
+                            rfs['resources']['rf'], data['cl'],
+                            {'user_rf_code': 'user_authority_rf_code',
+                             'vb_rf_code': 'vb_authority_rf_code'})
+                    cls = CommunityClassification(self.params) \
+                        .upload_community_classifications(data['cl'], conn)
+                    to_return = combine_json_return(to_return, cls)
                 if data['sr'] is not None:
                     if data['pl'] is not None:
                         data['sr'] = merge_vb_codes(
@@ -795,9 +863,199 @@ class PlotObservation(Operator):
                         )
                     sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
                     to_return = combine_json_return(to_return, sds)
+                if data['cr'] is not None:
+                    if data['py'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pys['resources']['py'], data['cr'],
+                            {
+                                'user_py_code': 'user_py_code',
+                                'vb_py_code': 'vb_py_code'
+                            }
+                        )
+                    if data['pl'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pls['resources']['ob'], data['cr'],
+                            {
+                                'user_ob_code': 'record_identifier',
+                                'vb_ob_code': 'vb_record_identifier'
+                            }
+                        )
+                    if data['pj'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pjs['resources']['pj'], data['cr'],
+                            {
+                                'user_pj_code': 'record_identifier',
+                                'vb_pj_code': 'vb_record_identifier'
+                            }
+                        )
+                    if data['cl'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            cls['resources']['cl'], data['cr'],
+                            {
+                                'user_cl_code':'record_identifier',
+                                'vb_cl_code': 'vb_record_identifier'
+                            }
+                        )
+                    crs = Party(self.params).upload_contributors(data['cr'], conn)
+                    to_return = combine_json_return(to_return, crs)
                 to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
             conn.close()
             return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
             return jsonify_error_message(str(e)), 500
+
+    def upload_soil(self, df, conn):
+        """
+        Take the Soil loader DataFrame and insert its contents into the soilobs
+        table.
+
+        Preconditions:
+        - Every vb_ob_code matches an existing plot observation record
+        Step 1: (*) INSERT INTO soilobs:
+                observation_id <- from vb_ob_code (upstream)
+                soilhorizon <- horizon
+                soildepthtop <- depth_top
+                soildepthbottom <- depth_bottom
+                soilcolor <- color
+                soilorganic <- organic
+                soiltexture <- texture
+                soilsand <- sand
+                soilsilt <- silt
+                soilclay <- clay
+                soilcoarse <- coarse
+                soilph <- ph
+                exchangecapacity <- exchange_capacity
+                basesaturation <- base_saturation
+                soildescription <- description
+                RETURNING soilobs_id -> vb_so_code
+
+        Parameters:
+            df (pandas.DataFrame): Soil data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "so": {"inserted": 1},
+                    },
+                    "resources": {
+                        "so": [{"action": "inserted",
+                                "user_so_code": "my_soilobs_1",
+                                "vb_so_code": "so.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'soil')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_soil_obs = table_defs_config.soil_obs[:]
+        table_defs = [config_soil_obs]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['vb_ob_code', 'user_so_code', 'horizon']
+
+        # TODO: Why do we do this here, but not in other upload methods?
+        config_soil_obs.append('vb_ob_code')
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "soil observations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert soil observations into soilobs table
+        #
+
+        df['user_ob_code'] = df['user_ob_code'].astype(str)
+        df['user_so_code'] = df['user_so_code'].astype(str)
+        so_actions = super().upload_to_table("soil_obs", 'so',
+            config_soil_obs, 'soilobs_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'so': so_actions['resources']['so'],
+            },
+            'counts':{
+                'so': so_actions['counts']['so'],
+            }
+        }
+        return to_return
+
+    def upload_disturbance(self, df, conn):
+        """
+        Take the Disturbance loader DataFrame and insert its contents into the
+        disturbanceobs table.
+
+        Preconditions:
+        - Every vb_ob_code matches an existing plot observation record
+        Step 1: (*) INSERT INTO disturbanceobs:
+                observation_id <- from vb_ob_code (upstream)
+                disturbancetype <- type
+                disturbanceintensity <- intensity
+                disturbanceage <- age
+                disturbanceextent <- extent
+                disturbancecomment <- comment
+                RETURNING disturbanceobs_id -> vb_do_code
+
+        Parameters:
+            df (pandas.DataFrame): Disturbance data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "do": {"inserted": 1},
+                    },
+                    "resources": {
+                        "do": [{"action": "inserted",
+                                "user_do_code": "my_disturbanceobs_1",
+                                "vb_do_code": "do.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'disturbance')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_disturbance_obs = table_defs_config.disturbance_obs[:]
+        table_defs = [config_disturbance_obs]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['vb_ob_code', 'user_do_code', 'type']
+
+        # TODO: Why do we do this here, but not in other upload methods?
+        config_disturbance_obs.append('vb_ob_code')
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "disturbance observations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert disturbance observations into disturbanceobs table
+        #
+
+        df['user_ob_code'] = df['user_ob_code'].astype(str)
+        df['user_do_code'] = df['user_do_code'].astype(str)
+        do_actions = super().upload_to_table("disturbance_obs", 'do',
+            config_disturbance_obs, 'disturbanceobs_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'do': do_actions['resources']['do'],
+            },
+            'counts':{
+                'do': do_actions['counts']['do'],
+            }
+        }
+        return to_return

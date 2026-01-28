@@ -23,9 +23,11 @@ table_code_lookup = {
     'plot-observations': 'ob',
     'projects': 'pj',
     'references': 'rf',
+    'roles': 'ar',
     'stratum-methods': 'sm',
     'taxon-interpretations': 'ti',
     'taxon-observations': 'to',
+    'user-datasets': 'ds',
 }
 
 
