@@ -441,7 +441,7 @@ class PlotObservation(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_observation < 6",
+                        "(emb_observation < 6 OR emb_observation IS NULL)",
                     ],
                     'params': []
                 },
