@@ -124,7 +124,7 @@ class TaxonObservation(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_taxonobservation < 6",
+                        "(emb_taxonobservation < 6 OR emb_taxonobservation IS NULL)",
                     ],
                     'params': []
                 },

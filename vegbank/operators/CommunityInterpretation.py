@@ -122,7 +122,7 @@ class CommunityInterpretation(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_comminterpretation < 6",
+                        "(emb_comminterpretation < 6 OR emb_comminterpretation IS NULL)",
                     ],
                     'params': []
                 },

@@ -167,7 +167,7 @@ class CommunityClassification(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_commclass < 6",
+                        "(emb_commclass < 6 OR emb_commclass IS NULL)",
                     ],
                     'params': []
                 },
