@@ -609,6 +609,7 @@ class PlotObservation(Operator):
             raise ValueError(validation['error']) 
 
         df['user_pl_code'] = df['user_pl_code'].astype(str)
+        to_return = None
         if not new_plots_df.empty:
             plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
             
@@ -618,20 +619,12 @@ class PlotObservation(Operator):
             df = df.merge(pl_codes_df, on='user_pl_code', how='left')
             df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
             df.drop(columns=['vb_pl_code_y'], inplace=True)
+            to_return = combine_json_return(to_return, plot_codes)
 
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
+        to_return = combine_json_return(to_return, observation_codes)
 
-        to_return = {
-            'resources':{
-                'pl': plot_codes['resources']['pl'],
-                'ob': observation_codes['resources']['ob']
-            },
-            'counts':{
-                'pl': plot_codes['counts']['pl'],
-                'ob': observation_codes['counts']['ob']
-            }
-        }
         return to_return
     
     def upload_all(self, request):
