@@ -998,7 +998,7 @@ def user_datasets(ds_code):
 
 @app.route("/identifiers", methods=['GET'])
 @app.route("/identifiers/<identifier_value>")
-def user_datasets():
+def identifiers():
     # TODO
     return
 
