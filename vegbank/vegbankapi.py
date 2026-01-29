@@ -25,6 +25,8 @@ from operators import (
     Reference,
     UserDataset
 )
+import cProfile
+import pstats
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
@@ -142,9 +144,19 @@ def plot_observations(vb_code):
             - 405: Unsupported HTTP method
     """
     plot_observation_operator = PlotObservation(params)
+    performance_test = request.args.get('performance_test', 'false').lower() == 'true'
     if request.method == 'POST':
+        if performance_test:
+            filename="upload_performance.txt"
+            cProfile.runctx("po.upload_all(r)", {}, {"po": PlotObservation(params), "r": request}, filename)
+            pstats.Stats(filename).sort_stats('cumulative').print_stats(20)
+            return jsonify("Performance test completed. See get_performance.txt for details.")
         return PlotObservation(params).upload_all(request)
     elif request.method == 'GET':
+        if performance_test:
+            cProfile.runctx("po.get_vegbank_resources(r, vc)", {}, {"po": PlotObservation(params), "r": request, "vc": vb_code}, filename="get_performance.txt")
+            pstats.Stats("get_performance.txt").sort_stats('cumulative').print_stats(20)
+            return jsonify("Performance test completed. See get_performance.txt for details.")
         return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
