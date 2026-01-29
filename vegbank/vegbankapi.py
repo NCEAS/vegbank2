@@ -999,8 +999,13 @@ def user_datasets(ds_code):
 @app.route("/identifiers", methods=['GET'])
 @app.route("/identifiers/<identifier_value>")
 def identifiers():
-    # TODO
-    return
+    """
+    TODO - Fill out docstring with more details
+    Resolve a given id/value (ex. accession code, citation) to its respective
+    end point if it exists in the 'identifiers' table.
+    """
+    identifiers_classification_operator = Identifiers(params)
+    return True
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
