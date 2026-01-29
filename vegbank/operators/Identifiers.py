@@ -1,4 +1,4 @@
-class Identifier:
+class Identifiers:
     """
     Docstring for Identifier - TODO
     """
