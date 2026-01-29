@@ -995,7 +995,7 @@ def user_datasets(ds_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
-
+# TODO - Determine what routes are needed, if specific defaults are required
 @app.route("/identifiers", methods=['GET'])
 @app.route("/identifiers/<identifier_value>")
 def identifiers():
@@ -1005,7 +1005,8 @@ def identifiers():
     end point if it exists in the 'identifiers' table.
     """
     identifiers_classification_operator = Identifiers(params)
-    return True
+    # TODO Confirm with team what is exactly expected when given an identifier
+    return
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
