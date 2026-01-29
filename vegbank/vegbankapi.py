@@ -23,7 +23,8 @@ from operators import (
     Role,
     StratumMethod,
     Reference,
-    UserDataset
+    UserDataset,
+    Identifiers
 )
 
 
@@ -994,6 +995,12 @@ def user_datasets(ds_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
+@app.route("/identifiers", methods=['GET'])
+@app.route("/identifiers/<identifier_value>")
+def user_datasets():
+    # TODO
+    return
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
