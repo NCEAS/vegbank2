@@ -1006,6 +1006,11 @@ def identifiers(identifier_value):
     """
     if identifier_value is None:
         return jsonify_error_message("An identifier value or citation must be provided."), 405
+    else:
+        # TODO: Query the identifiers table
+        # SELECT * from identifiers WHERE identifier_value
+        value_found = "Yay!"
+        return "An equivalent identifier has been found: {value_found}"
     # TODO: Determine if it is necessary to extend identifiers as an operator class
     # identifiers_classification_operator = Identifiers(params)
     # TODO Confirm with team what is exactly expected when given an identifier
