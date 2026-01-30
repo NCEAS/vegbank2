@@ -1009,10 +1009,25 @@ def identifiers(identifier_value):
     else:
         # TODO: Determine if it is necessary to extend identifiers as an operator class
         # identifiers_classification_operator = Identifiers(params)
-        # TODO: Query the identifiers table
-        # SELECT * from identifiers WHERE identifier_value
-        value_found = "Yay!"
-        return "An equivalent identifier has been found: {value_found}"
+        try:
+            with connect(**params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                    """
+                    SELECT identifier_id,
+                           vb_table_code,
+                           vb_record_id,
+                           identifier_type,
+                           identifier_value
+                    FROM identifiers
+                    WHERE identifier_value = %s
+                    """,
+                    (identifier_value,)
+                )
+                    return cur.fetchone()
+        except Exception:
+            print(traceback.format_exc())
+            raise
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
