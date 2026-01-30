@@ -24,7 +24,7 @@ from operators import (
     StratumMethod,
     Reference,
     UserDataset,
-    Identifiers
+    Identifiers,
 )
 
 
@@ -996,17 +996,20 @@ def user_datasets(ds_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 # TODO - Determine what routes are needed, if specific defaults are required
-@app.route("/identifiers", methods=['GET'])
+@app.route("/identifiers", defaults={'identifier_value': None}, methods=['GET'])
 @app.route("/identifiers/<identifier_value>")
-def identifiers():
+def identifiers(identifier_value):
     """
     TODO - Fill out docstring with more details
     Resolve a given id/value (ex. accession code, citation) to its respective
     end point if it exists in the 'identifiers' table.
     """
+    print(identifier_value)
     identifiers_classification_operator = Identifiers(params)
+    id_checked = identifiers_classification_operator.exists("Dou")
     # TODO Confirm with team what is exactly expected when given an identifier
-    return
+    return id_checked
+    # return "<h1>Welcome to the VegBank API - Identifiers</h1>"
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
