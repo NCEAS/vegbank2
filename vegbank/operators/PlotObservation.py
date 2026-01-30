@@ -717,11 +717,13 @@ class PlotObservation(Operator):
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
-                file_validation = Validator.validate(data[name], config['file_name'])
-                print(config['file_name'])
-                print(file_validation)
-                validation['error'] += file_validation['error']
-                validation['has_error'] = file_validation['has_error'] or validation['has_error']
+                if data[name] is not None:
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    print(config['file_name'])
+                    print(file_validation)
+                    validation['error'] += file_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or validation['has_error']
+
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
         
