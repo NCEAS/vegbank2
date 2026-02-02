@@ -1000,12 +1000,28 @@ def user_datasets(ds_code):
 @app.route("/identifiers/<identifier_value>")
 def identifiers(identifier_value):
     """
-    TODO - Fill out docstring with more details
-    Resolve a given id/value (ex. accession code, citation) to its respective
-    end point if it exists in the 'identifiers' table.
+    Retrieve an individual record for a given citation or identifier value. 
+
+    This function handles HTTP requests for identifying 'vb_codes' for historical
+    accession codes, citations and other identifiers, supporting only the 'GET'
+    method to retrieve an identifier.
+
+    If an identifier is found for a given 'identifier_value', we return the
+    corresponding record along with the 'identifier_value's 'vb_code'. If no record
+
+    Parameters:
+        identifier_value (str or None): The identifier value that the user would like
+            to search the 'identifiers' table for. Ex. "VB.TO.64992.VACCINIUMBOREAL"
+    
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved user dataset(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 404: Not Found
     """
     if identifier_value is None:
-        return jsonify_error_message("An identifier value or citation must be provided."), 405
+        return jsonify_error_message("An identifier value or citation must be provided."), 400
     else:
         # Query the database for a match of the given identifier value
         try:
@@ -1031,7 +1047,7 @@ def identifiers(identifier_value):
                             jsonify_error_message(
                                 f"Identifier value ({identifier_value}) not found."
                             ),
-                            405,
+                            404,
                         )
                     else:
                         # Add the 'vb_code' to result for convenience
