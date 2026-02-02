@@ -56,7 +56,7 @@ def before_request():
     if request.method == 'POST':
         if allow_uploads is False:
             return jsonify_error_message("Uploads not allowed."), 403
-        
+
 @app.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
@@ -1023,8 +1023,21 @@ def identifiers(identifier_value):
                     WHERE identifier_value = %s
                     """,
                     (identifier_value,)
-                )
-                    return cur.fetchone()
+                    )
+                    # Get result
+                    row = cur.fetchone()
+                    # If no result found, return error message
+                    if row is None:
+                        return (
+                            jsonify_error_message(
+                                f"Identifier value ({identifier_value}) not found."
+                            ),
+                            405,
+                        )
+                    else:
+                        # Add the 'vb_code' to result for convenience
+                        row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
+                        return row
         except Exception:
             print(traceback.format_exc())
             raise
