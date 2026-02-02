@@ -995,7 +995,7 @@ def user_datasets(ds_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
-# TODO - Determine what routes are needed, if specific defaults are required
+
 @app.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
 @app.route("/identifiers/<identifier_value>")
 def identifiers(identifier_value):
@@ -1007,8 +1007,7 @@ def identifiers(identifier_value):
     if identifier_value is None:
         return jsonify_error_message("An identifier value or citation must be provided."), 405
     else:
-        # TODO: Determine if it is necessary to extend identifiers as an operator class
-        # identifiers_classification_operator = Identifiers(params)
+        # Query the database for a match of the given identifier value
         try:
             with connect(**params, row_factory=dict_row) as conn:
                 with conn.cursor() as cur:
