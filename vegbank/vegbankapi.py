@@ -1007,6 +1007,7 @@ def identifiers(identifier_value):
 
     If an identifier is found for a given 'identifier_value', we return the
     corresponding record along with the 'identifier_value's 'vb_code'. If no record
+    is found, we return a message stating so.
 
     Parameters:
         identifier_value (str or None): The identifier value that the user would like
@@ -1023,6 +1024,8 @@ def identifiers(identifier_value):
     else:
         # Query the database for a match of the given identifier value
         try:
+            # Handle potential whitespace
+            identifier_value = identifier_value.strip()
             with connect(**params, row_factory=dict_row) as conn:
                 with conn.cursor() as cur:
                     cur.execute(
