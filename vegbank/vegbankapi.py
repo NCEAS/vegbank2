@@ -1056,8 +1056,8 @@ def identifiers(identifier_value):
                         # - plot observations (`od`)
                         # - commconcept (`cc`)
                         # - datasets (`ds`)
-                        if row["vb_table_code"] is "od" or "cc" or "ds":
-                            row["supported_redirect"] = True
+                        supported = row["vb_table_code"] in {"od", "cc", "ds"}
+                        row["supported_redirect"] = supported
                         return row
         except Exception:
             print(traceback.format_exc())
