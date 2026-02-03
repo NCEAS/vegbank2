@@ -1014,8 +1014,7 @@ def identifiers(identifier_value):
     
     Returns:
         flask.Response: A Flask response object containing:
-            - 200: Successfully retrieved user dataset(s) as JSON or
-                   Parquet (GET)
+            - 200: Successfully retrieved matching identifier
             - 400: Invalid parameters
             - 404: Not Found
     """
