@@ -996,7 +996,7 @@ def user_datasets(ds_code):
 
 
 @app.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
-@app.route("/identifiers/<identifier_value>")
+@app.route("/identifiers/<path:identifier_value>")
 def identifiers(identifier_value):
     """
     Retrieve an individual record for a given citation or identifier value. 
