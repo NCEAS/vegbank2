@@ -1058,7 +1058,7 @@ def identifiers(identifier_value):
                         # - datasets (`ds`)
                         supported = row["vb_table_code"] in {"od", "cc", "ds"}
                         row["supported_redirect"] = supported
-                        return row
+                        return jsonify(row), 200
         except Exception:
             print(traceback.format_exc())
             raise
