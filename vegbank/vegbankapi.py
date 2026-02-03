@@ -1051,6 +1051,13 @@ def identifiers(identifier_value):
                     else:
                         # Add the 'vb_code' to result for convenience
                         row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
+                        # Add a new field 'supported_redirect' for convenience
+                        # As of 2026/03:
+                        # - plot observations (`od`)
+                        # - commconcept (`cc`)
+                        # - datasets (`ds`)
+                        if row["vb_table_code"] is "od" or "cc" or "ds":
+                            row["supported_redirect"] = True
                         return row
         except Exception:
             print(traceback.format_exc())
