@@ -1,5 +1,5 @@
 from operators import table_defs_config
-from utilities import validate_required_and_missing_fields, validate_xor_pairs
+from utilities import validate_required_and_missing_fields
 config = {
     # Defines the required fields and table defs for each file that vegbank uploads. 
     
@@ -105,3 +105,46 @@ def validate_plot_observations(df):
     validation['error'] += new_validation['error'] + old_validation['error']
     validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
     return validation
+
+
+def validate_xor_pairs(df, xor_pairs, file_name):
+    '''
+    Takes a list of column name pairs and verifies that each pair has only one of the two columns populated per row.
+    Parameters:
+        df (pd.DataFrame): The dataframe to be validated.
+        xor_pairs (list): A list of tuples, where each tuple contains two column names that should be mutually exclusive.
+        file_name (str): The name of the file being validated (used in error messages).
+    '''
+    to_return = {
+        'has_error': False,
+        'error': ""
+    }
+    for xor_pair in xor_pairs:
+        col1, col2 = xor_pair
+        if not df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))].empty:
+            to_return['has_error'] = True
+            to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+    
+    return to_return
+
+def validate_user_codes(df_1_name, data, user_codes, file_name):
+    print("validating user codes in " + file_name)
+    df_1 = data[df_1_name]
+    print(df_1.columns)
+    to_return = {
+        'has_error': False,
+        'error': ""
+    }
+    for source_code, target_code, target_table in user_codes:
+        df_2 = data.get(target_table)
+        if df_2 is not None:
+            print("checking " + source_code + " against " + target_code + " in " + target_table)
+            print(df_2.columns)
+            missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
+            if len(missing_codes) > 0:
+                to_return['has_error'] = True
+                to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(missing_codes) + ". "  
+        else:
+            print("no data for " + target_table + ", skipping check of " + source_code)
+
+    return to_return

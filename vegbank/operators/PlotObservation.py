@@ -672,39 +672,51 @@ class PlotObservation(Operator):
             },
             'pl': {
                 'file_name': 'plot_observations',
-                'required': True
+                'required': True,
+                'user_codes':[('user_pj_code','user_pj_code', 'pj')] #user code format is source_code, target_code, target_df
             },
             'so': {
                 'file_name': 'soils',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'do': {
                 'file_name': 'disturbances',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'cl': {
                 'file_name': 'community_classifications',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
             },
             'sr': {
                 'file_name': 'strata',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'sc': {
                 'file_name': 'strata_cover_data',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
+                               ('user_sr_code','user_sr_code', 'sr')]
             },
             'sd': {
                 'file_name': 'stem_data',
-                'required': False
+                'required': False,
+                'user_codes': [('user_tm_code','user_tm_code', 'sc')]
             },
             'ti': {
                 'file_name': 'taxon_interpretations',
-                'required': False
+                'required': False,
+                'user_codes': [('user_to_code','user_to_code', 'sc'),
+                               ('user_rf_code','user_rf_code', 'rf')]
             },
             'cr':{
                 'file_name': 'contributors',
-                'required': False
+                'required': False,
+                'user_codes': [('user_py_code','user_py_code', 'py')] #Record identifier needs a validation, but it has multiple different possible sources
             }
         }
         data = {}
@@ -719,10 +731,15 @@ class PlotObservation(Operator):
                     request, config['file_name'], required=config['required'])
                 if data[name] is not None:
                     file_validation = Validator.validate(data[name], config['file_name'])
-                    print(config['file_name'])
-                    print(file_validation)
-                    validation['error'] += file_validation['error']
-                    validation['has_error'] = file_validation['has_error'] or validation['has_error']
+                    if 'user_codes' in config:
+                        user_code_validation = Validator.validate_user_codes(name, data, config['user_codes'], config['file_name'])
+                    else:
+                        user_code_validation = {
+                            'has_error': False,
+                            'error': ""
+                        }
+                    validation['error'] = file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error']
 
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
