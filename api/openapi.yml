@@ -457,6 +457,63 @@ paths:
           $ref: "#/components/responses/CommunityConcepts"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+  /parties/{py_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-py
+      summary: Get community concepts by py
+      description: >
+        Retrieve a paginated and sorted collection of the community concepts
+        with a party perspective (i.e. status record) provided by the specified
+        party (using its `py_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /references/{rf_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-rf
+      summary: Get community concepts by rf
+      description: >
+        Retrieve a paginated and sorted collection of the community concepts
+        associated with a given reference (using its `rf_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: rf_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "rf.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
   /community-concepts:
     get:
       tags:
@@ -746,6 +803,63 @@ paths:
             type: string
           example: "pc.1"
         - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /parties/{py_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-py
+      summary: Get plant concepts by py
+      description: >
+        Retrieve a paginated and sorted collection of the plant concepts with a
+        party perspective (i.e. status record) provided by the specified party
+        (using its `py_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /references/{rf_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-rf
+      summary: Get plant concepts by rf
+      description: >
+        Retrieve a paginated and sorted collection of the plant concepts
+        associated with a given reference (using its `rf_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: rf_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "rf.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
       responses:
         '200':
