@@ -1,1 +1,1 @@
-from .identifiers_queries import get_identifier_by_value
+from .identifiers_queries import IdentifiersQueries

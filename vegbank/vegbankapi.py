@@ -9,7 +9,7 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from repositories import get_identifier_by_value
+from repositories import IdentifiersQueries
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -1028,7 +1028,8 @@ def identifiers(identifier_value):
             # Handle potential whitespace
             identifier_value = identifier_value.strip()
             # Get result
-            row = get_identifier_by_value(params, identifier_value)
+            idsq = IdentifiersQueries(params)
+            row = idsq.get_identifier_by_value(identifier_value)
             # If no result found, return error message
             if row is None:
                 return (
