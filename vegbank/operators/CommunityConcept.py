@@ -374,10 +374,11 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cc'], data['cx'],
                         {"user_cc_code": "user_cc_code",
                          "vb_cc_code": "vb_cc_code"})
-                    data['cx'] = merge_vb_codes(
-                        pc_actions['resources']['cc'], data['cx'],
-                        {"user_cc_code": "user_correlated_cc_code",
-                         "vb_cc_code": "vb_correlated_cc_code"})
+                    if 'user_correlated_cc_code' in data['cx'].columns:
+                        data['cx'] = merge_vb_codes(
+                            cc_actions['resources']['cc'], data['cx'],
+                            {"user_cc_code": "user_correlated_cc_code",
+                             "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
                     to_return = combine_json_return(to_return, cx_actions)
                 else:

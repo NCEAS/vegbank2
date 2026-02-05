@@ -374,10 +374,11 @@ class PlantConcept(Operator):
                         pc_actions['resources']['pc'], data['px'],
                         {"user_pc_code": "user_pc_code",
                          "vb_pc_code": "vb_pc_code"})
-                    data['px'] = merge_vb_codes(
-                        pc_actions['resources']['pc'], data['px'],
-                        {"user_pc_code": "user_correlated_pc_code",
-                         "vb_pc_code": "vb_correlated_pc_code"})
+                    if 'user_correlated_pc_code' in data['px'].columns:
+                        data['px'] = merge_vb_codes(
+                            pc_actions['resources']['pc'], data['px'],
+                            {"user_pc_code": "user_correlated_pc_code",
+                             "vb_pc_code": "vb_correlated_pc_code"})
                     px_actions = self.upload_plant_correlations(data['px'], conn)
                     to_return = combine_json_return(to_return, px_actions)
                 else:
