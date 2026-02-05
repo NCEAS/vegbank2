@@ -1,10 +1,13 @@
+"""
+The 'identifiers_queries' module contains data-access logic for the 'identifiers' table.
+"""
+
 from psycopg import connect
 from psycopg.rows import dict_row
 
 def get_identifier_by_value(params: dict, identifier_value: str):
     """
-    Return the identifier row (dict) for an exact identifier_value match,
-    or None if not found.
+    Return the identifier row (dict) for an exact identifier_value match
     """
     with connect(**params, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
