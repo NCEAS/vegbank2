@@ -9,6 +9,7 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from repositories import IdentifiersQueries
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -23,7 +24,7 @@ from operators import (
     Role,
     StratumMethod,
     Reference,
-    UserDataset
+    UserDataset,
 )
 
 
@@ -55,7 +56,7 @@ def before_request():
     if request.method == 'POST':
         if allow_uploads is False:
             return jsonify_error_message("Uploads not allowed."), 403
-        
+
 @app.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
@@ -994,6 +995,62 @@ def user_datasets(ds_code):
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
+
+@app.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
+@app.route("/identifiers/<path:identifier_value>")
+def identifiers(identifier_value):
+    """
+    Retrieve an individual record for a given citation or identifier value. 
+
+    This function handles HTTP requests for identifying 'vb_codes' for historical
+    accession codes, citations and other identifiers, supporting only the 'GET'
+    method to retrieve an identifier.
+
+    If an identifier is found for a given 'identifier_value', we return the
+    corresponding record along with the 'identifier_value's 'vb_code'. If no record
+    is found, we return a message stating so.
+
+    Parameters:
+        identifier_value (str or None): The identifier value that the user would like
+            to search the 'identifiers' table for. Ex. "VB.TO.64992.VACCINIUMBOREAL"
+    
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved matching identifier
+            - 400: Invalid parameters
+            - 404: Not Found
+    """
+    if identifier_value is None:
+        return jsonify_error_message("An identifier value or citation must be provided."), 400
+    else:
+        # Query the database for a match of the given identifier value
+        try:
+            # Handle potential whitespace
+            identifier_value = identifier_value.strip()
+            # Get result
+            idsq = IdentifiersQueries(params)
+            row = idsq.get_identifier_by_value(identifier_value)
+            # If no result found, return error message
+            if row is None:
+                return (
+                    jsonify_error_message(
+                        f"Identifier value ({identifier_value}) not found."
+                    ),
+                    404,
+                )
+            else:
+                # Add the 'vb_code' to result for convenience
+                row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
+                return jsonify(row), 200
+        # pylint: disable=W0718
+        except Exception as e:
+            print(traceback.format_exc())
+            return (
+                jsonify_error_message(
+                    f"Unexpected error during identifier search: {str(e)}"
+                ),
+                500,
+            )
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=80,debug=True)
