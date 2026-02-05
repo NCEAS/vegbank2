@@ -603,8 +603,7 @@ def plant_concepts(vb_code):
     """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for plant concepts."), 405
+        return plant_concept_operator.upload_all(request)
     elif request.method == 'GET':
         return plant_concept_operator.get_vegbank_resources(request, vb_code)
     else:

@@ -1,6 +1,19 @@
 import os
 from operators import Operator
-from utilities import QueryParameterError
+from .Party import Party
+from .Reference import Reference
+from psycopg.rows import dict_row
+from psycopg import connect
+from operators import table_defs_config
+from flask import jsonify
+from utilities import (
+    read_parquet_file,
+    UploadDataError,
+    validate_required_and_missing_fields,
+    merge_vb_codes,
+    combine_json_return,
+    jsonify_error_message
+)
 
 
 class PlantConcept(Operator):
@@ -225,3 +238,482 @@ class PlantConcept(Operator):
         params['search'] = request_args.get('search')
 
         return params
+
+    def upload_all(self, request):
+        """
+        Orchestrate the insertion of client-provided Plant Concept data into
+        VegBank, starting with the Flask request containing the uploaded data
+        files.
+
+        Parameters:
+            request (flask.Request): The incoming Flask request object
+                containing Parquet files with Plant Concept data to be
+                loaded into VegBank
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "pc": {"inserted": 1},
+                    },
+                    "resources": {
+                        "pc": [{"action": "inserted",
+                                "user_pc_code": "my_new_concept_1",
+                                "vb_pc_code": "pc.123"}],
+                    }
+                }
+        Raises:
+            QueryParameterError: If any supplied code does not match the
+                expected pattern.
+        """
+        # Define the expected data inputs and whether or not they are required
+        # TODO: Think about whether we want any other information here, and
+        # likely factor this out some sort of configuration object
+        upload_files = {
+            'py': {
+                'file_name': 'parties',
+                'required': False
+            },
+            'rf': {
+                'file_name': 'references',
+                'required': False
+            },
+            'pc': {
+                'file_name': 'plant_concepts',
+                'required': True
+            },
+            'pn': {
+                'file_name': 'plant_names',
+                'required': False
+            },
+            'px': {
+                'file_name': 'plant_correlations',
+                'required': False
+            },
+        }
+        # Read each Parquet file from the request into a Pandas DataFrame
+        data = {}
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required'])
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
+
+        # Run the upload pipeline!
+        try:
+            to_return = None
+            with connect(**self.params, row_factory=dict_row) as conn:
+                # Insert any new parties
+                if data['py'] is not None:
+                    py_actions = Party(self.params).upload_parties(data['py'], conn)
+                    to_return = combine_json_return(to_return, py_actions)
+                else:
+                    py_actions = None
+
+                # Insert any new references
+                if data['rf'] is not None:
+                    rf_actions = Reference(self.params).upload_references(data['rf'], conn)
+                    to_return = combine_json_return(to_return, rf_actions)
+                else:
+                    rf_actions = None
+
+                # Prep & insert all new plant concepts
+                if py_actions is not None:
+                    # ... merge in newly created vb_py_codes
+                    data['pc'] = merge_vb_codes(
+                        py_actions['resources']['py'], data['pc'],
+                        {"user_py_code": "user_status_py_code",
+                         "vb_py_code": "vb_status_py_code"})
+                if rf_actions is not None:
+                    # ... merge in newly created concept vb_rf_codes
+                    data['pc'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['pc'],
+                        {"user_rf_code": "user_rf_code",
+                         "vb_rf_code": "vb_rf_code"})
+                    # ... merge in newly created status vb_rf_codes
+                    data['pc'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['pc'],
+                        {"user_rf_code": "user_status_rf_code",
+                         "vb_rf_code": "vb_status_rf_code"})
+                pc_actions = self.upload_plant_concepts(data['pc'], conn)
+                to_return = combine_json_return(to_return, pc_actions)
+
+                # Prep & insert any new plant names
+                if data['pn'] is not None:
+                    # ... merge in newly created vb_pc_codes
+                    data['pn'] = merge_vb_codes(
+                        pc_actions['resources']['pc'], data['pn'],
+                        {"user_pc_code": "user_pc_code",
+                         "vb_pc_code": "vb_pc_code"})
+                    # ... merge in newly created usage vb_ps_codes
+                    # Note oddball case: we're joining on user_pc_code because
+                    # users don't supply user_ps_code, but because concepts are
+                    # 1:1 with statuses in our loader schema, we can treat the
+                    # user_pc_code as an alias for the implicit user_ps_code
+                    data['pn'] = merge_vb_codes(
+                        pc_actions['resources']['ps'], data['pn'],
+                        {"user_ps_code": "user_pc_code",
+                         "vb_ps_code": "vb_ps_code"})
+                    # ... merge in newly created usage vb_py_codes
+                    if py_actions is not None:
+                        data['pn'] = merge_vb_codes(
+                            py_actions['resources']['py'], data['pn'],
+                            {"user_py_code": "user_usage_py_code",
+                             "vb_py_code": "vb_usage_py_code"})
+                    pn_actions = self.upload_plant_names(data['pn'], conn)
+                    to_return = combine_json_return(to_return, pn_actions)
+                else:
+                    pn_actions = None
+
+                # Prep & insert any new plant correlations
+                if data['px'] is not None:
+                    # ... merge in newly created vb_pc_codes
+                    data['px'] = merge_vb_codes(
+                        pc_actions['resources']['pc'], data['px'],
+                        {"user_pc_code": "user_pc_code",
+                         "vb_pc_code": "vb_pc_code"})
+                    if 'user_correlated_pc_code' in data['px'].columns:
+                        data['px'] = merge_vb_codes(
+                            pc_actions['resources']['pc'], data['px'],
+                            {"user_pc_code": "user_correlated_pc_code",
+                             "vb_pc_code": "vb_correlated_pc_code"})
+                    px_actions = self.upload_plant_correlations(data['px'], conn)
+                    to_return = combine_json_return(to_return, px_actions)
+                else:
+                    px_actions = None
+
+                # If this is a dry-run upload, roll back transaction and embed
+                # the informational JSON response in a dry-run wrapper message
+                if request.args.get('dry_run', 'false').lower() == 'true':
+                    conn.rollback()
+                    message = "dry run - rolling back transaction."
+                    return jsonify({
+                        "message": message,
+                        "dry_run_data": to_return
+                    })
+            conn.close()
+        except Exception as e:
+            return jsonify_error_message(
+                f"an error occurred here during upload: {str(e)}"), 500
+        return jsonify(to_return)
+
+    def upload_plant_concepts(self, df, conn):
+        """
+        Take the Plant Concepts loader DataFrame and insert its contents
+        into the plantname, plantconcept, and plantstatus tables.
+
+        Preconditions:
+        - Every vb_rf_code matches an existing reference record
+        - Every vb_status_rf_code matches an existing reference record
+        - Every vb_status_py_code matches an existing party record
+        - One record per user_pc_code (corollary: only one status per pc)
+        Step 1: INSERT INTO plantname:
+                plantname <- name
+                RETURNING plantname_id -> vb_pn_code
+                ... correlate vb_pn_code with name
+        Step 2: INSERT INTO plantconcept:
+                plantname_id <- from vb_pn_code (Step 1)
+                plantname <- name
+                reference_id <- from vb_rf_code (user or upstream)
+                plantdescription <- description
+                RETURNING plantconcept_id -> vb_pc_code
+                ...correlate vb_pc_code with user_pc_code
+        Step 3: INSERT INTO plantconcept:
+                plantconcept_id <- from vb_pc_code (Step 2)
+                reference_id <- from vb_status_rf_code (user or upstream)
+                party_id <- from vb_status_py_code (user or upstream)
+                plantconceptstatus <- plant_concept_status
+                plantparent_id <- from vb_parent_pc_code (Step 2)
+                plantlevel <- plant_level
+                startdate <- start_date
+                stopdate <- stop_date
+                plantpartycomments <- plant_party_comments
+                RETURNING plantstatus_id -> vb_ps_code
+        Step TODO: Set d_currentaccepted
+        Step TODO: Set d_obscount
+
+        Parameters:
+            df (pandas.DataFrame): Plant concept data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "pc": {"inserted": 1},
+                    },
+                    "resources": {
+                        "pc": [{"action": "inserted",
+                                "user_pc_code": "my_new_concept_1",
+                                "vb_pc_code": "pc.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_plant_name = table_defs_config.plant_name[:]
+        config_plant_concept = table_defs_config.plant_concept[:]
+        config_plant_status = table_defs_config.plant_status[:]
+        table_defs = [config_plant_name,
+                      config_plant_concept,
+                      config_plant_status]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['user_pc_code', 'name', 'vb_rf_code',
+                           'plant_concept_status', 'vb_status_py_code']
+
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "plant concepts")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Upsert names into plantnames table
+        #
+
+        df['user_pn_code'] = df['name']
+        config_plant_name.append('user_pn_code')
+
+        pn_actions = super().upload_to_table("plant_name", 'pn',
+            config_plant_name, 'plantname_id', df, False, conn,
+            validate = False)
+
+        # ... merge in newly created vb_pn_codes
+        df = merge_vb_codes(
+            pn_actions['resources']['pn'], df,
+            {"user_pn_code": "user_pn_code",
+             "vb_pn_code": "vb_pn_code"})
+        config_plant_concept.append('vb_pn_code')
+
+        #
+        # Insert concepts into plantconcept table
+        #
+
+        df['user_pc_code'] = df['user_pc_code'].astype(str)
+        pc_actions = super().upload_to_table("plant_concept", 'pc',
+            config_plant_concept, 'plantconcept_id', df, True, conn)
+
+        #
+        # Insert status into plantstatus table
+        #
+
+        df['user_ps_code'] = df['user_pc_code']
+        config_plant_status.append('user_ps_code')
+
+        # ... merge in newly created vb_pc_codes
+        df = merge_vb_codes(
+            pc_actions['resources']['pc'], df,
+            {"user_pc_code": "user_pc_code",
+             "vb_pc_code": "vb_pc_code"})
+        config_plant_status.append('vb_pc_code')
+
+        # ... merge in newly created vb_pc_codes
+        df = merge_vb_codes(
+            pc_actions['resources']['pc'], df,
+            {"user_pc_code": "user_parent_pc_code",
+             "vb_pc_code": "vb_parent_pc_code"})
+
+        ps_actions = super().upload_to_table("plant_status", 'ps',
+            config_plant_status, 'plantstatus_id', df, True, conn)
+
+        # TODO: decide which ones we actually want to return to the user -
+        # probably only `pc`?
+        to_return = {
+            'resources':{
+                'pn': pn_actions['resources']['pn'],
+                'pc': pc_actions['resources']['pc'],
+                'ps': ps_actions['resources']['ps']
+            },
+            'counts':{
+                'pn': pn_actions['counts']['pn'],
+                'pc': pc_actions['counts']['pc'],
+                'ps': ps_actions['counts']['ps']
+            }
+        }
+        return to_return
+
+    def upload_plant_names(self, df, conn):
+        """
+        Take the Plant Names loader DataFrame and insert its contents
+        into the plantname and plantusage tables.
+
+        Preconditions:
+        - Every vb_pc_code matches an existing concept record
+        - Every vb_ps_code matches an existing status record
+        - Every vb_usage_py_code matches an existing party record
+        Step 1: INSERT INTO plantname:
+                plantname <- name
+                RETURNING plantname_id -> vb_pn_code
+                ... correlate vb_pn_code with name
+        Step 2: INSERT INTO plantusage:
+                plantname_id <- from vb_pn_code (Step 1)
+                plantname <- name
+                plantconcept_id <- from vb_pc_code (upstream)
+                usagestart <- usage_start
+                usagestop <- usage_stop
+                plantnamestatus <- name_status
+                classsystem <- name_type
+                party_id <- from vb_usage_py_code (upstream)
+                plantstatus_id <- from vb_ps_code (upstream)
+                RETURNING plantusage_id -> vb_pu_code
+
+        Parameters:
+            df (pandas.DataFrame): Plant names data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "pu": {"inserted": 1},
+                    },
+                    "resources": {
+                        "pu": [{"action": "inserted",
+                                "user_pu_code": "concept_1",
+                                "vb_pu_code": "pu.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'plant_name')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_plant_name = table_defs_config.plant_name[:]
+        config_plant_usage = table_defs_config.plant_usage[:]
+        table_defs = [config_plant_name,
+                      config_plant_usage]
+        # TODO: finalize this here, unless/until we move this to configuration
+        required_fields = ['user_pc_code', 'vb_pc_code', 'name',
+                           'name_type', 'name_status']
+
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "plant names")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Upsert names into plantnames table
+        #
+
+        df['user_pn_code'] = df['name']
+        config_plant_name.append('user_pn_code')
+
+        pn_actions = super().upload_to_table("plant_name", 'pn',
+            config_plant_name, 'plantname_id', df, False, conn,
+            validate = False)
+
+        #
+        # Insert usages into plantusage table
+        #
+
+        # ... merge in newly created vb_pn_codes
+        df = merge_vb_codes(
+            pn_actions['resources']['pn'], df,
+            {"user_pn_code": "user_pn_code",
+             "vb_pn_code": "vb_pn_code"})
+        config_plant_usage.append('vb_pn_code')
+
+        df['user_pu_code'] = df['user_pc_code'] + ' ' + df['name_type']
+        config_plant_usage.append('user_pu_code')
+        pu_actions = super().upload_to_table("plant_usage", 'pu',
+            config_plant_usage, 'plantusage_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'pun': pn_actions['resources']['pn'],
+                'pu': pu_actions['resources']['pu'],
+            },
+            'counts':{
+                'pun': pn_actions['counts']['pn'],
+                'pu': pu_actions['counts']['pu'],
+            }
+        }
+        return to_return
+
+    def upload_plant_correlations(self, df, conn):
+        """
+        Take the Plant Correlations loader DataFrame and insert its contents
+        into the plantcorrelation table.
+
+        Preconditions:
+        - Every vb_pc_code matches an existing plant concept record
+        - Every vb_correlated_pc_code matches a concept referenced by at least
+          one existing plant status record
+        Step 1: (*) INSERT INTO plantcorrelation:
+                plantstatus_id <- using vb_correlated_pc_code (custom logic)
+                plantconcept_id <- from vb_pc_code (upstream)
+                plantconvergence <- convergence_type
+                correlationstart <- correlation_start
+                correlationstop <- correlation_stop
+                RETURNING plantcorrelation_id -> vb_px_code
+
+        Parameters:
+            df (pandas.DataFrame): Plant correlations data
+            conn (psycopg.Connection): Active database connection
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was inserted in the case of a
+                successful upload. Example:
+                {
+                    "counts": {
+                        "px": {"inserted": 1},
+                    },
+                    "resources": {
+                        "px": [{"action": "inserted",
+                                "user_px_code": "new_concept_1->pc.999",
+                                "vb_px_code": "px.123"}],
+                    }
+                }
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Override the default query path
+        self.QUERIES_FOLDER = os.path.join('queries', 'plant_correlation')
+
+        # Assemble table configuration; note syntax to force a copy of the
+        # config list, which we modify in-place within this method
+        config_plant_correlation = table_defs_config.plant_correlation[:]
+        table_defs = [config_plant_correlation]
+        # TODO: finalize this here, unless/until we move this to configuration
+        # e.g. what about vb_pc_code? required to *run*, but not required from
+        # (or even wanted from!!) the user
+        required_fields = ['vb_correlated_pc_code',
+                           'convergence_type', 'correlation_start']
+
+        # TODO: Why do we do this here, but not in other upload methods?
+        config_plant_correlation.append('vb_pc_code')
+        # Run basic input data validation
+        validation = validate_required_and_missing_fields(df, required_fields,
+            table_defs, "plant correlations")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        #
+        # Insert correlations into plantcorrelation table
+        #
+
+        df['user_px_code'] = df['user_pc_code'] + '->' + df['vb_correlated_pc_code']
+        config_plant_correlation.append('user_px_code')
+        px_actions = super().upload_to_table("plant_correlation", 'px',
+            config_plant_correlation, 'plantcorrelation_id', df, False, conn)
+
+        to_return = {
+            'resources':{
+                'px': px_actions['resources']['px'],
+            },
+            'counts':{
+                'px': px_actions['counts']['px'],
+            }
+        }
+        return to_return
