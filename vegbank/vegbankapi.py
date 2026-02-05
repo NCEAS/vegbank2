@@ -9,6 +9,7 @@ import time
 import traceback
 import os
 from utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from repositories import get_identifier_by_value
 from operators import (
     TaxonInterpretation,
     TaxonObservation,
@@ -1026,41 +1027,27 @@ def identifiers(identifier_value):
         try:
             # Handle potential whitespace
             identifier_value = identifier_value.strip()
-            with connect(**params, row_factory=dict_row) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                    """
-                    SELECT identifier_id,
-                           vb_table_code,
-                           vb_record_id,
-                           identifier_type,
-                           identifier_value
-                    FROM identifiers
-                    WHERE identifier_value = %s
-                    """,
-                    (identifier_value,)
-                    )
-                    # Get result
-                    row = cur.fetchone()
-                    # If no result found, return error message
-                    if row is None:
-                        return (
-                            jsonify_error_message(
-                                f"Identifier value ({identifier_value}) not found."
-                            ),
-                            404,
-                        )
-                    else:
-                        # Add the 'vb_code' to result for convenience
-                        row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
-                        # Add a new field 'supported_redirect' for convenience
-                        # As of 2026/03:
-                        # - plot observations (`od`)
-                        # - commconcept (`cc`)
-                        # - datasets (`ds`)
-                        supported = row["vb_table_code"] in {"od", "cc", "ds"}
-                        row["supported_redirect"] = supported
-                        return jsonify(row), 200
+            # Get result
+            row = get_identifier_by_value(params, identifier_value)
+            # If no result found, return error message
+            if row is None:
+                return (
+                    jsonify_error_message(
+                        f"Identifier value ({identifier_value}) not found."
+                    ),
+                    404,
+                )
+            else:
+                # Add the 'vb_code' to result for convenience
+                row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
+                # Add a new field 'supported_redirect' for convenience
+                # As of 2026/03:
+                # - plot observations (`od`)
+                # - commconcept (`cc`)
+                # - datasets (`ds`)
+                supported = row["vb_table_code"] in {"od", "cc", "ds"}
+                row["supported_redirect"] = supported
+                return jsonify(row), 200
         # pylint: disable=W0718
         except Exception as e:
             print(traceback.format_exc())
