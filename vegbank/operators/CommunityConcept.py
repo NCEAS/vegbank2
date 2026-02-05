@@ -476,7 +476,6 @@ class CommunityConcept(Operator):
         # Upsert names into commnames table
         #
 
-        print("--- UPLOADING COMM NAMES ---")
         df['user_cn_code'] = df['name']
         config_comm_name.append('user_cn_code')
 
@@ -495,7 +494,6 @@ class CommunityConcept(Operator):
         # Insert concepts into commconcept table
         #
 
-        print("--- UPLOADING COMM CONCEPTS ---")
         df['user_cc_code'] = df['user_cc_code'].astype(str)
         cc_actions = super().upload_to_table("comm_concept", 'cc',
             config_comm_concept, 'commconcept_id', df, True, conn)
@@ -504,7 +502,6 @@ class CommunityConcept(Operator):
         # Insert status into commstatus table
         #
 
-        print("--- UPLOADING COMM STATUSES ---")
         df['user_cs_code'] = df['user_cc_code']
         config_comm_status.append('user_cs_code')
 
@@ -608,7 +605,6 @@ class CommunityConcept(Operator):
         # Upsert names into commnames table
         #
 
-        print("--- UPLOADING COMM NAMES ---")
         df['user_cn_code'] = df['name']
         config_comm_name.append('user_cn_code')
 
@@ -620,7 +616,6 @@ class CommunityConcept(Operator):
         # Insert usages into commusage table
         #
 
-        print("--- UPLOADING COMM USAGES ---")
         # ... merge in newly created vb_cn_codes
         df = merge_vb_codes(
             cn_actions['resources']['cn'], df,
@@ -707,7 +702,6 @@ class CommunityConcept(Operator):
         # Insert correlations into commcorrelation table
         #
 
-        print("--- UPLOADING COMM CORRELATIONS ---")
         df['user_cx_code'] = df['user_cc_code'] + '->' + df['vb_correlated_cc_code']
         config_comm_correlation.append('user_cx_code')
         cx_actions = super().upload_to_table("comm_correlation", 'cx',
