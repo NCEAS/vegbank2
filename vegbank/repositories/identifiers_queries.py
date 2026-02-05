@@ -10,8 +10,9 @@ class IdentifiersQueries:
     """
     Repository-style query class for the `identifiers` table.
 
-    This class encapsulates SQL queries related to identifier lookup and
-    returns raw database records as plain Python dictionaries.
+    This class encapsulates SQL queries related to identifier lookup on
+    the identifiers table, and returns raw database records as plain
+    Python dictionaries.
     """
 
     def __init__(self, params: dict):
@@ -24,7 +25,7 @@ class IdentifiersQueries:
         """
         self.params = params
 
-    # TODO: Determine if this should be a class
+
     def get_identifier_by_value(self, identifier_value: str):
         """
         Return the identifier row (dict) for an exact identifier_value match
