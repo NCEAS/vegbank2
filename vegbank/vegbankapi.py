@@ -1040,13 +1040,6 @@ def identifiers(identifier_value):
             else:
                 # Add the 'vb_code' to result for convenience
                 row["vb_code"] = f"{row['vb_table_code']}.{row['vb_record_id']}"
-                # Add a new field 'supported_redirect' for convenience
-                # As of 2026/03:
-                # - plot observations (`od`)
-                # - commconcept (`cc`)
-                # - datasets (`ds`)
-                supported = row["vb_table_code"] in {"od", "cc", "ds"}
-                row["supported_redirect"] = supported
                 return jsonify(row), 200
         # pylint: disable=W0718
         except Exception as e:
