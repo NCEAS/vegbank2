@@ -492,7 +492,9 @@ def community_interpretations(vb_code):
 @app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/community-concepts/<vb_code>")
 @app.route("/community-classifications/<vb_code>/community-concepts", methods=['GET'])
+@app.route("/parties/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
+@app.route("/references/<vb_code>/community-concepts", methods=['GET'])
 def community_concepts(vb_code):
     """
     Retrieve either an individual community concept or a collection.
@@ -552,6 +554,8 @@ def community_concepts(vb_code):
 
 @app.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/plant-concepts/<vb_code>")
+@app.route("/parties/<vb_code>/plant-concepts", methods=['GET'])
+@app.route("/references/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
 def plant_concepts(vb_code):
