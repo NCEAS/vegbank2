@@ -4,6 +4,7 @@ import pandas as pd
 import traceback
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
+from vegbank.operators import Validator
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project

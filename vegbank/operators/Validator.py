@@ -1,5 +1,5 @@
-from operators import table_defs_config
-from utilities import validate_required_and_missing_fields
+from vegbank.operators import table_defs_config
+from vegbank.utilities import validate_required_and_missing_fields
 config = {
     # Defines the required fields and table defs for each file that vegbank uploads. 
     
@@ -85,7 +85,7 @@ def validate_plot_observations(df):
         'error': "",
         'has_error': False
     }
-    
+
     if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
         validation['error'] += "Rows cannot have both a vb_pl_code and a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
         validation['has_error'] = True
