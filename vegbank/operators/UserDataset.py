@@ -1,5 +1,6 @@
 import os
 from operators import Operator
+from utilities import validate_required_and_missing_fields, merge_vb_codes
 
 
 class UserDataset(Operator):
@@ -85,3 +86,16 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
+
+    def upload_user_dataset(self, df, conn):
+        table_defs = [table_defs.user_dataset]
+        required_fields = ['user_ds_code', 'name']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, 'user_dataset')
+        if validation['has_error']:
+            raise Exception(validation['error'])
+        
+        df['user_ds_code'] = df['user_ds_code'].astype(str)
+        new_dataset = super().upload_to_table("userdataset", 'ds', table_defs.user_dataset, df, True, conn, validate=False)
+
+        
+        return ""
