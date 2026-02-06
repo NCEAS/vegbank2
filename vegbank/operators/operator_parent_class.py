@@ -2,16 +2,17 @@ import os
 import io
 import re
 import textwrap
-from flask import jsonify, send_file
 import psycopg
 import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import traceback
+from vegbank.utilities import jsonify_error_message, QueryParameterError
+from flask import jsonify, send_file
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import jsonify_error_message,validate_required_and_missing_fields, QueryParameterError
+
 
 table_code_lookup = {
     'community-classifications': 'cl',
@@ -25,6 +26,7 @@ table_code_lookup = {
     'references': 'rf',
     'roles': 'ar',
     'stratum-methods': 'sm',
+    'taxon-importances': 'tm',
     'taxon-interpretations': 'ti',
     'taxon-observations': 'to',
     'user-datasets': 'ds',
@@ -631,7 +633,7 @@ class Operator:
                     - resources: pairs of user and vb codes for the new records
                     - counts: number of new records created
         """
-        print(f"DataFrame loaded with {len(df)} records.")
+        print(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
         
         
         df.columns = df.columns.str.lower()
@@ -698,11 +700,6 @@ class Operator:
                 with open(sql_file_create_codes, "r") as file:
                     sql = file.read()
                 cur.executemany(sql, code_inputs, returning=True)
-                new_identifiers = cur.fetchall()
-                while cur.nextset():
-                    next_identifiers = cur.fetchall()
-                    if next_identifiers:
-                        new_identifiers = new_identifiers + next_identifiers
 
             vb_field_name = f'vb_{insert_table_code}_code'
             to_return = {}

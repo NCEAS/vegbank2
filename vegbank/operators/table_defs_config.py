@@ -316,6 +316,70 @@ comm_correlation = [
     #'user_cx_code'
 ]
 
+# system added:
+# - 'user_pn_code'
+plant_name = [
+    'name'
+]
+
+# system added:
+# - 'vb_pn_code'
+plant_concept = [
+    'user_pc_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'name',
+    'description'
+]
+
+# system added:
+# - 'user_ps_code'
+# - 'vb_pc_code'
+plant_status = [
+    'user_pc_code',
+    'vb_status_rf_code',
+    'user_status_rf_code',
+    'plant_concept_status',
+    'vb_parent_pc_code',
+    'user_parent_pc_code',
+    'plant_level',
+    'start_date',
+    'stop_date',
+    'plant_party_comments',
+    'vb_status_py_code',
+    'user_status_py_code'
+]
+
+# system added:
+# - 'vb_pn_code'
+# - 'user_pu_code'
+plant_usage = [
+    'user_pc_code',
+    'name',
+    'name_type',
+    'name_status',
+    'usage_start',
+    'usage_stop',
+    'vb_usage_py_code',
+    'user_usage_py_code',
+    # generated upstream during the multi-part upload flow
+    'vb_pc_code',
+    'vb_ps_code'
+]
+
+plant_correlation = [
+    # user-supplied
+    'user_pc_code',
+    'vb_correlated_pc_code',
+    'user_correlated_pc_code',
+    'convergence_type',
+    'correlation_start',
+    'correlation_stop',
+    # generated during the multi-part upload flow
+    #'vb_pc_code',
+    #'user_px_code'
+]
+
 stratum = [
     'vb_ob_code',
     'user_ob_code',

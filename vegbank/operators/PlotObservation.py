@@ -1,17 +1,15 @@
 import os
 import textwrap
-from flask import jsonify
-from psycopg import connect
-from psycopg.rows import dict_row
 import pandas as pd
 import traceback
-from operators import Operator, table_defs_config, Validator
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
 from .Reference import Reference
 from .TaxonObservation import TaxonObservation
-from utilities import(
+from vegbank.utilities import(
     jsonify_error_message,
     validate_required_and_missing_fields,read_parquet_file,
     UploadDataError,
@@ -19,6 +17,9 @@ from utilities import(
     combine_json_return,
     dry_run_check
 )
+from flask import jsonify
+from psycopg import connect
+from psycopg.rows import dict_row
 
 
 class PlotObservation(Operator):
@@ -441,7 +442,7 @@ class PlotObservation(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_observation < 6",
+                        "(emb_observation < 6 OR emb_observation IS NULL)",
                     ],
                     'params': []
                 },
@@ -453,6 +454,19 @@ class PlotObservation(Operator):
                 },
                 'ob': {
                     'sql': "ob.observation_id = %s",
+                    'params': ['vb_id']
+                },
+                'ds': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT itemrecord
+                              FROM userdataset ud
+                              JOIN userdatasetitem udi USING (userdataset_id)
+                              WHERE ud.datasetsharing = 'public'
+                                AND udi.itemtable = 'observation'
+                                AND ob.observation_id = udi.itemrecord
+                                AND ud.userdataset_id = %s)
+                        """,
                     'params': ['vb_id']
                 },
                 'cc': {
@@ -596,6 +610,7 @@ class PlotObservation(Operator):
             raise ValueError(validation['error']) 
 
         df['user_pl_code'] = df['user_pl_code'].astype(str)
+        to_return = None
         if not new_plots_df.empty:
             plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
             
@@ -605,20 +620,12 @@ class PlotObservation(Operator):
             df = df.merge(pl_codes_df, on='user_pl_code', how='left')
             df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
             df.drop(columns=['vb_pl_code_y'], inplace=True)
+            to_return = combine_json_return(to_return, plot_codes)
 
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
+        to_return = combine_json_return(to_return, observation_codes)
 
-        to_return = {
-            'resources':{
-                'pl': plot_codes['resources']['pl'],
-                'ob': observation_codes['resources']['ob']
-            },
-            'counts':{
-                'pl': plot_codes['counts']['pl'],
-                'ob': observation_codes['counts']['ob']
-            }
-        }
         return to_return
     
     def upload_all(self, request):

@@ -1,4 +1,4 @@
-from operators import Operator
+from vegbank.operators.operator_parent_class import Operator
 
 
 class TaxonInterpretation(Operator):
@@ -102,7 +102,7 @@ class TaxonInterpretation(Operator):
             'conditions': {
                 'always': {
                     'sql': [
-                        "emb_taxoninterpretation < 6",
+                        "(emb_taxoninterpretation < 6 OR emb_taxoninterpretation IS NULL)",
                     ],
                     'params': []
                 },

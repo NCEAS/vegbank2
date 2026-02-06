@@ -12,7 +12,7 @@ database:
   ## @param name - The name of the database on the postgres pod to be used by VegBank.
   name: vegbank
   ## @param host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
-  host: vegbankdb-cnpg-rw
+  host: vegbankdb2-cnpg-rw
   ## @param port - The port to connect to on the database pod. 
   port: 5432
 

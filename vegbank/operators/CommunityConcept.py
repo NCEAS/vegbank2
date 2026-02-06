@@ -1,12 +1,9 @@
 import os
-from operators import Operator
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .Party import Party
 from .Reference import Reference
-from psycopg.rows import dict_row
-from psycopg import connect
-from operators import table_defs_config
-from flask import jsonify
-from utilities import (
+from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
     validate_required_and_missing_fields,
@@ -14,7 +11,9 @@ from utilities import (
     combine_json_return,
     jsonify_error_message
 )
-
+from psycopg.rows import dict_row
+from psycopg import connect
+from flask import jsonify
 
 class CommunityConcept(Operator):
     """
@@ -190,6 +189,20 @@ class CommunityConcept(Operator):
                               WHERE cc.commconcept_id = ci.commconcept_id
                                 AND commclass_id = %s)
                         """,
+                    'params': ['vb_id']
+                },
+                'py': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM commstatus cs
+                              WHERE cc.commconcept_id = cs.commconcept_id
+                                AND cs.party_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'rf': {
+                    'sql': "reference_id = %s",
                     'params': ['vb_id']
                 },
             },
@@ -374,6 +387,11 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cc'], data['cx'],
                         {"user_cc_code": "user_cc_code",
                          "vb_cc_code": "vb_cc_code"})
+                    if 'user_correlated_cc_code' in data['cx'].columns:
+                        data['cx'] = merge_vb_codes(
+                            cc_actions['resources']['cc'], data['cx'],
+                            {"user_cc_code": "user_correlated_cc_code",
+                             "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
@@ -472,7 +490,6 @@ class CommunityConcept(Operator):
         # Upsert names into commnames table
         #
 
-        print("--- UPLOADING COMM NAMES ---")
         df['user_cn_code'] = df['name']
         config_comm_name.append('user_cn_code')
 
@@ -491,7 +508,6 @@ class CommunityConcept(Operator):
         # Insert concepts into commconcept table
         #
 
-        print("--- UPLOADING COMM CONCEPTS ---")
         df['user_cc_code'] = df['user_cc_code'].astype(str)
         cc_actions = super().upload_to_table("comm_concept", 'cc',
             config_comm_concept, 'commconcept_id', df, True, conn)
@@ -500,7 +516,6 @@ class CommunityConcept(Operator):
         # Insert status into commstatus table
         #
 
-        print("--- UPLOADING COMM STATUSES ---")
         df['user_cs_code'] = df['user_cc_code']
         config_comm_status.append('user_cs_code')
 
@@ -604,7 +619,6 @@ class CommunityConcept(Operator):
         # Upsert names into commnames table
         #
 
-        print("--- UPLOADING COMM NAMES ---")
         df['user_cn_code'] = df['name']
         config_comm_name.append('user_cn_code')
 
@@ -616,7 +630,6 @@ class CommunityConcept(Operator):
         # Insert usages into commusage table
         #
 
-        print("--- UPLOADING COMM USAGES ---")
         # ... merge in newly created vb_cn_codes
         df = merge_vb_codes(
             cn_actions['resources']['cn'], df,
@@ -703,7 +716,6 @@ class CommunityConcept(Operator):
         # Insert correlations into commcorrelation table
         #
 
-        print("--- UPLOADING COMM CORRELATIONS ---")
         df['user_cx_code'] = df['user_cc_code'] + '->' + df['vb_correlated_cc_code']
         config_comm_correlation.append('user_cx_code')
         cx_actions = super().upload_to_table("comm_correlation", 'cx',
