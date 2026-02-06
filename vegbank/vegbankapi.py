@@ -11,6 +11,7 @@ import os
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
 from vegbank.repositories import IdentifiersQueries
 from vegbank.operators import (
+    TaxonImportance,
     TaxonInterpretation,
     TaxonObservation,
     PlotObservation,
