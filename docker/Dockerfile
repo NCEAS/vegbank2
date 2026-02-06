@@ -10,6 +10,7 @@ ADD /vegbank/vegbankapi.py .
 ADD /vegbank/utilities.py .
 ADD queries ./queries
 ADD /vegbank/operators ./operators
+ADD /vegbank/repositories ./repositories
 
 RUN pip install flask
 RUN pip install psycopg
