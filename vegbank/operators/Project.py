@@ -4,7 +4,12 @@ import pandas as pd
 import numpy as np
 import traceback
 from vegbank.operators import Operator, table_defs_config
-from vegbank.utilities import jsonify_error_message, allowed_file, QueryParameterError, validate_required_and_missing_fields
+from vegbank.utilities import (
+    jsonify_error_message,
+    allowed_file,
+    QueryParameterError,
+    validate_required_and_missing_fields,
+)
 from flask import jsonify
 from psycopg import ClientCursor
 from psycopg.rows import dict_row

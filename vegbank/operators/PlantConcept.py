@@ -1,5 +1,5 @@
 import os
-from vegbank.operators import Operator, table_defs_config
+from vegbank.operators import Operator, Party, Reference, table_defs_config
 from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
@@ -8,8 +8,6 @@ from vegbank.utilities import (
     combine_json_return,
     jsonify_error_message
 )
-from .Party import Party
-from .Reference import Reference
 from psycopg.rows import dict_row
 from psycopg import connect
 from flask import jsonify

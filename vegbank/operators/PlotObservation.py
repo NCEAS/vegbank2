@@ -2,7 +2,15 @@ import os
 import textwrap
 import pandas as pd
 import traceback
-from vegbank.operators import Operator, table_defs_config
+from vegbank.operators import (
+    Operator,
+    CommunityClassification,
+    Party,
+    Project,
+    Reference,
+    TaxonObservation,
+    table_defs_config,
+)
 from vegbank.utilities import(
     jsonify_error_message,
     validate_required_and_missing_fields,read_parquet_file,
@@ -11,11 +19,6 @@ from vegbank.utilities import(
     combine_json_return,
     dry_run_check
 )
-from .CommunityClassification import CommunityClassification
-from .Party import Party
-from .Project import Project
-from .Reference import Reference
-from .TaxonObservation import TaxonObservation
 from flask import jsonify
 from psycopg import connect
 from psycopg.rows import dict_row
