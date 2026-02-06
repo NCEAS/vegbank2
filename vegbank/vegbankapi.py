@@ -8,9 +8,9 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from repositories import IdentifiersQueries
-from operators import (
+from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from vegbank.repositories import IdentifiersQueries
+from vegbank.operators import (
     TaxonImportance,
     TaxonInterpretation,
     TaxonObservation,

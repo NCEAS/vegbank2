@@ -1,12 +1,9 @@
 import os
-from operators import Operator
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .Party import Party
 from .Reference import Reference
-from psycopg.rows import dict_row
-from psycopg import connect
-from operators import table_defs_config
-from flask import jsonify
-from utilities import (
+from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
     validate_required_and_missing_fields,
@@ -14,7 +11,9 @@ from utilities import (
     combine_json_return,
     jsonify_error_message
 )
-
+from psycopg.rows import dict_row
+from psycopg import connect
+from flask import jsonify
 
 class CommunityConcept(Operator):
     """

@@ -19,6 +19,11 @@ poetry = ">=1.8.3"
 pytest = ">=8.3.3"
 pylint = ">=3.2.7"
 black = ">=24.8.0"
+psycopg = ">=3.3.2"
+flask = ">=3.1.2"
+pandas = ">=3.0.0"
+pyarrow = ">=23.0.0"
+numpy = ">=2.4.2"
 
 [build-system]
 requires = ["poetry-core"]

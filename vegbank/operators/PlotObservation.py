@@ -1,17 +1,15 @@
 import os
 import textwrap
-from flask import jsonify
-from psycopg import connect
-from psycopg.rows import dict_row
 import pandas as pd
 import traceback
-from operators import Operator, table_defs_config
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
 from .Reference import Reference
 from .TaxonObservation import TaxonObservation
-from utilities import(
+from vegbank.utilities import(
     jsonify_error_message,
     validate_required_and_missing_fields,read_parquet_file,
     UploadDataError,
@@ -19,6 +17,9 @@ from utilities import(
     combine_json_return,
     dry_run_check
 )
+from flask import jsonify
+from psycopg import connect
+from psycopg.rows import dict_row
 
 
 class PlotObservation(Operator):

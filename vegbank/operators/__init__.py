@@ -15,3 +15,23 @@ from .TaxonImportance import TaxonImportance
 from .TaxonInterpretation import TaxonInterpretation
 from .TaxonObservation import TaxonObservation
 from .UserDataset import UserDataset
+
+
+__all__ = [
+    "Operator",
+    "CommunityClassification",
+    "CommunityConcept",
+    "CommunityInterpretation",
+    "CoverMethod",
+    "Party",
+    "PlantConcept",
+    "PlotObservation",
+    "Project",
+    "Reference",
+    "Role",
+    "StratumMethod",
+    "TaxonImportance",
+    "TaxonInterpretation",
+    "TaxonObservation",
+    "UserDataset",
+]
