@@ -11,6 +11,7 @@ import os
 from utilities import jsonify_error_message, dry_run_check, read_parquet_file
 from repositories import IdentifiersQueries
 from operators import (
+    TaxonImportance,
     TaxonInterpretation,
     TaxonObservation,
     PlotObservation,
@@ -214,6 +215,59 @@ def taxon_observations(vb_code):
         return to_return
     elif request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, vb_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-importances/<vb_code>", methods=['GET'])
+def taxon_importances(vb_code):
+    """
+    Retrieve an individual taxon importance or a collection.
+
+    This function handles HTTP requests for taxon importance data. It currently
+    supports only the GET method to retrieve records. If a POST request is made,
+    it returns an error message indicating that POST is not supported. For any
+    other HTTP method, it returns a 405 error.
+
+    GET: If a valid taxon importance code is provided, returns the corresponding
+    record if it exists. If a valid code for a different supported resource type
+    is provided, returns the collection of taxon importance records associated with
+    that resource. If no vb_code is provided, returns the full collection of
+    taxon importance records. Collection responses may be further mediated by
+    pagination parameters and other filtering query parameters.
+
+    Parameters:
+        vb_code (str or None): The unique identifier for the taxon importance
+            being retrieved, or for a resource of a different type used to focus
+            taxon importance retrieval. If None, retrieves all taxon importances.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Can be 'true' or 'false'. Defaults to 'false'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved taxon importance(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    taxon_importance_operator = TaxonImportance(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for community_interpretations."), 405
+    elif request.method == 'GET':
+        return taxon_importance_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
