@@ -188,6 +188,20 @@ class CommunityConcept(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'py': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM commstatus cs
+                              WHERE cc.commconcept_id = cs.commconcept_id
+                                AND cs.party_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'rf': {
+                    'sql': "reference_id = %s",
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],

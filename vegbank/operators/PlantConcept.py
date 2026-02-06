@@ -178,6 +178,20 @@ class PlantConcept(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'py': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM plantstatus ps
+                              WHERE pc.plantconcept_id = ps.plantconcept_id
+                                AND ps.party_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'rf': {
+                    'sql': "reference_id = %s",
+                    'params': ['vb_id']
+                },
                 'to': {
                     'sql': """\
                         EXISTS (
