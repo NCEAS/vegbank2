@@ -188,26 +188,6 @@ def dry_run_check(conn, data, request):
     else:
         return data
     
-def validate_xor_pairs(df, xor_pairs, file_name):
-    '''
-    Takes a list of column name pairs and verifies that each pair has only one of the two columns populated per row.
-    Parameters:
-        df (pd.DataFrame): The dataframe to be validated.
-        xor_pairs (list): A list of tuples, where each tuple contains two column names that should be mutually exclusive.
-        file_name (str): The name of the file being validated (used in error messages).
-    '''
-    to_return = {
-        'has_error': False,
-        'error': ""
-    }
-    for xor_pair in xor_pairs:
-        col1, col2 = xor_pair
-        if not df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))].empty:
-            to_return['has_error'] = True
-            to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
-    
-    return to_return
-
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
