@@ -54,6 +54,8 @@ tags:
   description: Operations related to plant concepts
 - name: Taxon observations
   description: Operations related to taxon observations
+- name: Taxon importances
+  description: Operations related to taxon importances
 - name: Taxon interpretations
   description: Operations related to taxon interpretations
 - name: Cover methods
@@ -1065,6 +1067,126 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /taxon-importances/{tm_code}:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-id
+      summary: Get taxon importance
+      description: >
+        Retrieve a single taxon importance using its `tm_code`.
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-ob
+      summary: Get taxon importances by ob
+      description: >
+        Retrieve a paginated collection of taxon importances
+        associated with the specified plot observation (using its
+        `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts/{pc_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-pc
+      summary: Get taxon importances by pc
+      description: >
+        Retrieve a paginated collection of taxon importances
+        interpreted to the specified plant concept (using its
+        `pc_code`).
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-to
+      summary: Get taxon importances by to
+      description: >
+        Retrieve a paginated collection of taxon importances
+        associated with the specified taxon observation (using its
+        `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm
+      summary: Get all taxon importances
+      description: >
+        Retrieve a paginated collection of all taxon importances
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
         '400':
           $ref: "#/components/responses/InvalidParameters"
 
@@ -2122,8 +2244,6 @@ components:
     TaxonObservations:
       description: |
         Matching taxon observation(s), with fields based on parameters:
-        - `detail=minimal&with_nested=false`: Basic fields only
-        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
         - `detail=full&with_nested=false`: Extended fields, no nested array fields
         - `detail=full&with_nested=true`: Extended fields + nested array fields
       content:
@@ -2132,6 +2252,23 @@ components:
             oneOf:
               - $ref: '#/components/schemas/taxon_obs_full'
               - $ref: '#/components/schemas/taxon_obs_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    TaxonImportances:
+      description: |
+        Matching taxon importances(s), with fields based on parameters:
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/taxon_imp_full'
+              - $ref: '#/components/schemas/taxon_imp_full_nested'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -4114,6 +4251,132 @@ components:
                 allOf:
                   - $ref: '#/components/schemas/TaxonObsFull'
                   - $ref: '#/components/schemas/TaxonObsFullNested'
+
+    TaxonImpFull:
+      type: object
+      properties:
+        tm_code:
+          type: string
+          description: "VegBank taxon importance identifier"
+          example: "tm.1"
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        stratum_name:
+          type: string
+          description: "Name associated with stratum by the stratum method"
+          example: "trees"
+        cover:
+          type: number
+          format: float
+          description: "Cover, in percent, of the taxon (limited to one stratum if sr_code has a value)"
+          example: 17.5
+        cover_code:
+          type: string
+          description: "Original cover code used by the author in the Cover Method for the plot"
+          example: "6"
+        basal_area:
+          type: number
+          format: float
+          description: "Total basal area of the species in m2/ha (limited to one stratum if sr_code has a value)"
+          example: 13.141
+        biomass:
+          type: number
+          format: float
+          description: "Biomass of the species in g/m2 (limited to one stratum if sr_code has a value)"
+          example: 813
+        inference_area:
+          type: number
+          format: float
+          description: "Area used to infer the importance values of the taxon, if not the
+same as plot-observation taxon_inference_area"
+          example: 1000
+        stratum_base:
+          type: number
+          format: float
+          description: "Base of the stratum, in meters"
+          example: 3
+        stratum_height:
+          type: number
+          format: float
+          description: "Tallest part of the stratum, in meters"
+          example: 25
+
+    TaxonImpFullNested:
+      type: object
+      properties:
+        stems:
+          type: array
+          items:
+            type: object
+            properties:
+              sc_code:
+                type: string
+                description: "VegBank stem count record identifier"
+                example: "sc.1"
+              diameter:
+                type: number
+                format: float
+                description: "Diameter of the stem in centimeters. When diameter classes are used, the diameter is the midpoint between the low end and high end for the diameter class; the offset between this and the endpoints is stored in stem_diameter_accuracy."
+                example: 3.75
+              diameter_accuracy:
+                type: number
+                format: float
+                description: "Accuracy of the stem diameter measurements in centimeters, representing the distance between the diameter class midpoint and endpoint"
+                example: 1.25
+              height:
+                type: number
+                format: float
+                description: "Measured height of the stem in meters. When height classes are used, the height is the midpoint between the low end and high end for the height class; the offset between this and the endpoint is stored in stem_height_accuracy."
+                example: 1.185
+              height_accuracy:
+                type: number
+                format: float
+                description: "Accuracy of the measured height of a stem, representing the offset between the midpoint of the class and the endpoint, in meters."
+                example: 0.185
+              count:
+                type: integer
+                description: "Number of stems of a single species that have these specific stem diameter and height data in common"
+                example: 1
+              taxon_area:
+                type: number
+                format: float
+                description: "Area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxon observation, taxon importance, and/or plot observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
+                example: 600
+          description: "Stem count records"
+
+    taxon_imp_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpFull'
+    taxon_imp_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpFull'
+                  - $ref: '#/components/schemas/TaxonImpFullNested'
 
     TaxonInterpMinimal:
       type: object
