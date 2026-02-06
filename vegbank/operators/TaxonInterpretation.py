@@ -1,4 +1,4 @@
-from operators import Operator
+from vegbank.operators import Operator
 
 
 class TaxonInterpretation(Operator):

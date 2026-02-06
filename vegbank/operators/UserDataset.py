@@ -1,5 +1,5 @@
 import os
-from operators import Operator
+from vegbank.operators import Operator
 
 
 class UserDataset(Operator):

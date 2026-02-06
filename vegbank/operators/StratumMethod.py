@@ -1,14 +1,13 @@
 import os
-from flask import jsonify
 import psycopg
-from psycopg import ClientCursor
-from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
 import traceback
-from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
-
+from vegbank.operators import Operator, table_defs_config
+from vegbank.utilities import jsonify_error_message, allowed_file, QueryParameterError
+from psycopg import ClientCursor
+from psycopg.rows import dict_row
+from flask import jsonify
 
 class StratumMethod(Operator):
     """

@@ -2,12 +2,11 @@ import os
 import traceback
 import pandas as pd
 import numpy as np
+from vegbank.operators import Operator, table_defs_config
+from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 from flask import jsonify
 from psycopg.rows import dict_row
 from psycopg import ClientCursor
-from operators import table_defs_config
-from operators import Operator
-from utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class TaxonObservation(Operator):

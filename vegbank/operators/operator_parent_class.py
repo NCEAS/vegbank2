@@ -2,16 +2,17 @@ import os
 import io
 import re
 import textwrap
-from flask import jsonify, send_file
 import psycopg
 import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import traceback
+from vegbank.utilities import jsonify_error_message, QueryParameterError
+from flask import jsonify, send_file
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
-from utilities import jsonify_error_message, QueryParameterError
+
 
 table_code_lookup = {
     'community-classifications': 'cl',
