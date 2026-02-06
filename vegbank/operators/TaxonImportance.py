@@ -108,6 +108,31 @@ class TaxonImportance(Operator):
                     'sql': "tm.taxonimportance_id = %s",
                     'params': ['vb_id']
                 },
+                "to": {
+                    'sql': "tm.taxonobservation_id = %s",
+                    'params': ['vb_id']
+                },
+                "ob": {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM taxonobservation txo
+                              WHERE tm.taxonobservation_id = txo.taxonobservation_id
+                                AND observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pc': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT plantconcept_id
+                              FROM taxoninterpretation txi
+                              JOIN taxonobservation txo USING (taxonobservation_id)
+                              WHERE tm.taxonobservation_id = txi.taxonobservation_id
+                                AND plantconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
             },
             'order_by': {
                 'sql': order_by_sql,

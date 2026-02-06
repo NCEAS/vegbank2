@@ -221,6 +221,9 @@ def taxon_observations(vb_code):
 
 @app.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-importances/<vb_code>", methods=['GET'])
+@app.route("/plant-concepts/<vb_code>/taxon-importances", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/taxon-importances", methods=['GET'])
+@app.route("/taxon-observations/<vb_code>/taxon-importances", methods=['GET'])
 def taxon_importances(vb_code):
     """
     Retrieve an individual taxon importance or a collection.
