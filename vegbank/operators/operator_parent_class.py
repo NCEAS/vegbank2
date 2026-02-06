@@ -631,7 +631,7 @@ class Operator:
                     - resources: pairs of user and vb codes for the new records
                     - counts: number of new records created
         """
-        print(f"DataFrame loaded with {len(df)} records.")
+        print(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
         
         
         df.columns = df.columns.str.lower()
@@ -698,11 +698,6 @@ class Operator:
                 with open(sql_file_create_codes, "r") as file:
                     sql = file.read()
                 cur.executemany(sql, code_inputs, returning=True)
-                new_identifiers = cur.fetchall()
-                while cur.nextset():
-                    next_identifiers = cur.fetchall()
-                    if next_identifiers:
-                        new_identifiers = new_identifiers + next_identifiers
 
             vb_field_name = f'vb_{insert_table_code}_code'
             to_return = {}
