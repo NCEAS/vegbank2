@@ -2,15 +2,13 @@ import os
 import textwrap
 import pandas as pd
 import traceback
-from vegbank.operators import (
-    Operator,
-    CommunityClassification,
-    Party,
-    Project,
-    Reference,
-    TaxonObservation,
-    table_defs_config,
-)
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from .CommunityClassification import CommunityClassification
+from .Party import Party
+from .Project import Project
+from .Reference import Reference
+from .TaxonObservation import TaxonObservation
 from vegbank.utilities import(
     jsonify_error_message,
     validate_required_and_missing_fields,read_parquet_file,

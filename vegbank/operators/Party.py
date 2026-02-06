@@ -1,6 +1,7 @@
 import os
 import pandas as pd
-from vegbank.operators import Operator, table_defs_config
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 
 

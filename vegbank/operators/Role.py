@@ -1,5 +1,5 @@
 import os
-from vegbank.operators import Operator
+from vegbank.operators.operator_parent_class import Operator
 
 
 class Role(Operator):

@@ -3,7 +3,8 @@ import psycopg
 import pandas as pd
 import numpy as np
 import traceback
-from vegbank.operators import Operator, table_defs_config
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from vegbank.utilities import (
     jsonify_error_message,
     allowed_file,

@@ -1,5 +1,8 @@
 import os
-from vegbank.operators import Operator, Party, Reference, table_defs_config
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from .Party import Party
+from .Reference import Reference
 from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
