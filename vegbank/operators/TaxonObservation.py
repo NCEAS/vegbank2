@@ -191,7 +191,6 @@ class TaxonObservation(Operator):
 
         df['user_tm_code'] = df['user_tm_code'].astype(str)
         taxon_importance_codes = super().upload_to_table("taxon_importance", 'tm', table_defs_config.taxon_importance, 'taxonimportance_id', df, True, conn)
-        print(taxon_importance_codes)
         to_return = {
             'resources':{
                 'to': taxon_observation_codes['resources']['to'],
@@ -257,7 +256,6 @@ class TaxonObservation(Operator):
         sl_df.replace({pd.NaT: None, np.nan: None}, inplace=True)
 
         sl_df.dropna(subset=['stem_code', 'stem_x_position', 'stem_y_position', 'stem_health'], inplace=True, how='all') #Drop rows where all stem location fields are null
-        print(sl_df)
         sl_df_no_code = sl_df[sl_df['user_sl_code'].isnull()] #Check if there are any rows with stem location data but no user_sl_code
         if not sl_df_no_code.empty:
             raise ValueError("All stem location records must have a user_sl_code when any stem location fields are provided.")

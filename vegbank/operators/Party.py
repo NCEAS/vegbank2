@@ -227,7 +227,7 @@ class Party(Operator):
         new_ob_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
         new_pj_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
         new_cl_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
-        print(ob_contributor_df)
+        
         if ob_contributor_df.empty is False:
             new_ob_contributors = super().upload_to_table("observation_contributor", 'cr', contributor_defs, 'observationcontributor_id', ob_contributor_df, False, conn, validate=True)
         if pj_contributor_df.empty is False:
