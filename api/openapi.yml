@@ -55,6 +55,8 @@ tags:
   description: Operations related to plant concepts
 - name: Taxon observations
   description: Operations related to taxon observations
+- name: Strata
+  description: Operations related to defined strata
 - name: Stem counts
   description: Operations related to stem counts
 - name: Taxon importances
@@ -1305,6 +1307,117 @@ paths:
         '400':
           $ref: "#/components/responses/InvalidParameters"
 
+  /strata/{sr_code}:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-id
+      summary: Get stratum
+      description: >
+        Retrieve a single stratum using its `sr_code`.
+      parameters:
+        - name: sr_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sr.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-ob
+      summary: Get strata by ob
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified plot observation (using its `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-to
+      summary: Get strata by to
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified taxon observation (using its `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances/{tm_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-tm
+      summary: Get strata by tm
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified taxon importance (using its `tm_code`).
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr
+      summary: Get all strata
+      description: >
+        Retrieve a paginated collection of all strata recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
   /taxon-interpretations/{ti_code}:
     get:
       tags:
@@ -2403,6 +2516,19 @@ components:
             format: binary
             description: Parquet file with same data as the JSON response.
 
+    Strata:
+      description: Matching stratum or strata
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/stratum'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
     TaxonInterpretations:
       description: |
         Matching taxon interpretation(s), with fields based on parameters:
@@ -3395,7 +3521,7 @@ components:
                 example: "sr.1"
               stratum_name:
                 type: string
-                description: "Stratum name, or '-all-' if sr_code is null"
+                description: "Stratum name, or '<All>' if sr_code is null"
                 example: "herb"
               cover:
                 type: number
@@ -4566,6 +4692,60 @@ same as plot-observation taxon_inference_area"
     stem_count:
       $ref: '#/components/schemas/StemCount'
 
+    Stratum:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        name:
+          type: string
+          description: "Stratum name"
+          example: "Dwarf shrub"
+        height:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 5
+        base:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 2
+        cover:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 45
+        description:
+          type: string
+          description: "Stratum description"
+          example: "Dwarf shrub"
+        sm_code:
+          type: string
+          description: "VegBank stratum method identifier"
+          example: "sm.1"
+        stratum_method_name:
+          type: string
+          description: "Name of the stratum method (e.g., Braun-Blanquet, TNC-ABI, NC Vegetation Survey #1, NC Vegetation Survey #2, etc.)"
+          example: "TurboVeg"
+        sy_code:
+          type: string
+          description: "VegBank stratum type identifier"
+          example: "sy.1"
+        stratum_type_name:
+          type: string
+          description: "Name associated with this stratum by the stratum method"
+          example: "Dwarf shrub"
+
+    stratum:
+      $ref: '#/components/schemas/Stratum'
+
     TaxonInterpMinimal:
       type: object
       properties:
@@ -5105,20 +5285,6 @@ same as plot-observation taxon_inference_area"
           type: string
         vb_code:
           type: string
-
-    stratum:
-      type: object
-      properties:
-        stratum_base:
-          type: number
-          format: float
-          description: "Average height of the bottom of the stratum in meters"
-          example: 0.1
-        stratum_height:
-          type: number
-          format: float
-          description: "Tallest part of the Stratum in meters."
-          example: 1.0
 
     disturbance_obs:
       type: object
