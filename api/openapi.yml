@@ -54,6 +54,8 @@ tags:
   description: Operations related to plant concepts
 - name: Taxon observations
   description: Operations related to taxon observations
+- name: Stem counts
+  description: Operations related to stem counts
 - name: Taxon importances
   description: Operations related to taxon importances
 - name: Taxon interpretations
@@ -1190,6 +1192,118 @@ paths:
         '400':
           $ref: "#/components/responses/InvalidParameters"
 
+  /stem-counts/{sc_code}:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc-by-id
+      summary: Get stem count
+      description: >
+        Retrieve a single stem count using its `sc_code`.
+      parameters:
+        - name: sc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sc.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/stem-counts:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-sc-by-ob
+      summary: Get stem counts by ob
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified plot observation (using its `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/stem-counts:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-sc-by-to
+      summary: Get stem counts by to
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified taxon observation (using its `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances/{tm_code}/stem-counts:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-sc-by-tm
+      summary: Get stem counts by tm
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified taxon importance (using its `tm_code`).
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /stem-counts:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-sc
+      summary: Get all stem counts
+      description: >
+        Retrieve a paginated collection of all stem counts
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
   /taxon-interpretations/{ti_code}:
     get:
       tags:
@@ -2275,6 +2389,19 @@ components:
             format: binary
             description: Parquet file with same data as the JSON response.
 
+    StemCounts:
+      description: Matching stem count(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/stem_count'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
     TaxonInterpretations:
       description: |
         Matching taxon interpretation(s), with fields based on parameters:
@@ -2744,7 +2871,7 @@ components:
         stem_size_limit:
           type: number
           format: float
-          description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count (stemCount)."
+          description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count"
           example: 10
         stem_observation_area:
           type: number
@@ -4377,6 +4504,66 @@ same as plot-observation taxon_inference_area"
                 allOf:
                   - $ref: '#/components/schemas/TaxonImpFull'
                   - $ref: '#/components/schemas/TaxonImpFullNested'
+
+    StemCount:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        tm_code:
+          type: string
+          description: "VegBank taxon importance identifier"
+          example: "tm.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        stratum_name:
+          type: string
+          description: "Stratum name, or '<All>' if sr_code is null"
+          example: "Canopy"
+        sc_code:
+          type: string
+          description: "VegBank stem count record identifier"
+          example: "sc.1"
+        diameter:
+          type: number
+          format: float
+          description: "Diameter of the stem in centimeters. When diameter classes are used, the diameter is the midpoint between the low end and high end for the diameter class; the offset between this and the endpoints is stored in stem_diameter_accuracy."
+          example: 3.75
+        diameter_accuracy:
+          type: number
+          format: float
+          description: "Accuracy of the stem diameter measurements in centimeters, representing the distance between the diameter class midpoint and endpoint"
+          example: 1.25
+        height:
+          type: number
+          format: float
+          description: "Measured height of the stem in meters. When height classes are used, the height is the midpoint between the low end and high end for the height class; the offset between this and the endpoint is stored in stem_height_accuracy."
+          example: 1.185
+        height_accuracy:
+          type: number
+          format: float
+          description: "Accuracy of the measured height of a stem, representing the offset between the midpoint of the class and the endpoint, in meters."
+          example: 0.185
+        count:
+          type: integer
+          description: "Number of stems of a single species that have these specific stem diameter and height data in common"
+          example: 1
+        taxon_area:
+          type: number
+          format: float
+          description: "Area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxon observation, taxon importance, and/or plot observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
+          example: 600
+
+    stem_count:
+      $ref: '#/components/schemas/StemCount'
 
     TaxonInterpMinimal:
       type: object
