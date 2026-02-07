@@ -11,6 +11,7 @@ from .Project import Project
 from .Reference import Reference
 from .Role import Role
 from .StemCount import StemCount
+from .Stratum import Stratum
 from .StratumMethod import StratumMethod
 from .TaxonImportance import TaxonImportance
 from .TaxonInterpretation import TaxonInterpretation
@@ -31,6 +32,7 @@ __all__ = [
     "Reference",
     "Role",
     "StemCount",
+    "Stratum",
     "StratumMethod",
     "TaxonImportance",
     "TaxonInterpretation",

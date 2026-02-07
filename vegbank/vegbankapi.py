@@ -24,6 +24,7 @@ from vegbank.operators import (
     Project,
     Role,
     StemCount,
+    Stratum,
     StratumMethod,
     Reference,
     UserDataset,
@@ -955,6 +956,62 @@ def stratum_methods(sm_code):
         return stratum_method_operator.upload_stratum_method(request, params)
     elif request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/strata", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/strata/<vb_code>", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/strata", methods=['GET'])
+@app.route("/taxon-observations/<vb_code>/strata", methods=['GET'])
+@app.route("/taxon-importances/<vb_code>/strata", methods=['GET'])
+def strata(vb_code):
+    """
+    Retrieve either an individual stratum or a collection of strata
+
+    This function handles HTTP requests for strata. It currently supports only
+    the GET method to retrieve records. If a POST request is made, it returns an
+    error message indicating that POST is not supported. For any other HTTP
+    method, it returns a 405 error.
+
+    GET: If a valid stratum code is provided (e.g., `sr.1`), returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of stratum records
+    associated with that resource. If no vb_code is provided, returns the full
+    collection of stratum records. Collection responses may be further mediated
+    by pagination parameters and other filtering query parameters.
+
+    Parameters (for GET requests only):
+        vb_code (str or None): The unique identifier for the stratum
+            being retrieved. If None, retrieves all strata.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Only 'false' is defined for this method. Defaults to 'false'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved stratum/strata as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+    """
+    stratum_operator = Stratum(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for strata."), 405
+    elif request.method == 'GET':
+        return stratum_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

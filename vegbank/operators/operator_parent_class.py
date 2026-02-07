@@ -26,6 +26,7 @@ table_code_lookup = {
     'references': 'rf',
     'roles': 'ar',
     'stem-counts': 'sc',
+    'strata': 'sr',
     'stratum-methods': 'sm',
     'taxon-importances': 'tm',
     'taxon-interpretations': 'ti',
