@@ -23,6 +23,7 @@ from vegbank.operators import (
     CoverMethod,
     Project,
     Role,
+    StemCount,
     StratumMethod,
     Reference,
     UserDataset,
@@ -271,6 +272,62 @@ def taxon_importances(vb_code):
             "POST method is not supported for community_interpretations."), 405
     elif request.method == 'GET':
         return taxon_importance_operator.get_vegbank_resources(request, vb_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/stem-counts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/stem-counts/<vb_code>", methods=['GET'])
+@app.route("/plot-observations/<vb_code>/stem-counts", methods=['GET'])
+@app.route("/taxon-observations/<vb_code>/stem-counts", methods=['GET'])
+@app.route("/taxon-importances/<vb_code>/stem-counts", methods=['GET'])
+def stem_counts(vb_code):
+    """
+    Retrieve either an individual stem count or a collection of counts.
+
+    This function handles HTTP requests for stem counts. It currently supports
+    only the GET method to retrieve records. If a POST request is made, it
+    returns an error message indicating that POST is not supported. For any
+    other HTTP method, it returns a 405 error.
+
+    GET: If a valid stem count code is provided (e.g., `sc.1`), returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of stem count records
+    associated with that resource. If no vb_code is provided, returns the full
+    collection of stem count records. Collection responses may be further
+    mediated by pagination parameters and other filtering query parameters.
+
+    Parameters (for GET requests only):
+        vb_code (str or None): The unique identifier for the stem count
+            being retrieved. If None, retrieves all stem counts.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        with_nested (str, optional): Include nested fields?
+            Only 'false' is defined for this method. Defaults to 'false'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved stem count(s) as JSON or
+                   Parquet (GET), or upload details as JSON (POST)
+            - 400: Invalid parameters
+            - 403: Uploads not allowed (POST only)
+            - 405: Unsupported HTTP method
+    """
+    stem_count_operator = StemCount(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for stem-counts."), 405
+    elif request.method == 'GET':
+        return stem_count_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

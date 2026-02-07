@@ -10,6 +10,7 @@ from .PlotObservation import PlotObservation
 from .Project import Project
 from .Reference import Reference
 from .Role import Role
+from .StemCount import StemCount
 from .StratumMethod import StratumMethod
 from .TaxonImportance import TaxonImportance
 from .TaxonInterpretation import TaxonInterpretation
@@ -29,6 +30,7 @@ __all__ = [
     "Project",
     "Reference",
     "Role",
+    "StemCount",
     "StratumMethod",
     "TaxonImportance",
     "TaxonInterpretation",

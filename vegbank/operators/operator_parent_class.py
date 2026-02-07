@@ -25,6 +25,7 @@ table_code_lookup = {
     'projects': 'pj',
     'references': 'rf',
     'roles': 'ar',
+    'stem-counts': 'sc',
     'stratum-methods': 'sm',
     'taxon-importances': 'tm',
     'taxon-interpretations': 'ti',
