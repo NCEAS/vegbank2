@@ -73,6 +73,8 @@ tags:
   description: Operations related to projects
 - name: References
   description: Operations related to references
+- name: Named Places
+  description: Operations related to named places
 - name: User Datasets
   description: |
     Operations related to VegBank datasets. A dataset is an arbitrary
@@ -1219,7 +1221,7 @@ paths:
   /plot-observations/{ob_code}/stem-counts:
     get:
       tags:
-        - Taxon importances
+        - Stem counts
       operationId: get-sc-by-ob
       summary: Get stem counts by ob
       description: >
@@ -1243,7 +1245,7 @@ paths:
   /taxon-observations/{to_code}/stem-counts:
     get:
       tags:
-        - Taxon importances
+        - Stem counts
       operationId: get-sc-by-to
       summary: Get stem counts by to
       description: >
@@ -1267,7 +1269,7 @@ paths:
   /taxon-importances/{tm_code}/stem-counts:
     get:
       tags:
-        - Taxon importances
+        - Stem counts
       operationId: get-sc-by-tm
       summary: Get stem counts by tm
       description: >
@@ -1291,7 +1293,7 @@ paths:
   /stem-counts:
     get:
       tags:
-        - Taxon importances
+        - Stem counts
       operationId: get-sc
       summary: Get all stem counts
       description: >
@@ -2034,6 +2036,46 @@ paths:
         '500':
           $ref: "#/components/responses/InvalidDataUpload"
 
+  /named-places/{np_code}:
+    get:
+      tags:
+        - Named Places
+      operationId: get-np-by-id
+      summary: Get named place
+      description: >
+        Retrieve a single named place using its `np_code`.
+      parameters:
+        - name: np_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "np.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/NamedPlaces"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /named-places:
+    get:
+      tags:
+        - Named Places
+      operationId: get-np
+      summary: Get all named places
+      description: >
+        Retrieve a paginated collection of all named places
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/NamedPlaces"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
   /user-datasets/{ds_code}:
     get:
       tags:
@@ -2626,6 +2668,19 @@ components:
           schema:
             allOf:
               - $ref: '#/components/schemas/reference'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    NamedPlaces:
+      description: Matching named place(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/named_place'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -5218,6 +5273,45 @@ same as plot-observation taxon_inference_area"
     reference:
       $ref: '#/components/schemas/Reference'
 
+    NamedPlace:
+      type: object
+      properties:
+        np_code:
+          type: string
+          description: "VegBank named place identifier"
+          example: "np.1"
+        system:
+          type: string
+          description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"
+          example: "county"
+        name:
+          type: string
+          description: "The name of a place in or at which a plot is located."
+          example: "Zion NP"
+        description:
+          type: string
+          description: "Description of a named place. For US county names, this field identifies the containing state."
+          example: "Zion National Park"
+        code:
+          type: string
+          description: "Optional code for location identification"
+          example: "ZION"
+        owner:
+          type: string
+          description: "Designated location owner"
+          example: "US NPS"
+        rf_label:
+          type: string
+          description: "Label for the observation reference"
+          example: "US NPS place names"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this named place"
+          example: 8
+
+    named_place:
+      $ref: '#/components/schemas/NamedPlace'
+
     UserDataset:
       type: object
       properties:
@@ -5270,21 +5364,6 @@ same as plot-observation taxon_inference_area"
     #Placeholder for upload schemas
     tbd:
       type: object
-
-    #TODO
-    named_place:
-      type: object
-      properties:
-        place_system:
-          type: string
-        place_name:
-          type: string
-        place_code:
-          type: string
-        reference:
-          type: string
-        vb_code:
-          type: string
 
     disturbance_obs:
       type: object

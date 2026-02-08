@@ -21,6 +21,7 @@ from vegbank.operators import (
     CommunityInterpretation,
     CommunityConcept,
     CoverMethod,
+    NamedPlace,
     Project,
     Role,
     StemCount,
@@ -270,7 +271,7 @@ def taxon_importances(vb_code):
     taxon_importance_operator = TaxonImportance(params)
     if request.method == 'POST':
         return jsonify_error_message(
-            "POST method is not supported for community_interpretations."), 405
+            "POST method is not supported for taxon-importances."), 405
     elif request.method == 'GET':
         return taxon_importance_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -596,7 +597,7 @@ def community_interpretations(vb_code):
     community_interpretation_operator = CommunityInterpretation(params)
     if request.method == 'POST':
         return jsonify_error_message(
-            "POST method is not supported for community_interpretations."), 405
+            "POST method is not supported for community-interpretations."), 405
     elif request.method == 'GET':
         return community_interpretation_operator.get_vegbank_resources(request,
                                                                        vb_code)
@@ -1113,10 +1114,59 @@ def roles(ar_code):
     """
     role_operator = Role(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for roles."), 405
+        return role_operator.upload_all(request)
     elif request.method == 'GET':
         return role_operator.get_vegbank_resources(request, ar_code)
+    else:
+        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/named-places", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/named-places/<vb_code>")
+def named_places(vb_code):
+    """
+    Retrieve either an individual named place record or a collection.
+
+    This function handles HTTP requests for named places. It currently supports
+    only the GET method to retrieve records. If a POST request is made, it
+    returns an error message indicating that POST is not supported. For any
+    other HTTP method, it returns a 405 error.
+
+    GET: If a valid named place code is provided (e.g., `np.1`), returns the
+    corresponding record if it exists. If a valid code for a different supported
+    resource type is provided, returns the collection of named place records
+    associated with that resource. If no vb_code is provided, returns the full
+    collection of named place records. Collection responses may be further
+    mediated by pagination parameters and other filtering query parameters.
+
+    Parameters:
+        vb_code (str or None): The unique identifier for the named place
+            being retrieved. If None, retrieves all named places.
+
+    GET Query Parameters:
+        detail (str, optional): Level of detail for the response.
+            Only 'full' is defined for this method. Defaults to 'full'.
+        limit (int, optional): Maximum number of records to return.
+            Defaults to 1000.
+        offset (int, optional): Number of records to skip before starting
+            to return records. Defaults to 0.
+        create_parquet (str, optional): Whether to return data as Parquet
+            rather than JSON. Accepts 'true' or 'false' (case-insensitive).
+            Defaults to False.
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved named place(s) as JSON or
+                   Parquet (GET)
+            - 400: Invalid parameters
+            - 405: Unsupported HTTP method
+    """
+    named_place_operator = NamedPlace(params)
+    if request.method == 'POST':
+        return jsonify_error_message(
+            "POST method is not supported for named-places."), 405
+    elif request.method == 'GET':
+        return named_place_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
@@ -1163,7 +1213,7 @@ def user_datasets(ds_code):
     user_dataset_operator = UserDataset(params)
     if request.method == 'POST':
         return jsonify_error_message(
-            "POST method is not supported for community_interpretations."), 405
+            "POST method is not supported for user-datasets."), 405
     elif request.method == 'GET':
         return user_dataset_operator.get_vegbank_resources(request, ds_code)
     else:

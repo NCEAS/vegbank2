@@ -19,6 +19,7 @@ table_code_lookup = {
     'community-concepts': 'cc',
     'community-interpretations': 'ci',
     'cover-methods': 'cm',
+    'named-places': 'np',
     'parties': 'py',
     'plant-concepts': 'pc',
     'plot-observations': 'ob',
