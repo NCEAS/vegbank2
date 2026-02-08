@@ -3552,6 +3552,10 @@ components:
           items:
             type: object
             properties:
+              np_code:
+                type: string
+                description: "VegBank named place identifier"
+                example: "np.1"
               system:
                 type: string
                 description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"

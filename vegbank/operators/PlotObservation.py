@@ -403,6 +403,7 @@ class PlotObservation(Operator):
             ) AS so ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'np_code', 'np.' || namedplace_id,
                       'system', placesystem,
                       'name', placename,
                       'description', placedescription,
