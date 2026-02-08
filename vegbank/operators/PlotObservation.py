@@ -481,6 +481,18 @@ class PlotObservation(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'np': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT namedplace_id
+                              FROM namedplace np
+                              JOIN place p USING (namedplace_id)
+                              JOIN plot pl USING (plot_id)
+                              WHERE ob.plot_id = pl.plot_id
+                                AND namedplace_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
                 'pc': {
                     'sql': """\
                         EXISTS (

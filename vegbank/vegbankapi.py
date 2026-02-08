@@ -71,6 +71,7 @@ def welcome_page():
 @app.route("/projects/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/parties/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/plot-observations", methods=['GET'])
+@app.route("/named-places/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/community-concepts/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
