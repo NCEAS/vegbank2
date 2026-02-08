@@ -171,6 +171,38 @@ paths:
           $ref: "#/components/responses/PlotObservations"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+  /named-places/{np_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-np
+      summary: Get plot observations by named place
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations associated with the specified named
+        place (using its `np_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: np_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "np.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
   /plant-concepts/{pc_code}/plot-observations:
     get:
       tags:
@@ -3520,6 +3552,10 @@ components:
           items:
             type: object
             properties:
+              np_code:
+                type: string
+                description: "VegBank named place identifier"
+                example: "np.1"
               system:
                 type: string
                 description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"
