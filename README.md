@@ -77,6 +77,40 @@ commits can be run, for example, for the mac with:
 
 - `act --container-architecture linux/amd64`
 
+### Adding project dependencies
+
+To add a dependency to this project, you will need to update `pyproject.toml` with the library that you are trying to add, as well as the minimum version required.
+
+There are two sections: `poetry.dependencies` and `poetry.group.dev.dependencies`. If the library you want to add is a runtime dependency and not just for development, add the dependency to `poetry.dependencies`
+
+```py
+[tool.poetry.dependencies]
+python = "^3.12"
+psycopg = ">=3.3.2"
+flask = ">=3.1.2"
+pandas = ">=3.0.0"
+pyarrow = ">=23.0.0"
+numpy = ">=2.4.2"
+# Add runtime dependencies here
+runtimedependency = ">=#.#.#"
+
+[tool.poetry.group.dev.dependencies]
+# Add development dependencies here
+poetry = ">=1.8.3"
+pytest = ">=8.3.3"
+pylint = ">=3.2.7"
+black = ">=24.8.0"
+```
+
+Afterwards, execute the following `poetry` command to export an updated `requirements.txt` document:
+
+```sh
+$ poetry export -f requirements.txt --only main --without-hashes -o requirements.txt
+```
+
+Once this is complete, you can build and deploy a new docker image and know that your python library will be available to your code to utilize.
+
+
 ## Current Contributors
 
 - Matthew B. Jones (jones@nceas.ucsb.edu): [ORCID: 0000-0003-0077-4738](https://orcid.org/0000-0003-0077-4738)
