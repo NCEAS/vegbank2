@@ -13,6 +13,10 @@ RUN python -m venv "$VENV_PATH" && pip install --upgrade pip setuptools wheel
 
 WORKDIR /app
 
+# TODO: Pip Install Poetry
+
+# TODO: Poetry Install
+
 COPY vegbank /app/vegbank
 COPY queries /app/queries
 
