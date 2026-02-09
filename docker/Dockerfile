@@ -8,18 +8,17 @@ LABEL org.opencontainers.image.version="0.0.3-289-importbugs"
 ENV VENV_PATH=/opt/venv
 ENV PATH="$VENV_PATH/bin:$PATH"
 
+WORKDIR /app
+
 # Create VENV and upgrade pip toools
 RUN python -m venv "$VENV_PATH" && pip install --upgrade pip setuptools wheel
 
-WORKDIR /app
+# Install runtime dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY vegbank /app/vegbank
 COPY queries /app/queries
-
-RUN pip install flask
-RUN pip install psycopg
-RUN pip install pandas
-RUN pip install pyarrow
 
 ENV PYTHONPATH=/app
 CMD [ "flask", "--app",  "vegbank.vegbankapi:app", "run", "--host=0.0.0.0", "--port=80"]
