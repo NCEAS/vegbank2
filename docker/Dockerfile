@@ -21,9 +21,6 @@ RUN python -m pip install uv --root-user-action ignore
 # Create (or reuse) the venv at $VIRTUAL_ENV
 RUN uv venv --allow-existing "${VIRTUAL_ENV}"
 
-# Copy dependency files (so Docker cache works well)
-COPY pyproject.toml uv.lock* /app/
-
 # Activate uv venv
 RUN . "${VIRTUAL_ENV}/bin/activate" && uv sync --active
 
