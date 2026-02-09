@@ -7,6 +7,10 @@ LABEL org.opencontainers.image.version="0.0.3-289-importbugs"
 # Add Docker VENV path
 ENV VENV_PATH=/opt/venv
 ENV PATH="$VENV_PATH/bin:$PATH"
+# Do not create __pycache__/ directories
+ENV PYTHONDONTWRITEBYTECODE=1
+# Ensure logs behave correctly by flushing out stdout/stderr immediately
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -17,6 +21,8 @@ RUN python -m venv "$VENV_PATH" && pip install --upgrade pip setuptools wheel
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+# TODO: We should be able to simply copy the application code instead of two directories
+# Ex. COPY . /app
 COPY vegbank /app/vegbank
 COPY queries /app/queries
 
