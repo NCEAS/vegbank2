@@ -84,6 +84,10 @@ To add a dependency to this project, you will need to update `pyproject.toml` wi
 There are two sections: `poetry.dependencies` and `poetry.group.dev.dependencies`. If the library you want to add is a runtime dependency and not just for development, add the dependency to `poetry.dependencies`
 
 ```py
+# pyproject.toml
+
+...
+
 [tool.poetry.dependencies]
 python = "^3.12"
 psycopg = ">=3.3.2"
@@ -100,6 +104,9 @@ poetry = ">=1.8.3"
 pytest = ">=8.3.3"
 pylint = ">=3.2.7"
 black = ">=24.8.0"
+
+...
+
 ```
 
 Afterwards, execute the following `poetry` command to export an updated `requirements.txt` document:
@@ -108,7 +115,7 @@ Afterwards, execute the following `poetry` command to export an updated `require
 $ poetry export -f requirements.txt --only main --without-hashes -o requirements.txt
 ```
 
-Once this is complete, you can build and deploy a new docker image and know that your python library will be available to your code to utilize.
+Once this is complete, you can build and deploy a new docker image and know that your python library will be available for your code to utilize.
 
 
 ## Current Contributors
