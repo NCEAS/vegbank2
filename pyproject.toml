@@ -1,4 +1,4 @@
-[tool.poetry]
+[project]
 name = "vegbank"
 version = "2.0.0-alpha1"
 description = "VegBank database and data access service"
@@ -9,25 +9,27 @@ authors = [
     "Matthew B. Jones <jones@nceas.ucsb.edu>"
     ]
 license = "Apache2"
+requires-python = ">=3.13"
 readme = "README.md"
 
-[tool.poetry.dependencies]
-python = "^3.13"
-psycopg = ">=3.3.2"
-flask = ">=3.1.2"
-pandas = ">=3.0.0"
-pyarrow = ">=23.0.0"
-numpy = ">=2.4.2"
+dependencies = [
+    "psycopg>=3.3.2",
+    "flask>=3.1.2",
+    "pandas>=3.0.0",
+    "pyarrow>=23.0.0",
+    "numpy>=2.4.2",
+]
 
-[tool.poetry.group.dev.dependencies]
-poetry = ">=1.8.3"
-pytest = ">=8.3.3"
-pylint = ">=3.2.7"
-black = ">=24.8.0"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3",
+    "pylint>=3.2.7",
+    "black>=24.8.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 addopts = [
