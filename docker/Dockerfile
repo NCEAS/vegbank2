@@ -16,6 +16,8 @@ WORKDIR /app
 # TODO: Pip Install Poetry
 
 # TODO: Poetry Install
+RUN curl -sSL https://install.python-poetry.org | python - \
+ && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
 COPY vegbank /app/vegbank
 COPY queries /app/queries
