@@ -3,14 +3,13 @@ name = "vegbank"
 version = "2.0.0-alpha1"
 description = "VegBank database and data access service"
 authors = [
-    "Robert Shelton <shelton@nceas.ucsb.edu>",
-    "Dou Mok <mok@nceas.ucsb.edu>",
-    "Jim Regetz <regetz@nceas.ucsb.edu>",
-    "Matthew B. Jones <jones@nceas.ucsb.edu>"
-    ]
-license = "Apache2"
+    { name = "Robert Shelton", email = "shelton@nceas.ucsb.edu" },
+    { name = "Dou Mok", email = "douming.mok@gmail.com" },
+    { name = "Jim Regetz", email = "regetz@nceas.ucsb.edu" },
+    { name = "Matthew B. Jones", email = "jones@nceas.ucsb.edu" },
+]
+license = { text = "Apache-2.0" }
 requires-python = ">=3.13"
-readme = "README.md"
 
 dependencies = [
     "psycopg>=3.3.2",
@@ -26,6 +25,9 @@ dev = [
     "pylint>=3.2.7",
     "black>=24.8.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["vegbank"]
 
 [build-system]
 requires = ["hatchling"]
