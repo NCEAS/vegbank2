@@ -11,15 +11,24 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1
 # Ensure logs behave correctly by flushing out stdout/stderr immediately
 ENV PYTHONUNBUFFERED=1
+# Disable interactive questions
+ENV POETRY_NO_INTERACTION=1
+ENV POETRY_VIRTUALENVS_CREATE=false
 
 WORKDIR /app
 
 # Create VENV and upgrade pip toools
 RUN python -m venv "$VENV_PATH" && pip install --upgrade pip setuptools wheel
 
-# Install runtime dependencies
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Download & install poetry
+RUN curl -sSL https://install.python-poetry.org | python - \
+ && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies
+RUN poetry install --no-root --only main
 
 # TODO: We should be able to simply copy the application code instead of two directories
 # Ex. COPY . /app
