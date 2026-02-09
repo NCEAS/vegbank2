@@ -81,7 +81,8 @@ commits can be run, for example, for the mac with:
 
 To add a dependency to this project, you will need to update `pyproject.toml` with the library that you are trying to add, as well as the minimum version required.
 
-There are two sections: `poetry.dependencies` and `poetry.group.dev.dependencies`. If the library you want to add is a runtime dependency and not just for development, add the dependency to `poetry.dependencies`
+- If the library is required at runtime, add it under `tool.poetry.dependencies`
+- If the library is used only for development or testing, add it under `tool.poetry.group.dev.dependencies`
 
 ```py
 # pyproject.toml
@@ -109,13 +110,13 @@ black = ">=24.8.0"
 
 ```
 
-Afterwards, execute the following `poetry` command to export an updated `requirements.txt` document:
+After updating `pyprooject.toml`, run the following to update `poetry.lock` with the latest resolved dependencies. 
 
 ```sh
-$ poetry export -f requirements.txt --only main --without-hashes -o requirements.txt
+$ poetry lock
 ```
 
-Once this is complete, you can build and deploy a new docker image and know that your python library will be available for your code to utilize.
+Lastly, build and deploy your Docker image. If you are unsure of how to, please follow the `README.md` under `/docker`.
 
 
 ## Current Contributors
