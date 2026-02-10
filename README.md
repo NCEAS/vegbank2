@@ -103,6 +103,7 @@ $ uv sync --active
 ### Adding project dependencies
 
 To add a dependency to this project, you will need to update `pyproject.toml` with the library that you are trying to add, as well as the minimum version required.
+- Note: An easy way to add dependencies to pyproject.toml is to add them with `uv` or other package management tools using a command like `uv add some_package`.
 
 - If the library is required at runtime, add it under `dependencies`
 - If the library is used only for development or testing, add it under `dependency-groups.dev`
