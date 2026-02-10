@@ -152,7 +152,6 @@ env.bak/
 venv.bak/
 
 # uv package manager
-uv.lock
 bin/
 
 # Spyder project settings
