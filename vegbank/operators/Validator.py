@@ -48,9 +48,11 @@ config = {
         "required_fields":['vb_ar_code', 'contributor_type', 'record_identifier'],
         "table_defs":[table_defs_config.contributor]
     },
-    "plot_observations":{
-        # Note: plot observations don't appear here because they have nonstandard requirements.
-        # See the validate_plot_observations method for more. 
+    "plot_observations":{ #This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
+        "new_pl_required_fields":['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code'],
+        "old_pl_required_fields":['vb_pl_code', 'user_ob_code'],
+        "table_defs":[table_defs_config.plot, table_defs_config.observation],
+        "xor_fields":[('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
     }
 
 }
@@ -85,25 +87,18 @@ def validate_plot_observations(df):
         'error': "",
         'has_error': False
     }
-
-    if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
-        validation['error'] += "Rows cannot have both a vb_pl_code and a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
-        validation['has_error'] = True
-    if not df[(df['user_pl_code'].isnull()) & (df['vb_pl_code'].isnull())].empty:
-        validation['error'] += "All rows must have either a vb_pl_code or a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
-        validation['has_error'] = True
+    pl_obs_config = config['plot_observations']
     
     new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()] 
     old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()] 
 
-    table_defs = [table_defs_config.plot, table_defs_config.observation]
-    new_pl_required_fields = ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code']
-    old_pl_required_fields = ['vb_pl_code', 'user_ob_code']
-    new_validation = validate_required_and_missing_fields(new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
-    old_validation = validate_required_and_missing_fields(old_plots_df, old_pl_required_fields, table_defs, "observations on existing plots")
+    new_validation = validate_required_and_missing_fields(new_plots_df, pl_obs_config['new_pl_required_fields'], pl_obs_config['table_defs'], "observations on new plots")
+    old_validation = validate_required_and_missing_fields(old_plots_df, pl_obs_config['old_pl_required_fields'], pl_obs_config['table_defs'], "observations on existing plots")
 
-    validation['error'] += new_validation['error'] + old_validation['error']
-    validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
+    xor_validation = validate_xor_pairs(df, pl_obs_config['xor_fields'], "plot_observations")
+
+    validation['error'] += new_validation['error'] + old_validation['error'] + xor_validation['error']
+    validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or xor_validation['has_error']
     return validation
 
 
@@ -119,29 +114,34 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         'has_error': False,
         'error': ""
     }
+    print(df.columns)
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair
-        if not df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))].empty:
+        if not df[((df[col1].notnull()) & (df[col2].notnull())) | ((df[col1].isnull()) & (df[col2].isnull()))].empty:
+            print("xor validation failed for " + col1 + " and " + col2 + " in " + file_name)
+            print(df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))])
             to_return['has_error'] = True
             to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
-    
     return to_return
 
 def validate_user_codes(df_1_name, data, user_codes, file_name):
-    print("validating user codes in " + file_name)
-    df_1 = data[df_1_name]
-    print(df_1.columns)
     to_return = {
         'has_error': False,
         'error': ""
     }
+    if user_codes is None:
+        return to_return
+    
+    df_1 = data[df_1_name]
     for source_code, target_code, target_table in user_codes:
         df_2 = data.get(target_table)
         if df_2 is not None:
-            print("checking " + source_code + " against " + target_code + " in " + target_table)
-            print(df_2.columns)
             missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
+            if 'None' in missing_codes: #Sometimes this happens in valid cases because the empy code is an xor field. We'll leave that validation for the xor method.
+                missing_codes.remove('None')
             if len(missing_codes) > 0:
+                print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed")
+                print(missing_codes)
                 to_return['has_error'] = True
                 to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(missing_codes) + ". "  
         else:

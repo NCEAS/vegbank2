@@ -1,6 +1,7 @@
 import os
 import textwrap
 import pandas as pd
+import numpy as np
 import traceback
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
@@ -738,16 +739,11 @@ class PlotObservation(Operator):
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
                 if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
                     file_validation = Validator.validate(data[name], config['file_name'])
-                    if 'user_codes' in config:
-                        user_code_validation = Validator.validate_user_codes(name, data, config['user_codes'], config['file_name'])
-                    else:
-                        user_code_validation = {
-                            'has_error': False,
-                            'error': ""
-                        }
-                    validation['error'] = file_validation['error'] + user_code_validation['error']
-                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error']
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
 
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
