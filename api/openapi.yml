@@ -82,6 +82,8 @@ tags:
     some specific analysis or similar activity, and registered in
     VegBank with a stable identifier that can be used for citing and
     sharing this defined collection.
+- name: Overview
+  description: VegBank summary stats
 
 paths:
   /plot-observations/{ob_code}:
@@ -2176,6 +2178,139 @@ paths:
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
           $ref: "#/components/responses/InvalidDataUpload"
+
+  /overview:
+    get:
+      tags:
+        - Overview
+      operationId: get-overview
+      summary: Get basic VegBank database stats
+      description: >
+        Retrieve an assortment of count statistics indicating what's in
+        VegBank.
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 5
+          description: Maximum number of records to return in Top N counts
+      responses:
+        '200':
+          description: Overview statistics successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  core_counts:
+                    type: array
+                    description: Database-wide count metrics
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the metric being counted"
+                          example: "observations"
+                        count:
+                          type: integer
+                          description: "Total count for this metric"
+                          example: 115246
+                  top_n_community_concepts:
+                    type: array
+                    description: Top N community concepts by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the community concept"
+                          example: "California Annual Grassland"
+                        cc_code:
+                          type: string
+                          description: "VegBank community concept identifier"
+                          example: "cc.1"
+                        count:
+                          type: integer
+                          description: "Count of observations of this community"
+                          example: 670
+                  top_n_plant_concepts:
+                    type: array
+                    description: Top N plant concepts by observation count
+                    items:
+                      type: object
+                      properties:
+                        plant_name:
+                          type: string
+                          description: "Plant concept name"
+                          example: "Quercus agrifolia"
+                        pc_code:
+                          type: string
+                          description: "VegBank plant concept identifier"
+                          example: "pc.1"
+                        count:
+                          type: integer
+                          description: "Count of observations containing this plant"
+                          example: 890
+                  top_n_projects:
+                    type: array
+                    description: Top N projects by observation count
+                    items:
+                      type: object
+                      properties:
+                        project_name:
+                          type: string
+                          description: "Name of the project"
+                          example: "California Vegetation Survey"
+                        pj_code:
+                          type: string
+                          description: "VegBank project identifier"
+                          example: "pj.1"
+                        count:
+                          type: integer
+                          description: "Count of observations in this project"
+                          example: 3400
+                  top_n_contributors:
+                    type: array
+                    description: Top N contributors by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the contributing party"
+                          example: "John Smith"
+                        py_code:
+                          type: string
+                          description: "VegBank party identifier"
+                          example: "py.1"
+                        count:
+                          type: integer
+                          description: "Count of observations by this contributor"
+                          example: 1250
+                  top_n_named_places:
+                    type: array
+                    description: Top N named places by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the geographic place"
+                          example: "California"
+                        np_code:
+                          type: string
+                          description: "VegBank named place identifier"
+                          example: "np.1"
+                        count:
+                          type: integer
+                          description: "Count of observations in this place"
+                          example: 5432
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
 
 components:
   parameters:
