@@ -13,7 +13,9 @@ from .Reference import Reference
 from .TaxonObservation import TaxonObservation
 from vegbank.utilities import(
     jsonify_error_message,
-    validate_required_and_missing_fields,read_parquet_file,
+    process_integer_param,
+    validate_required_and_missing_fields,
+    read_parquet_file,
     UploadDataError,
     merge_vb_codes,
     combine_json_return,
@@ -405,6 +407,7 @@ class PlotObservation(Operator):
             ) AS so ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'np_code', 'np.' || namedplace_id,
                       'system', placesystem,
                       'name', placename,
                       'description', placedescription,
@@ -480,6 +483,18 @@ class PlotObservation(Operator):
                               JOIN commconcept cc USING (commconcept_id)
                               WHERE ob.observation_id = cl.observation_id
                                 AND commconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'np': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT namedplace_id
+                              FROM namedplace np
+                              JOIN place p USING (namedplace_id)
+                              JOIN plot pl USING (plot_id)
+                              WHERE ob.plot_id = pl.plot_id
+                                AND namedplace_id = %s)
                         """,
                     'params': ['vb_id']
                 },
@@ -560,9 +575,9 @@ class PlotObservation(Operator):
         params = super().validate_query_params(request_args)
 
         # add params for limiting nested fields
-        params['num_taxa'] = self.process_integer_param('num_taxa',
+        params['num_taxa'] = process_integer_param('num_taxa',
             request_args.get('num_taxa', self.default_num_taxa))
-        params['num_comms'] = self.process_integer_param('num_comms',
+        params['num_comms'] = process_integer_param('num_comms',
             request_args.get('num_comms', self.default_num_comms))
 
         # capture search parameter, if it exists

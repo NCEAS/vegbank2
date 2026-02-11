@@ -187,7 +187,36 @@ def dry_run_check(conn, data, request):
         }
     else:
         return data
-    
+
+def process_integer_param(param_name, param_value):
+    err_msg = f"When provided, {param_name} must be a non-negative integer."
+    try:
+        param_value = int(param_value)
+    except ValueError:
+        raise QueryParameterError(err_msg)
+    if param_value < 0:
+        raise QueryParameterError(err_msg)
+    return param_value
+
+def process_option_param(param_name, param_value, options):
+    param_value = param_value.lower()
+    # Retun the lower-cased parameter if its valid
+    if param_value in options:
+        return param_value
+    # ... otherwise raise an informative error message
+    q_options = [f"'{option}'" for option in options]
+    if len(q_options) == 0:
+        err_msg = f"Unhandled parameter '{param_name}'."
+    else:
+        if len(q_options) == 1:
+            option_str = q_options[0]
+        elif len(q_options) == 2:
+            option_str = ' or '.join(q_options)
+        elif 2 < len(q_options):
+            option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
+        err_msg = f"When provided, '{param_name}' must be {option_str}."
+    raise QueryParameterError(err_msg)
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
