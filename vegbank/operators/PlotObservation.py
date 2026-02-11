@@ -530,7 +530,16 @@ class PlotObservation(Operator):
                 'sm': {
                     'sql': "stratummethod_id = %s",
                     'params': ['vb_id']
-                }
+                },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                             FROM bundle bb
+                             WHERE ob.observation_id = bb.observation_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],

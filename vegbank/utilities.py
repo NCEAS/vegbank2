@@ -1,7 +1,87 @@
-from flask import jsonify
+import re
 import pandas as pd
+from flask import jsonify
 
 ALLOWED_EXTENSIONS = 'parquet'
+
+def create_adbc_uri(params):
+    """Create a PostgreSQL connection URI from connection parameters.
+
+    Constructs a standard PostgreSQL connection URI string in the format
+    postgresql://user:password@host:port/dbname from a dictionary of connection
+    parameters. Validates that required parameters are present and provides
+    sensible defaults for optional parameters.
+
+    Args:
+        params (dict): Dictionary containing connection parameters. Required keys:
+            - 'user' (str): Database username
+            - 'port' (str or int): Database port number
+            - 'dbname' (str): Database name
+            Optional keys:
+            - 'password' (str): Database password. If not provided, URI will not
+              include password component
+            - 'host' (str): Database host. Defaults to 'localhost' if not provided
+
+    Returns:
+        str: A PostgreSQL connection URI in the format:
+            - With password: "postgresql://user:password@host:port/dbname"
+            - Without password: "postgresql://user@host:port/dbname"
+
+    Raises:
+        ValueError: If any required parameters ('user', 'port', 'dbname') are
+            missing from the params dictionary. The error message lists all
+            missing parameters.
+    """
+    required = ['user', 'port', 'dbname']
+    missing = [k for k in required if not params.get(k)]
+    if missing:
+        raise ValueError(f"Missing required parameters: {', '.join(missing)}")
+
+    user = params['user']
+    password = params.get('password')
+    host = params.get('host') or 'localhost'
+    port = params.get('port') or '5432'
+    dbname = params['dbname']
+
+    # Build URI with optional password
+    if password:
+        return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+    else:
+        return f"postgresql://{user}@{host}:{port}/{dbname}"
+
+def convert_psycopg_sql_to_adbc(sql):
+    """Convert SQL query from psycopg2/psycopg3 format to ADBC parameter format.
+
+    Transforms parameterized SQL queries from psycopg's %s placeholder style to
+    ADBC's $1, $2, $3... positional parameter style. Handles escaped percent
+    signs (%%) correctly by preserving them unchanged.
+
+    Args:
+        sql (str): SQL query string using psycopg-style placeholders. May
+            contain:
+            - %s for parameter placeholders
+            - %% for literal percent signs (escaped)
+            - Mix of both
+
+    Returns:
+        str: SQL query string with placeholders converted to ADBC format ($1,
+            $2, etc.). Each %s is replaced with a sequential $n placeholder,
+            while %% remains as %%.
+
+    Note:
+        The function uses a regex pattern that matches both %% and %s, ensuring
+        escaped percent signs are preserved while only actual placeholders are
+        converted.
+    """
+    counter = 1
+    def replacer(match):
+        nonlocal counter
+        if match.group(0) == '%%':
+            return '%%'  # Keep escaped percent signs
+        result = f"${counter}"
+        counter += 1
+        return result
+    return re.sub(r'%%|%s', replacer, sql)
 
 def allowed_file(filename):
     '''
