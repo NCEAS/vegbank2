@@ -12,8 +12,24 @@ def test_queries_sql_exists():
     assert base_length >= 19
 
 
-def test_load_sql():
-    """Confirm that 'load_sql' returns the expect .sql from the queries folder"""
+def test_load_sql_queries_package():
+    """Confirm that 'load_sql' returns the expect .sql from the queries folder when
+    supplied with a queries package that targets a subfolder."""
+    queries_package = f"vegbank.queries"
+    file_name = "create_codes.sql"
+
+    # Load the sql via function
+    sql = load_sql(queries_package, file_name)
+
+    # Load the file directly for expected result
+    expected_path = Path("vegbank/queries") / file_name
+    expected_sql = expected_path.read_text(encoding="utf-8")
+    assert sql == expected_sql
+
+
+def test_load_sql_queries_subpackage():
+    """Confirm that 'load_sql' returns the expect .sql from the queries folder when
+    supplied with a queries package that targets a subfolder."""
     table_name = "community_classification"
     queries_package = f"vegbank.queries.{table_name}"
     insert_tn_condensed = "comm_class"

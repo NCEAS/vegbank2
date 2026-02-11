@@ -60,9 +60,7 @@ class Operator:
         - Executing read queries and returning data as Parquet
 
     Attributes:
-        ROOT_QUERIES_FOLDER (str): Root path where SQL query files are stored.
-            This is for queries that are shared across multiple operators.
-        QUERIES_FOLDER (str): Path where SQL query files are stored.
+        queries_package (str): Python resource that contains the queries .sql
         detail_options (str): Accepted detail param values. This should
             be overridden by operator implementations as needed.
         default_detail (str): Default detail value.
@@ -89,6 +87,7 @@ class Operator:
             'normal', but may be updated to an alternative value ('count',
             'sql_debug', or 'sql_debug_count') based on a combination of the
             client request and self.debug.
+        query (dict): Empty dictionary to be overridden by an implementing class 
     """
 
     def __init__(self, params=None):
@@ -97,11 +96,9 @@ class Operator:
         `name` and `table_code`, must be overridden by child classes to
         reflect their specific resource and querying details.
         """
-        self.ROOT_QUERIES_FOLDER = "queries/"
-        # self.QUERIES_FOLDER = "queries/"
-        # Override the queries folder to one of your choice
+        # Override the queries resource to a folder of your choice
         # os.environ["QUERIES_DIR"] = "/path/to/queries"
-        # Otherwise, we will use the default queries package resource
+        # Otherwise, we will use the default queries package resource found in this project
         self.queries_package = "vegbank.queries"
         self.detail_options = ["full"]
         self.default_detail = "full"
@@ -686,9 +683,7 @@ class Operator:
             code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
             if create_codes:
-                sql_file_create_codes = os.path.join(self.ROOT_QUERIES_FOLDER, 'create_codes.sql')
-                with open(sql_file_create_codes, "r") as file:
-                    sql = file.read()
+                sql = load_sql(self.queries_package, 'create_codes.sql')
                 cur.executemany(sql, code_inputs, returning=True)
 
             vb_field_name = f'vb_{insert_table_code}_code'
