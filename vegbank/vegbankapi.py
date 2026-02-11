@@ -33,7 +33,6 @@ from vegbank.operators import (
 
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
-QUERIES_FOLDER = 'queries/'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
