@@ -654,30 +654,19 @@ class Operator:
 
         table_inputs = list(table_df.itertuples(index=False, name=None))
         with conn.cursor() as cur:
-            # sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
-            #                     f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
-            # with open(sql_file_temp_table, "r") as file:
-            #     sql = file.read()
             sql_file_temp_table = os.path.join(
                 f"{insert_table_name}/create_{insert_table_name}_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_table)
             cur.execute(sql)
 
-            # sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
-            #                     f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
-            # with open(sql_file_temp_insert, "r") as file:
-            #     sql = file.read()
             sql_file_temp_insert = os.path.join(
                 f"{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_insert)
             cur.executemany(sql, table_inputs)
+
             if validate:
-                # sql_file_validate = os.path.join(self.QUERIES_FOLDER,
-                #                     f'{insert_table_name}/validate_{insert_table_name}.sql')
-                # with open(sql_file_validate, "r") as file:
-                #     sql = file.read()
                 sql_file_validate = os.path.join(
                     f"{insert_table_name}/validate_{insert_table_name}.sql"
                 )
@@ -688,14 +677,14 @@ class Operator:
                     next_validation = cur.fetchall()
                     if next_validation:
                         validation_results = validation_results + next_validation
-                validation_results_list = [dict(t) for t in {tuple(d.items()) for d in validation_results}]
+                validation_results_list = [
+                    dict(t) for t in {tuple(d.items()) for d in validation_results}
+                ]
                 if validation_results:
-                    raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
+                    raise ValueError(
+                        f"The following vb codes do not exist in vegbank: {validation_results_list}"
+                    )
 
-            # sql_file_insert = os.path.join(self.QUERIES_FOLDER,
-            #                     f'{insert_table_name}/insert_{insert_table_name}.sql')
-            # with open(sql_file_insert, "r") as file:
-            #     sql = file.read()
             sql_file_insert = os.path.join(f'{insert_table_name}/insert_{insert_table_name}.sql')
             sql = load_sql(self.queries_package, sql_file_insert)
             cur.execute(sql)
