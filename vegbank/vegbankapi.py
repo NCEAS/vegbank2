@@ -9,7 +9,10 @@ import time
 import traceback
 import os
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from vegbank.repositories import IdentifiersQueries
+from vegbank.repositories import (
+    IdentifiersQueries,
+    Overview,
+)
 from vegbank.operators import (
     TaxonImportance,
     TaxonInterpretation,
@@ -1219,6 +1222,20 @@ def user_datasets(ds_code):
         return user_dataset_operator.get_vegbank_resources(request, ds_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+
+
+@app.route("/overview", methods=['GET'])
+def overview():
+    """
+    Retrieve summary stats from VegBank
+
+    Returns:
+        flask.Response: A Flask response object containing:
+            - 200: Successfully retrieved matching identifier
+            - 400: Invalid parameters
+            - 404: Not Found
+    """
+    return Overview(params).get_summary_stats(request)
 
 
 @app.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
