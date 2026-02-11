@@ -699,6 +699,3 @@ class Operator:
             }
 
             return to_return
-
-    def validate(self, df, file_name):
-        return validate_required_and_missing_fields(df, self.required_fields[file_name], self.table_defs[file_name], file_name)

@@ -118,9 +118,22 @@ def validate_xor_pairs(df, xor_pairs, file_name):
     
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair
-        if col1 not in df.columns or col2 not in df.columns:
-            continue #If one of the columns in the pair isn't present, we'll let the required fields validation catch that instead of throwing an error here.
-        if not df[((df[col1].notnull()) & (df[col2].notnull())) | ((df[col1].isnull()) & (df[col2].isnull()))].empty:
+        if col1 not in df.columns and col2 not in df.columns:
+            to_return['has_error'] = True
+            to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+            continue
+        elif (col1 in df.columns and col2 not in df.columns) | (col1 not in df.columns and col2 in df.columns):
+            if col1 in df.columns:
+                if df[col1].isnull().any():
+                    to_return['has_error'] = True
+                    to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+                    continue
+            if col2 in df.columns:
+                if df[col2].isnull().any():
+                    to_return['has_error'] = True
+                    to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+                    continue
+        elif not df[((df[col1].notnull()) & (df[col2].notnull())) | ((df[col1].isnull()) & (df[col2].isnull()))].empty:
             print("xor validation failed for " + col1 + " and " + col2 + " in " + file_name)
             print(df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))])
             to_return['has_error'] = True
@@ -136,21 +149,30 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
         return to_return
     
     df_1 = data[df_1_name]
+    print("read in data for " + df_1_name + " to validate user codes: ")
+    print(df_1.columns)
     for source_code, target_code, target_table in user_codes:
+        print(f"validating {source_code} from {df_1_name} against {target_code}  in {target_table}")
         if source_code not in df_1.columns:
             print(f"{source_code} is not present in {file_name}, skipping user code validation for {source_code}")
-            continue
-        df_2 = data.get(target_table)
-        if df_2 is not None:
-            missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
-            if 'None' in missing_codes: #Sometimes this happens in valid cases because the empy code is an xor field. We'll leave that validation for the xor method.
-                missing_codes.remove('None')
-            if len(missing_codes) > 0:
-                print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed")
-                print(missing_codes)
-                to_return['has_error'] = True
-                to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(missing_codes) + ". "  
+        elif data[target_table] is None:
+            to_return['has_error'] = True
+            to_return['error'] += f"Validation failed for {source_code} in {file_name} because the target table {target_table} is missing. "
         else:
-            print("no data for " + target_table + ", skipping check of " + source_code)
-
+            df_2 = data.get(target_table)
+            if df_2 is not None:
+                missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
+                if 'None' in missing_codes: #Sometimes this happens in valid cases because the empy code is an xor field. We'll leave that validation for the xor method.
+                    missing_codes.remove('None')
+                if len(missing_codes) > 0:
+                    print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed")
+                    print(missing_codes)
+                    to_return['has_error'] = True
+                    to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(missing_codes) + ". "  
+            else:
+                print("no data for " + target_table + ", skipping check of " + source_code)
+        if to_return['has_error'] is False:
+            print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has passed")
+        else:
+            print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has failed with error: " + to_return['error'])
     return to_return

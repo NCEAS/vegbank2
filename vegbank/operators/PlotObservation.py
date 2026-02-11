@@ -735,7 +735,8 @@ class PlotObservation(Operator):
                 'file_name': 'taxon_interpretations',
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
-                               ('user_rf_code','user_rf_code', 'rf')]
+                               ('user_rf_code','user_rf_code', 'rf'),
+                               ('user_py_code', 'user_py_code', 'py')]
             },
             'cr':{
                 'file_name': 'contributors',
