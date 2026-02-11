@@ -112,6 +112,7 @@ class Operator:
         self.include_full_count = True
         self.debug = True
         self.query_mode = 'normal'
+        self.query = {}
 
     def extract_id_from_vb_code(self, vb_code, table_code = None):
         """
