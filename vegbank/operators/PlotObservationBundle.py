@@ -359,6 +359,9 @@ class PlotObservationBundle(Operator):
               types via _convert_extension_types() before CSV conversion
             - A README.txt file is automatically generated and included in the ZIP
         """
+        # Get current timestamp
+        timestamp = datetime.now(timezone.utc)
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             # Add CSV files
@@ -379,15 +382,17 @@ class PlotObservationBundle(Operator):
                 zip_file.writestr(filename, csv_buffer.getvalue())
             # Generate README content
             readme_content = self._generate_readme(request, query, record_count,
-                                                   filters)
+                                                   filters, timestamp)
             zip_file.writestr('README.txt', readme_content)
 
         zip_buffer.seek(0)
+        file_ts = timestamp.strftime('%Y%m%d_%H%M%S')
+        filename = f'vegbank_{self.name}_{timestamp.strftime('%Y%m%d_%H%M%S')}.zip'
         return send_file(
             zip_buffer,
             mimetype='application/zip',
             as_attachment=True,
-            download_name=f'{self.name}_files.zip'
+            download_name=filename
         )
 
     def _convert_extension_types(self, table):
@@ -463,7 +468,7 @@ class PlotObservationBundle(Operator):
 
         return pa.table(new_columns, schema=pa.schema(new_schema))
 
-    def _generate_readme(self, request, query, record_count, filters):
+    def _generate_readme(self, request, query, record_count, filters, timestamp):
         """Generate README.txt content for VegBank data download ZIP file.
 
         Creates formatted documentation that includes download timestamp, source URL,
@@ -493,9 +498,6 @@ class PlotObservationBundle(Operator):
             - File structure list with descriptions
             - Proper VegBank citation with search timestamp
         """
-        # Get current timestamp
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')
-
         # Extract filter information
         display_filters = []
         for filter, value in filters.items():
@@ -512,7 +514,7 @@ class PlotObservationBundle(Operator):
             "VegBank Data Download",
             "=" * 21,
             "",
-            f"Downloaded: {timestamp}",
+            f"Downloaded: {timestamp.strftime('%Y-%m-%d %H:%M:%S %Z')}",
             "Source: https://vegbank.org",
             "",
             f"Plot observation filter: {filter_desc}",
