@@ -8,11 +8,11 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import traceback
-from vegbank.utilities import jsonify_error_message, QueryParameterError
 from flask import jsonify, send_file
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 from vegbank.utilities import (
+    load_sql,
     jsonify_error_message,
     process_integer_param,
     process_option_param,
