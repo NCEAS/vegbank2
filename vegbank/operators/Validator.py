@@ -115,8 +115,11 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         'error': ""
     }
     print(df.columns)
+    
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair
+        if col1 not in df.columns or col2 not in df.columns:
+            continue #If one of the columns in the pair isn't present, we'll let the required fields validation catch that instead of throwing an error here.
         if not df[((df[col1].notnull()) & (df[col2].notnull())) | ((df[col1].isnull()) & (df[col2].isnull()))].empty:
             print("xor validation failed for " + col1 + " and " + col2 + " in " + file_name)
             print(df[((df[col1].notnull()) & (df[col2].isnull())) | ((df[col1].isnull()) & (df[col2].notnull()))])
@@ -134,6 +137,9 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
     
     df_1 = data[df_1_name]
     for source_code, target_code, target_table in user_codes:
+        if source_code not in df_1.columns:
+            print(f"{source_code} is not present in {file_name}, skipping user code validation for {source_code}")
+            continue
         df_2 = data.get(target_table)
         if df_2 is not None:
             missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
