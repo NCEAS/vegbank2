@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+from urllib.parse import quote_plus
 from flask import jsonify
 
 ALLOWED_EXTENSIONS = 'parquet'
@@ -37,15 +38,16 @@ def create_adbc_uri(params):
     if missing:
         raise ValueError(f"Missing required parameters: {', '.join(missing)}")
 
-    user = params['user']
-    password = params.get('password')
+    user = quote_plus(params['user'])
     host = params.get('host') or 'localhost'
     port = params.get('port') or '5432'
     dbname = params['dbname']
 
     # Build URI with optional password
+    password = params.get('password')
     if password:
-        return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+        password_encoded = quote_plus(password)
+        return f"postgresql://{user}:{password_encoded}@{host}:{port}/{dbname}"
     else:
         return f"postgresql://{user}@{host}:{port}/{dbname}"
 
