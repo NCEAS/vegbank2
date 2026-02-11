@@ -316,7 +316,7 @@ class PlotObservationBundle(Operator):
                 'plot_observations': PlotObservation(self.params),
                 'taxon_observations': TaxonObservation(self.params),
                 'taxon_importances': TaxonImportance(self.params),
-                'taxon_intepretations': TaxonInterpretation(self.params),
+                'taxon_interpretations': TaxonInterpretation(self.params),
                 'plant_concepts': PlantConcept(self.params),
                 'community_classifications': CommunityInterpretation(self.params),
                 'community_concepts': CommunityConcept(self.params),
