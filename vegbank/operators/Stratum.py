@@ -95,7 +95,7 @@ class Stratum(Operator):
                         """,
                     'params': ['vb_id']
                 },
-                'zip': {
+                'bundle': {
                     'sql': """\
                         EXISTS (
                             SELECT observation_id

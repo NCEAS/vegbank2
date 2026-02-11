@@ -146,6 +146,15 @@ class TaxonObservation(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                             FROM bundle bb
+                             WHERE txo.observation_id = bb.observation_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql,

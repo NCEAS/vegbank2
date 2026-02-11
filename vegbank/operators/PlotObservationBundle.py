@@ -8,7 +8,17 @@ import pyarrow.compute as pc
 import pyarrow.csv as csv
 import adbc_driver_postgresql.dbapi as pg_dbapi
 from flask import Response, send_file
+from .CommunityConcept import CommunityConcept
+from .CommunityInterpretation import CommunityInterpretation
+from .Party import Party
+from .PlantConcept import PlantConcept
 from .PlotObservation import PlotObservation
+from .Project import Project
+from .StemCount import StemCount
+from .Stratum import Stratum
+from .TaxonImportance import TaxonImportance
+from .TaxonInterpretation import TaxonInterpretation
+from .TaxonObservation import TaxonObservation
 from vegbank.operators import Operator, table_code_lookup
 from vegbank.utilities import (
     create_adbc_uri,
@@ -304,6 +314,16 @@ class PlotObservationBundle(Operator):
                 cur.execute(sql, data)
             query = {
                 'plot_observations': PlotObservation(self.params),
+                'taxon_observations': TaxonObservation(self.params),
+                'taxon_importances': TaxonImportance(self.params),
+                'taxon_intepretations': TaxonInterpretation(self.params),
+                'plant_concepts': PlantConcept(self.params),
+                'community_classifications': CommunityInterpretation(self.params),
+                'community_concepts': CommunityConcept(self.params),
+                'projects': Project(self.params),
+                'parties': Party(self.params),
+                'stem_counts': StemCount(self.params),
+                'strata': Stratum(self.params),
             }
             return self._create_zip_response(request, conn, query, filters)
 
@@ -560,6 +580,24 @@ class PlotObservationBundle(Operator):
         # Map common filenames to descriptions
         file_desc_map = {
             'plot_observations': 'Primary plot observations, with ob_code as primary key',
+            'community_classifications': 'Community Classifications (linked by ob_code)',
+            'community_concepts': ('Community concepts (cc_code) attached'
+                                   ' to plot observations via classifications'),
+            'stem_counts': ('Counts of stems (sc_code) associated with a taxon'
+                            ' observation (to_code), possibly linked to a stratum (sr_code)'),
+            'strata': ('Defined strata in which taxon importances are recorded',
+                       'as part of a plot observation (linked by ob_code)'),
+            'parties': ('People and organizations (py_codes) contributing to plot'
+                        ' observations and related activities'),
+            'plant_concepts': ('Plant concepts (pc_code) attached to taxon'
+                               ' observations via interpretations'),
+            'projects': 'Projects (pj_codes) under which plot observations were made',
+            'taxon_importances': ('Plant cover and other metrics associated with'
+                                  ' a taxon observation (to_code), possibly linked'
+                                  ' to a stratum (sr_code)'),
+            'taxon_interpretations': ('Assignments of plant concepts (by pc_code)'
+                                      ' to taxon observations (to_code)'),
+            'taxon_observations': 'Plant taxa observed on the plot (linked by ob_code)',
         }
 
         for filename in query.keys():

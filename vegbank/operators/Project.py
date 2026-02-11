@@ -100,6 +100,16 @@ class Project(Operator):
                     'sql': "pj.project_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT bb.observation_id
+                             FROM bundle bb
+                             JOIN observation ob USING (observation_id)
+                             WHERE pj.project_id = ob.project_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],

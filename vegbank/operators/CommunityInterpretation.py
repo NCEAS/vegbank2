@@ -148,6 +148,16 @@ class CommunityInterpretation(Operator):
                     'sql': "ci.commconcept_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM bundle
+                              JOIN commclass cl USING (observation_id)
+                              WHERE ci.commclass_id = cl.commclass_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql,
