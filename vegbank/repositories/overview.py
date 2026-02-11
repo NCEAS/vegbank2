@@ -37,8 +37,8 @@ class Overview:
                 - top_n_projects (list): Top N projects by obs count
                 - top_n_contributors (list): Top N contributors by contribution count
                 - top_n_named_places (list): Top N named places by obs count
+                - latest_n_projects (list): Most recent N projects with plots
         """
-        #TODO: move param validation from Operator to utilities, and use it here
         limit = request.args.get('limit', 5)
 
         with connect(**self.params, row_factory=dict_row) as conn:
@@ -105,7 +105,20 @@ class Overview:
                     """, [limit])
                 community_concepts = cur.fetchall()
 
-                # 6: Overview counts
+                # 6: Latest projects by plot added
+                cur.execute(
+                    """
+                    SELECT projectname AS name,
+                           'pj.' || project_id AS pj_code,
+                           d_lastplotaddeddate AS last_date_added,
+                           d_obscount AS count
+                      FROM project
+                      ORDER BY d_lastplotaddeddate DESC NULLS LAST
+                      LIMIT %s
+                    """, [limit])
+                newest_projects = cur.fetchall()
+
+                # 7: Overview counts
                 cur.execute(
                     """
                     SELECT COUNT(1) AS count
@@ -240,4 +253,5 @@ class Overview:
                     'top_n_projects': projects,
                     'top_n_contributors': contributors,
                     'top_n_named_places': named_places,
+                    'latest_n_projects': newest_projects,
                 }

@@ -2219,6 +2219,29 @@ paths:
                           type: integer
                           description: "Total count for this metric"
                           example: 115246
+                  latest_n_projects:
+                    type: array
+                    description: Most recent N projects by plot upload date
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the project"
+                          example: "California Vegetation Survey"
+                        pj_code:
+                          type: string
+                          description: "VegBank project identifier"
+                          example: "pj.1"
+                        last_date_added:
+                          type: string
+                          format: date
+                          description: "Most recent plot observation upload date"
+                          example: "2026-03-30"
+                        count:
+                          type: integer
+                          description: "Count of observations in this project"
+                          example: 3400
                   top_n_community_concepts:
                     type: array
                     description: Top N community concepts by observation count
@@ -2243,7 +2266,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        plant_name:
+                        name:
                           type: string
                           description: "Plant concept name"
                           example: "Quercus agrifolia"
@@ -2261,7 +2284,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        project_name:
+                        name:
                           type: string
                           description: "Name of the project"
                           example: "California Vegetation Survey"
