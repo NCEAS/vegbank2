@@ -8,7 +8,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import traceback
-from vegbank.utilities import jsonify_error_message, QueryParameterError
+from vegbank.utilities import load_sql, jsonify_error_message, QueryParameterError
 from flask import jsonify, send_file
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
@@ -92,7 +92,11 @@ class Operator:
         reflect their specific resource and querying details.
         """
         self.ROOT_QUERIES_FOLDER = "queries/"
-        self.QUERIES_FOLDER = "queries/"
+        # self.QUERIES_FOLDER = "queries/"
+        # Override the queries folder to one of your choice
+        # os.environ["QUERIES_DIR"] = "/path/to/queries"
+        # Otherwise, we will use the default queries package resource
+        self.queries_package = "vegbank.queries"
         self.detail_options = ["full"]
         self.default_detail = "full"
         self.nested_options = ["false"]
@@ -125,7 +129,7 @@ class Operator:
                 expected pattern.
         """
         if table_code is None:
-             table_code = self.table_code
+            table_code = self.table_code
         vb_id_match = re.match(fr'^{table_code}\.(\d+)$', vb_code)
         if vb_id_match is None:
             raise QueryParameterError(
@@ -635,8 +639,7 @@ class Operator:
                     - counts: number of new records created
         """
         print(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
-        
-        
+
         df.columns = df.columns.str.lower()
         table_df = df[df.columns.intersection(insert_table_def)]
         table_df = table_df.reindex(columns=insert_table_def)
@@ -648,24 +651,37 @@ class Operator:
         if duplicate_user_codes.any():
             duplicated_codes = table_df.loc[duplicate_user_codes, join_field_name].tolist()
             raise ValueError(f"The following user codes are duplicated in the upload data for table {insert_table_name}: {duplicated_codes}")
-        
+
         table_inputs = list(table_df.itertuples(index=False, name=None))
         with conn.cursor() as cur:
-            sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
-            with open(sql_file_temp_table, "r") as file:
-                sql = file.read()
+            # sql_file_temp_table = os.path.join(self.QUERIES_FOLDER,
+            #                     f'{insert_table_name}/create_{insert_table_name}_temp_table.sql')
+            # with open(sql_file_temp_table, "r") as file:
+            #     sql = file.read()
+            sql_file_temp_table = os.path.join(
+                f"{insert_table_name}/create_{insert_table_name}_temp_table.sql"
+            )
+            sql = load_sql(self.queries_package, sql_file_temp_table)
             cur.execute(sql)
-            sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
-            with open(sql_file_temp_insert, "r") as file:
-                sql = file.read()
+
+            # sql_file_temp_insert = os.path.join(self.QUERIES_FOLDER,
+            #                     f'{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql')
+            # with open(sql_file_temp_insert, "r") as file:
+            #     sql = file.read()
+            sql_file_temp_insert = os.path.join(
+                f"{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql"
+            )
+            sql = load_sql(self.queries_package, sql_file_temp_insert)
             cur.executemany(sql, table_inputs)
             if validate:
-                sql_file_validate = os.path.join(self.QUERIES_FOLDER,
-                                    f'{insert_table_name}/validate_{insert_table_name}.sql')
-                with open(sql_file_validate, "r") as file:
-                    sql = file.read()
+                # sql_file_validate = os.path.join(self.QUERIES_FOLDER,
+                #                     f'{insert_table_name}/validate_{insert_table_name}.sql')
+                # with open(sql_file_validate, "r") as file:
+                #     sql = file.read()
+                sql_file_validate = os.path.join(
+                    f"{insert_table_name}/validate_{insert_table_name}.sql"
+                )
+                sql = load_sql(self.queries_package, sql_file_validate)
                 cur.execute(sql)
                 validation_results = cur.fetchall()
                 while cur.nextset():
@@ -676,10 +692,12 @@ class Operator:
                 if validation_results:
                     raise ValueError(f"The following vb codes do not exist in vegbank: {validation_results_list}")
 
-            sql_file_insert = os.path.join(self.QUERIES_FOLDER,
-                                f'{insert_table_name}/insert_{insert_table_name}.sql')
-            with open(sql_file_insert, "r") as file:
-                sql = file.read()
+            # sql_file_insert = os.path.join(self.QUERIES_FOLDER,
+            #                     f'{insert_table_name}/insert_{insert_table_name}.sql')
+            # with open(sql_file_insert, "r") as file:
+            #     sql = file.read()
+            sql_file_insert = os.path.join(f'{insert_table_name}/insert_{insert_table_name}.sql')
+            sql = load_sql(self.queries_package, sql_file_insert)
             cur.execute(sql)
             id_pairs = cur.fetchall()
             id_pairs_df = pd.DataFrame(id_pairs)
@@ -687,7 +705,7 @@ class Operator:
             new_codes_list = id_pairs_df[insert_table_id].tolist()
 
             joined_df = pd.merge(table_df, id_pairs_df, on=join_field_name)
-            
+
             new_codes_df = pd.DataFrame()
             new_codes_df['vb_record_id'] = new_codes_list
             new_codes_df['vb_table_code'] = insert_table_code
