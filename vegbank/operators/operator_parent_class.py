@@ -114,6 +114,10 @@ class Operator:
         self.query_mode = 'normal'
         self.query = {}
 
+    def configure_query(self) -> None:
+        """Default function for subclasses to optionally override."""
+        pass
+
     def extract_id_from_vb_code(self, vb_code, table_code = None):
         """
         Parse the integer database ID from a vb_code string
