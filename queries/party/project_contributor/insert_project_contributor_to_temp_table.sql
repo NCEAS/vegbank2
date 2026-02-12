@@ -5,7 +5,7 @@ INSERT INTO project_contributor_temp
         vb_ar_code,
         contributor_type,
         record_identifier,
-        vb_record_identifier, 
-        vb_py_code
+        vb_py_code,
+        vb_record_identifier
     )
 VALUES (%s, %s, %s, %s, %s, %s, %s);
