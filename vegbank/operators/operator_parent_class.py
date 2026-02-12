@@ -99,6 +99,7 @@ class Operator:
         # Override the queries resource to a folder of your choice
         # os.environ["QUERIES_DIR"] = "/path/to/queries"
         # Otherwise, we will use the default queries package resource found in this project
+        self.queries_root = "vegbank.queries"
         self.queries_package = "vegbank.queries"
         self.detail_options = ["full"]
         self.default_detail = "full"
@@ -683,7 +684,7 @@ class Operator:
             code_inputs = list(new_codes_df.itertuples(index=False, name=None))
 
             if create_codes:
-                sql = load_sql(self.queries_package, 'create_codes.sql')
+                sql = load_sql(self.queries_root, 'create_codes.sql')
                 cur.executemany(sql, code_inputs, returning=True)
 
             vb_field_name = f'vb_{insert_table_code}_code'
