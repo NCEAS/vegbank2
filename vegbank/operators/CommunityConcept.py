@@ -34,7 +34,9 @@ class CommunityConcept(Operator):
         super().__init__(params)
         self.name = "community_concept"
         self.table_code = "cc"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        # TODO: Delete old QUERIES_Folder
+        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "comm_name", "obs_count"]
 
@@ -597,7 +599,9 @@ class CommunityConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'community_name')
+        # TODO: Delete old QUERIES_FOLDER
+        # self.QUERIES_FOLDER = os.path.join('queries', 'community_name')
+        self.queries_package = f"{self.queries_package}.community_name"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -692,7 +696,9 @@ class CommunityConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'community_correlation')
+        # TODO: Delete QUERIES_FOLDER
+        # self.QUERIES_FOLDER = os.path.join('queries', 'community_correlation')
+        self.queries_package = f"{self.queries_package}.community_correlation"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
