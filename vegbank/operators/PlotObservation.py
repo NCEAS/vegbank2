@@ -765,7 +765,7 @@ class PlotObservation(Operator):
                 return jsonify_error_message(e.message), e.status_code
         
         if validation['has_error']:
-            return jsonify_error_message(validation['error'])
+            return jsonify_error_message(validation['error']), 400
         
         try:
             with connect(**self.params, row_factory=dict_row) as conn:

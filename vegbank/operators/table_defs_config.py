@@ -463,5 +463,6 @@ contributor = [
     'user_py_code',
     'vb_ar_code',
     'contributor_type',
-    'record_identifier'
+    'record_identifier',
+    'vb_py_code'
 ]

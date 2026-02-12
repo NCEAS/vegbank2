@@ -202,7 +202,6 @@ class Party(Operator):
         required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
         contributor_defs = table_defs_config.contributor.copy()
         contributor_defs.append('vb_record_identifier')
-        contributor_defs.append('vb_py_code')
         table_defs = [contributor_defs]
 
         df.columns = map(str.lower, df.columns)

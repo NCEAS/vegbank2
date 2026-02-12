@@ -24,7 +24,7 @@ config = {
         "table_defs":[table_defs_config.disturbance_obs]
     },
     "community_classifications":{
-        "required_fields":['user_cc_code', 'community_name'],
+        "required_fields":['user_cl_code', 'vb_cc_code'],
         "table_defs":[table_defs_config.comm_class, table_defs_config.comm_interp]
     },
     "strata":{
