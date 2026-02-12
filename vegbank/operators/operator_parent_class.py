@@ -100,6 +100,7 @@ class Operator:
         # os.environ["QUERIES_DIR"] = "/path/to/queries"
         # Otherwise, we will use the default queries package resource found in this project
         self.queries_root = "vegbank.queries"
+        # Note: The queries_package may be overwritten by implementing classes
         self.queries_package = "vegbank.queries"
         self.detail_options = ["full"]
         self.default_detail = "full"
