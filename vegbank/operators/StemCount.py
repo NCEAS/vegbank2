@@ -18,7 +18,9 @@ class StemCount(Operator):
         super().__init__(params)
         self.name = "stem_count"
         self.table_code = "sc"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        # TODO: Delete QUERIES_FOLDER after testing
+        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
