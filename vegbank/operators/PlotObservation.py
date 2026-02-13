@@ -960,7 +960,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.queries_package = f"{self.queries_package}.soil"
+        self.queries_package = f"{self.queries_root}.soil"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -1033,7 +1033,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.queries_package = f"{self.queries_package}.disturbance"
+        self.queries_package = f"{self.queries_root}.disturbance"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
