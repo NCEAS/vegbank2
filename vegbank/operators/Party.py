@@ -21,8 +21,6 @@ class Party(Operator):
         super().__init__(params)
         self.name = "party"
         self.table_code = "py"
-        # TODO: Delete QUERIES_FOLDER after testing
-        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.sort_options = ["default", "surname", "organization_name", "obs_count"]
 

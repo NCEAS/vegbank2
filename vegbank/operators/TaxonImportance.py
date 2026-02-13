@@ -20,8 +20,6 @@ class TaxonImportance(Operator):
         super().__init__(params)
         self.name = "taxon_importance"
         self.table_code = "tm"
-        # TODO: Delete QUERIES_FOLDER after testing
-        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
 

@@ -17,8 +17,6 @@ class Role(Operator):
         super().__init__(params)
         self.name = "role"
         self.table_code = "ar"
-        # TODO: Delete QUERIES_FOLDER after testing
-        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):

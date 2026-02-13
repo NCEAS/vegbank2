@@ -34,8 +34,6 @@ class StratumMethod(Operator):
         super().__init__(params)
         self.name = "stratum_method"
         self.table_code = "sm"
-        # TODO: Delete QUERIES_FOLDER after testing
-        # self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
 

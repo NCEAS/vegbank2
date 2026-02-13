@@ -60,7 +60,9 @@ class Operator:
         - Executing read queries and returning data as Parquet
 
     Attributes:
+        queries_root (str): Python resource that contains the queries .sql
         queries_package (str): Python resource that contains the queries .sql
+            which may be overriden by implementing classes
         detail_options (str): Accepted detail param values. This should
             be overridden by operator implementations as needed.
         default_detail (str): Default detail value.
