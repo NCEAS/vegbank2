@@ -57,3 +57,41 @@ def test_queries_package_override_community_names_v2():
         comm_concept_operator.upload_community_names(df, conn)
 
     assert comm_concept_operator.queries_package == "vegbank.queries.community_name"
+
+
+def test_queries_package_override_community_correlation():
+    """Check that the queries package attribute was overridden as expected when calling
+    the 'upload_community_names' function."""
+    comm_concept_operator = CommunityConcept(params)
+    # Create a basic dataframe with the required keys
+    df = pd.DataFrame([
+        {
+            "vb_correlated_cc_code": "VB.CC.DM.001",
+            "convergence_type": "convergence",
+            "correlation_start": "02.16.2026",
+            "user_cc_code": "dou.cc.1"
+        }
+    ])
+    # This connection represents access to a db
+    conn = MagicMock()
+
+    # Mock return values for 'upload_to_table'
+    cx_actions = {
+        "resources": {
+            "cx": [
+                {"commcorrelation_id": 123}
+            ]
+        },
+        "counts": {
+            "cx": 1
+        },
+    }
+
+    # Side effect allows the initial call to return the first object,
+    # then the subsequent to call the second object
+    with patch.object(
+        Operator, "upload_to_table", return_value=cx_actions
+    ) as _mocked:
+        comm_concept_operator.upload_community_correlations(df, conn)
+
+    assert comm_concept_operator.queries_package == "vegbank.queries.community_correlation"
