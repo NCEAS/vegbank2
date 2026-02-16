@@ -1,4 +1,4 @@
-"""Test module for the 'CommunityConcept' operator class"""
+"""Test module for the 'PlantConcept' operator class"""
 from unittest.mock import MagicMock, patch
 import pandas as pd
 from vegbank.operators import (

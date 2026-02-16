@@ -1,4 +1,4 @@
-"""Test module for the 'CommunityConcept' operator class"""
+"""Test module for the 'NamedPlace' operator class"""
 from vegbank.operators import (
     NamedPlace,
 )
