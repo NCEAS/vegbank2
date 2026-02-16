@@ -598,7 +598,7 @@ class PlantConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.queries_package = f"{self.queries_package}.plant_name"
+        self.queries_package = f"{self.queries_root}.plant_name"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method

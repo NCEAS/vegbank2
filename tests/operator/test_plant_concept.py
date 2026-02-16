@@ -56,4 +56,4 @@ def test_queries_package_upload_plant_names():
     ) as _mocked:
         plant_concept_operator.upload_plant_names(df, conn)
 
-    assert plant_concept_operator.queries_package == "vegbank.queries.plant_concept.plant_name"
+    assert plant_concept_operator.queries_package == "vegbank.queries.plant_name"
