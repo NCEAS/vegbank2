@@ -5,7 +5,6 @@ from vegbank.operators import (
     Operator,
     CommunityConcept,
 )
-from vegbank.utilities import merge_vb_codes
 
 params = {}
 
