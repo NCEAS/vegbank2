@@ -61,7 +61,7 @@ def test_queries_package_override_community_names_v2():
 
 def test_queries_package_override_community_correlation():
     """Check that the queries package attribute was overridden as expected when calling
-    the 'upload_community_names' function."""
+    the 'upload_community_correlation' function."""
     comm_concept_operator = CommunityConcept(params)
     # Create a basic dataframe with the required keys
     df = pd.DataFrame([
