@@ -589,7 +589,7 @@ class Operator:
         """
         with conn.cursor() as cur:
             df = pd.read_sql(cur.mogrify(sql, data), conn)
-        if count is -1:
+        if count == -1:
             count = len(df)
         arrow_tbl = pa.Table.from_pandas(df)
         if count is not None:
