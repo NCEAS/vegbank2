@@ -24,9 +24,8 @@ RUN uv venv --allow-existing "${VIRTUAL_ENV}"
 # Activate uv venv
 RUN . "${VIRTUAL_ENV}/bin/activate" && uv sync --active
 
-# TODO: We should be able to simply copy the application code instead of two directories
-# Ex. COPY . /app
-COPY vegbank /app/vegbank
+# TODO: Delete when package is released and can be installed via pip
+COPY src/vegbank /app/vegbank
 
 ENV PYTHONPATH=/app
 CMD ["/data/venv/bin/python", "-m", "flask", "--app", "vegbank.vegbankapi:app", "run", "--host=0.0.0.0", "--port=80"]
