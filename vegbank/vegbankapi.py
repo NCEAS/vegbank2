@@ -49,9 +49,6 @@ params['password'] = os.getenv('VB_DB_PASS')
 
 allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
 
-allow_uploads = True
-params['dbname'] = 'vegbankdb4'
-
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
@@ -1311,4 +1308,4 @@ def identifiers(identifier_value):
             )
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=81,debug=True)
+    app.run(host='0.0.0.0',port=80,debug=True)
