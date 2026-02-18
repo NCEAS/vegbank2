@@ -188,6 +188,32 @@ def dry_run_check(conn, data, request):
     else:
         return data
 
+def validate_dataset_json(json):
+    """
+    Validate the structure of the dataset JSON object.
+    Parameters:
+        data: The JSON object to validate.
+    Raises:
+        QueryParameterError: If the JSON structure is invalid.
+    """
+    if not isinstance(json, dict):
+        raise QueryParameterError("Invalid JSON structure: expected a JSON object.")
+    if 'data' not in json: 
+        raise QueryParameterError("Missing 'data' key in JSON: expected a 'data' key containing the dataset information.")
+    data = json['data']
+    if not isinstance(data, dict):
+        raise QueryParameterError("Invalid JSON structure: 'data' should be a dictionary with the element 'observation' containing a list of observation codes.")
+    if 'observation' not in data:
+        raise QueryParameterError("Missing 'observation' key in JSON: 'data' should contain an 'observation' key with a list of observation codes.")
+    if not isinstance(data['observation'], list):  
+        raise QueryParameterError("Invalid 'observation' structure: 'observation' should be a list of observation codes.")
+    extra_keys = set(data.keys()) - {'observation'}
+    if extra_keys:
+        raise QueryParameterError(f"Invalid keys in JSON: {', '.join(extra_keys)}. Only 'observation' key is allowed.")
+    for observation in data['observation']:
+        if not isinstance(observation, str) or not observation.startswith('ob.') or not observation[3:].isdigit():
+            raise QueryParameterError(f"Invalid observation code: '{observation}'. It must follow the pattern 'ob.' followed by an integer.")
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):

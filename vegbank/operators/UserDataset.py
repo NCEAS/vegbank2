@@ -1,5 +1,7 @@
 import os
-from operators import Operator
+from datetime import datetime
+import pandas as pd
+from operators import Operator, table_defs_config as table_defs
 from utilities import validate_required_and_missing_fields, merge_vb_codes
 
 
@@ -86,16 +88,56 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
+    test_dataset = {
+            'user_ds_code': 'test_ds_001',
+            'name': 'Test Dataset 001',
+            'description': 'A test dataset containing 10 observations.',
+            'type': 'upload',
+            'data': {
+                'observation':[
+                    'ob.2948',
+                    'ob.2949',
+                    'ob.2950',
+                    'ob.2951',
+                    'ob.2952',
+                    'ob.2953',
+                    'ob.2954',
+                    'ob.2955',
+                    'ob.2956',
+                    'ob.2957'
+                ]
+            }
+        }
+    def upload_user_dataset(self, dataset, conn, validate=False):
+        user_dataset_insert_sql = """
+            INSERT INTO userdataset (datasetname, datasetdescription, datasettype, datasetstart)
+            VALUES (%s, %s, %s, %s)
+            RETURNING userdataset_id"""
+        dataset_insert_data = (
+            dataset['name'],
+            dataset.get('description', ''),
+            dataset['type'],
+            datetime.now()
+            #TODO This will eventually need to be the user id of the person uploading the dataset. Once we have the auth token we can fill this in. 
+        )
+        with conn.cursor() as cur: 
+            cur.execute(user_dataset_insert_sql, dataset_insert_data)
+            user_dataset_id = cur.fetchone()['userdataset_id']
 
-    def upload_user_dataset(self, df, conn):
-        table_defs = [table_defs.user_dataset]
-        required_fields = ['user_ds_code', 'name']
-        validation = validate_required_and_missing_fields(df, required_fields, table_defs, 'user_dataset')
-        if validation['has_error']:
-            raise Exception(validation['error'])
-        
-        df['user_ds_code'] = df['user_ds_code'].astype(str)
-        new_dataset = super().upload_to_table("userdataset", 'ds', table_defs.user_dataset, df, True, conn, validate=False)
+            data_tuples = []
+            for item_table, codes in dataset['data'].items():
+                for code in codes:
+                    item_record = code[3:]
+                    item_database = 'vegbank'
+                    data_tuples.append((code, item_database, item_table, item_record))
+            items_df = pd.DataFrame(data_tuples, columns=['identifier', 'item_database', 'item_table', 'item_record'])
+            items_df['user_di_code'] = items_df.index + 1
+            items_df['userdataset_id'] = user_dataset_id
+            items_df['user_di_code'] = items_df['user_di_code'].astype(str)
+            new_dataset_items = super().upload_to_table("user_dataset_item", 'di', table_defs.user_dataset_item, 'userdatasetitem_id', items_df, False, conn, validate)
 
-        
-        return ""
+            to_return = {
+                'userdataset_id': user_dataset_id,
+                'dataset_items': new_dataset_items
+            }
+        return to_return

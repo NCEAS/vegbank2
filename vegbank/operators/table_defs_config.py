@@ -467,3 +467,12 @@ contributor = [
     'contributor_type',
     'record_identifier'
 ]
+
+user_dataset_item = [
+    'user_di_code',
+    'identifier',
+    'userdataset_id',
+    'item_database',
+    'item_table',
+    'item_record'
+]

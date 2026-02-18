@@ -1,5 +1,7 @@
 import os
 import textwrap
+import time
+from datetime import datetime 
 from flask import jsonify
 from psycopg import connect
 from psycopg.rows import dict_row
@@ -11,6 +13,7 @@ from .Party import Party
 from .Project import Project
 from .Reference import Reference
 from .TaxonObservation import TaxonObservation
+from .UserDataset import UserDataset
 from utilities import(
     jsonify_error_message,
     validate_required_and_missing_fields,read_parquet_file,
@@ -714,6 +717,7 @@ class PlotObservation(Operator):
             }
         }
         data = {}
+        dataset = {}
         to_return = None
         for name, config in upload_files.items():
             try:
@@ -726,12 +730,15 @@ class PlotObservation(Operator):
             with connect(**self.params, row_factory=dict_row) as conn:
                 if data['pj'] is not None:
                     pjs = Project(self.params).upload_project(data['pj'], conn)
+                    dataset['project'] = [item['vb_pj_code'] for item in pjs['resources']['pj']]
                     to_return = combine_json_return(to_return, pjs)
                 if data['py'] is not None:
                     pys = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code'] for item in pys['resources']['py']]
                     to_return = combine_json_return(to_return, pys)
                 if data['rf'] is not None:
                     rfs = Reference(self.params).upload_references(data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code'] for item in rfs['resources']['rf']]
                     to_return = combine_json_return(to_return, rfs)
 
                 if data['pl'] is not None:
@@ -745,6 +752,8 @@ class PlotObservation(Operator):
                         )
 
                     pls = PlotObservation(self.params).upload_plot_observations(data['pl'], conn)
+                    dataset['plot'] = [item['vb_pl_code'] for item in pls['resources']['pl']]
+                    dataset['observation'] = [item['vb_ob_code'] for item in pls['resources']['ob']]
                     to_return = combine_json_return(to_return, pls)
                 if data['so'] is not None:
                     data['so']['user_ob_code'] = data['so']['user_ob_code'].astype(str)
@@ -761,6 +770,7 @@ class PlotObservation(Operator):
                         {'user_ob_code': 'user_ob_code',
                          'vb_ob_code': 'vb_ob_code'})
                     dos = self.upload_disturbance(data['do'], conn)
+                    dataset['disturbanceobs'] = [item['vb_do_code'] for item in dos['resources']['do']]
                     to_return = combine_json_return(to_return, dos)
                 if data['cl'] is not None:
                     # TODO: Need validation to make sure this field exists; the
@@ -775,17 +785,21 @@ class PlotObservation(Operator):
                          'vb_ob_code': 'vb_ob_code'})
                     if data['rf'] is not None:
                         # ... merge in newly created comm class vb_rf_codes
-                        data['cl'] = merge_vb_codes(
-                            rfs['resources']['rf'], data['cl'],
-                            {'user_rf_code': 'user_comm_class_rf_code',
-                             'vb_rf_code': 'vb_comm_class_rf_code'})
+                        if 'user_comm_class_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_comm_class_rf_code',
+                                'vb_rf_code': 'vb_comm_class_rf_code'})
                         # ... merge in newly created interp authority vb_rf_codes
-                        data['cl'] = merge_vb_codes(
-                            rfs['resources']['rf'], data['cl'],
-                            {'user_rf_code': 'user_authority_rf_code',
-                             'vb_rf_code': 'vb_authority_rf_code'})
+                        if 'user_interp_authority_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_authority_rf_code',
+                                'vb_rf_code': 'vb_authority_rf_code'})
                     cls = CommunityClassification(self.params) \
                         .upload_community_classifications(data['cl'], conn)
+                    dataset['commclass'] = [item['vb_cl_code'] for item in cls['resources']['cl']]
+                    dataset['comminterpretation'] = [item['vb_ci_code'] for item in cls['resources']['ci']]
                     to_return = combine_json_return(to_return, cls)
                 if data['sr'] is not None:
                     if data['pl'] is not None:
@@ -797,6 +811,7 @@ class PlotObservation(Operator):
                             }
                         )
                     srs = TaxonObservation(self.params).upload_strata_definitions(data['sr'], conn)
+                    dataset['strata'] = [item['vb_sr_code'] for item in srs['resources']['sr']]
                     to_return = combine_json_return(to_return, srs)
                 if data['sc'] is not None:
                     if data['pl'] is not None:
@@ -816,6 +831,8 @@ class PlotObservation(Operator):
                             }
                         )
                     scs = TaxonObservation(self.params).upload_strata_cover_data(data['sc'], conn)
+                    dataset['taxonobservation'] = [item['vb_to_code'] for item in scs['resources']['to']]
+                    dataset['taxonimportance'] = [item['vb_tm_code'] for item in scs['resources']['tm']]
                     to_return = combine_json_return(to_return, scs)
 
                 if data['ti'] is not None:
@@ -844,6 +861,7 @@ class PlotObservation(Operator):
                             }
                         )
                     tis = TaxonObservation(self.params).upload_taxon_interpretations(data['ti'], conn)
+                    dataset['taxoninterpretation'] = [item['vb_ti_code'] for item in tis['resources']['ti']]
                     to_return = combine_json_return(to_return, tis)
                 if data['sd'] is not None:
                     if data['sc'] is not None:
@@ -855,6 +873,8 @@ class PlotObservation(Operator):
                             }
                         )
                     sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
+                    dataset['stemcount'] = [item['vb_sc_code'] for item in sds['resources']['sc']]
+                    dataset['stemlocation'] = [item['vb_sl_code'] for item in sds['resources']['sl']]
                     to_return = combine_json_return(to_return, sds)
                 if data['cr'] is not None:
                     if data['py'] is not None:
@@ -891,7 +911,30 @@ class PlotObservation(Operator):
                         )
                     crs = Party(self.params).upload_contributors(data['cr'], conn)
                     to_return = combine_json_return(to_return, crs)
+
+                dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from upload on ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data':dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(dataset_input, conn)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds']['inserted'] = 1
+                to_return['resources']['ds'] = [{
+                    'action': 'inserted',
+                    'user_ds_code': dataset_name,
+                    'vb_ds_code': 'ds.' + str(ds['userdataset_id'])
+                }]
                 to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
+                
+
             conn.close()
             return jsonify(to_return)
         except Exception as e:

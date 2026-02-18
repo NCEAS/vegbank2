@@ -8,7 +8,7 @@ import io
 import time
 import traceback
 import os
-from utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from utilities import jsonify_error_message, dry_run_check, read_parquet_file, validate_dataset_json
 from repositories import IdentifiersQueries
 from operators import (
     TaxonImportance,
@@ -1048,8 +1048,22 @@ def user_datasets(ds_code):
     """
     user_dataset_operator = UserDataset(params)
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for community_interpretations."), 405
+        if not request.is_json:
+            return jsonify_error_message("Request body must be JSON."), 400
+        to_return = None
+        try:
+            dataset = request.get_json()
+            validate_dataset_json(dataset)
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = user_dataset_operator.upload_user_dataset(dataset, conn, validate=True)
+                to_return = dry_run_check(conn, to_return, request)
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(
+                f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
+            
     elif request.method == 'GET':
         return user_dataset_operator.get_vegbank_resources(request, ds_code)
     else:
