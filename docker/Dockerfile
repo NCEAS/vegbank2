@@ -2,7 +2,7 @@ FROM python:3.13
 
 LABEL org.opencontainers.image.title="vegbank2 Flask API"
 LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
-LABEL org.opencontainers.image.version="0.0.3-310-queries-resource"
+LABEL org.opencontainers.image.version="0.0.3-309-src-pkg"
 
 # Add Docker VENV path
 ENV VIRTUAL_ENV=/data/venv
