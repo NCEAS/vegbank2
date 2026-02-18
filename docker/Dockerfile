@@ -2,7 +2,7 @@ FROM python:3.13
 
 LABEL org.opencontainers.image.title="vegbank2 Flask API"
 LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
-LABEL org.opencontainers.image.version="0.0.3-303-docker-venv"
+LABEL org.opencontainers.image.version="0.0.3-310-queries-resource"
 
 # Add Docker VENV path
 ENV VIRTUAL_ENV=/data/venv
@@ -27,7 +27,6 @@ RUN . "${VIRTUAL_ENV}/bin/activate" && uv sync --active
 # TODO: We should be able to simply copy the application code instead of two directories
 # Ex. COPY . /app
 COPY vegbank /app/vegbank
-COPY queries /app/queries
 
 ENV PYTHONPATH=/app
 CMD ["/data/venv/bin/python", "-m", "flask", "--app", "vegbank.vegbankapi:app", "run", "--host=0.0.0.0", "--port=80"]

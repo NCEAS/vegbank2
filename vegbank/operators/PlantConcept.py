@@ -35,7 +35,7 @@ class PlantConcept(Operator):
         super().__init__(params)
         self.name = "plant_concept"
         self.table_code = "pc"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "plant_name", "obs_count"]
 
@@ -598,7 +598,7 @@ class PlantConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'plant_name')
+        self.queries_package = f"{self.queries_root}.plant_name"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -693,7 +693,7 @@ class PlantConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'plant_correlation')
+        self.queries_package = f"{self.queries_root}.plant_correlation"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method

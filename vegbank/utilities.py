@@ -1,3 +1,7 @@
+from __future__ import annotations
+import os
+from pathlib import Path
+from importlib.resources import files
 from flask import jsonify
 import pandas as pd
 
@@ -216,6 +220,23 @@ def process_option_param(param_name, param_value, options):
             option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
         err_msg = f"When provided, '{param_name}' must be {option_str}."
     raise QueryParameterError(err_msg)
+
+def load_sql(package: str, relative_path: str, encoding: str = "utf-8") -> str:
+    """
+    Load an SQL file either from a filesystem override directory (if set),
+    or from packaged resources via importlib.resources.
+
+    Args:
+        package: Python package that contains SQL resources, e.g. "vegbank.queries"
+        relative_path: Path inside queries, e.g. "cover_method/create_cover_method_temp_table.sql"
+    """
+    override_dir = os.getenv("QUERIES_DIR")
+    if override_dir:
+        p = Path(override_dir) / relative_path
+        return p.read_text(encoding=encoding)
+
+    parts = relative_path.split("/")
+    return files(package).joinpath(*parts).read_text(encoding=encoding)
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""

@@ -41,7 +41,7 @@ class PlotObservation(Operator):
         super().__init__(params)
         self.name = "plot_observation"
         self.table_code = "ob"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")
@@ -960,7 +960,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'soil')
+        self.queries_package = f"{self.queries_root}.soil"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -1033,7 +1033,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'disturbance')
+        self.queries_package = f"{self.queries_root}.disturbance"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method

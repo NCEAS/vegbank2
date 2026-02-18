@@ -17,7 +17,7 @@ class NamedPlace(Operator):
         super().__init__(params)
         self.name = "named_place"
         self.table_code = "np"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}

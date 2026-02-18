@@ -30,7 +30,7 @@ class Project(Operator):
         super().__init__(params)
         self.name = "project"
         self.table_code = "pj"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.sort_options = ["default", "project_name", "obs_count"]
         
 
