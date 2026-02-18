@@ -109,7 +109,7 @@ spec:
             - -c
             - >
               echo "## Flyway Env";
-              env | grep '^FLYWAY_' || true;
+              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE vegbankdbcreds SECRET)/' || true;
               echo "## Listing Migrations";
               ls {{ .Values.flyway.dbpath }}/migrations || true;
               echo "Applying all migrations in db/migrations";
