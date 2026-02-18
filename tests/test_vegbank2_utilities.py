@@ -22,7 +22,7 @@ def test_load_sql_queries_package():
     sql = load_sql(queries_package, file_name)
 
     # Load the file directly for expected result
-    expected_path = Path("vegbank/queries") / file_name
+    expected_path = Path("src/vegbank/queries") / file_name
     expected_sql = expected_path.read_text(encoding="utf-8")
     assert sql == expected_sql
 
@@ -41,6 +41,6 @@ def test_load_sql_queries_subpackage():
     sql = load_sql(queries_package, temp_table_path)
 
     # Load the file directly for expected result
-    expected_path = Path("vegbank/queries") / table_name / temp_table_path
+    expected_path = Path("src/vegbank/queries") / table_name / temp_table_path
     expected_sql = expected_path.read_text(encoding="utf-8")
     assert sql == expected_sql
