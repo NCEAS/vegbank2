@@ -1,28 +1,37 @@
-[tool.poetry]
+[project]
 name = "vegbank"
 version = "2.0.0-alpha1"
 description = "VegBank database and data access service"
 authors = [
-    "Robert Shelton <shelton@nceas.ucsb.edu>",
-    "Dou Mok <mok@nceas.ucsb.edu>",
-    "Jim Regetz <regetz@nceas.ucsb.edu>",
-    "Matthew B. Jones <jones@nceas.ucsb.edu>"
-    ]
-license = "Apache2"
-readme = "README.md"
+    { name = "Robert Shelton", email = "shelton@nceas.ucsb.edu" },
+    { name = "Dou Mok", email = "douming.mok@gmail.com" },
+    { name = "Jim Regetz", email = "regetz@nceas.ucsb.edu" },
+    { name = "Matthew B. Jones", email = "jones@nceas.ucsb.edu" },
+]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.13"
 
-[tool.poetry.dependencies]
-python = "^3.12"
+dependencies = [
+    "psycopg>=3.3.2",
+    "flask>=3.1.2",
+    "pandas>=3.0.0",
+    "pyarrow>=23.0.0",
+    "numpy>=2.4.2",
+]
 
-[tool.poetry.group.dev.dependencies]
-poetry = ">=1.8.3"
-pytest = ">=8.3.3"
-pylint = ">=3.2.7"
-black = ">=24.8.0"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3",
+    "pylint>=3.2.7",
+    "black>=24.8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["vegbank"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 addopts = [

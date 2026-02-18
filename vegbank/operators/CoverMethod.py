@@ -1,13 +1,14 @@
 import os
-from flask import jsonify
-import psycopg
-from psycopg import ClientCursor
-from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
 import traceback
-from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
+import psycopg
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import jsonify_error_message, allowed_file, QueryParameterError, load_sql
+from flask import jsonify
+from psycopg import ClientCursor
+from psycopg.rows import dict_row
 
 
 class CoverMethod(Operator):
@@ -29,7 +30,7 @@ class CoverMethod(Operator):
         super().__init__(params)
         self.name = "cover_method"
         self.table_code = "cm"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):
@@ -169,17 +170,25 @@ class CoverMethod(Operator):
                 
                 with conn.cursor() as cur:
                     with conn.transaction():
-                        
-                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_temp_table.sql", "r") as file:
-                            sql = file.read() 
+                        cm_create_cm_tmp_table_path = (
+                            "cover_method/create_cover_method_temp_table.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, cm_create_cm_tmp_table_path
+                        )
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_to_temp_table.sql", "r") as file:
-                            sql = file.read()
+
+                        cm_insert_cm_tmp_table_path = (
+                            "/cover_method/insert_cover_methods_to_temp_table.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, cm_insert_cm_tmp_table_path
+                        )
                         cur.executemany(sql, cover_method_inputs)
-                        
+
                         print("about to run validate cover methods")
-                        with open(self.QUERIES_FOLDER + "/cover_method/validate_cover_methods.sql", "r") as file:
-                            sql = file.read() 
+                        cm_validate_cm_tmp_table_path = "/cover_method/validate_cover_methods.sql"
+                        sql = load_sql(self.queries_package, cm_validate_cm_tmp_table_path)
                         cur.execute(sql)
                         existing_records = cur.fetchall()
                         print("existing records: " + str(existing_records))
@@ -191,15 +200,19 @@ class CoverMethod(Operator):
                         if(len(new_references) > 0):
                             raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new cover methods.")
 
-                        with open(self.QUERIES_FOLDER + "/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql", "r") as file:
-                            sql = file.read()
+                        cm_insert_cm_tmp_to_perm_table_path = (
+                            "/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, cm_insert_cm_tmp_to_perm_table_path
+                        )
                         cur.execute(sql)
                         inserted_cover_method_records = cur.fetchall()
                         print("inserted records: " + str(inserted_cover_method_records))
 
                         if(len(inserted_cover_method_records) == 0 and len(existing_records) == 0):
                             raise ValueError("No new cover methods to insert. Please check your data for duplicates.")
-                        
+
                         inserted_cover_method_records_df = pd.DataFrame(inserted_cover_method_records)
                         print("inserted_cover_method_records_df: " + str(inserted_cover_method_records_df))
 
@@ -207,15 +220,28 @@ class CoverMethod(Operator):
                         cover_index_df = cover_index_df[cover_index_fields]
                         cover_index_inputs = list(cover_index_df.itertuples(index=False, name=None))
 
-                        with open(self.QUERIES_FOLDER + "/cover_index/create_cover_index_temp_table.sql", "r") as file:
-                            sql = file.read() 
+                        ci_create_ci_tmp_table_path = (
+                            "/cover_index/create_cover_index_temp_table.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, ci_create_ci_tmp_table_path
+                        )
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/cover_index/insert_cover_indices_to_temp_table.sql", "r") as file:
-                            sql = file.read()
+
+                        ci_insert_ci_tmp_table_path = (
+                            "/cover_index/insert_cover_indices_to_temp_table.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, ci_insert_ci_tmp_table_path
+                        )
                         cur.executemany(sql, cover_index_inputs)
 
-                        with open(self.QUERIES_FOLDER + "/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql", "r") as file:
-                            sql = file.read()
+                        ci_insert_ci_tmp_to_perm_table_path = (
+                            "/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, ci_insert_ci_tmp_to_perm_table_path
+                        )
                         cur.execute(sql)
                         inserted_cover_index_records = cur.fetchall()
                         print("inserted cover index records: " + str(inserted_cover_index_records))
@@ -226,8 +252,12 @@ class CoverMethod(Operator):
                         print("covermethod_ids: " + str(covermethod_ids))
 
                         print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/cover_method/create_cover_method_accession_codes.sql", "r") as file:
-                            sql = file.read()
+                        cm_create_cm_acc_codes_path = (
+                            "/cover_method/create_cover_method_accession_codes.sql"
+                        )
+                        sql = load_sql(
+                            self.queries_package, cm_create_cm_acc_codes_path
+                        )
                         cur.execute(sql, (covermethod_ids, ))
                         new_cm_codes = cur.fetchall()
 

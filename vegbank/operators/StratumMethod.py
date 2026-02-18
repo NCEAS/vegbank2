@@ -1,14 +1,19 @@
 import os
-from flask import jsonify
 import psycopg
-from psycopg import ClientCursor
-from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
 import traceback
-from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError
-
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import (
+    load_sql,
+    jsonify_error_message,
+    allowed_file,
+    QueryParameterError,
+)
+from psycopg import ClientCursor
+from psycopg.rows import dict_row
+from flask import jsonify
 
 class StratumMethod(Operator):
     """
@@ -29,7 +34,7 @@ class StratumMethod(Operator):
         super().__init__(params)
         self.name = "stratum_method"
         self.table_code = "sm"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):
@@ -148,7 +153,7 @@ class StratumMethod(Operator):
             print(f"DataFrame loaded with {len(df)} records.")
 
             df.columns = map(str.lower, df.columns)
-            #Checking if the user submitted any unsupported columns
+            # Checking if the user submitted any unsupported columns
             additional_columns = set(df.columns) - set(stratum_method_fields) - set(stratum_type_fields)
             if(len(additional_columns) > 0):
                 return jsonify_error_message(f"Your data must only contain fields included in the plot observation schema. The following fields are not supported: {additional_columns} ")
@@ -162,23 +167,30 @@ class StratumMethod(Operator):
             print(str(stratum_method_df))
             print("---------------")
             stratum_method_inputs = list(stratum_method_df.itertuples(index=False, name=None))
-            
 
-            with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
-                
+            with psycopg.connect(
+                **params, cursor_factory=ClientCursor, row_factory=dict_row
+            ) as conn:
                 with conn.cursor() as cur:
                     with conn.transaction():
-                        
-                        with open(self.QUERIES_FOLDER + "/stratum_method/create_stratum_method_temp_table.sql", "r") as file:
-                            sql = file.read() 
+
+                        sql_create_sm_temp_table = (
+                            "/stratum_method/create_stratum_method_temp_table.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_create_sm_temp_table)
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/stratum_method/insert_stratum_methods_to_temp_table.sql", "r") as file:
-                            sql = file.read()
+
+                        sql_insert_sm_temp_table = (
+                            "/stratum_method/insert_stratum_methods_to_temp_table.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_insert_sm_temp_table)
                         cur.executemany(sql, stratum_method_inputs)
-                        
+
                         print("about to run validate stratum methods")
-                        with open(self.QUERIES_FOLDER + "/stratum_method/validate_stratum_methods.sql", "r") as file:
-                            sql = file.read() 
+                        sql_validate_sm_temp_table = (
+                            "/stratum_method/validate_stratum_methods.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_validate_sm_temp_table)
                         cur.execute(sql)
                         existing_records = cur.fetchall()
                         print("existing records: " + str(existing_records))
@@ -187,18 +199,23 @@ class StratumMethod(Operator):
                         new_references = cur.fetchall()
                         print("new references: " + str(new_references))
 
-                        if(len(new_references) > 0):
-                            raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new stratum methods.")
+                        if len(new_references) > 0:
+                            raise ValueError(
+                                f"The following references do not exist in the database: {new_references}."
+                                + " Please add them to the reference table before uploading new stratum methods."
+                            )
 
-                        with open(self.QUERIES_FOLDER + "/stratum_method/insert_stratum_methods_from_temp_table_to_permanent.sql", "r") as file:
-                            sql = file.read()
+                        sql_insert_sm_temp_to_perm_table = "/stratum_method/insert_stratum_methods_from_temp_table_to_permanent.sql"
+                        sql = load_sql(
+                            self.queries_package, sql_insert_sm_temp_to_perm_table
+                        )
                         cur.execute(sql)
                         inserted_stratum_method_records = cur.fetchall()
                         print("inserted records: " + str(inserted_stratum_method_records))
 
                         if(len(inserted_stratum_method_records) == 0 and len(existing_records) == 0):
                             raise ValueError("No new stratum methods to insert. Please check your data for duplicates.")
-                        
+
                         inserted_stratum_method_records_df = pd.DataFrame(inserted_stratum_method_records)
                         print("inserted_stratum_method_records_df: " + str(inserted_stratum_method_records_df))
 
@@ -208,16 +225,24 @@ class StratumMethod(Operator):
 
                         print("stratum_type_inputs: " + str(stratum_type_inputs))
 
-                        with open(self.QUERIES_FOLDER + "/stratum_type/create_stratum_type_temp_table.sql", "r") as file:
-                            sql = file.read() 
+                        sql_create_st_temp_table = (
+                            "/stratum_type/create_stratum_type_temp_table.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_create_st_temp_table)
                         cur.execute(sql)
-                        with open(self.QUERIES_FOLDER + "/stratum_type/insert_stratum_types_to_temp_table.sql", "r") as file:
-                            sql = file.read()
+
+                        sql_insert_st_temp_table = (
+                            "/stratum_type/insert_stratum_types_to_temp_table.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_insert_st_temp_table)
                         cur.executemany(sql, stratum_type_inputs)
 
-                        with open(self.QUERIES_FOLDER + "/stratum_type/insert_stratum_types_from_temp_table_to_permanent.sql", "r") as file:
-                            sql = file.read()
+                        sql_insert_st_temp_to_perm_table = (
+                            "/stratum_type/insert_stratum_types_from_temp_table_to_permanent.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_insert_st_temp_to_perm_table)
                         cur.execute(sql)
+
                         inserted_stratum_type_records = cur.fetchall()
                         print("inserted stratum type records: " + str(inserted_stratum_type_records))
 
@@ -226,9 +251,10 @@ class StratumMethod(Operator):
                             stratummethod_ids.append(record['stratummethod_id'])
                         print("stratummethod_ids: " + str(stratummethod_ids))
 
-                        print("about to run create accession code")
-                        with open(self.QUERIES_FOLDER + "/stratum_method/create_stratum_method_accession_codes.sql", "r") as file:
-                            sql = file.read()
+                        sql_create_sm_acc_codes = (
+                            "/stratum_method/create_stratum_method_accession_codes.sql"
+                        )
+                        sql = load_sql(self.queries_package, sql_create_sm_acc_codes)
                         cur.execute(sql, (stratummethod_ids, ))
                         new_sm_codes = cur.fetchall()
 
@@ -240,7 +266,6 @@ class StratumMethod(Operator):
                         joined_df = pd.merge(df, sm_codes_df, on='stratummethodname')
                         print("----------------------------------------")
                         print(str(joined_df))
-
 
                         to_return_stratum_methods = []
                         to_return_stratum_types = []

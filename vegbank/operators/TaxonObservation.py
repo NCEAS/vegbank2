@@ -2,12 +2,12 @@ import os
 import traceback
 import pandas as pd
 import numpy as np
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 from flask import jsonify
 from psycopg.rows import dict_row
 from psycopg import ClientCursor
-from operators import table_defs_config
-from operators import Operator
-from utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class TaxonObservation(Operator):
@@ -34,7 +34,7 @@ class TaxonObservation(Operator):
         super().__init__(params)
         self.name = "taxon_observation"
         self.table_code = "to"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):

@@ -1,8 +1,8 @@
 import os
-from operators import Operator
-from utilities import QueryParameterError, validate_required_and_missing_fields
-from operators import table_defs_config
 import pandas as pd
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class Party(Operator):
@@ -21,7 +21,7 @@ class Party(Operator):
         super().__init__(params)
         self.name = "party"
         self.table_code = "py"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.sort_options = ["default", "surname", "organization_name", "obs_count"]
 
     def configure_query(self, *args, **kwargs):

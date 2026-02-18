@@ -1,7 +1,8 @@
 import os
 from datetime import datetime
 import pandas as pd
-from operators import Operator, table_defs_config as table_defs
+from vegbank.operators.operator_parent_class import Operator 
+from vegbank.operators import table_defs_config as table_defs
 from utilities import validate_required_and_missing_fields, merge_vb_codes
 
 
@@ -20,7 +21,7 @@ class UserDataset(Operator):
         super().__init__(params)
         self.name = "user_dataset"
         self.table_code = "ds"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}

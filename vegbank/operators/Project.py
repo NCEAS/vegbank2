@@ -1,13 +1,19 @@
 import os
-from flask import jsonify
 import psycopg
-from psycopg import ClientCursor
-from psycopg.rows import dict_row
 import pandas as pd
 import numpy as np
 import traceback
-from operators import Operator, table_defs_config
-from utilities import jsonify_error_message, allowed_file, QueryParameterError, validate_required_and_missing_fields
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import (
+    jsonify_error_message,
+    allowed_file,
+    QueryParameterError,
+    validate_required_and_missing_fields,
+)
+from flask import jsonify
+from psycopg import ClientCursor
+from psycopg.rows import dict_row
 
 
 class Project(Operator):
@@ -24,7 +30,7 @@ class Project(Operator):
         super().__init__(params)
         self.name = "project"
         self.table_code = "pj"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.sort_options = ["default", "project_name", "obs_count"]
         
 

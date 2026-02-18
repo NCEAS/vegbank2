@@ -2,26 +2,29 @@ import os
 import textwrap
 import time
 from datetime import datetime 
-from flask import jsonify
-from psycopg import connect
-from psycopg.rows import dict_row
 import pandas as pd
 import traceback
-from operators import Operator, table_defs_config
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
 from .Reference import Reference
 from .TaxonObservation import TaxonObservation
 from .UserDataset import UserDataset
-from utilities import(
+from vegbank.utilities import(
     jsonify_error_message,
-    validate_required_and_missing_fields,read_parquet_file,
+    process_integer_param,
+    validate_required_and_missing_fields,
+    read_parquet_file,
     UploadDataError,
     merge_vb_codes,
     combine_json_return,
     dry_run_check
 )
+from flask import jsonify
+from psycopg import connect
+from psycopg.rows import dict_row
 
 
 class PlotObservation(Operator):
@@ -41,7 +44,7 @@ class PlotObservation(Operator):
         super().__init__(params)
         self.name = "plot_observation"
         self.table_code = "ob"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")
@@ -405,6 +408,7 @@ class PlotObservation(Operator):
             ) AS so ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
+                      'np_code', 'np.' || namedplace_id,
                       'system', placesystem,
                       'name', placename,
                       'description', placedescription,
@@ -480,6 +484,18 @@ class PlotObservation(Operator):
                               JOIN commconcept cc USING (commconcept_id)
                               WHERE ob.observation_id = cl.observation_id
                                 AND commconcept_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'np': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT namedplace_id
+                              FROM namedplace np
+                              JOIN place p USING (namedplace_id)
+                              JOIN plot pl USING (plot_id)
+                              WHERE ob.plot_id = pl.plot_id
+                                AND namedplace_id = %s)
                         """,
                     'params': ['vb_id']
                 },
@@ -560,9 +576,9 @@ class PlotObservation(Operator):
         params = super().validate_query_params(request_args)
 
         # add params for limiting nested fields
-        params['num_taxa'] = self.process_integer_param('num_taxa',
+        params['num_taxa'] = process_integer_param('num_taxa',
             request_args.get('num_taxa', self.default_num_taxa))
-        params['num_comms'] = self.process_integer_param('num_comms',
+        params['num_comms'] = process_integer_param('num_comms',
             request_args.get('num_comms', self.default_num_comms))
 
         # capture search parameter, if it exists
@@ -987,7 +1003,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'soil')
+        self.queries_package = f"{self.queries_root}.soil"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -1060,7 +1076,7 @@ class PlotObservation(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'disturbance')
+        self.queries_package = f"{self.queries_root}.disturbance"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method

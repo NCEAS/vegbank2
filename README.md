@@ -77,6 +77,64 @@ commits can be run, for example, for the mac with:
 
 - `act --container-architecture linux/amd64`
 
+### Installing `vegbank` using the `uv` package manager
+
+We are using `uv` as our python environment and dependency manager. To get started locally, follow these instructions below:
+
+```sh
+# Step 1: Set your `VIRTUAL_ENV` path (if not already set)
+$ export VIRTUAL_ENV=/data/venv
+
+# Step 2: Install `uv` (if not already installed)
+$ python -m pip install uv --root-user-action ignore
+
+# Step 3: Navigate to your project root
+$ cd /path/to/vegbank2
+
+# Step 4: Create/reuse the venv and activate it
+$ uv venv --allow-existing ${VIRTUAL_ENV}
+$ source ${VIRTUAL_ENV}/bin/activate
+
+# Step 5: Install all dependencies into the venv
+$ uv sync --active
+
+```
+
+### Adding project dependencies
+
+To add a dependency to this project, you will need to update `pyproject.toml` with the library that you are trying to add, as well as the minimum version required.
+- Note: An easy way to add dependencies to pyproject.toml is to add them with `uv` or other package management tools using a command like `uv add some_package`.
+
+- If the library is required at runtime, add it under `dependencies`
+- If the library is used only for development or testing, add it under `dependency-groups.dev`
+
+```py
+# pyproject.toml
+
+...
+
+dependencies = [
+    "psycopg>=3.3.2",
+    "flask>=3.1.2",
+    "pandas>=3.0.0",
+    "pyarrow>=23.0.0",
+    "numpy>=2.4.2",
+    "DEPENDENCYNAME>=#.#.#", # Add runtime dependencies here
+]
+
+[dependency-groups]
+dev = [
+    # Add development dependencies here
+    "pytest>=8.3.3",
+    "pylint>=3.2.7",
+    "black>=24.8.0",
+]
+
+```
+
+Lastly, build and deploy your Docker image. If you are unsure of how to, please follow the `README.md` under `/docker`.
+
+
 ## Current Contributors
 
 - Matthew B. Jones (jones@nceas.ucsb.edu): [ORCID: 0000-0003-0077-4738](https://orcid.org/0000-0003-0077-4738)

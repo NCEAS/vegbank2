@@ -1,7 +1,8 @@
 import os
 import pandas as pd
-from operators import Operator, table_defs_config
-from utilities import QueryParameterError, validate_required_and_missing_fields
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 
 
 class Reference(Operator):
@@ -19,7 +20,7 @@ class Reference(Operator):
         super().__init__(params)
         self.name = "reference"
         self.table_code = "rf"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}

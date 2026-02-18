@@ -1,13 +1,13 @@
 import os
-from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import Operator
 
 
-class Role(Operator):
+class NamedPlace(Operator):
     """
-    Defines operations related to the exchange of party roles with VegBank.
+    Defines operations related to the exchange of named places with VegBank.
 
-    Role: A role assignable to a party in the context of some
-        contribution
+    Named Place: A named place (geographic region, managed unit, etc) in which a
+        plot may be located.
 
     Inherits from the Operator parent class to utilize common default values and
     methods.
@@ -15,28 +15,34 @@ class Role(Operator):
 
     def __init__(self, params):
         super().__init__(params)
-        self.name = "role"
-        self.table_code = "ar"
+        self.name = "named_place"
+        self.table_code = "np"
         self.queries_package = f"{self.queries_package}.{self.name}"
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
         main_columns = {}
         main_columns['full'] = {
-            'ar_code': "'ar.' || ar.role_id",
-            'name': "ar.rolecode",
-            'description': "ar.roledescription",
+            'np_code': "'np.' || np.namedplace_id",
+            'system': "np.placesystem",
+            'name': "np.placename",
+            'description': "np.placedescription",
+            'code': "np.placecode",
+            'owner': "np.owner",
+            'rf_label': "rf.reference_id_transl",
+            'obs_count': "np.d_obscount",
         }
         from_sql = """\
-            FROM ar
+            FROM np
+            LEFT JOIN view_reference_transl AS rf USING (reference_id)
             """
         order_by_sql = """\
-            ORDER BY ar.role_id
+            ORDER BY np.namedplace_id
             """
 
         self.query = {}
         self.query['base'] = {
-            'alias': "ar",
+            'alias': "np",
             'select': {
                 "always": {
                     'columns': base_columns,
@@ -44,7 +50,7 @@ class Role(Operator):
                 },
             },
             'from': {
-                'sql': "FROM aux_role AS ar",
+                'sql': "FROM namedplace AS np",
                 'params': []
             },
             'conditions': {
@@ -52,8 +58,8 @@ class Role(Operator):
                     'sql': None,
                     'params': []
                 },
-                "ar": {
-                    'sql': "ar.role_id = %s",
+                "np": {
+                    'sql': "np.namedplace_id = %s",
                     'params': ['vb_id']
                 },
             },

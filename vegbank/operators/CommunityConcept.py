@@ -1,12 +1,9 @@
 import os
-from operators import Operator
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
 from .Party import Party
 from .Reference import Reference
-from psycopg.rows import dict_row
-from psycopg import connect
-from operators import table_defs_config
-from flask import jsonify
-from utilities import (
+from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
     validate_required_and_missing_fields,
@@ -14,7 +11,9 @@ from utilities import (
     combine_json_return,
     jsonify_error_message
 )
-
+from psycopg.rows import dict_row
+from psycopg import connect
+from flask import jsonify
 
 class CommunityConcept(Operator):
     """
@@ -35,7 +34,7 @@ class CommunityConcept(Operator):
         super().__init__(params)
         self.name = "community_concept"
         self.table_code = "cc"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "comm_name", "obs_count"]
 
@@ -598,7 +597,7 @@ class CommunityConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'community_name')
+        self.queries_package = f"{self.queries_root}.community_name"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
@@ -693,7 +692,7 @@ class CommunityConcept(Operator):
             ValueError: If data validation fails
         """
         # Override the default query path
-        self.QUERIES_FOLDER = os.path.join('queries', 'community_correlation')
+        self.queries_package = f"{self.queries_root}.community_correlation"
 
         # Assemble table configuration; note syntax to force a copy of the
         # config list, which we modify in-place within this method
