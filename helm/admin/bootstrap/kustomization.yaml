@@ -1,0 +1,25 @@
+resources:
+  - vegbankdb-bootstrap-from-legacy.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: vegbank-db-migrations
+    files:
+      - ../../db/migrations/V1.0__vegbank.sql
+      - ../../db/migrations/V1.1__create_aggregrates.sql
+      - ../../db/migrations/V1.2__create_extras.sql
+      - ../../db/migrations/V1.3__create_indices.sql
+      - ../../db/migrations/V1.4__create_vegbank_views.sql
+      - ../../db/migrations/V1.5__add_constraints.sql
+      - ../../db/migrations/V1.6__backfill_party_null_values.sql
+      - ../../db/migrations/V1.7__create_identifiers_table.sql
+      - ../../db/migrations/V1.8__populate_acc_identifiers_procedure.sql
+      - ../../db/migrations/V1.9__populate_vb_identifiers_procedure.sql
+      - ../../db/migrations/V2.0__enable_plant_concept_fts.sql
+      - ../../db/migrations/V2.1__enable_community_concept_fts.sql
+      - ../../db/migrations/V2.2__enable_project_fts.sql
+      - ../../db/migrations/V2.3__enable_party_fts.sql
+      - ../../db/migrations/V2.4__enable_plot_observation_fts.sql
+      - ../../db/migrations/V2.5__backfill_userdataset_acc_vb_codes.sql
