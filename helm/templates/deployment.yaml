@@ -28,9 +28,11 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
+      {{- if .Values.databaseRestore.enabled }}
       - name: vegbankdb-init-pgdata
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -41,10 +43,12 @@ spec:
       initContainers:
         - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
           image: {{ .Values.databaseRestore.postgresImage }}
+          {{- if .Values.databaseRestore.enabled }}
           volumeMounts:
             # Mount the PVC, this path will contain the directory that's been mounted on knbvm
-            - name: {{ .Values.databaseRestore.pvc }}
-              mountPath: "/tmp/databaseRestore"
+            - name: vegbankdb-init-pgdata
+              mountPath: {{ .Values.databaseRestore.mountpath }}
+          {{- end }}
           env:
             - name: VB_DB_PASS
               valueFrom:
