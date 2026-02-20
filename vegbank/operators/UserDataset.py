@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 from vegbank.operators.operator_parent_class import Operator 
 from vegbank.operators import table_defs_config as table_defs
-from utilities import validate_required_and_missing_fields, merge_vb_codes
+from utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql
 
 
 class UserDataset(Operator):
@@ -117,6 +117,16 @@ class UserDataset(Operator):
         with conn.cursor() as cur: 
             cur.execute(user_dataset_insert_sql, dataset_insert_data)
             user_dataset_id = cur.fetchone()['userdataset_id']
+            print(user_dataset_id)
+            new_codes_df = pd.DataFrame()
+            new_codes_df['vb_record_id'] = [user_dataset_id]
+            new_codes_df['vb_table_code'] = 'ds'
+            new_codes_df['identifier_type'] = 'vb_code'
+            new_codes_df['identifier_value'] =  'ds.' + new_codes_df['vb_record_id'].astype(str)
+            print(new_codes_df)
+            code_inputs = list(new_codes_df.itertuples(index=False, name=None))
+            sql = load_sql(self.queries_root, 'create_codes.sql')
+            cur.executemany(sql, code_inputs, returning=True)
 
             data_tuples = []
             for item_table, codes in dataset['data'].items():
