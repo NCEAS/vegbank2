@@ -91,6 +91,18 @@ class UserDataset(Operator):
         }
 
     def upload_user_dataset(self, dataset, conn, validate=False):
+        '''
+        Uploads a user dataset to VegBank. If a user is submitting it via the endpoint, we use validate=True 
+        because users are only allowed to submit datasets containing only observation codes. Otherwise, 
+        the request is coming from one of the bulk endpoints, and all those foreign keys are new so they 
+        must be valid and don't need to be checked. 
+
+        dataset should be a dict with the following keys:
+        - name: str
+        - description: str (optional)
+        - type: str (e.g. 'dataset', 'normal')
+        - data: dict where keys are item tables (e.g. 'observation') and values are lists of vb_codes (e.g. ['ob.123', 'ob.456'])
+        '''
         user_dataset_insert_sql = """
             INSERT INTO userdataset (datasetname, datasetdescription, datasettype, datasetstart)
             VALUES (%s, %s, %s, %s)
