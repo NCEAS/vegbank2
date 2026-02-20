@@ -1,85 +1,82 @@
 """Route tests for vegbankapi endpoints."""
 import io
 from unittest.mock import MagicMock, patch
+import pytest
 from vegbank import vegbankapi
 from vegbank.vegbankapi import app
 
 
-def test_allow_uploads_false_post_blocked(monkeypatch):
+@pytest.fixture
+def test_client():
+    """Provide a Flask test client with testing mode enabled."""
+    app.testing = True
+    with app.test_client() as client:
+        yield client
+
+
+def test_allow_uploads_false_post_blocked(monkeypatch, test_client):
     """Test that a post request to the plot-observations endpoint is rejected when
     allow_uploads is false"""
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", False)
-    # Set this to true so that exceptions can propagate if they occur
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.PlotObservation, "upload_all", autospec=True
-        ) as mock_upload_all:
-            response = client.post("/plot-observations")
+    with patch.object(
+        vegbankapi.PlotObservation, "upload_all", autospec=True
+    ) as mock_upload_all:
+        response = test_client.post("/plot-observations")
 
     assert response.status_code == 403
     mock_upload_all.assert_not_called()
 
 
-def test_plot_observations_get_dispatches_to_operator():
+def test_plot_observations_get_dispatches_to_operator(test_client):
     """Test that a get request to the plot-observations endpoint calls the expected
     operator class and function."""
-    # Set this to true so that exceptions can propagate if they occur
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.PlotObservation,
-            "get_vegbank_resources",
-            autospec=True,
-            return_value=({"ok": True}, 200),
-        ) as mock_get_vegbank_resources:
-            response = client.get("/plot-observations/ob.1")
+    with patch.object(
+        vegbankapi.PlotObservation,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=({"ok": True}, 200),
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/plot-observations/ob.1")
 
     assert response.status_code == 200
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_plot_observations_post_calls_upload_all_when_uploads_allowed(monkeypatch):
+def test_plot_observations_post_calls_upload_all_when_uploads_allowed(monkeypatch, test_client):
     """Test that a post request to the plot-observations endpoint is accepted when
     allow_uploads is true"""
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-    # Set this to true so that exceptions can propagate if they occur
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.PlotObservation,
-            "upload_all",
-            autospec=True,
-            return_value=({"uploaded": True}, 201),
-        ) as mock_upload_all:
-            response = client.post("/plot-observations")
+    with patch.object(
+        vegbankapi.PlotObservation,
+        "upload_all",
+        autospec=True,
+        return_value=({"uploaded": True}, 201),
+    ) as mock_upload_all:
+        response = test_client.post("/plot-observations")
 
     assert response.status_code == 201
     assert mock_upload_all.call_count == 1
 
 
-def test_taxon_observations_get_dispatches_to_operator():
+def test_taxon_observations_get_dispatches_to_operator(test_client):
     """Test that a get request to the taxon-observations endpoint calls the expected
     operator class and function."""
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.TaxonObservation,
-            "get_vegbank_resources",
-            autospec=True,
-            return_value=({"ok": True}, 200),
-        ) as mock_get_vegbank_resources:
-            response = client.get("/taxon-observations/to.1")
+    with patch.object(
+        vegbankapi.TaxonObservation,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=({"ok": True}, 200),
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/taxon-observations/to.1")
 
     assert response.status_code == 200
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(monkeypatch):
+def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(monkeypatch, test_client):
     """Test that a post request to the taxon-observations endpoint is accepted when
     allow_uploads is true and follows the expected upload sequence."""
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-    app.testing = True
 
     mock_conn = MagicMock()
     mock_db_connect_ctx = MagicMock()
@@ -88,23 +85,22 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(monk
     mock_df = MagicMock(name="taxon_observations_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
-    with app.test_client() as client:
-        with patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx), patch(
-            "vegbank.vegbankapi.pd.read_parquet",
-            return_value=mock_df,
-        ) as mock_read_parquet, patch.object(
-            vegbankapi.TaxonObservation,
-            "upload_strata_definitions",
-            autospec=True,
-            return_value={"counts": {"to": 1}},
-        ) as mock_upload_strata_definitions, patch(
-            "vegbank.vegbankapi.dry_run_check",
-            return_value=fake_response,
-        ) as mock_dry_run_check:
-            response = client.post(
-                "/taxon-observations",
-                data={"file": (io.BytesIO(b"dummy"), "taxon_observations.parquet")}
-            )
+    with patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx), patch(
+        "vegbank.vegbankapi.pd.read_parquet",
+        return_value=mock_df,
+    ) as mock_read_parquet, patch.object(
+        vegbankapi.TaxonObservation,
+        "upload_strata_definitions",
+        autospec=True,
+        return_value={"counts": {"to": 1}},
+    ) as mock_upload_strata_definitions, patch(
+        "vegbank.vegbankapi.dry_run_check",
+        return_value=fake_response,
+    ) as mock_dry_run_check:
+        response = test_client.post(
+            "/taxon-observations",
+            data={"file": (io.BytesIO(b"dummy"), "taxon_observations.parquet")}
+        )
 
     assert response.status_code == 201
     assert mock_read_parquet.call_count == 1
@@ -112,59 +108,51 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(monk
     assert mock_dry_run_check.call_count == 1
 
 
-def test_taxon_importances_get_dispatches_to_operator():
+def test_taxon_importances_get_dispatches_to_operator(test_client):
     """Test that a get request to the taxon-importances endpoint calls the expected
     operator class and function."""
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.TaxonImportance,
-            "get_vegbank_resources",
-            autospec=True,
-            return_value=({"ok": True}, 200),
-        ) as mock_get_vegbank_resources:
-            response = client.get("/taxon-importances/ti.1")
+    with patch.object(
+        vegbankapi.TaxonImportance,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=({"ok": True}, 200),
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/taxon-importances/ti.1")
 
     assert response.status_code == 200
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_taxon_importances_post_returns_405_when_uploads_allowed(monkeypatch):
+def test_taxon_importances_post_returns_405_when_uploads_allowed(monkeypatch, test_client):
     """Test that a post request to the taxon-importances endpoint returns 405 when
     allow_uploads is true."""
     # If this is not set to true, we won't observe the expected behaviour with code 405
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-    app.testing = True
-    with app.test_client() as client:
-        response = client.post("/taxon-importances")
+    response = test_client.post("/taxon-importances")
 
     assert response.status_code == 405
 
 
-def test_stem_counts_get_dispatches_to_operator():
+def test_stem_counts_get_dispatches_to_operator(test_client):
     """Test that a get request to the stem-counts endpoint calls the expected
     operator class and function."""
-    app.testing = True
-    with app.test_client() as client:
-        with patch.object(
-            vegbankapi.StemCount,
-            "get_vegbank_resources",
-            autospec=True,
-            return_value=({"ok": True}, 200),
-        ) as mock_get_vegbank_resources:
-            response = client.get("/stem-counts/sc.1")
+    with patch.object(
+        vegbankapi.StemCount,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=({"ok": True}, 200),
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/stem-counts/sc.1")
 
     assert response.status_code == 200
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_stem_counts_post_returns_405_when_uploads_allowed(monkeypatch):
+def test_stem_counts_post_returns_405_when_uploads_allowed(monkeypatch, test_client):
     """Test that a post request to the stem-counts endpoint returns 405 when
     allow_uploads is true."""
     # If this is not set to true, we won't observe the expected behaviour with code 405
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-    app.testing = True
-    with app.test_client() as client:
-        response = client.post("/stem-counts")
+    response = test_client.post("/stem-counts")
 
     assert response.status_code == 405
