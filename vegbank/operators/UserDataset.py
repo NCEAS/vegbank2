@@ -89,26 +89,7 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
-    test_dataset = {
-            'user_ds_code': 'test_ds_001',
-            'name': 'Test Dataset 001',
-            'description': 'A test dataset containing 10 observations.',
-            'type': 'upload',
-            'data': {
-                'observation':[
-                    'ob.2948',
-                    'ob.2949',
-                    'ob.2950',
-                    'ob.2951',
-                    'ob.2952',
-                    'ob.2953',
-                    'ob.2954',
-                    'ob.2955',
-                    'ob.2956',
-                    'ob.2957'
-                ]
-            }
-        }
+
     def upload_user_dataset(self, dataset, conn, validate=False):
         user_dataset_insert_sql = """
             INSERT INTO userdataset (datasetname, datasetdescription, datasettype, datasetstart)
