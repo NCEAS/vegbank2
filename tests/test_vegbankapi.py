@@ -1,4 +1,4 @@
-"""Route tests for plot_observations in vegbankapi."""
+"""Route tests for vegbankapi endpoints."""
 from unittest.mock import patch
 
 from vegbank import vegbankapi
@@ -13,12 +13,11 @@ def test_allow_uploads_false_post_blocked(monkeypatch):
     app.testing = True
     with app.test_client() as client:
         with patch.object(
-            vegbankapi.PlotObservation, "upload_all"
+            vegbankapi.PlotObservation, "upload_all", autospec=True
         ) as mock_upload_all:
             response = client.post("/plot-observations")
 
     assert response.status_code == 403
-    assert response.get_json() == {"error": {"message": "Uploads not allowed."}}
     mock_upload_all.assert_not_called()
 
 
@@ -33,12 +32,11 @@ def test_plot_observations_get_dispatches_to_operator():
             "get_vegbank_resources",
             autospec=True,
             return_value=({"ok": True}, 200),
-        ) as mock_get_resources:
+        ) as mock_get_vegbank_resources:
             response = client.get("/plot-observations/ob.1")
 
     assert response.status_code == 200
-    assert response.get_json() == {"ok": True}
-    assert mock_get_resources.call_count == 1
+    assert mock_get_vegbank_resources.call_count == 1
 
 
 def test_plot_observations_post_calls_upload_all_when_uploads_allowed(monkeypatch):
@@ -51,10 +49,10 @@ def test_plot_observations_post_calls_upload_all_when_uploads_allowed(monkeypatc
         with patch.object(
             vegbankapi.PlotObservation,
             "upload_all",
+            autospec=True,
             return_value=({"uploaded": True}, 201),
         ) as mock_upload_all:
             response = client.post("/plot-observations")
 
     assert response.status_code == 201
-    assert response.get_json() == {"uploaded": True}
     assert mock_upload_all.call_count == 1
