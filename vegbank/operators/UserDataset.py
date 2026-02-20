@@ -117,13 +117,12 @@ class UserDataset(Operator):
         with conn.cursor() as cur: 
             cur.execute(user_dataset_insert_sql, dataset_insert_data)
             user_dataset_id = cur.fetchone()['userdataset_id']
-            print(user_dataset_id)
+            
             new_codes_df = pd.DataFrame()
             new_codes_df['vb_record_id'] = [user_dataset_id]
             new_codes_df['vb_table_code'] = 'ds'
             new_codes_df['identifier_type'] = 'vb_code'
             new_codes_df['identifier_value'] =  'ds.' + new_codes_df['vb_record_id'].astype(str)
-            print(new_codes_df)
             code_inputs = list(new_codes_df.itertuples(index=False, name=None))
             sql = load_sql(self.queries_root, 'create_codes.sql')
             cur.executemany(sql, code_inputs, returning=True)
