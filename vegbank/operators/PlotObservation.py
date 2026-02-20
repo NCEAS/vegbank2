@@ -786,7 +786,6 @@ class PlotObservation(Operator):
                         {'user_ob_code': 'user_ob_code',
                          'vb_ob_code': 'vb_ob_code'})
                     dos = self.upload_disturbance(data['do'], conn)
-                    dataset['disturbanceobs'] = [item['vb_do_code'] for item in dos['resources']['do']]
                     to_return = combine_json_return(to_return, dos)
                 if data['cl'] is not None:
                     # TODO: Need validation to make sure this field exists; the
@@ -827,7 +826,6 @@ class PlotObservation(Operator):
                             }
                         )
                     srs = TaxonObservation(self.params).upload_strata_definitions(data['sr'], conn)
-                    dataset['strata'] = [item['vb_sr_code'] for item in srs['resources']['sr']]
                     to_return = combine_json_return(to_return, srs)
                 if data['sc'] is not None:
                     if data['pl'] is not None:
@@ -847,8 +845,6 @@ class PlotObservation(Operator):
                             }
                         )
                     scs = TaxonObservation(self.params).upload_strata_cover_data(data['sc'], conn)
-                    dataset['taxonobservation'] = [item['vb_to_code'] for item in scs['resources']['to']]
-                    dataset['taxonimportance'] = [item['vb_tm_code'] for item in scs['resources']['tm']]
                     to_return = combine_json_return(to_return, scs)
 
                 if data['ti'] is not None:
@@ -889,8 +885,6 @@ class PlotObservation(Operator):
                             }
                         )
                     sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
-                    dataset['stemcount'] = [item['vb_sc_code'] for item in sds['resources']['sc']]
-                    dataset['stemlocation'] = [item['vb_sl_code'] for item in sds['resources']['sl']]
                     to_return = combine_json_return(to_return, sds)
                 if data['cr'] is not None:
                     if data['py'] is not None:
