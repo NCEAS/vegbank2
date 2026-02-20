@@ -110,3 +110,32 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(monk
     assert mock_read_parquet.call_count == 1
     assert mock_upload_strata_definitions.call_count == 1
     assert mock_dry_run_check.call_count == 1
+
+
+def test_taxon_importances_get_dispatches_to_operator():
+    """Test that a get request to the taxon-importances endpoint calls the expected
+    operator class and function."""
+    app.testing = True
+    with app.test_client() as client:
+        with patch.object(
+            vegbankapi.TaxonImportance,
+            "get_vegbank_resources",
+            autospec=True,
+            return_value=({"ok": True}, 200),
+        ) as mock_get_vegbank_resources:
+            response = client.get("/taxon-importances/ti.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_taxon_importances_post_returns_405_when_uploads_allowed(monkeypatch):
+    """Test that a post request to the taxon-importances endpoint returns 405 when
+    allow_uploads is true."""
+    # If this is not set to true, we won't observe the expected behaviour with code 405
+    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
+    app.testing = True
+    with app.test_client() as client:
+        response = client.post("/taxon-importances")
+
+    assert response.status_code == 405
