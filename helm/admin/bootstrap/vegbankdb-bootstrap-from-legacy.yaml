@@ -1,0 +1,129 @@
+## This pod is intended to be run once to bootstrap the vegbank database with the initial data-only
+## dump from the legacy vegbank production site. See the README for details
+
+## 1. Prerequisites:
+##
+## - Ensure the target Postgres cluster (CNPG) is running
+## - As prod-k8s admin, create the PV cephfs-vegbankdb-bootstrap-pgdata using the definition in
+##   helm/admin/bootstrap/pv--vegbankdb-bootstrap-cephfs.yaml
+## - Ensure the vegbankdbcreds secret exists, containing postgres username and password
+## - Ensure the data dump file is at: knbvm:/mnt/ceph/repos/vegbank/vegbank_pg10_dataonly.dump
+
+---
+# 2. Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vegbankdb-init-pvc-standalone
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: cephfs-vegbankdb-bootstrap-pgdata
+  storageClassName: csi-cephfs-sc
+
+---
+# 3. Pod to execute the Flyway/Restore logic
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vegbankdb-bootstrap-pod
+spec:
+  restartPolicy: Never
+  initContainers:
+    # --- STEP 0: Wait for Postgres ---
+    - name: wait-for-postgres
+      image: postgres:17-alpine
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "Waiting for PostgreSQL at ${PGHOST}..."
+          while ! pg_isready -h ${PGHOST} -p 5432 -U ${PGUSER}; do
+            echo "Postgres not ready yet. Retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "PostgreSQL is ready!"
+      env: &db-env
+        - name: PGHOST
+          value: "vegbankdb-cnpg-rw"
+        - name: PGDATABASE
+          value: "vegbank"
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef:
+              name: vegbankdbcreds
+              key: username
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vegbankdbcreds
+              key: password
+
+    # --- STEP 1: Flyway migrations up to V1.4 ---
+    - name: flyway-part-1
+      image: flyway/flyway:9-alpine
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          export FLYWAY_URL="jdbc:postgresql://${PGHOST}:5432/${PGDATABASE}"
+          export FLYWAY_USER=$PGUSER
+          export FLYWAY_PASSWORD=$PGPASSWORD
+          export FLYWAY_LOCATIONS="filesystem:/flyway/sql"
+          
+          echo "Step 1: Running Flyway migrations up to and including V1.4..."
+          flyway migrate -target="1.4"
+      env: *db-env
+      volumeMounts:
+        - name: migrations-volume
+          mountPath: /flyway/sql
+
+    # --- STEP 2: Restore Data ---
+    - name: restore-data
+      image: postgres:17-alpine
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          export DUMP_FILE_NAME="vegbank_pg10_dataonly.dump"
+          echo "Step 2: Restoring data from ${DUMP_FILE_NAME} located at the root of the PV..."
+          pg_restore --exit-on-error -j 2 -h ${PGHOST} -p 5432 -U ${PGUSER} -d ${PGDATABASE} /data/${DUMP_FILE_NAME}
+      env: *db-env
+      resources:
+        requests:
+          cpu: "1"
+          memory: "1Gi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+      volumeMounts:
+        - name: data-volume
+          mountPath: /data
+
+  # --- STEP 3: Remaining Flyway Migrations ---
+  containers:
+    - name: flyway-part-2
+      image: flyway/flyway:9-alpine
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          export FLYWAY_URL="jdbc:postgresql://${PGHOST}:5432/${PGDATABASE}"
+          export FLYWAY_USER=$PGUSER
+          export FLYWAY_PASSWORD=$PGPASSWORD
+          export FLYWAY_LOCATIONS="filesystem:/flyway/sql"
+          
+          echo "Step 3: Running remaining Flyway migrations..."
+          flyway migrate
+          echo "Bootstrap complete!"
+      env: *db-env
+      volumeMounts:
+        - name: migrations-volume
+          mountPath: /flyway/sql
+
+  volumes:
+    - name: migrations-volume
+      configMap:
+        name: vegbank-db-migrations
+    - name: data-volume
+      persistentVolumeClaim:
+        claimName: vegbankdb-init-pvc-standalone
