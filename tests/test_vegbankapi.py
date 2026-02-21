@@ -53,7 +53,10 @@ def test_plot_observations_get_dispatches_to_operator(test_client):
         vegbankapi.PlotObservation,
         "get_vegbank_resources",
         autospec=True,
-        return_value=({"ok": True}, 200),
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
     ) as mock_get_vegbank_resources:
         response = test_client.get("/plot-observations/ob.1")
 
@@ -68,7 +71,10 @@ def test_plot_observations_post_calls_upload_all_when_uploads_allowed(test_clien
         vegbankapi.PlotObservation,
         "upload_all",
         autospec=True,
-        return_value=({"uploaded": True}, 201),
+        return_value=(
+            {"uploaded": True},
+            201,
+        ),  # Note: The return value above is purely placeholder data
     ) as mock_upload_all:
         response = test_client.post("/plot-observations")
 
@@ -83,7 +89,10 @@ def test_taxon_observations_get_dispatches_to_operator(test_client):
         vegbankapi.TaxonObservation,
         "get_vegbank_resources",
         autospec=True,
-        return_value=({"ok": True}, 200),
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
     ) as mock_get_vegbank_resources:
         response = test_client.get("/taxon-observations/to.1")
 
@@ -110,7 +119,9 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(
             vegbankapi.TaxonObservation,
             "upload_strata_definitions",
             autospec=True,
-            return_value={"counts": {"to": 1}},
+            return_value={
+                "counts": {"to": 1}
+            },  # Note: The return value above is purely placeholder data
         ) as mock_upload_strata_definitions,
         patch(
             "vegbank.vegbankapi.dry_run_check",
@@ -135,7 +146,10 @@ def test_taxon_importances_get_dispatches_to_operator(test_client):
         vegbankapi.TaxonImportance,
         "get_vegbank_resources",
         autospec=True,
-        return_value=({"ok": True}, 200),
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
     ) as mock_get_vegbank_resources:
         response = test_client.get("/taxon-importances/ti.1")
 
@@ -158,7 +172,10 @@ def test_stem_counts_get_dispatches_to_operator(test_client):
         vegbankapi.StemCount,
         "get_vegbank_resources",
         autospec=True,
-        return_value=({"ok": True}, 200),
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
     ) as mock_get_vegbank_resources:
         response = test_client.get("/stem-counts/sc.1")
 
@@ -193,7 +210,9 @@ def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
             vegbankapi.TaxonObservation,
             "upload_strata_cover_data",
             autospec=True,
-            return_value={"counts": {"ti": 1}},
+            return_value={
+                "counts": {"ti": 1}
+            },  # Note: The return value above is purely placeholder data
         ) as mock_upload_strata_cover_data,
         patch(
             "vegbank.vegbankapi.dry_run_check",
