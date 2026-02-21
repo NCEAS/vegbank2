@@ -7,8 +7,8 @@ from vegbank import vegbankapi
 from vegbank.vegbankapi import app
 
 
-@pytest.fixture
-def test_client():
+@pytest.fixture(name="test_client")
+def setup_test_client():
     """Provide a Flask test client with testing mode enabled."""
     app.testing = True
     with app.test_client() as client:
