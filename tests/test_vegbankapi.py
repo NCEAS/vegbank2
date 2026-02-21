@@ -237,3 +237,51 @@ def test_strata_cover_data_post_returns_500_on_upload_error(test_client):
         response = test_client.post("/strata-cover-data")
 
     assert response.status_code == 500
+
+
+def test_stem_data_post_calls_upload_pipeline_when_uploads_allowed(
+    test_client, mock_db_connection_context
+):
+    """Test that a post request to the stem-data endpoint is accepted
+    when allow_uploads is true and follows the expected upload sequence."""
+    mock_db_connect_ctx = mock_db_connection_context
+    mock_df = MagicMock(name="stem_data_dataframe")
+    fake_response = ({"uploaded": True}, 201)
+
+    with (
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch(
+            "vegbank.vegbankapi.read_parquet_file",
+            return_value=mock_df,
+        ) as mock_read_parquet_file,
+        patch.object(
+            vegbankapi.TaxonObservation,
+            "upload_stem_data",
+            autospec=True,
+            return_value={
+                "counts": {"stl": 1, "sc": 1}
+            },  # Note: The return value above is purely placeholder data
+        ) as mock_upload_stem_data,
+        patch(
+            "vegbank.vegbankapi.dry_run_check",
+            return_value=fake_response,
+        ) as mock_dry_run_check,
+    ):
+        response = test_client.post("/stem-data")
+
+    assert response.status_code == 201
+    assert mock_read_parquet_file.call_count == 1
+    assert mock_upload_stem_data.call_count == 1
+    assert mock_dry_run_check.call_count == 1
+
+
+def test_stem_data_post_returns_500_on_upload_error(test_client):
+    """Test that a post request to the stem-data endpoint returns 500
+    when an upload error occurs."""
+    with patch(
+        "vegbank.vegbankapi.read_parquet_file",
+        side_effect=Exception("Forced exception"),
+    ):
+        response = test_client.post("/stem-data")
+
+    assert response.status_code == 500
