@@ -625,3 +625,41 @@ def test_projects_post_returns_500_on_upload_error(test_client):
         response = test_client.post("/projects")
 
     assert response.status_code == 500
+
+
+def test_cover_methods_get_dispatches_to_operator(test_client):
+    """Test that a get request to the cover-methods endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.CoverMethod,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/cover-methods/cm.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_cover_methods_post_calls_upload_cover_method_when_uploads_allowed(
+    test_client,
+):
+    """Test that a post request to the cover-methods endpoint is accepted when
+    allow_uploads is true."""
+    with patch.object(
+        vegbankapi.CoverMethod,
+        "upload_cover_method",
+        autospec=True,
+        return_value=(
+            {"uploaded": True},
+            201,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_upload_cover_method:
+        response = test_client.post("/cover-methods")
+
+    assert response.status_code == 201
+    assert mock_upload_cover_method.call_count == 1
