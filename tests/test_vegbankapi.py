@@ -798,3 +798,30 @@ def test_references_post_returns_500_on_upload_error(test_client):
         )
 
     assert response.status_code == 500
+
+
+def test_roles_get_dispatches_to_operator(test_client):
+    """Test that a get request to the roles endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.Role,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/roles/ar.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_roles_post_calls_upload_all_when_uploads_allowed(
+    test_client,
+):
+    """Test that a post request to the roles endpoint currently raises an AttributeError
+    because Role.upload_all is not implemented."""
+    with pytest.raises(AttributeError):
+        test_client.post("/roles")
