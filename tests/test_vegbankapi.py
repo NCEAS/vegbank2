@@ -15,6 +15,12 @@ def setup_test_client():
         yield client
 
 
+@pytest.fixture(autouse=True)
+def default_allow_uploads_true(monkeypatch):
+    """Default uploads to enabled unless a test overrides it."""
+    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
+
+
 @pytest.fixture(name="mock_db_connection_context")
 def setup_mock_db_connection_context():
     """Provide a mocked database connection and context manager."""
@@ -56,11 +62,10 @@ def test_plot_observations_get_dispatches_to_operator(test_client):
 
 
 def test_plot_observations_post_calls_upload_all_when_uploads_allowed(
-    monkeypatch, test_client
+    test_client
 ):
     """Test that a post request to the plot-observations endpoint is accepted when
     allow_uploads is true."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
     with patch.object(
         vegbankapi.PlotObservation,
         "upload_all",
@@ -89,12 +94,10 @@ def test_taxon_observations_get_dispatches_to_operator(test_client):
 
 
 def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(
-    monkeypatch, test_client, mock_db_connection_context
+    test_client, mock_db_connection_context
 ):
     """Test that a post request to the taxon-observations endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-
     mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="taxon_observations_dataframe")
     fake_response = ({"uploaded": True}, 201)
@@ -143,12 +146,10 @@ def test_taxon_importances_get_dispatches_to_operator(test_client):
 
 
 def test_taxon_importances_post_returns_405_when_uploads_allowed(
-    monkeypatch, test_client
+    test_client
 ):
     """Test that a post request to the taxon-importances endpoint returns 405
     when allow_uploads is true."""
-    # If this is not set to true, we won't observe the expected behaviour with code 405
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
     response = test_client.post("/taxon-importances")
 
     assert response.status_code == 405
@@ -169,23 +170,19 @@ def test_stem_counts_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_stem_counts_post_returns_405_when_uploads_allowed(monkeypatch, test_client):
+def test_stem_counts_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the stem-counts endpoint returns 405 when
     allow_uploads is true."""
-    # If this is not set to true, we won't observe the expected behaviour with code 405
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
     response = test_client.post("/stem-counts")
 
     assert response.status_code == 405
 
 
 def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
-    monkeypatch, test_client, mock_db_connection_context
+    test_client, mock_db_connection_context
 ):
     """Test that a post request to the strata-cover-data endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-
     mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="strata_cover_dataframe")
     fake_response = ({"uploaded": True}, 201)
@@ -215,11 +212,9 @@ def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
     assert mock_dry_run_check.call_count == 1
 
 
-def test_strata_cover_data_post_returns_500_on_upload_error(monkeypatch, test_client):
+def test_strata_cover_data_post_returns_500_on_upload_error(test_client):
     """Test that a post request to the strata-cover-data endpoint returns 500
     when an upload error occurs."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
-
     with patch(
         "vegbank.vegbankapi.read_parquet_file",
         side_effect=Exception("Forced exceptipn"),
