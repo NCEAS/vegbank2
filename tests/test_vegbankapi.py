@@ -409,7 +409,7 @@ def test_community_interpretations_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_community_interpretations_post_calls_are_rejected(
+def test_community_interpretations_post_returns_405_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the community-interpretations endpoint returns 405
