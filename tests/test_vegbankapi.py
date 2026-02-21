@@ -351,3 +351,41 @@ def test_taxon_interpretations_post_returns_500_on_upload_error(test_client):
         response = test_client.post("/taxon-interpretations")
 
     assert response.status_code == 500
+
+
+def test_community_classifications_get_dispatches_to_operator(test_client):
+    """Test that a get request to the community-classifications endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.CommunityClassification,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/community-classifications/cc.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_community_classifications_post_calls_upload_all_when_uploads_allowed(
+    test_client,
+):
+    """Test that a post request to the community-classifications endpoint is accepted when
+    allow_uploads is true."""
+    with patch.object(
+        vegbankapi.CommunityClassification,
+        "upload_all",
+        autospec=True,
+        return_value=(
+            {"uploaded": True},
+            201,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_upload_all:
+        response = test_client.post("/community-classifications")
+
+    assert response.status_code == 201
+    assert mock_upload_all.call_count == 1
