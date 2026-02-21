@@ -285,3 +285,69 @@ def test_stem_data_post_returns_500_on_upload_error(test_client):
         response = test_client.post("/stem-data")
 
     assert response.status_code == 500
+
+
+def test_taxon_interpretations_get_dispatches_to_operator(test_client):
+    """Test that a get request to the taxon-interpretations endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.TaxonInterpretation,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/taxon-interpretations/ti.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_taxon_interpretations_post_calls_upload_pipeline_when_uploads_allowed(
+    test_client, mock_db_connection_context
+):
+    """Test that a post request to the taxon-interpretations endpoint is accepted
+    when allow_uploads is true and follows the expected upload sequence."""
+    mock_db_connect_ctx = mock_db_connection_context
+    mock_df = MagicMock(name="taxon_interpretations_dataframe")
+    fake_response = {"uploaded": True}
+
+    with (
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch(
+            "vegbank.vegbankapi.read_parquet_file",
+            return_value=mock_df,
+        ) as mock_read_parquet_file,
+        patch.object(
+            vegbankapi.TaxonObservation,
+            "upload_taxon_interpretations",
+            autospec=True,
+            return_value={
+                "counts": {"ti": 1}
+            },  # Note: The return value above is purely placeholder data
+        ) as mock_upload_taxon_interpretations,
+        patch(
+            "vegbank.vegbankapi.dry_run_check",
+            return_value=fake_response,
+        ) as mock_dry_run_check,
+    ):
+        response = test_client.post("/taxon-interpretations")
+
+    assert response.status_code == 200
+    assert mock_read_parquet_file.call_count == 1
+    assert mock_upload_taxon_interpretations.call_count == 1
+    assert mock_dry_run_check.call_count == 1
+
+
+def test_taxon_interpretations_post_returns_500_on_upload_error(test_client):
+    """Test that a post request to the taxon-interpretations endpoint returns 500
+    when an upload error occurs."""
+    with patch(
+        "vegbank.vegbankapi.read_parquet_file",
+        side_effect=Exception("Forced exception"),
+    ):
+        response = test_client.post("/taxon-interpretations")
+
+    assert response.status_code == 500
