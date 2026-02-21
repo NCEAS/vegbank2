@@ -61,9 +61,7 @@ def test_plot_observations_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_plot_observations_post_calls_upload_all_when_uploads_allowed(
-    test_client
-):
+def test_plot_observations_post_calls_upload_all_when_uploads_allowed(test_client):
     """Test that a post request to the plot-observations endpoint is accepted when
     allow_uploads is true."""
     with patch.object(
@@ -145,9 +143,7 @@ def test_taxon_importances_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_taxon_importances_post_returns_405_when_uploads_allowed(
-    test_client
-):
+def test_taxon_importances_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the taxon-importances endpoint returns 405
     when allow_uploads is true."""
     response = test_client.post("/taxon-importances")
