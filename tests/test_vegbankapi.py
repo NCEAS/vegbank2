@@ -493,3 +493,75 @@ def test_plant_concepts_post_calls_upload_all_when_uploads_allowed(
 
     assert response.status_code == 201
     assert mock_upload_all.call_count == 1
+
+
+def test_parties_get_dispatches_to_operator(test_client):
+    """Test that a get request to the parties endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.Party,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/parties/py.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_parties_post_calls_upload_pipeline_when_uploads_allowed(
+    test_client, mock_db_connection_context
+):
+    """Test that a post request to the parties endpoint is accepted
+    when allow_uploads is true and follows the expected upload sequence."""
+    mock_db_connect_ctx = mock_db_connection_context
+    mock_df = MagicMock(name="parties_dataframe")
+    fake_response = {"uploaded": True}
+
+    with (
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch(
+            "vegbank.vegbankapi.pd.read_parquet",
+            return_value=mock_df,
+        ) as mock_read_parquet,
+        patch.object(
+            vegbankapi.Party,
+            "upload_parties",
+            autospec=True,
+            return_value={
+                "counts": {"py": 1}
+            },  # Note: The return value above is purely placeholder data
+        ) as mock_upload_parties,
+        patch(
+            "vegbank.vegbankapi.dry_run_check",
+            return_value=fake_response,
+        ) as mock_dry_run_check,
+    ):
+        response = test_client.post(
+            "/parties",
+            data={"file": (io.BytesIO(b"dummy"), "parties.parquet")},
+        )
+
+    assert response.status_code == 200
+    assert mock_read_parquet.call_count == 1
+    assert mock_upload_parties.call_count == 1
+    assert mock_dry_run_check.call_count == 1
+
+
+def test_parties_post_returns_500_on_upload_error(test_client):
+    """Test that a post request to the parties endpoint returns 500
+    when an upload error occurs."""
+    with patch(
+        "vegbank.vegbankapi.pd.read_parquet",
+        side_effect=Exception("Forced exception"),
+    ):
+        response = test_client.post(
+            "/parties",
+            data={"file": (io.BytesIO(b"dummy"), "parties.parquet")},
+        )
+
+    assert response.status_code == 500
