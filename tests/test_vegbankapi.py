@@ -895,3 +895,59 @@ def test_overview_get_dispatches_to_repository(test_client):
 
     assert response.status_code == 200
     assert mock_get_summary_stats.call_count == 1
+
+
+def test_identifiers_get_returns_400_when_identifier_missing(test_client):
+    """Test that a get request to the identifiers endpoint returns 400 when
+    no identifier value is provided."""
+    response = test_client.get("/identifiers/")
+
+    assert response.status_code == 400
+
+
+def test_identifiers_get_returns_200_when_identifier_found(test_client):
+    """Test that a get request to the identifiers endpoint returns 200 when
+    a matching identifier value is found."""
+    with patch.object(
+        vegbankapi.IdentifiersQueries,
+        "get_identifier_by_value",
+        autospec=True,
+        return_value={
+            "vb_table_code": "to",
+            "vb_record_id": 123,
+        },  # Note: The return value above is purely placeholder data
+    ) as mock_get_identifier_by_value:
+        response = test_client.get("/identifiers/test_identifier")
+
+    assert response.status_code == 200
+    assert mock_get_identifier_by_value.call_count == 1
+
+
+def test_identifiers_get_returns_404_when_identifier_not_found(test_client):
+    """Test that a get request to the identifiers endpoint returns 404 when
+    a matching identifier value is not found."""
+    with patch.object(
+        vegbankapi.IdentifiersQueries,
+        "get_identifier_by_value",
+        autospec=True,
+        return_value=None,
+    ) as mock_get_identifier_by_value:
+        response = test_client.get("/identifiers/test_identifier")
+
+    assert response.status_code == 404
+    assert mock_get_identifier_by_value.call_count == 1
+
+
+def test_identifiers_get_returns_500_on_identifier_query_error(test_client):
+    """Test that a get request to the identifiers endpoint returns 500 when
+    an identifier query error occurs."""
+    with patch.object(
+        vegbankapi.IdentifiersQueries,
+        "get_identifier_by_value",
+        autospec=True,
+        side_effect=Exception("Forced exception"),
+    ) as mock_get_identifier_by_value:
+        response = test_client.get("/identifiers/test_identifier")
+
+    assert response.status_code == 500
+    assert mock_get_identifier_by_value.call_count == 1
