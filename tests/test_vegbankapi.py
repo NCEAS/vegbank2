@@ -170,3 +170,56 @@ def test_stem_counts_post_returns_405_when_uploads_allowed(monkeypatch, test_cli
     response = test_client.post("/stem-counts")
 
     assert response.status_code == 405
+
+
+def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
+    monkeypatch, test_client
+):
+    """Test that a post request to the strata-cover-data endpoint is accepted
+    when allow_uploads is true and follows the expected upload sequence."""
+    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
+
+    mock_conn = MagicMock()
+    mock_db_connect_ctx = MagicMock()
+    mock_db_connect_ctx.__enter__.return_value = mock_conn
+    mock_db_connect_ctx.__exit__.return_value = False
+    mock_df = MagicMock(name="strata_cover_dataframe")
+    fake_response = ({"uploaded": True}, 201)
+
+    with (
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch(
+            "vegbank.vegbankapi.read_parquet_file",
+            return_value=mock_df,
+        ) as mock_read_parquet_file,
+        patch.object(
+            vegbankapi.TaxonObservation,
+            "upload_strata_cover_data",
+            autospec=True,
+            return_value={"counts": {"ti": 1}},
+        ) as mock_upload_strata_cover_data,
+        patch(
+            "vegbank.vegbankapi.dry_run_check",
+            return_value=fake_response,
+        ) as mock_dry_run_check,
+    ):
+        response = test_client.post("/strata-cover-data")
+
+    assert response.status_code == 201
+    assert mock_read_parquet_file.call_count == 1
+    assert mock_upload_strata_cover_data.call_count == 1
+    assert mock_dry_run_check.call_count == 1
+
+
+def test_strata_cover_data_post_returns_500_on_upload_error(monkeypatch, test_client):
+    """Test that a post request to the strata-cover-data endpoint returns 500
+    when an upload error occurs."""
+    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
+
+    with patch(
+        "vegbank.vegbankapi.read_parquet_file",
+        side_effect=Exception("Forced exceptipn"),
+    ):
+        response = test_client.post("/strata-cover-data")
+
+    assert response.status_code == 500
