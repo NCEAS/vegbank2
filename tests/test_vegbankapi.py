@@ -727,3 +727,74 @@ def test_strata_post_returns_405_when_uploads_allowed(test_client):
     response = test_client.post("/strata")
 
     assert response.status_code == 405
+
+
+def test_references_get_dispatches_to_operator(test_client):
+    """Test that a get request to the references endpoint calls the expected
+    operator class and function."""
+    with patch.object(
+        vegbankapi.Reference,
+        "get_vegbank_resources",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_vegbank_resources:
+        response = test_client.get("/references/rf.1")
+
+    assert response.status_code == 200
+    assert mock_get_vegbank_resources.call_count == 1
+
+
+def test_references_post_calls_upload_pipeline_when_uploads_allowed(
+    test_client, mock_db_connection_context
+):
+    """Test that a post request to the references endpoint is accepted
+    when allow_uploads is true and follows the expected upload sequence."""
+    mock_df = MagicMock(name="references_dataframe")
+    fake_response = {"uploaded": True}
+
+    with (
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
+        patch(
+            "vegbank.vegbankapi.pd.read_parquet",
+            return_value=mock_df,
+        ) as mock_read_parquet,
+        patch.object(
+            vegbankapi.Reference,
+            "upload_references",
+            autospec=True,
+            return_value={
+                "counts": {"rf": 1}
+            },  # Note: The return value above is purely placeholder data
+        ) as mock_upload_references,
+        patch(
+            "vegbank.vegbankapi.dry_run_check",
+            return_value=fake_response,
+        ) as mock_dry_run_check,
+    ):
+        response = test_client.post(
+            "/references",
+            data={"file": (io.BytesIO(b"dummy"), "references.parquet")},
+        )
+
+    assert response.status_code == 200
+    assert mock_read_parquet.call_count == 1
+    assert mock_upload_references.call_count == 1
+    assert mock_dry_run_check.call_count == 1
+
+
+def test_references_post_returns_500_on_upload_error(test_client):
+    """Test that a post request to the references endpoint returns 500
+    when an upload error occurs."""
+    with patch(
+        "vegbank.vegbankapi.pd.read_parquet",
+        side_effect=Exception("Forced exception"),
+    ):
+        response = test_client.post(
+            "/references",
+            data={"file": (io.BytesIO(b"dummy"), "references.parquet")},
+        )
+
+    assert response.status_code == 500
