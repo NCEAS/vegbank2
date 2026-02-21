@@ -105,12 +105,11 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(
 ):
     """Test that a post request to the taxon-observations endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="taxon_observations_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
     with (
-        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
         patch(
             "vegbank.vegbankapi.pd.read_parquet",
             return_value=mock_df,
@@ -196,12 +195,11 @@ def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
 ):
     """Test that a post request to the strata-cover-data endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="strata_cover_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
     with (
-        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
         patch(
             "vegbank.vegbankapi.read_parquet_file",
             return_value=mock_df,
@@ -244,12 +242,11 @@ def test_stem_data_post_calls_upload_pipeline_when_uploads_allowed(
 ):
     """Test that a post request to the stem-data endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="stem_data_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
     with (
-        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
         patch(
             "vegbank.vegbankapi.read_parquet_file",
             return_value=mock_df,
@@ -310,12 +307,11 @@ def test_taxon_interpretations_post_calls_upload_pipeline_when_uploads_allowed(
 ):
     """Test that a post request to the taxon-interpretations endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="taxon_interpretations_dataframe")
     fake_response = {"uploaded": True}
 
     with (
-        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
         patch(
             "vegbank.vegbankapi.read_parquet_file",
             return_value=mock_df,
@@ -518,12 +514,11 @@ def test_parties_post_calls_upload_pipeline_when_uploads_allowed(
 ):
     """Test that a post request to the parties endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
-    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="parties_dataframe")
     fake_response = {"uploaded": True}
 
     with (
-        patch("vegbank.vegbankapi.connect", return_value=mock_db_connect_ctx),
+        patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
         patch(
             "vegbank.vegbankapi.pd.read_parquet",
             return_value=mock_df,
