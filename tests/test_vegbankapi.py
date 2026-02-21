@@ -877,3 +877,21 @@ def test_user_datasets_post_returns_405_when_uploads_allowed(test_client):
     response = test_client.post("/user-datasets")
 
     assert response.status_code == 405
+
+
+def test_overview_get_dispatches_to_repository(test_client):
+    """Test that a get request to the overview endpoint calls the expected
+    repository class and function."""
+    with patch.object(
+        vegbankapi.Overview,
+        "get_summary_stats",
+        autospec=True,
+        return_value=(
+            {"ok": True},
+            200,
+        ),  # Note: The return value above is purely placeholder data
+    ) as mock_get_summary_stats:
+        response = test_client.get("/overview")
+
+    assert response.status_code == 200
+    assert mock_get_summary_stats.call_count == 1
