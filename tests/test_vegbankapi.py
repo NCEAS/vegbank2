@@ -15,6 +15,16 @@ def setup_test_client():
         yield client
 
 
+@pytest.fixture(name="mock_db_connection_context")
+def setup_mock_db_connection_context():
+    """Provide a mocked database connection and context manager."""
+    mock_conn = MagicMock()
+    mock_db_connect_ctx = MagicMock()
+    mock_db_connect_ctx.__enter__.return_value = mock_conn
+    mock_db_connect_ctx.__exit__.return_value = False
+    return mock_db_connect_ctx
+
+
 def test_plot_observations_post_rejected_when_allow_uploads_false(
     monkeypatch, test_client
 ):
@@ -79,16 +89,13 @@ def test_taxon_observations_get_dispatches_to_operator(test_client):
 
 
 def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(
-    monkeypatch, test_client
+    monkeypatch, test_client, mock_db_connection_context
 ):
     """Test that a post request to the taxon-observations endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
 
-    mock_conn = MagicMock()
-    mock_db_connect_ctx = MagicMock()
-    mock_db_connect_ctx.__enter__.return_value = mock_conn
-    mock_db_connect_ctx.__exit__.return_value = False
+    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="taxon_observations_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
@@ -173,16 +180,13 @@ def test_stem_counts_post_returns_405_when_uploads_allowed(monkeypatch, test_cli
 
 
 def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
-    monkeypatch, test_client
+    monkeypatch, test_client, mock_db_connection_context
 ):
     """Test that a post request to the strata-cover-data endpoint is accepted
     when allow_uploads is true and follows the expected upload sequence."""
     monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
 
-    mock_conn = MagicMock()
-    mock_db_connect_ctx = MagicMock()
-    mock_db_connect_ctx.__enter__.return_value = mock_conn
-    mock_db_connect_ctx.__exit__.return_value = False
+    mock_db_connect_ctx = mock_db_connection_context
     mock_df = MagicMock(name="strata_cover_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
