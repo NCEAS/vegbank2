@@ -6,6 +6,11 @@ Decorator overview
 ------------------
 ``require_token``
     Protects an endpoint that requires *any* valid, unexpired JWT issued by Keycloak.
+
+``require_scope(scope)``
+    Same as ``require_token`` but additionally asserts that the tokencontains correct 
+    Vegbank scope (e.g. ``"vegbank:admin"``, ``"vegbank:contributor"``, ``"vegbank:user"``).
+
 """
 
 import functools
@@ -24,6 +29,11 @@ _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 
 oauth = OAuth()
 auth_bp = Blueprint("auth", __name__)
+
+# Keycloak vegbank specific scopes
+SCOPE_ADMIN = "vegbank:admin"
+SCOPE_CONTRIBUTOR = "vegbank:contributor"
+SCOPE_USER = "vegbank:user"
 
 
 # Loading client secrets from file
@@ -166,7 +176,6 @@ def _token_error_response(exc):
     return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
 
 
-
 def require_token(f):
     """Decorator – protect an endpoint that requires *any* valid JWT.
 
@@ -195,6 +204,61 @@ def require_token(f):
         return f(claims, *args, **kwargs)
 
     return decorated
+
+
+def require_scope(required_scope: str):
+    """Decorator factory – protect an endpoint that requires a specific scope.
+
+    Supported VegBank scopes:
+
+    * ``vegbank:admin``       – admin ops
+    * ``vegbank:contributor`` – create/update access
+    * ``vegbank:user``        – read-only access
+
+    Returns ``401`` for missing / invalid tokens, ``403`` if the required scope
+    is absent from the token.
+
+    Args:
+        required_scope: Valid OAuth 2.0 scope string that must be present in the token's ``scope`` claim.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        def decorated(*args, **kwargs):
+            token_str = _extract_bearer_token()
+            if not token_str:
+                return jsonify({"error": "Missing or invalid Authorization header"}), 401
+
+            try:
+                claims = _decode_and_validate_token(token_str)
+            except Exception as exc:  # pylint: disable=broad-except
+                return _token_error_response(exc)
+
+            # Scope check
+            token_scopes = claims.get("scope", "").split()
+            if required_scope not in token_scopes:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Insufficient scope. Required: {required_scope}",
+                            "available_scopes": token_scopes,
+                        }
+                    ),
+                    403,
+                )
+
+            # Store in request-scoped context for downstream helpers
+            g.token_claims = claims
+            session["userinfo"] = {
+                "sub": claims.get("sub"),
+                "preferred_username": claims.get("preferred_username"),
+                "email": claims.get("email"),
+                "name": claims.get("name"),
+            }
+            return f(claims, *args, **kwargs)
+
+        return decorated
+
+    return decorator
 
 
 @auth_bp.route("/login", methods=["GET"])
