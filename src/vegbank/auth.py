@@ -73,10 +73,12 @@ def login():
     Redirects the user to the Keycloak login page. After successful
     authentication, Keycloak redirects back to the /authorize callback.
 
+    The redirect URI can be set explicitly via the ``OIDC_REDIRECT_URI``
+
     Returns:
         302 redirect to the Keycloak login page.
     """
-    redirect_uri = url_for("auth.authorize", _external=True)
+    redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
     return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
 
 

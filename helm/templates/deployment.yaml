@@ -163,6 +163,11 @@ spec:
             # Path to the mounted OIDC client secrets JSON file
             - name: KEYCLOAK_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
+            {{- if .Values.oidcRedirectUri }}
+            # Explicit OIDC redirect URI - required when behind a path-rewriting ingress
+            - name: OIDC_REDIRECT_URI
+              value: {{ .Values.oidcRedirectUri | quote }}
+            {{- end }}
             # Secret key for signing Flask sessions (must be stable across restarts)
             - name: FLASK_SECRET_KEY
               valueFrom:

@@ -6,6 +6,9 @@ replicaCount: 1
 
 allowUploads: false
 
+## @param oidcRedirectUri - Explicit OIDC redirect URI used in the login flow.
+oidcRedirectUri: "https://api-dev.vegbank.org/authorize"
+
 ## @section Database
 ## configuration for the PostgreSQL database used by VegBank.
 database:
