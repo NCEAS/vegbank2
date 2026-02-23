@@ -3,11 +3,16 @@
 Implements OIDC / OAuth 2.0 login via Keycloak using authlib.
 """
 
+import functools
 import json
 import os
 
+import requests as _requests
+
 from authlib.integrations.flask_client import OAuth
-from flask import Blueprint, jsonify, session, url_for
+from authlib.jose import JsonWebKey, jwt
+from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenError
+from flask import Blueprint, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
@@ -65,6 +70,96 @@ def init_oauth(app) -> bool:
 
     print("[auth] OAuth client initialised.")
     return True
+
+
+@functools.lru_cache(maxsize=1)
+def get_jwks_keys():
+    """Fetch and cache the JWKS signing keys from the OIDC provider.
+
+    Returns:
+        authlib.jose.JsonWebKey: A ``JsonWebKeySet`` ready for ``jwt.decode``.
+
+    Raises:
+        ValueError: If the OIDC server metadata does not expose a ``jwks_uri``.
+        requests.RequestException: If errors while fetching the JWKS.
+    """
+    metadata = oauth.vegbank_oidc.load_server_metadata()
+    jwks_uri = metadata.get("jwks_uri")
+    if not jwks_uri:
+        raise ValueError("OIDC provider metadata does not contain 'jwks_uri'")
+
+    response = _requests.get(jwks_uri, timeout=10)
+    response.raise_for_status()
+    return JsonWebKey.import_key_set(response.json())
+
+
+def _extract_bearer_token():
+    """Extract the raw JWT string from the 
+    ``Authorization: Bearer …`` header.
+
+    Returns:
+        str | None: The token string, or ``None`` if the header is absent / malformed.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    return None
+
+
+def _decode_and_validate_token(token_str: str) -> dict:
+    """Decode *and* full-validate a JWT against the OIDC provider's JWKS.
+
+    Validates signature, issuer (``iss``), and authorized-party (``azp``) claims.
+
+    Args:
+        token_str: Raw JWT string
+
+    Returns:
+        The validated claims dict.
+
+    Raises:
+        DecodeError: Token could not be decoded.
+        InvalidTokenError: Signature is valid but one or more claims are
+            invalid (such as expired tokens).
+        BadSignatureError: JWKS signature verification failed.
+        ValueError: ``jwks_uri`` missing from OIDC metadata.
+        requests.RequestException: Network / HTTP error fetching JWKS.
+    """
+    jwks = get_jwks_keys()
+    metadata = oauth.vegbank_oidc.load_server_metadata()
+    issuer = metadata.get("issuer")
+
+    # load_client_secrets is cheap (file read) but we only need client_id.
+    secrets = load_client_secrets()
+
+    claims = jwt.decode(
+        token_str,
+        jwks,
+        claims_options={
+            "iss": {"essential": True, "value": issuer},
+            "azp": {"essential": True, "value": secrets.get("client_id")},
+        },
+    )
+    claims.validate()
+    return claims
+
+
+def _token_error_response(exc):
+    """Produce a uniform JSON error response for token validation failures."""
+    error_map = {
+        DecodeError: ("Token decoding failed", 401),
+        InvalidTokenError: ("Token validation failed", 401),
+        BadSignatureError: ("Token signature verification failed", 401),
+        ValueError: ("OIDC provider configuration error", 500),
+        _requests.RequestException: ("Failed to fetch OIDC provider keys", 502),
+        (KeyError, TypeError): ("Invalid token structure", 401),
+    }
+    for exc_types, (message, status) in error_map.items():
+        if isinstance(exc, exc_types):
+            return jsonify({"error": message, "details": str(exc)}), status
+    # Unexpected exception — treat as server error
+    return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
+
 
 @auth_bp.route("/login", methods=["GET"])
 def login():
