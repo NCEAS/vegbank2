@@ -49,11 +49,10 @@ flyway:
     repository: flyway/flyway
     ## @param flyway.image.pullPolicy How often should flyway image be pulled from repository?
     pullPolicy: IfNotPresent
-    ## Overrides the image tag whose default is the chart appVersion.
     ## @param flyway.image.tag The tag of the flyway image to use in the initContainer
     ##
-    tag: "11.15.0"
-  ## @param flyway.configpath The path to the flyway.conf file
+    tag: "12.0.2"
+
   configpath: /opt/local/flyway/flyway.conf
   ## @param flyway.dbpath The path to the directory containing the flyway migration files
   dbpath: /opt/local/flyway/db
