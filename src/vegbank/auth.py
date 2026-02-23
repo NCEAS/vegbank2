@@ -8,6 +8,7 @@ import os
 
 from authlib.integrations.flask_client import OAuth
 from flask import Blueprint, jsonify, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 
@@ -48,6 +49,10 @@ def init_oauth(app) -> bool:
     except (FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"[auth] WARNING: Could not load client secrets ({exc}). Auth unavailable.")
         return False
+
+    # Trust X-Forwarded-Proto / X-Forwarded-Host headers injected by nginx
+    # so Flask builds correct https:// redirect URIs behind the ingress.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     oauth.init_app(app)
     oauth.register(
