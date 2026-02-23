@@ -9,6 +9,7 @@ import time
 import traceback
 import os
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from vegbank.auth import auth_bp, init_oauth
 from vegbank.repositories import (
     IdentifiersQueries,
     Overview,
@@ -39,6 +40,9 @@ UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+init_oauth(app)
+app.register_blueprint(auth_bp)
 
 params = {}
 params['dbname'] = os.getenv('VB_DB_NAME')
