@@ -9,7 +9,7 @@ import time
 import traceback
 import os
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from vegbank.auth import auth_bp, init_oauth
+from vegbank.auth import auth_bp, init_oauth, require_token, require_scope, SCOPE_ADMIN, SCOPE_CONTRIBUTOR, SCOPE_USER
 from vegbank.repositories import (
     IdentifiersQueries,
     Overview,
@@ -83,7 +83,8 @@ def welcome_page():
 @app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
-def plot_observations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR)
+def plot_observations(claims, vb_code):
     """
     Retrieve either an individual plot observation or a collection, or
     upload a new set of plot observations.
@@ -167,7 +168,8 @@ def plot_observations(vb_code):
 @app.route("/taxon-observations/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
-def taxon_observations(vb_code):
+@require_token
+def taxon_observations(claims, vb_code):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
     set of taxon observations.
