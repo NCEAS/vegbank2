@@ -80,7 +80,7 @@ def init_oauth(app) -> bool:
         client_id=secrets.get("client_id"),
         client_secret=secrets.get("client_secret"),
         server_metadata_url=secrets.get("server_metadata_url"),
-        client_kwargs={"scope": secrets.get("scope_request", "openid email")},
+        client_kwargs={"scope": secrets.get("scope_request", "openid email profile vegbank:admin vegbank:contributor vegbank:user")},
     )
 
     print("[auth] OAuth client initialised.")
