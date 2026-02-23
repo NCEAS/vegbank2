@@ -40,6 +40,7 @@ UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
 
 init_oauth(app)
 app.register_blueprint(auth_bp)

@@ -163,6 +163,12 @@ spec:
             # Path to the mounted OIDC client secrets JSON file
             - name: KEYCLOAK_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
+            # Secret key for signing Flask sessions (must be stable across restarts)
+            - name: FLASK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-flask-secret
+                  key: secret_key
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
