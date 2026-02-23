@@ -1,6 +1,11 @@
 """Authentication module for the VegBank API.
 
 Implements OIDC / OAuth 2.0 login via Keycloak using authlib.
+
+Decorator overview
+------------------
+``require_token``
+    Protects an endpoint that requires *any* valid, unexpired JWT issued by Keycloak.
 """
 
 import functools
@@ -12,7 +17,7 @@ import requests as _requests
 from authlib.integrations.flask_client import OAuth
 from authlib.jose import JsonWebKey, jwt
 from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenError
-from flask import Blueprint, jsonify, request, session, url_for
+from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
@@ -159,6 +164,37 @@ def _token_error_response(exc):
             return jsonify({"error": message, "details": str(exc)}), status
     # Unexpected exception — treat as server error
     return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
+
+
+
+def require_token(f):
+    """Decorator – protect an endpoint that requires *any* valid JWT.
+
+    Returns ``401`` if the token is missing, expired, or otherwise invalid.
+    """
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        token_str = _extract_bearer_token()
+        if not token_str:
+            return jsonify({"error": "Missing or invalid Authorization header"}), 401
+
+        try:
+            claims = _decode_and_validate_token(token_str)
+        except Exception as exc:  # pylint: disable=broad-except
+            return _token_error_response(exc)
+
+        # Store in request-scoped context for downstream helpers
+        g.token_claims = claims
+        # Sync a lightweight subset into session for browser-based flows
+        session["userinfo"] = {
+            "sub": claims.get("sub"),
+            "preferred_username": claims.get("preferred_username"),
+            "email": claims.get("email"),
+            "name": claims.get("name"),
+        }
+        return f(claims, *args, **kwargs)
+
+    return decorated
 
 
 @auth_bp.route("/login", methods=["GET"])
