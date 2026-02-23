@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 from vegbank.operators.operator_parent_class import Operator 
 from vegbank.operators import table_defs_config as table_defs
-from utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql
+from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql
 
 
 class UserDataset(Operator):
