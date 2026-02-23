@@ -31,6 +31,10 @@ spec:
       - name: vegbankdb-init-pgdata
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
+      - name: keycloak-oidc-config
+        secret:
+          secretName: vegbank-keycloak-oidc-config
+          defaultMode: 0440
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -130,8 +134,11 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            - name: keycloak-oidc-config
+              mountPath: /etc/vegbank/oidc
+              readOnly: true
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
@@ -153,6 +160,9 @@ spec:
               value: {{ .Values.database.port | quote }}
             - name: VB_ALLOW_UPLOADS
               value: {{ .Values.allowUploads | quote }}
+            # Path to the mounted OIDC client secrets JSON file
+            - name: KEYCLOAK_CLIENT_SECRETS_FILE
+              value: /etc/vegbank/oidc/client_secrets.json
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
