@@ -48,6 +48,7 @@ class PlotObservationBundle(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.default_limit = 20000
         self.max_limit = self.default_limit
+        self.record_limit = 100000
         self.sort_options = ("default", "author_obs_code")
         self.bundle_options = ("csv", )
         self.default_bundle = "csv"
@@ -294,7 +295,7 @@ class PlotObservationBundle(Operator):
         request = SimpleNamespace(
             path='bundle/bundle',
             args={
-                'limit': 100000,
+                'limit': self.record_limit,
             }
         )
         uri = create_adbc_uri(self.params)
@@ -485,6 +486,7 @@ class PlotObservationBundle(Operator):
                 the "Records:" line is omitted.
             filters (dict): Key-value pairs of filter conditions used to restrict
                 the set of plot observations included in the download bundle.
+            timestamp (datetime): Recorded time for the download operation.
 
         Returns:
             str: Formatted README content as a multi-line string ready to be written
@@ -539,8 +541,10 @@ class PlotObservationBundle(Operator):
 
         readme_parts.extend([
             "",
-            "Note that the obs_count column in various tables reports *total* plot",
-            "observation counts in VegBank, not counts specific to downloaded data.",
+            "Additional notes:",
+            f" - Each CSV is limited to an absolute maximum of {self.record_limit:,} records.",
+            " - The obs_count column in various tables reports *total* plot observation",
+            "   counts in VegBank, not counts specific to downloaded data.",
             "",
         ])
 
