@@ -1,3 +1,4 @@
+import numpy as np
 from vegbank.operators import table_defs_config
 from vegbank.utilities import validate_required_and_missing_fields
 config = {
@@ -162,8 +163,9 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
             df_2 = data.get(target_table)
             if df_2 is not None:
                 missing_codes = set(df_1[source_code].astype(str)) - set(df_2[target_code].astype(str))
-                if 'None' in missing_codes: #Sometimes this happens in valid cases because the empy code is an xor field. We'll leave that validation for the xor method.
-                    missing_codes.remove('None')
+                missing_codes.discard(np.nan) #sometimes pandas reads empty cells as nan, which can cause issues with validation of xor fields. We'll discard those from the missing codes, and leave validation of xor fields to the xor validation method.
+                missing_codes.discard(None)
+            
                 if len(missing_codes) > 0:
                     print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed")
                     print(missing_codes)

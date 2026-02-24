@@ -820,15 +820,17 @@ class PlotObservation(Operator):
                          'vb_ob_code': 'vb_ob_code'})
                     if data['rf'] is not None:
                         # ... merge in newly created comm class vb_rf_codes
-                        data['cl'] = merge_vb_codes(
-                            rfs['resources']['rf'], data['cl'],
-                            {'user_rf_code': 'user_comm_class_rf_code',
-                             'vb_rf_code': 'vb_comm_class_rf_code'})
+                        if 'user_comm_class_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_comm_class_rf_code',
+                                'vb_rf_code': 'vb_comm_class_rf_code'})
                         # ... merge in newly created interp authority vb_rf_codes
-                        data['cl'] = merge_vb_codes(
-                            rfs['resources']['rf'], data['cl'],
-                            {'user_rf_code': 'user_authority_rf_code',
-                             'vb_rf_code': 'vb_authority_rf_code'})
+                        if 'user_authority_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_authority_rf_code',
+                                'vb_rf_code': 'vb_authority_rf_code'})
                     cls = CommunityClassification(self.params) \
                         .upload_community_classifications(data['cl'], conn)
                     to_return = combine_json_return(to_return, cls)
