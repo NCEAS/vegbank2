@@ -27,7 +27,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["vegbank"]
+packages = ["src/vegbank"]
 
 [build-system]
 requires = ["hatchling"]
