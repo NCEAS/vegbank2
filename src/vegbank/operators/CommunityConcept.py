@@ -205,6 +205,17 @@ class CommunityConcept(Operator):
                     'sql': "reference_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              JOIN commclass cl USING (commclass_id)
+                              JOIN bundle ob USING (observation_id)
+                              WHERE cc.commconcept_id = ci.commconcept_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],

@@ -18,6 +18,7 @@ from vegbank.operators import (
     TaxonInterpretation,
     TaxonObservation,
     PlotObservation,
+    PlotObservationBundle,
     Party,
     PlantConcept,
     CommunityClassification,
@@ -140,6 +141,10 @@ def plot_observations(vb_code):
         create_parquet (str, optional): Whether to return data as Parquet
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
+        bundle (str, optional): Return plot observations and numerous related
+            resources in a multi-file bundle. Currently accepts only 'csv', in
+            which case a zip archive of CSV files will be returned. Defaults to
+            None.
 
     Returns:
         flask.Response: A Flask response object containing:
@@ -153,7 +158,10 @@ def plot_observations(vb_code):
     if request.method == 'POST':
         return PlotObservation(params).upload_all(request)
     elif request.method == 'GET':
-        return plot_observation_operator.get_vegbank_resources(request, vb_code)
+        if request.args.get('bundle') is not None:
+            return PlotObservationBundle(params).get_vegbank_resources(request, vb_code)
+        else:
+            return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

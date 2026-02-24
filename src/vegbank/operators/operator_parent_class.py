@@ -11,7 +11,11 @@ import traceback
 from flask import jsonify, send_file
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
+import adbc_driver_postgresql.dbapi as pg_dbapi
+from contextlib import nullcontext
 from vegbank.utilities import (
+    create_adbc_uri,
+    convert_psycopg_sql_to_adbc,
     load_sql,
     jsonify_error_message,
     process_integer_param,
@@ -39,6 +43,7 @@ table_code_lookup = {
     'taxon-interpretations': 'ti',
     'taxon-observations': 'to',
     'user-datasets': 'ds',
+    'bundle': 'bundle',
 }
 
 
@@ -120,6 +125,7 @@ class Operator:
         self.debug = True
         self.query_mode = 'normal'
         self.query = {}
+        self.temp_table = None
 
     def configure_query(self) -> None:
         """Default function for subclasses to optionally override."""
@@ -280,6 +286,9 @@ class Operator:
         #  - WHERE clauses
         #  - ORDER BY (matching the order of the base CTE)
         main_sql_parts = []
+        if self.temp_table is not None:
+            main_sql_parts.append(
+                f"CREATE TEMP TABLE {self.temp_table} AS")
         # Load additional CTEs (or really any other SELECT preamble), if any
         cte = self.query.get('cte')
         if cte is not None:
@@ -323,7 +332,8 @@ class Operator:
         # Return the SQL and associated ordered list of placeholder names
         return sql, params
 
-    def get_vegbank_resources(self, request, vb_code=None):
+    def get_vegbank_resources(self, request, vb_code=None, conn=None,
+                              use_bundle=False):
         """
         Retrieve either an individual VegBank resource or a collection.
 
@@ -351,6 +361,12 @@ class Operator:
                 resource being retrieved or for the resource used to scope the
                 collection of resources being retrieved. If None, retrieves all
                 records.
+            conn (psycopg.Connection): Active database connection. If None, a
+                new psycopg connection will be created.
+            use_bundle (bool): Are we preparing a full bundle of data? If so,
+                we'll be going down a slightly different DB query path and
+                returning a pure arrow table rather than a parquet or JSON
+                response.
 
         Query Parameters:
             count (optional): If present, only return the collection count.
@@ -431,6 +447,8 @@ class Operator:
                 return jsonify_error_message(e.message), e.status_code
             params['vb_id'] = vb_id
             by = table_code
+        elif use_bundle:
+            by = 'bundle'
         else:
             by = None
 
@@ -439,7 +457,11 @@ class Operator:
         data = [params.get(val) for val in placeholders]
 
         using_record_count = querying_by_code and not is_cross_resource_query
-        with psycopg.connect(**self.params, cursor_factory=ClientCursor) as conn:
+        if conn is not None:
+            cm = nullcontext(conn)
+        else:
+            cm = psycopg.connect(**self.params, cursor_factory=ClientCursor)
+        with cm as conn:
             # In sql_debug mode, just return the generated SQL
             if self.query_mode == 'sql_debug':
                 with conn.cursor() as cur:
@@ -476,7 +498,9 @@ class Operator:
             # Now query for data (if we didn't already return SQL or a count),
             # passing in the count as set above to one of: the full count, -1 as
             # an indicator to use the record count, or None to skip counting
-            if params['create_parquet']:
+            if use_bundle:
+                return self.get_arrow_table(conn, sql, data)
+            elif params['create_parquet']:
                 return self.create_parquet_response(conn, sql, data, count)
             else:
                 return self.create_json_response(conn, sql, data, count)
@@ -554,16 +578,21 @@ class Operator:
                       omitted if count is None
         """
         to_return = {}
-        conn.row_factory = dict_row
-        with conn.cursor() as cur:
-            cur.execute(sql, data)
-            results = cur.fetchall()
-            if count == -1:
-                count = len(results)
-            if count is not None:
-                to_return["count"] = count
-            if self.query_mode == 'normal':
-                to_return["data"] = results
+        original_factory = conn.row_factory
+        try:
+            conn.row_factory = dict_row
+            with conn.cursor() as cur:
+                cur.execute(sql, data)
+                results = cur.fetchall()
+                if count==-1:
+                    count = len(results)
+                if count is not None:
+                    to_return["count"] = count
+                if self.query_mode == 'normal':
+                    to_return["data"] = results
+        finally:
+            # Restore the original row factory
+            conn.row_factory = original_factory
         return jsonify(to_return)
 
     def create_parquet_response(self, conn, sql, data, count=None):
@@ -601,6 +630,45 @@ class Operator:
                          mimetype='application/octet-stream',
                          as_attachment=True,
                          download_name=f'{self.name}.parquet')
+
+    def get_arrow_table(self, conn, sql, data):
+        """Execute a SQL query and return results as an Apache Arrow table.
+
+        Converts the SQL query from psycopg format to ADBC format, executes it
+        using either a provided connection or a new ADBC connection, and fetches
+        the results as an Arrow table for efficient columnar data processing.
+
+        Args:
+            conn: Database connection object. If provided, this connection will
+                be used and managed externally. If None, a new ADBC connection
+                will be created using self.params and automatically closed after
+                the query completes.
+            sql (str): SQL query string with psycopg-style placeholders (%s).
+                The query will be automatically converted to ADBC format ($1,
+                $2, etc.).
+            data (tuple or list): Parameters to bind to the SQL query
+                placeholders, provided in the order they appear in the query.
+
+        Returns:
+            pyarrow.Table: An Arrow table containing the query results in
+                columnar format. This format is efficient for analytics and can
+                be easily converted to Parquet, Pandas DataFrames, or other
+                formats.
+
+        Note:
+            The function automatically handles connection management: if no
+            connection is provided, it creates a temporary ADBC connection that
+            is properly closed after use via context manager.
+        """
+        sql = convert_psycopg_sql_to_adbc(sql)
+        # Use passed in connection if there is one, else connect using ADBC
+        uri = create_adbc_uri(self.params)
+        cm = nullcontext(conn) if conn else pg_dbapi.connect(uri)
+        with cm as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, data)
+                arrow_tbl = cur.fetch_arrow_table()
+        return arrow_tbl
 
     def upload_to_table(self, insert_table_name, insert_table_code, insert_table_def, insert_table_id, df, create_codes, conn, validate = True):
         """

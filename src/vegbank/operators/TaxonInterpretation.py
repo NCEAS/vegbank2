@@ -128,6 +128,16 @@ class TaxonInterpretation(Operator):
                     'sql': "txi.plantconcept_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                              FROM bundle
+                              JOIN taxonobservation txo USING (observation_id)
+                              WHERE txi.taxonobservation_id = txo.taxonobservation_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql,
