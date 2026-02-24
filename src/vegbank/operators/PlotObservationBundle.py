@@ -313,16 +313,16 @@ class PlotObservationBundle(Operator):
                 cur.execute(sql, data)
             query = {
                 'plot_observations': PlotObservation(self.params),
-                'taxon_observations': TaxonObservation(self.params),
-                'taxon_importances': TaxonImportance(self.params),
-                'taxon_interpretations': TaxonInterpretation(self.params),
-                'plant_concepts': PlantConcept(self.params),
-                'community_classifications': CommunityInterpretation(self.params),
                 'community_concepts': CommunityConcept(self.params),
-                'projects': Project(self.params),
-                'parties': Party(self.params),
+                'community_classifications': CommunityInterpretation(self.params),
+                'taxon_observations': TaxonObservation(self.params),
+                'plant_concepts': PlantConcept(self.params),
+                'taxon_interpretations': TaxonInterpretation(self.params),
+                'taxon_importances': TaxonImportance(self.params),
                 'stem_counts': StemCount(self.params),
                 'strata': Stratum(self.params),
+                'projects': Project(self.params),
+                'parties': Party(self.params),
             }
             return self._create_zip_response(request, conn, query, filters)
 
@@ -531,7 +531,7 @@ class PlotObservationBundle(Operator):
             "File structure",
             "-" * 14,
             "",
-            "This download contains one ore more related CSV files:",
+            "This download contains one or more related CSV files:",
             "",
         ])
 
@@ -550,7 +550,7 @@ class PlotObservationBundle(Operator):
             "-" * 8,
             "Peet, R.K., M.T. Lee, M.D. Jennings, D. Faber-Langendoen (eds). 2013.",
             "VegBank: The vegetation plot archive of the Ecological Society of America.",
-            f"http://vegbank.org, searched on {timestamp}",
+            f"http://vegbank.org, searched on {timestamp.strftime('%Y-%m-%d')}",
             ""
         ])
 
@@ -580,35 +580,71 @@ class PlotObservationBundle(Operator):
 
         # Map common filenames to descriptions
         file_desc_map = {
-            'plot_observations': 'Primary plot observations, with ob_code as primary key',
-            'community_classifications': 'Community Classifications (linked by ob_code)',
-            'community_concepts': ('Community concepts (cc_code) attached'
-                                   ' to plot observations via classifications'),
-            'stem_counts': ('Counts of stems (sc_code) associated with a taxon'
-                            ' observation (to_code), possibly linked to a stratum (sr_code)'),
-            'strata': ('Defined strata in which taxon importances are recorded',
-                       'as part of a plot observation (linked by ob_code)'),
-            'parties': ('People and organizations (py_codes) contributing to plot'
-                        ' observations and related activities'),
-            'plant_concepts': ('Plant concepts (pc_code) attached to taxon'
-                               ' observations via interpretations'),
-            'projects': 'Projects (pj_codes) under which plot observations were made',
-            'taxon_importances': ('Plant cover and other metrics associated with'
-                                  ' a taxon observation (to_code), possibly linked'
-                                  ' to a stratum (sr_code)'),
-            'taxon_interpretations': ('Assignments of plant concepts (by pc_code)'
-                                      ' to taxon observations (to_code)'),
-            'taxon_observations': 'Plant taxa observed on the plot (linked by ob_code)',
+            'plot_observations': (
+                'Plot observations, with `ob_code` as the primary key uniquely identifying\n'
+                '  each observation.'
+            ),
+            'community_concepts': (
+                'Community concepts, with `cc_code` as the primary key uniquely identifying\n'
+                '  each concept. Can be joined to plot_observations via community_classifications\n'
+                '  (see below).'
+            ),
+            'community_classifications': (
+                'Community classifications, with `ci_code` as the primary key uniquely\n'
+                '  identifying each community interpretation event. There may be multiple\n'
+                '  interpretations per classification event (`cl_code`). Can be joined to\n'
+                '  plot_observations (via `ob_code`) and community_concepts (via `cc_code`).'
+            ),
+            'taxon_observations': (
+                'Plant taxa observed on a plot, with `to_code` as the primary key uniquely\n'
+                '  identifying each taxon observation. Can be joined to plot_observations\n'
+                '  (via `ob_code`).'
+            ),
+            'plant_concepts': (
+                'Plant concepts, with `pc_code` as the primary key uniquely identifying\n'
+                '  each concept. Can be joined to plot_observations via taxon_interpretations\n'
+                '  (see below).'
+            ),
+            'taxon_interpretations': (
+                'Assignments of plant concepts to taxon observations, with `ti_code` as the\n'
+                '  primary key uniquely identifying each interpretation. Can be joined to\n'
+                '  plot_observations (via `ob_code`), taxon observations (via `to_code`),\n'
+                '  and plant concepts (via `pc_code`).'
+            ),
+            'taxon_importances': (
+                'Plant cover and other metrics recorded for a taxon observation (possibly\n'
+                '  limited to a defined stratum), with `tm_code` as the primary key uniquely\n'
+                '  identifying each importance record. Can be joined to plot_observations\n'
+                '  (via `ob_code`), taxon_observations (via `to_code`), and strata (via\n'
+                '  `sr_code`).'
+            ),
+            'stem_counts': (
+                'Counts of stems associated with a given importance record for a taxon\n'
+                '  observation (possibly within a defined stratum), with `sc_code` as the\n'
+                '  primary key uniquely identifying each stem count. Can be joined to\n'
+                '  plot_observations (via `ob_code`), taxon_observations (via `to_code`),\n'
+                '  taxon_importances (via `tm_code`), and strata (via `sr_code`).'
+            ),
+            'strata': (
+                'Defined strata in which taxon importances and stem counts may be recorded\n'
+                '  as part of a plot observation, with `sr_code` as the primary key uniquely\n'
+                '  identifying each stratum. Can be joined to plot_observations (via `ob_code`).'
+            ),
+            'projects': (
+                'Projects under which plot observations were made, with `pj_code` as the\n'
+                '  primary key uniquely identifying each project. Can be joined from\n'
+                '  plot_observations (via `pj_code`).'
+            ),
+            'parties': (
+                'People and/or organizations contributing to plot observations and related\n'
+                '  activities, with `py_code` as the primary key uniquely identifying each\n'
+                '  party.'
+            ),
         }
 
         for filename in query.keys():
             desc = file_desc_map.get(filename)
-            if desc:
-                descriptions.append(f"- {filename}.csv: {desc}")
-            else:
-                # Generate generic description for unknown files
-                formatted_name = filename.replace('_', ' ').title()
-                suffix = " (linked by ob_code)" if filename != 'plot_observations' else ""
-                descriptions.append(f"- {filename}.csv: {formatted_name}{suffix}")
+            descriptions.append(f"{filename}.csv")
+            descriptions.append(f"- {desc}\n")
 
         return descriptions
