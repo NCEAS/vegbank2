@@ -213,6 +213,9 @@ class PlotObservationBundle(Operator):
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
 
+        # enforce maximum plot observation count
+        params['limit'] = min(params['limit'], self.max_limit)
+
         return params
 
     def get_vegbank_resources(self, request, vb_code=None):
@@ -541,8 +544,10 @@ class PlotObservationBundle(Operator):
 
         readme_parts.extend([
             "",
-            "Additional notes:",
-            f" - Each CSV is limited to an absolute maximum of {self.record_limit:,} records.",
+            "Important notes:",
+            (" - Plot observations are limited to a maximum of "
+             f"{filters.get('limit', self.default_limit):,} records."),
+            f" - All other CSVs are limited to a maximum of {self.record_limit:,} records.",
             " - The obs_count column in various tables reports *total* plot observation",
             "   counts in VegBank, not counts specific to downloaded data.",
             "",
