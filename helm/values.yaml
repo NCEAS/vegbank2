@@ -75,18 +75,6 @@ nameOverride: ""
 ## @param fullnameOverride
 fullnameOverride: ""
 
-## @section serviceAccount
-serviceAccount:
-  ## @param serviceAccount.create Specifies whether a service account should be created
-  create: true
-  ## @param serviceAccount.automount Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  ## @param serviceAccount.annotations Annotations to add to the service account
-  annotations: {}
-  ## @param serviceAccount.name The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
 ## @param podAnnotations currently unused
 podAnnotations: {}
 ## @param podLabels
@@ -114,7 +102,7 @@ service:
   ## @param service.port The port on which the service will be exposed.
   port: 80
 
-## @section ingress
+## @section Ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
@@ -122,22 +110,18 @@ ingress:
   enabled: true
   ## @param ingress.className The class of the ingress controller to use.
   className: nginx
-  ## @section ingress.annotations Annotations to add to the ingress resource.
-  annotations: 
+  annotations:
     ## @param ingress.annotations.cert-manager.io/cluster-issuer
     cert-manager.io/cluster-issuer: "letsencrypt-prod" 
-  ## @section ingress.hosts Host name information for the ingress. 
   hosts:
     ## @param ingress.hosts[0].host The host names for the ingress.
     - host: api-dev.vegbank.org
-      ## @section ingress.hosts[0].paths The paths for the ingress.
       paths:
         ## @param ingress.hosts[0].paths[0].path The path for the ingress.
         - path: /
         ## @param ingress.hosts[0].paths[0].pathType The type of path matching to use.
           pathType: Prefix 
-  ## @section tls 
-  ## Host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
+  ## Host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.
   tls: 
       ## @param ingress.tls[0].hosts The host names for the TLS certification.
     - hosts: 
@@ -158,25 +142,33 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-## @section livenessProbe
+## @section Probes
 livenessProbe:
-  ## @section livenessProbe.httpGet
   httpGet:
     ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
     ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
     port: 80
-
-## @section readinessProbe
 readinessProbe:
-  ## @section readinessProbe.httpGet
   httpGet:
     ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /
     ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
     port: 80
 
-## @section autoscaling
+## @section Miscellaneous
+
+serviceAccount:
+  ## @param serviceAccount.create Specifies whether a service account should be created
+  create: true
+  ## @param serviceAccount.automount Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  ## @param serviceAccount.annotations Annotations to add to the service account
+  annotations: {}
+  ## @param serviceAccount.name The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
 autoscaling:
   ## @param autoscaling.enabled
   enabled: false
