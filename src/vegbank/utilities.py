@@ -1,0 +1,337 @@
+from __future__ import annotations
+import os
+import re
+from pathlib import Path
+from importlib.resources import files
+from flask import jsonify
+import pandas as pd
+from urllib.parse import quote_plus
+from flask import jsonify
+
+ALLOWED_EXTENSIONS = 'parquet'
+
+def create_adbc_uri(params):
+    """Create a PostgreSQL connection URI from connection parameters.
+
+    Constructs a standard PostgreSQL connection URI string in the format
+    postgresql://user:password@host:port/dbname from a dictionary of connection
+    parameters. Validates that required parameters are present and provides
+    sensible defaults for optional parameters.
+
+    Args:
+        params (dict): Dictionary containing connection parameters. Required keys:
+            - 'user' (str): Database username
+            - 'port' (str or int): Database port number
+            - 'dbname' (str): Database name
+            Optional keys:
+            - 'password' (str): Database password. If not provided, URI will not
+              include password component
+            - 'host' (str): Database host. Defaults to 'localhost' if not provided
+
+    Returns:
+        str: A PostgreSQL connection URI in the format:
+            - With password: "postgresql://user:password@host:port/dbname"
+            - Without password: "postgresql://user@host:port/dbname"
+
+    Raises:
+        ValueError: If any required parameters ('user', 'port', 'dbname') are
+            missing from the params dictionary. The error message lists all
+            missing parameters.
+    """
+    required = ['user', 'port', 'dbname']
+    missing = [k for k in required if not params.get(k)]
+    if missing:
+        raise ValueError(f"Missing required parameters: {', '.join(missing)}")
+
+    user = quote_plus(params['user'])
+    host = params.get('host') or 'localhost'
+    port = params.get('port') or '5432'
+    dbname = params['dbname']
+
+    # Build URI with optional password
+    password = params.get('password')
+    if password:
+        password_encoded = quote_plus(password)
+        return f"postgresql://{user}:{password_encoded}@{host}:{port}/{dbname}"
+    else:
+        return f"postgresql://{user}@{host}:{port}/{dbname}"
+
+def convert_psycopg_sql_to_adbc(sql):
+    """Convert SQL query from psycopg2/psycopg3 format to ADBC parameter format.
+
+    Transforms parameterized SQL queries from psycopg's %s placeholder style to
+    ADBC's $1, $2, $3... positional parameter style. Handles escaped percent
+    signs (%%) correctly by preserving them unchanged.
+
+    Args:
+        sql (str): SQL query string using psycopg-style placeholders. May
+            contain:
+            - %s for parameter placeholders
+            - %% for literal percent signs (escaped)
+            - Mix of both
+
+    Returns:
+        str: SQL query string with placeholders converted to ADBC format ($1,
+            $2, etc.). Each %s is replaced with a sequential $n placeholder,
+            while %% remains as %%.
+
+    Note:
+        The function uses a regex pattern that matches both %% and %s, ensuring
+        escaped percent signs are preserved while only actual placeholders are
+        converted.
+    """
+    counter = 1
+    def replacer(match):
+        nonlocal counter
+        if match.group(0) == '%%':
+            return '%%'  # Keep escaped percent signs
+        result = f"${counter}"
+        counter += 1
+        return result
+    return re.sub(r'%%|%s', replacer, sql)
+
+def allowed_file(filename):
+    '''
+    Checks if the provided filename has an allowed extension. 
+    Allowed extension is defined in the ALLOWED_EXTENSIONS variable above.
+    Parameters:
+        filename (str): The name of the file to be checked.
+    Returns:
+        bool: True if the file has an allowed extension, False otherwise.
+    '''
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def jsonify_error_message(message):
+    '''
+    Returns a JSON response with the provided error message.
+    Parameters:
+        message (str): The error message to be included in the JSON response.
+    Returns:
+        Response: A Flask JSON response containing the error message.
+    '''
+    return jsonify({
+        "error":{
+            "message": message
+        }
+    })
+
+def validate_required_and_missing_fields(df, required_fields, table_defs, file_name):
+    '''
+    Validates that the provided dataframe contains all required fields and does not contain any unsupported fields.
+    Parameters:
+        df (pd.DataFrame): The dataframe to be validated.
+        required_fields (list): A list of required field names.
+        table_defs (list): A list of lists, where each inner list contains the field names for a specific table.
+        file_name (str): The name of the file being validated (used in error messages).
+    Returns:
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
+    '''
+    df.columns = map(str.lower, df.columns)
+    to_return = {
+        'has_error': False,
+        'error': ""
+    }
+    #Checking if the user's submission is missing any required columns
+    error_string = ""
+    missing_fields = []
+    for field in required_fields:
+        if field not in df.columns:
+            missing_fields.append(field)
+        elif df[field].isnull().any():
+            missing_fields.append(field)
+    if 0 < len(missing_fields):
+            error_string += "The following required columns for " + file_name + " must be present with no null values : " + ", ".join(missing_fields) + ". "
+
+    # Checking if the user submitted any unsupported columns
+    extra_fields = set(df.columns)
+    for insert_table_def in table_defs:
+        extra_fields = extra_fields - set(insert_table_def)
+    if 0 < len(extra_fields):
+            error_string += "The following columns are not supported for " + file_name + ": " + ", ".join(extra_fields) + ". "
+
+    if error_string != "":
+        to_return['has_error'] = True
+        to_return['error'] = error_string
+    
+    return to_return
+
+def read_parquet_file(request, file_name='file', required=False):
+    '''
+    Check for a Parquet file in the provided API request, and if it
+    exists, read in and return it as a Pandas dataframe.
+
+    Parameters:
+        request (flask.Request): The incoming Flask request object
+        file_name (str): The name of the expected file
+        required (bool): Is this a required file?
+    Returns:
+        pandas.DataFrame: The loaded data, or None if the file was not
+            provided (and not required)
+    Raises:
+        UploadDataError: If the data file is missing (when required) or
+            malformed
+    '''
+    if file_name not in request.files:
+        if not required:
+            return None
+        else:
+            raise UploadDataError(
+                f"Missing required upload file {file_name}."
+            )
+    file = request.files[file_name]
+    if file.filename == '':
+        raise UploadDataError(
+            "No selected file."
+        )
+    if not allowed_file(file.filename):
+        raise UploadDataError(
+            "File type not allowed. Only Parquet files are accepted."
+        )
+    try:
+        df = pd.read_parquet(file)
+    except Exception as e:
+        raise UploadDataError(
+            f"Failed to read {file_name}: {e}"
+        )
+    print(f"dataframe loaded with {len(df)} records.")
+    return df
+
+def merge_vb_codes(inserted_codes, df, mapping):
+    '''
+    Merge newly created VB codes into a dataframe based on the user code field.
+
+    This function takes a dictionary of newly inserted codes, converts it to a
+    dataframe, and merges it with an existing dataframe using a left join on the
+    user code column. If the VB code column already exists in the target
+    dataframe, the function combines the values, prioritizing existing values
+    over new ones.
+
+    Parameters:
+        inserted_codes (dict): A dictionary containing the newly created codes,
+            where keys are column names and values are lists of code values.
+            Must contain columns that will be renamed according to the mapping.
+        df (pandas.DataFrame): The target dataframe to merge the new codes into.
+            Should contain a column matching the user code field specified in
+            the mapping.
+        mapping (dict): A dictionary mapping the column names from
+            inserted_codes to the column names in the target dataframe. Should
+            have exactly two key-value pairs: one for the user code column and
+            one for the VB code column (e.g., {"user_py_code":
+            "user_status_py_code", "vb_py_code": "vb_status_py_code"}).
+
+    Returns:
+        pandas.DataFrame: The modified dataframe with the new VB codes merged in.
+            Existing VB code values are preserved when conflicts occur.
+    '''
+    codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
+    user_col, vb_col = list(mapping.values())
+    df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
+    if f'{vb_col}_x' in df:
+        df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
+        df.drop(columns=[f'{vb_col}_x', f'{vb_col}_y'], inplace=True)
+    return df
+
+def combine_json_return(main_dict, new_dict):
+    '''
+    Merge new_dict into main_dict by combining the nested dicts
+    referenced by top level keys. For each top-level key, the nested
+    dictionaries are merged, with values from new_dict taking precedence
+    over values from main_dict when keys conflict.
+
+    Parameters:
+        main_dict (dict): The base dictionary containing nested dictionaries
+            as values. Can be None, in which case new_dict is returned as-is.
+        new_dict (dict): The dictionary to merge into main_dict. Its nested
+            dictionaries will be combined with those in main_dict.
+
+    Returns:
+        dict: The merged dictionary where each top-level key maps to a
+            dictionary that combines the nested dictionaries from both inputs.
+            Values from new_dict override matching keys in main_dict.
+    '''
+    if main_dict is None:
+        return new_dict
+    result = {}
+    for key in set(main_dict.keys()) | set(new_dict.keys()):
+        result[key] = {**main_dict.get(key, {}),
+                       **new_dict.get(key, {})}
+    return result
+
+def dry_run_check(conn, data, request):
+    """
+    Check if the request is a dry run and roll back the transaction if so.
+    Parameters:
+        conn: The database connection object.
+        data: The data resulting from the upload request.
+        request: The Flask request object containing query parameters.
+    """
+    if request.args.get('dry_run', 'false').lower() == 'true':  
+        conn.rollback()
+        return {
+            "message": "dry run, transaction was rolled back",
+            "dry_run_data" : data
+        }
+    else:
+        return data
+
+def process_integer_param(param_name, param_value):
+    err_msg = f"When provided, {param_name} must be a non-negative integer."
+    try:
+        param_value = int(param_value)
+    except ValueError:
+        raise QueryParameterError(err_msg)
+    if param_value < 0:
+        raise QueryParameterError(err_msg)
+    return param_value
+
+def process_option_param(param_name, param_value, options):
+    param_value = param_value.lower()
+    # Retun the lower-cased parameter if its valid
+    if param_value in options:
+        return param_value
+    # ... otherwise raise an informative error message
+    q_options = [f"'{option}'" for option in options]
+    if len(q_options) == 0:
+        err_msg = f"Unhandled parameter '{param_name}'."
+    else:
+        if len(q_options) == 1:
+            option_str = q_options[0]
+        elif len(q_options) == 2:
+            option_str = ' or '.join(q_options)
+        elif 2 < len(q_options):
+            option_str = f"{', '.join(q_options[:-1])}, or {q_options[-1]}"
+        err_msg = f"When provided, '{param_name}' must be {option_str}."
+    raise QueryParameterError(err_msg)
+
+def load_sql(package: str, relative_path: str, encoding: str = "utf-8") -> str:
+    """
+    Load an SQL file either from a filesystem override directory (if set),
+    or from packaged resources via importlib.resources.
+
+    Args:
+        package: Python package that contains SQL resources, e.g. "vegbank.queries"
+        relative_path: Path inside queries, e.g. "cover_method/create_cover_method_temp_table.sql"
+    """
+    override_dir = os.getenv("QUERIES_DIR")
+    if override_dir:
+        p = Path(override_dir) / relative_path
+        return p.read_text(encoding=encoding)
+
+    parts = relative_path.split("/")
+    return files(package).joinpath(*parts).read_text(encoding=encoding)
+
+class QueryParameterError(Exception):
+    """Exception raised for invalid query parameters."""
+    def __init__(self, message, status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+class UploadDataError(Exception):
+    """Exception raised for missing or invalid upload data."""
+    def __init__(self, message, status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
