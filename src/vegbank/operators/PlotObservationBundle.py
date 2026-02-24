@@ -1,4 +1,3 @@
-import os
 import io
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -46,7 +45,7 @@ class PlotObservationBundle(Operator):
         super().__init__(params)
         self.name = "plot_observation"
         self.table_code = "ob"
-        self.QUERIES_FOLDER = os.path.join(self.QUERIES_FOLDER, self.name)
+        self.queries_package = f"{self.queries_package}.{self.name}"
         self.default_limit = 20000
         self.max_limit = self.default_limit
         self.sort_options = ("default", "author_obs_code")
