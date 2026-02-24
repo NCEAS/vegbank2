@@ -48,7 +48,7 @@ class PlotObservationBundle(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.default_limit = 20000
         self.max_limit = self.default_limit
-        self.record_limit = 100000
+        self.record_limit = 1000000
         self.sort_options = ("default", "author_obs_code")
         self.bundle_options = ("csv", )
         self.default_bundle = "csv"
