@@ -191,7 +191,7 @@ def taxon_observations(vb_code):
 
     Parameters:
         vb_code (str or None): The unique identifier for the taxon
-            observation concept being retrieved, or for a resource of a
+            observation being retrieved, or for a resource of a
             different type used to focus taxon observation retrieval. If
             None, retrieves all taxon observations.
 
@@ -701,6 +701,11 @@ def plant_concepts(vb_code):
     plant concept records. Collection responses may be further mediated by
     pagination parameters and other filtering query parameters.
 
+    POST: Upload a set of files conforming with the plant concept loader schema,
+    and return counts and created codes of newly inserted records. Includes an
+    option for deactivating existing concepts superseded by the newly uploaded
+    data.
+
     Parameters:
         vb_code (str or None): The unique identifier for the plant
             concept being retrieved, or for a resource of a different type used
@@ -724,6 +729,27 @@ def plant_concepts(vb_code):
         create_parquet (str, optional): Whether to return data as Parquet
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
+
+    POST Parameters:
+        plant_concepts (FileStorage): Parquet file containing new plant concepts
+            and corresponding status details.
+        plant_names (FileStorage, optional): Parquet file containing zero or
+            more plant name usages (and related details) for each concept.
+        plant_correlations (FileStorage, optional): Parquet file containing
+            correlations between concepts.
+        parties (FileStorage, optional): Parquet file containing one or more new
+            parties (people or organizations) providing perspectives on the
+            uploaded concepts.
+        references (FileStorage, optional): Parquet file containing one or more
+            new references associated with the uploaded plant concepts.
+        deactivation (str, optional): Which existing plant concepts in VegBank
+            should be deactivated when inserting the new concepts. Can be "none"
+            (don't deactivate any records), "by_party" (deactivate all existing
+            plant status and related usage records associated with any parties
+            that are also associated with the uploaded concepts), or
+            "by_party_below_order" (like "by_party", but only apply to concepts
+            at the family taxonomic level or lower, or with unspecified level).
+            Defaults to "none".
 
     Returns:
         flask.Response: A Flask response object containing:
