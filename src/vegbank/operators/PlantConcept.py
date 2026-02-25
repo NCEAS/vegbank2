@@ -9,7 +9,8 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    process_option_param,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -38,6 +39,8 @@ class PlantConcept(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "plant_name", "obs_count"]
+        self.deactivation_options = ["none", "by_party", "by_party_below_order"]
+        self.default_deactivation = "none"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -362,7 +365,12 @@ class PlantConcept(Operator):
                         rf_actions['resources']['rf'], data['pc'],
                         {"user_rf_code": "user_status_rf_code",
                          "vb_rf_code": "vb_status_rf_code"})
-                pc_actions = self.upload_plant_concepts(data['pc'], conn)
+                what_to_deactivate = process_option_param('deactivation',
+                    request.args.get('deactivation', self.default_deactivation),
+                    self.deactivation_options)
+
+                pc_actions = self.upload_plant_concepts(
+                    data['pc'], conn, what_to_deactivate = what_to_deactivate)
                 to_return = combine_json_return(to_return, pc_actions)
 
                 # Prep & insert any new plant names
@@ -424,7 +432,7 @@ class PlantConcept(Operator):
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
 
-    def upload_plant_concepts(self, df, conn):
+    def upload_plant_concepts(self, df, conn, what_to_deactivate = 'none'):
         """
         Take the Plant Concepts loader DataFrame and insert its contents
         into the plantname, plantconcept, and plantstatus tables.
@@ -498,6 +506,8 @@ class PlantConcept(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
 
+        to_return = None
+
         #
         # Upsert names into plantnames table
         #
@@ -508,6 +518,7 @@ class PlantConcept(Operator):
         pn_actions = super().upload_to_table("plant_name", 'pn',
             config_plant_name, 'plantname_id', df, False, conn,
             validate = False)
+        to_return = combine_json_return(to_return, pn_actions)
 
         # ... merge in newly created vb_pn_codes
         df = merge_vb_codes(
@@ -517,12 +528,21 @@ class PlantConcept(Operator):
         config_plant_concept.append('vb_pn_code')
 
         #
+        # Optionally deactivate old concepts from the same parties
+        #
+
+        deactivation_actions = self.deactivate_old_concepts(conn, df,
+                                                            what_to_deactivate)
+        to_return = combine_json_return(to_return, deactivation_actions)
+
+        #
         # Insert concepts into plantconcept table
         #
 
         df['user_pc_code'] = df['user_pc_code'].astype(str)
         pc_actions = super().upload_to_table("plant_concept", 'pc',
             config_plant_concept, 'plantconcept_id', df, True, conn)
+        to_return = combine_json_return(to_return, pc_actions)
 
         #
         # Insert status into plantstatus table
@@ -546,21 +566,8 @@ class PlantConcept(Operator):
 
         ps_actions = super().upload_to_table("plant_status", 'ps',
             config_plant_status, 'plantstatus_id', df, True, conn)
+        to_return = combine_json_return(to_return, ps_actions)
 
-        # TODO: decide which ones we actually want to return to the user -
-        # probably only `pc`?
-        to_return = {
-            'resources':{
-                'pn': pn_actions['resources']['pn'],
-                'pc': pc_actions['resources']['pc'],
-                'ps': ps_actions['resources']['ps']
-            },
-            'counts':{
-                'pn': pn_actions['counts']['pn'],
-                'pc': pc_actions['counts']['pc'],
-                'ps': ps_actions['counts']['ps']
-            }
-        }
         return to_return
 
     def upload_plant_names(self, df, conn):
@@ -742,3 +749,105 @@ class PlantConcept(Operator):
             }
         }
         return to_return
+
+    def deactivate_old_concepts(self, conn, df, what_to_deactivate):
+        """
+        Deactivate old concepts in VegBank
+
+        For a set of plant status records defined jointly by the combination of
+        `df` and `what_to_deactivate`, set the `stopdate` to `now` if it is not
+        already set to some date, and then likewise set the `usagestop` to `now`
+        (if not already set) for all related plant usage records.
+
+        Parameters:
+            conn (psycopg.Connection): Active database connection
+            df (pandas.DataFrame): Uploaded plant concept data
+            what_to_deactivate (str): Concept deactivation strategy
+
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was existing records were
+                deactivated if successfully completed. Example:
+                {
+                    "counts": {
+                        "pc_existing": {"inserted": 1},
+                    },
+                    "resources": {
+                        "pc_existing": [{"action": "STOP",
+                                "user_pc_code": "my_new_concept_1",
+                                "vb_pc_code": "pc.123"}],
+                    }
+                }
+        """
+        print("Applying stop dates to old concepts...")
+        if what_to_deactivate == 'by_party':
+            sql_deactivate_status = """
+                UPDATE plantstatus
+                   SET stopdate = NOW()
+                   WHERE stopdate IS NULL
+                     AND party_id = ANY(%s)
+                   RETURNING plantconcept_id,
+                             party_id,
+                             'STOP' AS action"""
+        elif what_to_deactivate == 'by_party_below_order':
+            sql_deactivate_status = """
+                UPDATE plantstatus
+                   SET stopdate = NOW()
+                   WHERE stopdate IS NULL
+                     AND party_id = ANY(%s)
+                     AND (plantlevel IS NULL OR
+                          LOWER(plantlevel) IN ('family', 'genus', 'species',
+                                                'subspecies', 'variety', 'forma'))
+                   RETURNING plantconcept_id,
+                             party_id,
+                             'STOP' AS action"""
+        else:
+            return  {
+                "resources": {
+                    "pc_existing": []
+                },
+                "counts": {
+                    "pc_existing": {
+                        "deactivated": 0
+                    }
+                }
+            }
+
+        # Put stop dates on old concepts
+        unique_status_parties = (
+            df['vb_status_py_code']
+            .str.removeprefix('py.')
+            .astype(int)
+            .unique()
+            .tolist()
+        )
+        sql = f"""\
+            WITH updated_status AS (
+              {sql_deactivate_status}
+            ),
+            updated_usage AS (
+              UPDATE plantusage
+                 SET usagestop = NOW()
+                 FROM updated_status
+                 WHERE plantusage.plantconcept_id = updated_status.plantconcept_id
+                   AND plantusage.usagestop IS NULL
+                 RETURNING plantusage.plantconcept_id
+            ) SELECT action,
+                     'py.' || party_id AS vb_py_code,
+                     'pc.' || plantconcept_id AS vb_pc_code
+                FROM updated_status"""
+
+        with conn.cursor() as cur:
+            cur.execute(sql, (unique_status_parties,))
+            pc_deactivated = cur.fetchall()
+
+        return {
+            "resources": {
+                "pc_existing": pc_deactivated
+            },
+            "counts": {
+                "pc_existing": {
+                    "deactivated": len(pc_deactivated)
+                }
+            }
+        }
