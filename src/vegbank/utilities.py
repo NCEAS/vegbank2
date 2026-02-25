@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 from importlib.resources import files
+from itertools import islice
 from flask import jsonify
 import pandas as pd
 from urllib.parse import quote_plus
@@ -320,6 +321,21 @@ def load_sql(package: str, relative_path: str, encoding: str = "utf-8") -> str:
 
     parts = relative_path.split("/")
     return files(package).joinpath(*parts).read_text(encoding=encoding)
+
+def batch_of_ids(list_of_ids, batch_size):
+    """
+    Yield successive batches from a list of IDs.
+
+    Args:
+        list_of_ids: An iterable of IDs to be batched.
+        batch_size (int): The maximum number of IDs per batch.
+
+    Returns:
+        Generator yielding lists of IDs, each of length <= batch_size.
+    """
+    it = iter(list_of_ids)
+    while batch := list(islice(it, batch_size)):
+        yield batch
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
