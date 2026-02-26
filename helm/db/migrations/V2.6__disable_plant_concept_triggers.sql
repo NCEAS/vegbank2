@@ -16,6 +16,9 @@ ALTER TABLE commname DISABLE TRIGGER trg_commname_search;
 -- Disable triggers for updating party search_vector
 ALTER TABLE party DISABLE TRIGGER trg_party_search;
 
+-- Disable triggers for updating project search_vector
+ALTER TABLE project DISABLE TRIGGER trg_project_search;
+
 -- Disable triggers for updating observation search_vector
 ALTER TABLE observation DISABLE TRIGGER trg_observation_obsearch;
 ALTER TABLE plot DISABLE TRIGGER trg_plot_to_ob_search;

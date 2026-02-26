@@ -923,6 +923,11 @@ class PlotObservation(Operator):
                     party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
                                  for code in to_return['resources']['py']]
                     update_search_vector(conn, 'party', party_ids)
+                # Update project search vector
+                if 'pj' in to_return['resources'].keys():
+                    project_ids = [self.extract_id_from_vb_code(code['vb_pj_code'], 'pj')
+                                   for code in to_return['resources']['pj']]
+                    update_search_vector(conn, 'project', project_ids)
                 # Update observation search vector
                 observation_ids = [self.extract_id_from_vb_code(code['vb_ob_code'], 'ob')
                                    for code in to_return['resources']['ob']]
