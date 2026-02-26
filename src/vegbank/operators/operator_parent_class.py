@@ -403,6 +403,7 @@ class Operator:
             self.query_mode = 'count'
         else:
             self.query_mode = 'normal'
+        self.request = request
 
         try:
             params = self.validate_query_params(request.args)
