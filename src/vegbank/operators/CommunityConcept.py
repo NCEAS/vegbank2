@@ -411,6 +411,11 @@ class CommunityConcept(Operator):
                 else:
                     cx_actions = None
 
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
                 # Update comm concept search vector
                 commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
                                    for code in to_return['resources']['cc']]

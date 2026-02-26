@@ -918,6 +918,11 @@ class PlotObservation(Operator):
                     crs = Party(self.params).upload_contributors(data['cr'], conn)
                     to_return = combine_json_return(to_return, crs)
 
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
                 # Update observation search vector
                 observation_ids = [self.extract_id_from_vb_code(code['vb_ob_code'], 'ob')
                                    for code in to_return['resources']['ob']]

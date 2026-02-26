@@ -465,6 +465,11 @@ class PlantConcept(Operator):
                 else:
                     px_actions = None
 
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
                 # Update plant concept search vector
                 plantconcept_ids = [self.extract_id_from_vb_code(code['vb_pc_code'], 'pc')
                                    for code in to_return['resources']['pc']]
