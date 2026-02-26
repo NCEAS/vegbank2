@@ -17,7 +17,8 @@ from vegbank.utilities import(
     UploadDataError,
     merge_vb_codes,
     combine_json_return,
-    dry_run_check
+    dry_run_check,
+    update_search_vector,
 )
 from flask import jsonify
 from psycopg import connect
@@ -916,6 +917,12 @@ class PlotObservation(Operator):
                         )
                     crs = Party(self.params).upload_contributors(data['cr'], conn)
                     to_return = combine_json_return(to_return, crs)
+
+                # Update observation search vector
+                observation_ids = [self.extract_id_from_vb_code(code['vb_ob_code'], 'ob')
+                                   for code in to_return['resources']['ob']]
+                update_search_vector(conn, 'observation', observation_ids)
+
                 to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
             conn.close()
             return jsonify(to_return)
