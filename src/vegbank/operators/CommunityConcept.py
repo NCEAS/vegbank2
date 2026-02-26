@@ -345,7 +345,8 @@ class CommunityConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new community concepts
-                if py_actions is not None:
+                if (py_actions is not None and
+                        'user_status_py_code' in data['cc'].columns):
                     # ... merge in newly created vb_py_codes
                     data['cc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['cc'],
@@ -382,7 +383,8 @@ class CommunityConcept(Operator):
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if py_actions is not None:
+                    if (py_actions is not None and
+                            'user_usage_py_code' in data['cn'].columns):
                         data['cn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['cn'],
                             {"user_py_code": "user_usage_py_code",

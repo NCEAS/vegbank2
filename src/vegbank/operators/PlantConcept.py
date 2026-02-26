@@ -394,7 +394,8 @@ class PlantConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new plant concepts
-                if py_actions is not None:
+                if (py_actions is not None and
+                        'user_status_py_code' in data['pc'].columns):
                     # ... merge in newly created vb_py_codes
                     data['pc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['pc'],
@@ -436,7 +437,8 @@ class PlantConcept(Operator):
                         {"user_ps_code": "user_pc_code",
                          "vb_ps_code": "vb_ps_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if py_actions is not None:
+                    if (py_actions is not None and
+                            'user_usage_py_code' in data['pn'].columns):
                         data['pn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['pn'],
                             {"user_py_code": "user_usage_py_code",
