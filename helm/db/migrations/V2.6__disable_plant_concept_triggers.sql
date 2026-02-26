@@ -4,6 +4,6 @@
 ------------------------------------------------------------------- */
 
 -- Disable triggers for updating plant concept search_vector
-DISABLE TRIGGER trg_plantconcept_search ON plantconcept;
-DISABLE TRIGGER trg_plantusage_search ON plantusage;
-DISABLE TRIGGER trg_plantname_search ON plantname;
+ALTER TABLE plantconcept DISABLE TRIGGER trg_plantconcept_search;
+ALTER TABLE plantusage DISABLE TRIGGER trg_plantusage_search;
+ALTER TABLE plantname DISABLE TRIGGER trg_plantname_search;
