@@ -12,6 +12,7 @@ from vegbank.utilities import (
     combine_json_return,
     jsonify_error_message,
     process_option_param,
+    update_search_vector,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -462,10 +463,10 @@ class PlantConcept(Operator):
                 else:
                     px_actions = None
 
-                # Update plant concepts search vector
-                plant_concept_ids = [int(record['vb_pc_code'][3:]) for record in
-                                     pc_actions['resources']['pc']]
-                self.update_plant_concept_search_vector(conn, plant_concept_ids)
+                # Update plant concept search vector
+                plantconcept_ids = [self.extract_id_from_vb_code(code['vb_pc_code'], 'pc')
+                                   for code in to_return['resources']['pc']]
+                update_search_vector(conn, 'plantconcept', plantconcept_ids)
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
@@ -901,33 +902,3 @@ class PlantConcept(Operator):
                 }
             }
         }
-
-    def update_plant_concept_search_vector(self, conn, plantconcept_ids,
-                                           batch_size=50000):
-        """
-        Update the plant concept search_vector for a list of plant concept IDs.
-
-        Executes the database function build_plantconcept_search_vector() for
-        each given ID, processing records in batches to avoid overloading the
-        database with large IN-clauses.
-
-        Args:
-            conn: A database connection object with cursor support.
-            plantconcept_ids (list): IDs of the plantconcept records to update.
-            batch_size (int): Number of records to update per query. Defaults to 50000.
-
-        Returns:
-            None
-        """
-        if not plantconcept_ids:
-            return
-        with conn.cursor() as cur:
-            for chunk in batch_of_ids(plantconcept_ids, batch_size):
-                cur.execute(
-                    """
-                    UPDATE plantconcept
-                      SET search_vector = build_plantconcept_search_vector(plantconcept_id)
-                      WHERE plantconcept_id = ANY(%s)
-                    """,
-                    (chunk,)
-            )

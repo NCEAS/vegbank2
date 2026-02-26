@@ -337,6 +337,36 @@ def batch_of_ids(list_of_ids, batch_size):
     while batch := list(islice(it, batch_size)):
         yield batch
 
+def update_search_vector(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the search_vector column for a set of records identified by ID.
+
+    Executes the database function build_<table>_search_vector() for
+    each given ID, processing records in batches to avoid overloading the
+    database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with search_vector to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(
+                f"""
+                UPDATE {table}
+                  SET search_vector = build_{table}_search_vector({table}_id)
+                  WHERE {table}_id = ANY(%s)
+                """,
+                (chunk,)
+        )
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):
