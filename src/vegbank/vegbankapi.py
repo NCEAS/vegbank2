@@ -714,6 +714,9 @@ def plant_concepts(vb_code):
 
     GET Query Parameters:
         search (str, optional): Plant name search query.
+        status (str, optional): Status criterion for returned plant concepts.
+            Can be 'any', 'current', 'accepted', or 'current_accepted'. Defaults
+            to 'any'.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
