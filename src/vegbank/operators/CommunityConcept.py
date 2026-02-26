@@ -9,7 +9,8 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    update_search_vector,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -407,6 +408,11 @@ class CommunityConcept(Operator):
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
                     cx_actions = None
+
+                # Update comm concept search vector
+                commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
+                                   for code in to_return['resources']['cc']]
+                update_search_vector(conn, 'commconcept', commconcept_ids)
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message

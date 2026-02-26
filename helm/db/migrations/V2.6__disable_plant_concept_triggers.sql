@@ -8,6 +8,11 @@ ALTER TABLE plantconcept DISABLE TRIGGER trg_plantconcept_search;
 ALTER TABLE plantusage DISABLE TRIGGER trg_plantusage_search;
 ALTER TABLE plantname DISABLE TRIGGER trg_plantname_search;
 
+-- Disable triggers for updating comm concept search_vector
+ALTER TABLE commconcept DISABLE TRIGGER trg_commconcept_search;
+ALTER TABLE commusage DISABLE TRIGGER trg_commusage_search;
+ALTER TABLE commname DISABLE TRIGGER trg_commname_search;
+
 -- Disable triggers for updating observation search_vector
 ALTER TABLE observation DISABLE TRIGGER trg_observation_obsearch;
 ALTER TABLE plot DISABLE TRIGGER trg_plot_to_ob_search;
