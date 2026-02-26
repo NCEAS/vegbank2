@@ -9,7 +9,8 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    update_search_vector,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -344,7 +345,8 @@ class CommunityConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new community concepts
-                if py_actions is not None:
+                if (py_actions is not None and
+                        'user_status_py_code' in data['cc'].columns):
                     # ... merge in newly created vb_py_codes
                     data['cc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['cc'],
@@ -381,7 +383,8 @@ class CommunityConcept(Operator):
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if py_actions is not None:
+                    if (py_actions is not None and
+                            'user_usage_py_code' in data['cn'].columns):
                         data['cn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['cn'],
                             {"user_py_code": "user_usage_py_code",
@@ -407,6 +410,16 @@ class CommunityConcept(Operator):
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
                     cx_actions = None
+
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
+                # Update comm concept search vector
+                commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
+                                   for code in to_return['resources']['cc']]
+                update_search_vector(conn, 'commconcept', commconcept_ids)
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
