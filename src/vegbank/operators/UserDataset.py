@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import pandas as pd
-from vegbank.operators.operator_parent_class import Operator 
+from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config as table_defs
 from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql
 
@@ -101,10 +101,12 @@ class UserDataset(Operator):
         - name: str
         - description: str (optional)
         - type: str (e.g. 'dataset', 'normal')
-        - data: dict where keys are item tables (e.g. 'observation') and values are lists of vb_codes (e.g. ['ob.123', 'ob.456'])
+        - data: dict where keys are item tables (e.g. 'observation') and 
+            values are lists of vb_codes (e.g. ['ob.123', 'ob.456'])
         '''
         user_dataset_insert_sql = """
-            INSERT INTO userdataset (datasetname, datasetdescription, datasettype, datasetstart)
+            INSERT INTO userdataset (datasetname, datasetdescription, 
+                datasettype, datasetstart)
             VALUES (%s, %s, %s, %s)
             RETURNING userdataset_id"""
         dataset_insert_data = (
@@ -112,17 +114,20 @@ class UserDataset(Operator):
             dataset.get('description', ''),
             dataset['type'],
             datetime.now()
-            #TODO This will eventually need to be the user id of the person uploading the dataset. Once we have the auth token we can fill this in. 
+            # TODO This will eventually need to be the user id of the person
+            # uploading the dataset. Once we have the auth token we can
+            # fill this in.
         )
-        with conn.cursor() as cur: 
+        with conn.cursor() as cur:
             cur.execute(user_dataset_insert_sql, dataset_insert_data)
             user_dataset_id = cur.fetchone()['userdataset_id']
-            
+
             new_codes_df = pd.DataFrame()
             new_codes_df['vb_record_id'] = [user_dataset_id]
             new_codes_df['vb_table_code'] = 'ds'
             new_codes_df['identifier_type'] = 'vb_code'
-            new_codes_df['identifier_value'] =  'ds.' + new_codes_df['vb_record_id'].astype(str)
+            new_codes_df['identifier_value'] = 'ds.' + \
+                new_codes_df['vb_record_id'].astype(str)
             code_inputs = list(new_codes_df.itertuples(index=False, name=None))
             sql = load_sql(self.queries_root, 'create_codes.sql')
             cur.executemany(sql, code_inputs, returning=True)
@@ -132,15 +137,34 @@ class UserDataset(Operator):
                 for code in codes:
                     item_record = code[3:]
                     item_database = 'vegbank'
-                    data_tuples.append((code, item_database, item_table, item_record))
-            items_df = pd.DataFrame(data_tuples, columns=['identifier', 'item_database', 'item_table', 'item_record'])
+                    data_tuples.append(
+                        (code, item_database, item_table, item_record))
+            items_df = pd.DataFrame(data_tuples, columns=[
+                                    'identifier', 'item_database',
+                                    'item_table', 'item_record'])
             items_df['user_di_code'] = items_df.index + 1
             items_df['userdataset_id'] = user_dataset_id
             items_df['user_di_code'] = items_df['user_di_code'].astype(str)
-            new_dataset_items = super().upload_to_table("user_dataset_item", 'di', table_defs.user_dataset_item, 'userdatasetitem_id', items_df, False, conn, validate)
+            new_dataset_items = super().upload_to_table("user_dataset_item", 'di',
+                                                        table_defs.user_dataset_item,
+                                                        'userdatasetitem_id',
+                                                        items_df, False, conn,
+                                                        validate)
 
             to_return = {
-                'userdataset_id': user_dataset_id,
-                'dataset_items': new_dataset_items
+                'counts': {
+                    'di': len(new_dataset_items),
+                    'ds': 1
+                },
+                'resources': {
+                    'ds': [
+                        {
+                            'action': 'inserted',
+                            'user_ds_code': None,
+                            'vb_ds_code': 'ds.' + str(user_dataset_id)
+                        }
+                    ],
+                    'di': new_dataset_items['resources']['di']
+                }
             }
         return to_return
