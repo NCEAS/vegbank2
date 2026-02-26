@@ -855,6 +855,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -881,6 +882,7 @@ paths:
             type: string
           example: "py.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -909,6 +911,7 @@ paths:
             type: string
           example: "rf.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -938,6 +941,7 @@ paths:
             type: string
           example: "to.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -967,6 +971,7 @@ paths:
             type: string
           example: "ob.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -989,6 +994,7 @@ paths:
         based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_pc'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -2599,6 +2605,20 @@ components:
         minimum: 0
         default: 5
       description: Number of communities to return per plot observation, ordered by commclass_id
+    status_pc:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [any, current, accepted, current_accepted]
+        default: any
+      description: |
+        Status criterion for returned plant concepts:
+        - `any`: Returns matching concepts regardless of status
+        - `current`: Only returns concepts that don't have (past) status stop dates
+        - `accepted`: Only returns concepts that have status of Accepted
+        - `current_accepted`: Only returns concepts that are both current and accepted
 
   responses:
 
