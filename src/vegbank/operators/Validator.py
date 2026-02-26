@@ -47,7 +47,8 @@ config = {
     },
     "contributors":{
         "required_fields":['vb_ar_code', 'contributor_type', 'record_identifier'],
-        "table_defs":[table_defs_config.contributor]
+        "table_defs":[table_defs_config.contributor],
+        "xor_fields":[('vb_py_code', 'user_py_code')]
     },
     "plot_observations":{ #This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
         "new_pl_required_fields":['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code'],
@@ -197,4 +198,36 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
             print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has passed")
         else:
             print(f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has failed with error: " + to_return['error'])
+    
+    if file_name is 'contributors':
+        record_identifier_validation = validate_contributor_record_identifier_codes(data[df_1_name], data)
+        to_return['has_error'] = to_return['has_error'] or record_identifier_validation['has_error']
+        to_return['error'] += record_identifier_validation['error']
+    return to_return
+
+def validate_contributor_record_identifier_codes(df, data):
+    '''
+    Validates contributor user codes against the three tables the record identifier can point to, as well as party. 
+    This is a special case function because the contributor record identifier can point to three different tables (project, plot, or observation) in addition to party, so it needs to validate against all of those tables and check that the user code exists in at least one of them.
+    '''
+    to_return = {
+        'has_error': False,
+        'error': ""
+    }
+    set_list = []
+    if data['cl'] is not None:
+        set_list.append(set(data['cl']['user_cl_code'].astype(str)))
+    if data['pj'] is not None:
+        set_list.append(set(data['pj']['user_pj_code'].astype(str)))
+    if data['pl'] is not None:
+        set_list.append(set(data['pl']['user_ob_code'].astype(str)))
+    print(set_list)
+    missing_codes = set(df['record_identifier'].astype(str))
+    for s in set_list:
+        missing_codes = missing_codes - s
+    missing_codes.discard(np.nan)
+    missing_codes.discard(None)
+    if len(missing_codes) > 0:
+        to_return['has_error'] = True
+        to_return['error'] += f"The following record_identifier values in contributors do not exist in the user provided project, plot, or community classification tables: " + ", ".join(missing_codes) + ". "
     return to_return
