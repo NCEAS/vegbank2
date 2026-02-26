@@ -629,7 +629,8 @@ class PlotObservation(Operator):
         df['user_pl_code'] = df['user_pl_code'].astype(str)
         to_return = None
         if not new_plots_df.empty:
-            plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
+            plot_codes = super().upload_to_table("plot", 'pl', 
+                table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
             
             pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
             pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
@@ -640,7 +641,8 @@ class PlotObservation(Operator):
             to_return = combine_json_return(to_return, plot_codes)
 
         df['user_ob_code'] = df['user_ob_code'].astype(str)
-        observation_codes = super().upload_to_table("observation", 'ob', table_defs_config.observation, 'observation_id', df, True, conn)
+        observation_codes = super().upload_to_table("observation", 'ob', 
+            table_defs_config.observation, 'observation_id', df, True, conn)
         to_return = combine_json_return(to_return, observation_codes)
 
         return to_return
@@ -697,7 +699,8 @@ class PlotObservation(Operator):
             'pl': {
                 'file_name': 'plot_observations',
                 'required': True,
-                'user_codes':[('user_pj_code','user_pj_code', 'pj')] #user code format is source_code, target_code, target_df
+                'user_codes': [('user_pj_code','user_pj_code', 'pj')] 
+                #user code format is source_code, target_code, target_df
             },
             'so': {
                 'file_name': 'soils',
@@ -741,7 +744,8 @@ class PlotObservation(Operator):
             'cr':{
                 'file_name': 'contributors',
                 'required': False,
-                'user_codes': [('user_py_code','user_py_code', 'py')] #Record identifier needs a validation, but it has multiple different possible sources
+                'user_codes': [('user_py_code','user_py_code', 'py')] 
+                #record_identifier has a special validation in Validator
             }
         }
         data = {}
