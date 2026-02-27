@@ -4,7 +4,6 @@ from vegbank.operators import table_defs_config
 from .Party import Party
 from .Reference import Reference
 from vegbank.utilities import (
-    batch_of_ids,
     read_parquet_file,
     UploadDataError,
     validate_required_and_missing_fields,
