@@ -41,6 +41,8 @@ class CommunityConcept(Operator):
         self.sort_options = ["default", "comm_name", "obs_count"]
         self.status_options = ["any", "current", "accepted", "current_accepted"]
         self.default_status = "any"
+        self.deactivation_options = ["none", "by_party"]
+        self.default_deactivation = "none"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -408,7 +410,12 @@ class CommunityConcept(Operator):
                         rf_actions['resources']['rf'], data['cc'],
                         {"user_rf_code": "user_status_rf_code",
                          "vb_rf_code": "vb_status_rf_code"})
-                cc_actions = self.upload_community_concepts(data['cc'], conn)
+                what_to_deactivate = process_option_param('deactivation',
+                    request.args.get('deactivation', self.default_deactivation),
+                    self.deactivation_options)
+
+                cc_actions = self.upload_community_concepts(
+                    data['cc'], conn, what_to_deactivate = what_to_deactivate)
                 to_return = combine_json_return(to_return, cc_actions)
 
                 # Prep & insert any new community names
@@ -481,7 +488,7 @@ class CommunityConcept(Operator):
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
 
-    def upload_community_concepts(self, df, conn):
+    def upload_community_concepts(self, df, conn, what_to_deactivate = 'none'):
         """
         Take the Community Concepts loader DataFrame and insert its contents
         into the commname, commconcept, and commstatus tables.
@@ -555,6 +562,8 @@ class CommunityConcept(Operator):
         if validation['has_error']:
             raise ValueError(validation['error'])
 
+        to_return = None
+
         #
         # Upsert names into commnames table
         #
@@ -565,6 +574,7 @@ class CommunityConcept(Operator):
         cn_actions = super().upload_to_table("comm_name", 'cn',
             config_comm_name, 'commname_id', df, False, conn,
             validate = False)
+        to_return = combine_json_return(to_return, cn_actions)
 
         # ... merge in newly created vb_cn_codes
         df = merge_vb_codes(
@@ -574,12 +584,21 @@ class CommunityConcept(Operator):
         config_comm_concept.append('vb_cn_code')
 
         #
+        # Optionally deactivate old concepts from the same parties
+        #
+
+        deactivation_actions = self.deactivate_old_concepts(conn, df,
+                                                            what_to_deactivate)
+        to_return = combine_json_return(to_return, deactivation_actions)
+
+        #
         # Insert concepts into commconcept table
         #
 
         df['user_cc_code'] = df['user_cc_code'].astype(str)
         cc_actions = super().upload_to_table("comm_concept", 'cc',
             config_comm_concept, 'commconcept_id', df, True, conn)
+        to_return = combine_json_return(to_return, cc_actions)
 
         #
         # Insert status into commstatus table
@@ -603,21 +622,8 @@ class CommunityConcept(Operator):
 
         cs_actions = super().upload_to_table("comm_status", 'cs',
             config_comm_status, 'commstatus_id', df, True, conn)
+        to_return = combine_json_return(to_return, cs_actions)
 
-        # TODO: decide which ones we actually want to return to the user -
-        # probably only `cc`?
-        to_return = {
-            'resources':{
-                'cn': cn_actions['resources']['cn'],
-                'cc': cc_actions['resources']['cc'],
-                'cs': cs_actions['resources']['cs']
-            },
-            'counts':{
-                'cn': cn_actions['counts']['cn'],
-                'cc': cc_actions['counts']['cc'],
-                'cs': cs_actions['counts']['cs']
-            }
-        }
         return to_return
 
     def upload_community_names(self, df, conn):
@@ -799,3 +805,93 @@ class CommunityConcept(Operator):
             }
         }
         return to_return
+
+    def deactivate_old_concepts(self, conn, df, what_to_deactivate):
+        """
+        Deactivate old concepts in VegBank
+
+        For a set of community status records defined jointly by the combination of
+        `df` and `what_to_deactivate`, set the `stopdate` to `now` if it is not
+        already set to some date, and then likewise set the `usagestop` to `now`
+        (if not already set) for all related community usage records.
+
+        Parameters:
+            conn (psycopg.Connection): Active database connection
+            df (pandas.DataFrame): Uploaded community concept data
+            what_to_deactivate (str): Concept deactivation strategy
+
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was existing records were
+                deactivated if successfully completed. Example:
+                {
+                    "counts": {
+                        "cc_existing": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cc_existing": [{"action": "STOP",
+                                "user_cc_code": "my_new_concept_1",
+                                "vb_cc_code": "cc.123"}],
+                    }
+                }
+        """
+        print("Applying stop dates to old concepts...")
+        if what_to_deactivate == 'by_party':
+            sql_deactivate_status = """
+                UPDATE commstatus
+                   SET stopdate = NOW()
+                   WHERE stopdate IS NULL
+                     AND party_id = ANY(%s)
+                   RETURNING commconcept_id,
+                             party_id,
+                             'STOP' AS action"""
+        else:
+            return  {
+                "resources": {
+                    "cc_existing": []
+                },
+                "counts": {
+                    "cc_existing": {
+                        "deactivated": 0
+                    }
+                }
+            }
+
+        # Put stop dates on old concepts
+        unique_status_parties = (
+            df['vb_status_py_code']
+            .str.removeprefix('py.')
+            .astype(int)
+            .unique()
+            .tolist()
+        )
+        sql = f"""\
+            WITH updated_status AS (
+              {sql_deactivate_status}
+            ),
+            updated_usage AS (
+              UPDATE commusage
+                 SET usagestop = NOW()
+                 FROM updated_status
+                 WHERE commusage.commconcept_id = updated_status.commconcept_id
+                   AND commusage.usagestop IS NULL
+                 RETURNING commusage.commconcept_id
+            ) SELECT action,
+                     'py.' || party_id AS vb_py_code,
+                     'cc.' || commconcept_id AS vb_cc_code
+                FROM updated_status"""
+
+        with conn.cursor() as cur:
+            cur.execute(sql, (unique_status_parties,))
+            cc_deactivated = cur.fetchall()
+
+        return {
+            "resources": {
+                "cc_existing": cc_deactivated
+            },
+            "counts": {
+                "cc_existing": {
+                    "deactivated": len(cc_deactivated)
+                }
+            }
+        }

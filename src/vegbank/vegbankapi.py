@@ -639,11 +639,35 @@ def community_concepts(vb_code):
     be further mediated by pagination parameters and other filtering query
     parameters.
 
+    POST: Upload a set of files conforming with the comm concept loader schema,
+    and return counts and created codes of newly inserted records. Includes an
+    option for deactivating existing concepts superseded by the newly uploaded
+    data.
+
     Parameters:
         vb_code (str or None): The unique identifier for the community concept
             being retrieved, or for a resource of a different type used to focus
             community concept retrieval. If None, retrieves all community
             concepts.
+
+    POST Parameters:
+        community_concepts (FileStorage): Parquet file containing new community
+            concepts and corresponding status details.
+        community_names (FileStorage, optional): Parquet file containing zero or
+            more community name usages (and related details) for each concept.
+        community_correlations (FileStorage, optional): Parquet file containing
+            correlations between concepts.
+        parties (FileStorage, optional): Parquet file containing one or more new
+            parties (people or organizations) providing perspectives on the
+            uploaded concepts.
+        references (FileStorage, optional): Parquet file containing one or more
+            new references associated with the uploaded community concepts.
+        deactivation (str, optional): Which existing community concepts in VegBank
+            should be deactivated when inserting the new concepts. Can be "none"
+            (don't deactivate any records) or "by_party" (deactivate all existing
+            community status and related usage records associated with any
+            parties that are also associated with the uploaded concepts).
+            Defaults to "none".
 
     GET Query Parameters:
         search (str, optional): Community name search query.
