@@ -63,7 +63,7 @@ spec:
 
     # --- STEP 1: Flyway migrations up to V1.4 ---
     - name: flyway-part-1
-      image: flyway/flyway:9-alpine
+      image: flyway/flyway:12.0.2-alpine
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -103,7 +103,7 @@ spec:
   # --- STEP 3: Remaining Flyway Migrations ---
   containers:
     - name: flyway-part-2
-      image: flyway/flyway:9-alpine
+      image: flyway/flyway:12.0.2-alpine
       command: ["/bin/sh", "-c"]
       args:
         - |

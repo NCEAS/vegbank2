@@ -9,7 +9,9 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    process_option_param,
+    update_search_vector,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -37,6 +39,8 @@ class CommunityConcept(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "comm_name", "obs_count"]
+        self.status_options = ["any", "current", "accepted", "current_accepted"]
+        self.default_status = "any"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -136,6 +140,46 @@ class CommunityConcept(Operator):
                      cc.commconcept_id {self.direction}
             """
 
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+
         self.query = {}
         self.query['base'] = {
             'alias': "cc",
@@ -154,10 +198,7 @@ class CommunityConcept(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': None,
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -205,6 +246,17 @@ class CommunityConcept(Operator):
                     'sql': "reference_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              JOIN commclass cl USING (commclass_id)
+                              JOIN bundle ob USING (observation_id)
+                              WHERE cc.commconcept_id = ci.commconcept_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],
@@ -249,6 +301,11 @@ class CommunityConcept(Operator):
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
+
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
 
         return params
 
@@ -333,7 +390,8 @@ class CommunityConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new community concepts
-                if py_actions is not None:
+                if (py_actions is not None and
+                        'user_status_py_code' in data['cc'].columns):
                     # ... merge in newly created vb_py_codes
                     data['cc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['cc'],
@@ -370,7 +428,8 @@ class CommunityConcept(Operator):
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if py_actions is not None:
+                    if (py_actions is not None and
+                            'user_usage_py_code' in data['cn'].columns):
                         data['cn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['cn'],
                             {"user_py_code": "user_usage_py_code",
@@ -396,6 +455,16 @@ class CommunityConcept(Operator):
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
                     cx_actions = None
+
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
+                # Update comm concept search vector
+                commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
+                                   for code in to_return['resources']['cc']]
+                update_search_vector(conn, 'commconcept', commconcept_ids)
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
@@ -660,9 +729,9 @@ class CommunityConcept(Operator):
         into the commcorrelation table.
 
         Preconditions:
-        - Every vb_cc_code matches an existing plant concept record
+        - Every vb_cc_code matches an existing comm concept record
         - Every vb_correlated_cc_code matches a concept referenced by at least
-          one existing plant status record
+          one existing comm status record
         Step 1: (*) INSERT INTO commcorrelation:
                 commstatus_id <- using vb_correlated_cc_code (custom logic)
                 commconcept_id <- from vb_cc_code (upstream)
