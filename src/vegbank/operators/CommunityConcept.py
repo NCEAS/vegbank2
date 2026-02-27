@@ -10,6 +10,7 @@ from vegbank.utilities import (
     merge_vb_codes,
     combine_json_return,
     jsonify_error_message,
+    process_option_param,
     update_search_vector,
 )
 from psycopg.rows import dict_row
@@ -38,6 +39,8 @@ class CommunityConcept(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "comm_name", "obs_count"]
+        self.status_options = ["any", "current", "accepted", "current_accepted"]
+        self.default_status = "any"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -137,6 +140,46 @@ class CommunityConcept(Operator):
                      cc.commconcept_id {self.direction}
             """
 
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+
         self.query = {}
         self.query['base'] = {
             'alias': "cc",
@@ -155,10 +198,7 @@ class CommunityConcept(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': None,
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -261,6 +301,11 @@ class CommunityConcept(Operator):
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
+
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
 
         return params
 
