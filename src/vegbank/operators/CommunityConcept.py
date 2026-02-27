@@ -729,9 +729,9 @@ class CommunityConcept(Operator):
         into the commcorrelation table.
 
         Preconditions:
-        - Every vb_cc_code matches an existing plant concept record
+        - Every vb_cc_code matches an existing comm concept record
         - Every vb_correlated_cc_code matches a concept referenced by at least
-          one existing plant status record
+          one existing comm status record
         Step 1: (*) INSERT INTO commcorrelation:
                 commstatus_id <- using vb_correlated_cc_code (custom logic)
                 commconcept_id <- from vb_cc_code (upstream)
