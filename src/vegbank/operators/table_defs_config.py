@@ -392,7 +392,6 @@ stratum = [
 
 stem_location = [
     'user_sl_code',
-    'vb_sc_code',
     'stem_code',
     'stem_x_position',
     'stem_y_position',
@@ -402,7 +401,6 @@ stem_location = [
 stem_count = [
     'user_sc_code',
     'user_tm_code',
-    'vb_tm_code',
     'stem_count',
     'stem_diameter',
     'stem_diameter_accuracy',
@@ -465,5 +463,6 @@ contributor = [
     'user_py_code',
     'vb_ar_code',
     'contributor_type',
-    'record_identifier'
+    'record_identifier',
+    'vb_py_code'
 ]
