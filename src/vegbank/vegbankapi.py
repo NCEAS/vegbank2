@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, Blueprint, jsonify, request, send_file
 import psycopg
 from psycopg import connect, ClientCursor
 from psycopg.rows import dict_row
@@ -38,8 +38,10 @@ from vegbank.operators import (
 
 UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files if necessary
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+#app = Flask(__name__)
+#app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+main = Blueprint('main', __name__)
 
 params = {}
 params['dbname'] = os.getenv('VB_DB_NAME')
@@ -54,7 +56,7 @@ default_detail = "full"
 default_limit = 1000
 default_offset = 0
 
-@app.before_request
+@main.before_request
 def before_request():
     """
     Log the incoming request method and path, and check if uploads are allowed for POST requests.
@@ -64,21 +66,21 @@ def before_request():
         if allow_uploads is False:
             return jsonify_error_message("Uploads not allowed."), 403
 
-@app.route("/")
+@main.route("/")
 def welcome_page():
     return "<h1>Welcome to the VegBank API</h1>"
 
 
-@app.route("/plot-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/plot-observations/<vb_code>", methods=['GET'])
-@app.route("/projects/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/parties/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/plant-concepts/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/named-places/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/community-concepts/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
-@app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/plot-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/plot-observations/<vb_code>", methods=['GET'])
+@main.route("/projects/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/parties/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/plant-concepts/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/named-places/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/community-concepts/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
+@main.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
 def plot_observations(vb_code):
     """
     Retrieve either an individual plot observation or a collection, or
@@ -166,10 +168,10 @@ def plot_observations(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/taxon-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-observations/<vb_code>", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
-@app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
+@main.route("/taxon-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/taxon-observations/<vb_code>", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
+@main.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
 def taxon_observations(vb_code):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
@@ -233,11 +235,11 @@ def taxon_observations(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-importances/<vb_code>", methods=['GET'])
-@app.route("/plant-concepts/<vb_code>/taxon-importances", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/taxon-importances", methods=['GET'])
-@app.route("/taxon-observations/<vb_code>/taxon-importances", methods=['GET'])
+@main.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/taxon-importances/<vb_code>", methods=['GET'])
+@main.route("/plant-concepts/<vb_code>/taxon-importances", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/taxon-importances", methods=['GET'])
+@main.route("/taxon-observations/<vb_code>/taxon-importances", methods=['GET'])
 def taxon_importances(vb_code):
     """
     Retrieve an individual taxon importance or a collection.
@@ -289,11 +291,11 @@ def taxon_importances(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/stem-counts", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/stem-counts/<vb_code>", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/stem-counts", methods=['GET'])
-@app.route("/taxon-observations/<vb_code>/stem-counts", methods=['GET'])
-@app.route("/taxon-importances/<vb_code>/stem-counts", methods=['GET'])
+@main.route("/stem-counts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/stem-counts/<vb_code>", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/stem-counts", methods=['GET'])
+@main.route("/taxon-observations/<vb_code>/stem-counts", methods=['GET'])
+@main.route("/taxon-importances/<vb_code>/stem-counts", methods=['GET'])
 def stem_counts(vb_code):
     """
     Retrieve either an individual stem count or a collection of counts.
@@ -345,7 +347,7 @@ def stem_counts(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/strata-cover-data", methods=['POST'])
+@main.route("/strata-cover-data", methods=['POST'])
 def strata_cover_data():
     """
     Upload strata cover data from a Parquet file.
@@ -378,7 +380,7 @@ def strata_cover_data():
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
 
-@app.route("/stem-data", methods=['POST'])
+@main.route("/stem-data", methods=['POST'])
 def stem_data():
     """
     Upload stem location data from a Parquet file.
@@ -416,11 +418,11 @@ def stem_data():
         return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
     return to_return
 
-@app.route("/taxon-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/taxon-interpretations/<vb_code>", methods=['GET'])
-@app.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
-@app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
+@main.route("/taxon-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/taxon-interpretations/<vb_code>", methods=['GET'])
+@main.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
+@main.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
 def taxon_interpretations(vb_code):
     """
     Retrieve either an individual taxon interpretation or a collection, or
@@ -499,10 +501,10 @@ def taxon_interpretations(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-classifications", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/community-classifications/<vb_code>", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
-@app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
+@main.route("/community-classifications", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/community-classifications/<vb_code>", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
+@main.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
 def community_classifications(vb_code):
     """
     Retrieve either an individual community classification or a collection.
@@ -557,11 +559,11 @@ def community_classifications(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/community-interpretations/<vb_code>", methods=['GET'])
-@app.route("/community-classifications/<vb_code>/community-interpretations", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/community-interpretations", methods=['GET'])
-@app.route("/community-concepts/<vb_code>/community-interpretations", methods=['GET'])
+@main.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/community-interpretations/<vb_code>", methods=['GET'])
+@main.route("/community-classifications/<vb_code>/community-interpretations", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/community-interpretations", methods=['GET'])
+@main.route("/community-concepts/<vb_code>/community-interpretations", methods=['GET'])
 def community_interpretations(vb_code):
     """
     Retrieve either an individual community interpretation or a collection.
@@ -616,12 +618,12 @@ def community_interpretations(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/community-concepts/<vb_code>")
-@app.route("/community-classifications/<vb_code>/community-concepts", methods=['GET'])
-@app.route("/parties/<vb_code>/community-concepts", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
-@app.route("/references/<vb_code>/community-concepts", methods=['GET'])
+@main.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/community-concepts/<vb_code>")
+@main.route("/community-classifications/<vb_code>/community-concepts", methods=['GET'])
+@main.route("/parties/<vb_code>/community-concepts", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
+@main.route("/references/<vb_code>/community-concepts", methods=['GET'])
 def community_concepts(vb_code):
     """
     Retrieve either an individual community concept or a collection.
@@ -706,12 +708,12 @@ def community_concepts(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/plant-concepts/<vb_code>")
-@app.route("/parties/<vb_code>/plant-concepts", methods=['GET'])
-@app.route("/references/<vb_code>/plant-concepts", methods=['GET'])
-@app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
+@main.route("/plant-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/plant-concepts/<vb_code>")
+@main.route("/parties/<vb_code>/plant-concepts", methods=['GET'])
+@main.route("/references/<vb_code>/plant-concepts", methods=['GET'])
+@main.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
 def plant_concepts(vb_code):
     """
     Retrieve either an individual plant concept or a collection.
@@ -797,11 +799,11 @@ def plant_concepts(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/parties", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/parties/<vb_code>", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/parties", methods=['GET'])
-@app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
-@app.route("/projects/<vb_code>/parties", methods=['GET'])
+@main.route("/parties", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/parties/<vb_code>", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/parties", methods=['GET'])
+@main.route("/community-classifications/<vb_code>/parties", methods=['GET'])
+@main.route("/projects/<vb_code>/parties", methods=['GET'])
 def parties(vb_code):
     """
     Retrieve either an individual party or a collection.
@@ -867,8 +869,8 @@ def parties(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
-@app.route("/projects/<pj_code>", methods=['GET'])
+@main.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
+@main.route("/projects/<pj_code>", methods=['GET'])
 def projects(pj_code):
     """
     Retrieve either an individual project or a collection, or upload a new set
@@ -930,8 +932,8 @@ def projects(pj_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
-@app.route("/cover-methods/<cm_code>")
+@main.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
+@main.route("/cover-methods/<cm_code>")
 def cover_methods(cm_code):
     """
     Retrieve either an individual cover method or a collection, or upload a new
@@ -979,8 +981,8 @@ def cover_methods(cm_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
-@app.route("/stratum-methods/<sm_code>", methods=['GET'])
+@main.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
+@main.route("/stratum-methods/<sm_code>", methods=['GET'])
 def stratum_methods(sm_code):
     """
     Retrieve either an individual stratum method or a collection, or upload a
@@ -1028,11 +1030,11 @@ def stratum_methods(sm_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/strata", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/strata/<vb_code>", methods=['GET'])
-@app.route("/plot-observations/<vb_code>/strata", methods=['GET'])
-@app.route("/taxon-observations/<vb_code>/strata", methods=['GET'])
-@app.route("/taxon-importances/<vb_code>/strata", methods=['GET'])
+@main.route("/strata", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/strata/<vb_code>", methods=['GET'])
+@main.route("/plot-observations/<vb_code>/strata", methods=['GET'])
+@main.route("/taxon-observations/<vb_code>/strata", methods=['GET'])
+@main.route("/taxon-importances/<vb_code>/strata", methods=['GET'])
 def strata(vb_code):
     """
     Retrieve either an individual stratum or a collection of strata
@@ -1084,8 +1086,8 @@ def strata(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
-@app.route("/references/<rf_code>")
+@main.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
+@main.route("/references/<rf_code>")
 def references(rf_code):
     """
     Retrieve either an individual reference or a collection.
@@ -1143,8 +1145,8 @@ def references(rf_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
-@app.route("/roles/<ar_code>")
+@main.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
+@main.route("/roles/<ar_code>")
 def roles(ar_code):
     """
     Retrieve either an individual role or a collection.
@@ -1188,8 +1190,8 @@ def roles(ar_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/named-places", defaults={'vb_code': None}, methods=['GET', 'POST'])
-@app.route("/named-places/<vb_code>")
+@main.route("/named-places", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@main.route("/named-places/<vb_code>")
 def named_places(vb_code):
     """
     Retrieve either an individual named place record or a collection.
@@ -1238,8 +1240,8 @@ def named_places(vb_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
-@app.route("/user-datasets/<ds_code>")
+@main.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
+@main.route("/user-datasets/<ds_code>")
 def user_datasets(ds_code):
     """
     Retrieve either an individual user dataset listing or a collection.
@@ -1287,7 +1289,7 @@ def user_datasets(ds_code):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/overview", methods=['GET'])
+@main.route("/overview", methods=['GET'])
 def overview():
     """
     Retrieve summary stats from VegBank
@@ -1301,8 +1303,8 @@ def overview():
     return Overview(params).get_summary_stats(request)
 
 
-@app.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
-@app.route("/identifiers/<path:identifier_value>")
+@main.route("/identifiers/", defaults={'identifier_value': None}, methods=['GET'])
+@main.route("/identifiers/<path:identifier_value>")
 def identifiers(identifier_value):
     """
     Retrieve an individual record for a given citation or identifier value. 

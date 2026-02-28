@@ -18,6 +18,7 @@ dependencies = [
     "pyarrow>=23.0.0",
     "numpy>=2.4.2",
     "adbc-driver-postgresql>=1.10.0",
+    "gunicorn>=25.1.0",
 ]
 
 [dependency-groups]

@@ -148,13 +148,13 @@ livenessProbe:
     ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
     ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
-    port: 80
+    port: 8000
 readinessProbe:
   httpGet:
     ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /
     ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
-    port: 80
+    port: 8000
 
 ## @section Miscellaneous
 

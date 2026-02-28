@@ -26,6 +26,6 @@ RUN . "${VIRTUAL_ENV}/bin/activate" && uv sync --active
 
 # TODO: Delete when package is released and can be installed via pip
 COPY src/vegbank /app/vegbank
-
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 ENV PYTHONPATH=/app
-CMD ["/data/venv/bin/python", "-m", "flask", "--app", "vegbank.vegbankapi:app", "run", "--host=0.0.0.0", "--port=80"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "vegbank.gunicorn_test:app"]
