@@ -246,41 +246,74 @@ def _validate_and_extract_claims(required_scope=None):
 
 
 
-def require_token(f):
+def require_token(methods=None):
     """Decorator – protect an endpoint that requires *any* valid JWT.
 
     Returns ``401`` if the token is missing, expired, or otherwise invalid.
+    
+    Can enforce auth on specific HTTP methods only. If ``methods`` is None,
+    protects all methods.
+
+    Args:
+        methods: Optional list of HTTP method names (e.g., ``['POST', 'PUT', 'DELETE']``) to protect.
+                 If None, all methods are protected.
+                 If the current request method is not in the list, auth is skipped.
+
+    Example:
+        ``@require_token(methods=['POST', 'PUT', 'DELETE'])`` – only protect write operations
     """
-    @functools.wraps(f)
-    def decorated(*args, **kwargs):
-        claims, error = _validate_and_extract_claims()
-        if error:
-            return error
+    def decorator(f):
+        @functools.wraps(f)
+        def decorated(*args, **kwargs):
+            # If methods are specified, only enforce auth for those methods
+            if methods is not None and request.method not in methods:
+                # No auth required for this method; pass None as claims
+                return f(None, *args, **kwargs)
+            
+            claims, error = _validate_and_extract_claims()
+            if error:
+                return error
 
-        _store_user_context(claims)
-        return f(claims, *args, **kwargs)
+            _store_user_context(claims)
+            return f(claims, *args, **kwargs)
 
-    return decorated
+        return decorated
+
+    return decorator
 
 
-def require_scope(required_scope: str):
+def require_scope(required_scope: str, methods=None):
     """Decorator factory – protect an endpoint that requires a specific scope.
 
     Supported VegBank scopes:
 
     * ``vegbank:admin``       – admin ops
-    * ``vegbank:contributor`` – create/update access
-    * ``vegbank:user``        – read-only access
+    * ``vegbank:contributor`` – create/update access for vegbank data
+    * ``vegbank:user``        – create/update access for user datasets
 
     Returns ``401`` for missing / invalid tokens, ``403`` if the required scope
     is absent from the token.
+    
+    Can enforce auth on specific HTTP methods only. If ``methods`` is None,
+    protects all methods.
 
     Args:
         required_scope: Valid OAuth 2.0 scope string that must be present in the token's ``scope`` claim.
+        methods: Optional list of HTTP method names (e.g., ``['POST', 'PUT', 'DELETE']``) to protect.
+                 If None, all methods are protected.
+                 If the current request method is not in the list, auth is skipped.
+
+    Example:
+        ``@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])`` – only protect POST operations
     """
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
+            # If methods are specified, only enforce auth for those methods
+            if methods is not None and request.method not in methods:
+                # No auth required for this method; pass None as claims
+                return f(None, *args, **kwargs)
+            
             claims, error = _validate_and_extract_claims(required_scope=required_scope)
             if error:
                 return error
