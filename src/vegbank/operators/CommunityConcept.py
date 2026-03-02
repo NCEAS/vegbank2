@@ -553,7 +553,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
