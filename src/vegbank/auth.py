@@ -84,7 +84,9 @@ def init_oauth(app) -> bool:
 
     # Trust X-Forwarded-Proto / X-Forwarded-Host headers injected by nginx
     # so Flask builds correct https:// redirect URIs behind the ingress.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    # Only apply ProxyFix once to avoid nested wrapping.
+    if not isinstance(app.wsgi_app, ProxyFix):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     oauth.init_app(app)
     oauth.register(
