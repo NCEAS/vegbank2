@@ -39,7 +39,7 @@ SCOPE_ADMIN = "vegbank:admin"
 SCOPE_CONTRIBUTOR = "vegbank:contributor"
 SCOPE_USER = "vegbank:user"
 
-# Initialize  module-level logger
+# Initialize module-level logger
 logger = logging.getLogger(__name__)
 
 oauth = OAuth()
@@ -140,7 +140,7 @@ def _extract_bearer_token():
     return None
 
 
-def _decode_and_validate_token(token_str: str) -> dict:
+def _decode_and_validate_token(token_str: str):
     """Decode *and* full-validate a JWT against the OIDC provider's JWKS.
 
     Validates signature, issuer (``iss``), and authorized-party (``azp``) claims.
@@ -149,7 +149,7 @@ def _decode_and_validate_token(token_str: str) -> dict:
         token_str: Raw JWT string
 
     Returns:
-        The validated claims dict.
+        The validated claims object.
 
     Raises:
         DecodeError: Token could not be decoded.
@@ -185,9 +185,10 @@ def _token_error_response(exc):
         InvalidTokenError: ("Token validation failed", 401),
         BadSignatureError: ("Token signature verification failed", 401),
         OAuthError: ("Authorization failed", 401),
+        KeyError: ("Invalid token structure", 401),
+        TypeError: ("Invalid token structure", 401),
         ValueError: ("OIDC provider configuration error", 500),
         _requests.RequestException: ("Failed to fetch OIDC provider keys", 502),
-        (KeyError, TypeError): ("Invalid token structure", 401),
     }
     for exc_types, (message, status) in error_map.items():
         if isinstance(exc, exc_types):
@@ -300,10 +301,15 @@ def login():
     authentication the provider redirects back to the ``/authorize``
     callback.
 
-    The redirect URI can be set explicitly via the ``OIDC_REDIRECT_URI``
+    Args:
+        (None)
 
     Returns:
         302 redirect to the provider's authorization endpoint.
+
+    Environment Variables:
+        OIDC_REDIRECT_URI: Optional explicit redirect URI. If not set,
+                          defaults to ``/authorize`` endpoint.
     """
     redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
     return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
