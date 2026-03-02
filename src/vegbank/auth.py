@@ -16,12 +16,16 @@ Decorator overview
 import functools
 import json
 import os
+import logging
+from requests import RequestException
 
 import requests as _requests
 
+from authlib.integrations.base_client.errors import OAuthError
 from authlib.integrations.flask_client import OAuth
 from authlib.jose import JsonWebKey, jwt
 from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenError
+
 from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -35,8 +39,10 @@ SCOPE_ADMIN = "vegbank:admin"
 SCOPE_CONTRIBUTOR = "vegbank:contributor"
 SCOPE_USER = "vegbank:user"
 
+# Initialize  module-level logger
+logger = logging.getLogger(__name__)
 
-# Loading client secrets from file
+
 def load_client_secrets(filepath: str | None = None) -> dict:
     """Load client secrets from a JSON file.
 
@@ -52,7 +58,6 @@ def load_client_secrets(filepath: str | None = None) -> dict:
         return json.load(f)
 
 
-# Initialize the OAuth client and register the OIDC provider
 def init_oauth(app) -> bool:
     """Initialise the OAuth client and register the OIDC provider.
 
@@ -67,7 +72,7 @@ def init_oauth(app) -> bool:
     try:
         secrets = load_client_secrets()
     except (FileNotFoundError, json.JSONDecodeError) as exc:
-        print(f"[auth] WARNING: Could not load client secrets ({exc}). Auth unavailable.")
+        logger.warning("Could not load client secrets (%s). Auth unavailable.", exc)
         return False
 
     # Trust X-Forwarded-Proto / X-Forwarded-Host headers injected by nginx
@@ -83,7 +88,7 @@ def init_oauth(app) -> bool:
         client_kwargs={"scope": secrets.get("scope_request", "openid email profile vegbank:admin vegbank:contributor vegbank:user")},
     )
 
-    print("[auth] OAuth client initialised.")
+    logger.info("OAuth client initialised.")
     return True
 
 
@@ -292,23 +297,19 @@ def authorize():
     """
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
-    except Exception as exc:  # pylint: disable=broad-except
+    except (OAuthError, RequestException) as exc:
+        logger.warning("OIDC token exchange error: %s", exc)
         return jsonify({"error": "Authorization failed", "details": str(exc)}), 401
 
     session["token"] = token
-    session["userinfo"] = token.get("userinfo", {})
 
     return (
         jsonify(
             {
                 "message": "Authorization successful",
-                "userinfo": session["userinfo"],
                 "token": {
                     "access_token": token.get("access_token"),
-                    "token_type": token.get("token_type"),
                     "refresh_token": token.get("refresh_token"),
-                    "expires_in": token.get("expires_in"),
-                    "scope": token.get("scope"),
                 },
             }
         ),
