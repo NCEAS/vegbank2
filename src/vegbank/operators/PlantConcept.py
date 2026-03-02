@@ -554,7 +554,7 @@ class PlantConcept(Operator):
                       config_plant_concept,
                       config_plant_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_pc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_pc_code', 'name', 'vb_rf_code', 'start_date',
                            'plant_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
