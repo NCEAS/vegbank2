@@ -177,11 +177,12 @@ def _decode_and_validate_token(token_str: str) -> dict:
 
 
 def _token_error_response(exc):
-    """Produce a uniform JSON error response for token validation failures."""
+    """Produce a uniform JSON error response for token validation/exchange failures."""
     error_map = {
         DecodeError: ("Token decoding failed", 401),
         InvalidTokenError: ("Token validation failed", 401),
         BadSignatureError: ("Token signature verification failed", 401),
+        OAuthError: ("Authorization failed", 401),
         ValueError: ("OIDC provider configuration error", 500),
         _requests.RequestException: ("Failed to fetch OIDC provider keys", 502),
         (KeyError, TypeError): ("Invalid token structure", 401),
@@ -323,7 +324,7 @@ def authorize():
         token = oauth.vegbank_oidc.authorize_access_token()
     except (OAuthError, RequestException) as exc:
         logger.warning("OIDC token exchange error: %s", exc)
-        return jsonify({"error": "Authorization failed", "details": str(exc)}), 401
+        return _token_error_response(exc)
 
     session["token"] = token
 
