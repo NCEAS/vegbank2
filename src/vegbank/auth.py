@@ -5,6 +5,7 @@ Implements OIDC / OAuth 2.0 login via Keycloak using authlib.
 
 import json
 import os
+import logging
 
 from authlib.integrations.flask_client import OAuth
 from flask import Blueprint, jsonify, session, url_for
@@ -47,7 +48,7 @@ def init_oauth(app) -> bool:
     try:
         secrets = load_client_secrets()
     except (FileNotFoundError, json.JSONDecodeError) as exc:
-        print(f"[auth] WARNING: Could not load client secrets ({exc}). Auth unavailable.")
+        logger.warning("Could not load client secrets (%s). Auth unavailable.", exc)
         return False
 
     # Trust X-Forwarded-Proto / X-Forwarded-Host headers injected by nginx
@@ -63,7 +64,7 @@ def init_oauth(app) -> bool:
         client_kwargs={"scope": secrets.get("scope_request", "openid email")},
     )
 
-    print("[auth] OAuth client initialised.")
+    logger.info("OAuth client initialised.")
     return True
 
 @auth_bp.route("/login", methods=["GET"])
