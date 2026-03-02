@@ -193,6 +193,55 @@ def _token_error_response(exc):
     return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
 
 
+def _store_user_context(claims):
+    """Store decoded token claims in request and session context."""
+    g.token_claims = claims
+    session["userinfo"] = {
+        "sub": claims.get("sub"),
+        "preferred_username": claims.get("preferred_username"),
+        "email": claims.get("email"),
+        "name": claims.get("name"),
+    }
+
+
+def _validate_and_extract_claims(required_scope=None):
+    """Validate bearer token and optionally check required scope.
+    
+    Args:
+        required_scope: Optional scope string to validate.
+        
+    Returns:
+        Tuple of (claims_dict, error_response_tuple) where error_response_tuple is None on success.
+    """
+    token_str = _extract_bearer_token()
+    if not token_str:
+        error_resp = (jsonify({"error": "Missing or invalid Authorization header"}), 401)
+        return None, error_resp
+
+    try:
+        claims = _decode_and_validate_token(token_str)
+    except (DecodeError, InvalidTokenError, BadSignatureError, ValueError, RequestException) as exc:
+        return None, _token_error_response(exc)
+    
+    # Scope check if required
+    if required_scope:
+        token_scopes = claims.get("scope", "").split()
+        if required_scope not in token_scopes:
+            error_resp = (
+                jsonify(
+                    {
+                        "error": f"Insufficient scope. Required: {required_scope}",
+                        "available_scopes": token_scopes,
+                    }
+                ),
+                403,
+            )
+            return None, error_resp
+    
+    return claims, None
+
+
+
 def require_token(f):
     """Decorator – protect an endpoint that requires *any* valid JWT.
 
@@ -200,24 +249,11 @@ def require_token(f):
     """
     @functools.wraps(f)
     def decorated(*args, **kwargs):
-        token_str = _extract_bearer_token()
-        if not token_str:
-            return jsonify({"error": "Missing or invalid Authorization header"}), 401
+        claims, error = _validate_and_extract_claims()
+        if error:
+            return error
 
-        try:
-            claims = _decode_and_validate_token(token_str)
-        except Exception as exc:  # pylint: disable=broad-except
-            return _token_error_response(exc)
-
-        # Store in request-scoped context for downstream helpers
-        g.token_claims = claims
-        # Sync a lightweight subset into session for browser-based flows
-        session["userinfo"] = {
-            "sub": claims.get("sub"),
-            "preferred_username": claims.get("preferred_username"),
-            "email": claims.get("email"),
-            "name": claims.get("name"),
-        }
+        _store_user_context(claims)
         return f(claims, *args, **kwargs)
 
     return decorated
@@ -241,36 +277,11 @@ def require_scope(required_scope: str):
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
-            token_str = _extract_bearer_token()
-            if not token_str:
-                return jsonify({"error": "Missing or invalid Authorization header"}), 401
+            claims, error = _validate_and_extract_claims(required_scope=required_scope)
+            if error:
+                return error
 
-            try:
-                claims = _decode_and_validate_token(token_str)
-            except Exception as exc:  # pylint: disable=broad-except
-                return _token_error_response(exc)
-
-            # Scope check
-            token_scopes = claims.get("scope", "").split()
-            if required_scope not in token_scopes:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Insufficient scope. Required: {required_scope}",
-                            "available_scopes": token_scopes,
-                        }
-                    ),
-                    403,
-                )
-
-            # Store in request-scoped context for downstream helpers
-            g.token_claims = claims
-            session["userinfo"] = {
-                "sub": claims.get("sub"),
-                "preferred_username": claims.get("preferred_username"),
-                "email": claims.get("email"),
-                "name": claims.get("name"),
-            }
+            _store_user_context(claims)
             return f(claims, *args, **kwargs)
 
         return decorated
