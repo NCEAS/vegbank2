@@ -4800,8 +4800,8 @@ components:
         inference_area:
           type: number
           format: float
-          description: "Area used to infer the importance values of the taxon, if not the
-same as plot-observation taxon_inference_area"
+          description: "Area used to infer the importance values of the taxon, if not the 
+            same as plot-observation taxon_inference_area"
           example: 1000
         stratum_base:
           type: number
