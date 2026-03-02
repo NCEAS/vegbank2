@@ -73,7 +73,7 @@ spec:
           export FLYWAY_LOCATIONS="filesystem:/flyway/sql"
           
           echo "Step 1: Running Flyway migrations up to and including V1.4..."
-          flyway migrate -target="1.4"
+          flyway migrate -target="1.4" -baselineOnMigrate="true" -baselineVersion="0"
       env: *db-env
       volumeMounts:
         - name: migrations-volume
@@ -87,7 +87,7 @@ spec:
         - |
           export DUMP_FILE_NAME="vegbank_pg10_dataonly.dump"
           echo "Step 2: Restoring data from ${DUMP_FILE_NAME} located at the root of the PV..."
-          pg_restore --exit-on-error -j 2 -h ${PGHOST} -p 5432 -U ${PGUSER} -d ${PGDATABASE} /data/${DUMP_FILE_NAME}
+          pg_restore --verbose --exit-on-error -j 2 -h ${PGHOST} -p 5432 -U ${PGUSER} -d ${PGDATABASE} /data/${DUMP_FILE_NAME}
       env: *db-env
       resources:
         requests:
