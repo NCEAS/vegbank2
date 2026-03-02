@@ -392,8 +392,7 @@ class CommunityConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new community concepts
-                if (py_actions is not None and
-                        'user_status_py_code' in data['cc'].columns):
+                if py_actions is not None:
                     # ... merge in newly created vb_py_codes
                     data['cc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['cc'],
@@ -435,8 +434,7 @@ class CommunityConcept(Operator):
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if (py_actions is not None and
-                            'user_usage_py_code' in data['cn'].columns):
+                    if py_actions is not None:
                         data['cn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['cn'],
                             {"user_py_code": "user_usage_py_code",
@@ -453,11 +451,10 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cc'], data['cx'],
                         {"user_cc_code": "user_cc_code",
                          "vb_cc_code": "vb_cc_code"})
-                    if 'user_correlated_cc_code' in data['cx'].columns:
-                        data['cx'] = merge_vb_codes(
-                            cc_actions['resources']['cc'], data['cx'],
-                            {"user_cc_code": "user_correlated_cc_code",
-                             "vb_cc_code": "vb_correlated_cc_code"})
+                    data['cx'] = merge_vb_codes(
+                        cc_actions['resources']['cc'], data['cx'],
+                        {"user_cc_code": "user_correlated_cc_code",
+                         "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
@@ -553,7 +550,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
@@ -614,7 +611,8 @@ class CommunityConcept(Operator):
              "vb_cc_code": "vb_cc_code"})
         config_comm_status.append('vb_cc_code')
 
-        # ... merge in newly created vb_cc_codes
+        # ... merge in any newly created vb_cc_codes for user-uploaded
+        # parent concept references
         df = merge_vb_codes(
             cc_actions['resources']['cc'], df,
             {"user_cc_code": "user_parent_cc_code",

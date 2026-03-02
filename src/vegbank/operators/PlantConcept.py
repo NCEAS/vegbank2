@@ -615,7 +615,8 @@ class PlantConcept(Operator):
              "vb_pc_code": "vb_pc_code"})
         config_plant_status.append('vb_pc_code')
 
-        # ... merge in newly created vb_pc_codes
+        # ... merge in any newly created vb_pc_codes for user-uploaded
+        # parent concept references
         df = merge_vb_codes(
             pc_actions['resources']['pc'], df,
             {"user_pc_code": "user_parent_pc_code",
