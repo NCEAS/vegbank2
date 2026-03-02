@@ -396,6 +396,9 @@ paths:
       tags:
         - Plot observations
       operationId: upload-ob
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload plot observations
       x-status: "beta"
       requestBody:
@@ -583,6 +586,9 @@ paths:
       tags:
         - Community concepts
       operationId: upload-cc
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload community concepts
       x-status: "planned"
       requestBody:
@@ -993,6 +999,9 @@ paths:
       tags:
         - Plant concepts
       operationId: upload-pc
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload plant concepts
       x-status: "planned"
       requestBody:
@@ -1619,6 +1628,9 @@ paths:
       tags:
         - Cover methods
       operationId: upload-cm
+      security:
+        - oauth2:
+            - vegbank:admin
       summary: Upload cover methods
       x-status: "beta"
       requestBody:
@@ -1688,6 +1700,9 @@ paths:
       tags:
         - Stratum methods
       operationId: upload-sm
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload stratum methods
       x-status: "beta"
       requestBody:
@@ -1839,6 +1854,9 @@ paths:
       tags:
         - Parties
       operationId: upload-py
+      security:
+        - oauth2:
+            - vegbank:admin
       summary: Upload parties
       x-status: "beta"
       requestBody:
@@ -1907,6 +1925,9 @@ paths:
       tags:
         - Parties
       operationId: upload-ar
+      security:
+        - oauth2:
+            - vegbank:admin
       summary: Upload roles
       x-status: "planned"
       requestBody:
@@ -1977,6 +1998,9 @@ paths:
       tags:
         - Projects
       operationId: upload-pj
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload projects
       x-status: "planned"
       requestBody:
@@ -2046,6 +2070,9 @@ paths:
       tags:
         - References
       operationId: upload-rf
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload references
       x-status: "planned"
       requestBody:
@@ -2154,6 +2181,9 @@ paths:
       tags:
         - User Datasets
       operationId: upload-ds
+      security:
+        - oauth2:
+            - vegbank:user
       summary: Upload a new user-defined dataset, which defines a bundle
         of one or more plot observations
       x-status: "planned"
@@ -2578,6 +2608,17 @@ components:
         minimum: 0
         default: 5
       description: Number of communities to return per plot observation, ordered by commclass_id
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://api.vegbank.org/login
+          scopes:
+            vegbank:admin: Administrator access with full permissions
+            vegbank:contributor: Contributor access to create and update plot observations
+            vegbank:user: User access for uploading user-defined datasets
 
   responses:
 
