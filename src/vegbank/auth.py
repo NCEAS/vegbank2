@@ -6,8 +6,11 @@ Implements OIDC / OAuth 2.0 login via Keycloak using authlib.
 import json
 import os
 import logging
+from requests import RequestException
 
+from authlib.integrations.base_client.errors import OAuthError
 from authlib.integrations.flask_client import OAuth
+
 from flask import Blueprint, jsonify, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -15,6 +18,9 @@ _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 
 oauth = OAuth()
 auth_bp = Blueprint("auth", __name__)
+
+# Initialize  module-level logger
+logger = logging.getLogger(__name__)
 
 
 # Loading client secrets from file
@@ -98,7 +104,8 @@ def authorize():
     """
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
-    except Exception as exc:  # pylint: disable=broad-except
+    except (OAuthError, RequestException) as exc:
+        logger.warning("OIDC token exchange error: %s", exc)
         return jsonify({"error": "Authorization failed", "details": str(exc)}), 401
 
     session["token"] = token
