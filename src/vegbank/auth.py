@@ -23,7 +23,6 @@ auth_bp = Blueprint("auth", __name__)
 logger = logging.getLogger(__name__)
 
 
-# Loading client secrets from file
 def load_client_secrets(filepath: str | None = None) -> dict:
     """Load client secrets from a JSON file.
 
@@ -39,7 +38,6 @@ def load_client_secrets(filepath: str | None = None) -> dict:
         return json.load(f)
 
 
-# Initialize the OAuth client and register the OIDC provider
 def init_oauth(app) -> bool:
     """Initialise the OAuth client and register the OIDC provider.
 
@@ -109,19 +107,14 @@ def authorize():
         return jsonify({"error": "Authorization failed", "details": str(exc)}), 401
 
     session["token"] = token
-    session["userinfo"] = token.get("userinfo", {})
 
     return (
         jsonify(
             {
                 "message": "Authorization successful",
-                "userinfo": session["userinfo"],
                 "token": {
                     "access_token": token.get("access_token"),
-                    "token_type": token.get("token_type"),
                     "refresh_token": token.get("refresh_token"),
-                    "expires_in": token.get("expires_in"),
-                    "scope": token.get("scope"),
                 },
             }
         ),
