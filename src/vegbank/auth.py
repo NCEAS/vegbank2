@@ -1,15 +1,17 @@
 """Authentication module for the VegBank API.
 
-Implements OIDC / OAuth 2.0 login via Keycloak using authlib.
+Implements OIDC / OAuth 2.0 login via a configurable OIDC provider using authlib.
 
 Decorator overview
 ------------------
 ``require_token``
-    Protects an endpoint that requires *any* valid, unexpired JWT issued by Keycloak.
+    Protects an endpoint that requires *any* valid, unexpired JWT issued by
+    the configured OIDC provider.
 
 ``require_scope(scope)``
-    Same as ``require_token`` but additionally asserts that the tokencontains correct 
-    Vegbank scope (e.g. ``"vegbank:admin"``, ``"vegbank:contributor"``, ``"vegbank:user"``).
+    Same as ``require_token`` but additionally asserts that the token contains the
+    correct Vegbank scope (e.g. ``"vegbank:admin"``, ``"vegbank:contributor"``,
+    ``"vegbank:user"``).
 
 """
 
@@ -34,7 +36,7 @@ _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 oauth = OAuth()
 auth_bp = Blueprint("auth", __name__)
 
-# Keycloak vegbank specific scopes
+# VegBank-specific scopes
 SCOPE_ADMIN = "vegbank:admin"
 SCOPE_CONTRIBUTOR = "vegbank:contributor"
 SCOPE_USER = "vegbank:user"
@@ -47,13 +49,18 @@ def load_client_secrets(filepath: str | None = None) -> dict:
     """Load client secrets from a JSON file.
 
     Args:
-        filepath: Optional explicit path. Falls back to KEYCLOAK_CLIENT_SECRETS_FILE
-                    env var, then the default Kubernetes mount path.
+        filepath: Optional explicit path. Falls back to the
+                    ``OIDC_CLIENT_SECRETS_FILE`` environment variable
 
     Returns:
         Parsed dict of client credentials.
     """
-    resolved = filepath or os.getenv("KEYCLOAK_CLIENT_SECRETS_FILE", _DEFAULT_SECRETS_PATH)
+    # accept either explicit filepath argument or environment variable, with a default fallback
+    resolved = (
+        filepath
+        or os.getenv("OIDC_CLIENT_SECRETS_FILE")
+        or _DEFAULT_SECRETS_PATH
+    )
     with open(resolved, "r") as f:
         return json.load(f)
 
@@ -270,13 +277,14 @@ def require_scope(required_scope: str):
 def login():
     """Initiate the OIDC login flow.
 
-    Redirects the user to the Keycloak login page. After successful
-    authentication, Keycloak redirects back to the /authorize callback.
+    Sends the user to the provider's login page. After successful
+    authentication the provider redirects back to the ``/authorize``
+    callback.
 
     The redirect URI can be set explicitly via the ``OIDC_REDIRECT_URI``
 
     Returns:
-        302 redirect to the Keycloak login page.
+        302 redirect to the provider's authorization endpoint.
     """
     redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
     return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
@@ -286,10 +294,10 @@ def login():
 def authorize():
     """OIDC authorization callback endpoint.
 
-    Keycloak redirects here after a successful login with a short-lived
-    authorization code. This endpoint exchanges that code for an access
-    token, stores both the token and the user-info claims in the session,
-    and returns them to the caller.
+    The OIDC provider redirects here after a successful login with a
+    short-lived authorization code. This endpoint exchanges that code for an
+    access token, stores both the token and the user-info claims in the
+    session, and returns them to the user.
 
     Returns:
         200 JSON with ``token`` and ``userinfo`` on success.

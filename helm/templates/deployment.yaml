@@ -33,9 +33,9 @@ spec:
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
       {{- end }}
-      - name: keycloak-oidc-config
+      - name: oidc-config
         secret:
-          secretName: vegbank-keycloak-oidc-config
+          secretName: vegbank-oidc-config
           defaultMode: 0440
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -139,7 +139,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: keycloak-oidc-config
+            - name: oidc-config
               mountPath: /etc/vegbank/oidc
               readOnly: true
           {{- with .Values.volumeMounts }}
@@ -165,7 +165,7 @@ spec:
             - name: VB_ALLOW_UPLOADS
               value: {{ .Values.allowUploads | quote }}
             # Path to the mounted OIDC client secrets JSON file
-            - name: KEYCLOAK_CLIENT_SECRETS_FILE
+            - name: OIDC_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
             {{- if .Values.oidcRedirectUri }}
             # Explicit OIDC redirect URI - required when behind a path-rewriting ingress
