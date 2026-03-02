@@ -95,7 +95,8 @@ spec:
               mountPath: {{ .Values.flyway.dbpath }}/migrations
           env:
             - name: FLYWAY_URL
-              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+              value: "jdbc:postgresql://{{ .Values.flyway.dbHost }}:{{ .Values.flyway.dbPort }}/{{
+              .Values.database.name }}"
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:

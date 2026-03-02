@@ -212,20 +212,22 @@ $ kubectl -n dev-vegbank port-forward vegbank-745779dccd-994r6 2580:80
 
 ### Database
 
-| Name                            | Description                                                               | Value                                     |
-| ------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------- |
-| `database.name`                 | The name of the postgres database to be used by VegBank                   | `vegbank`                                 |
-| `database.host`                 | hostname of database to be used by VegBank (Must match CNPG RW service)   | `vegbankdb2-cnpg-rw`                      |
-| `database.port`                 | port to connect to the database (Must match CNPG port number)             | `5432`                                    |
-| `databaseRestore.enabled`       | Restores a full (schema+data) database dump file defined below            | `false`                                   |
-| `databaseRestore.pvc`           | PVC containing the (schema+data) database dump file to restore            | `vegbankdb-init-pgdata`                   |
-| `databaseRestore.mountpath`     | Mount path inside the container for the pvc/dump file volume              | `/tmp/databaseRestore`                    |
-| `databaseRestore.filepath`      | dump file path, relative to databaseRestore.mountpath                     | `vegbank_full_fc_v1.9_pg16_20250924.dump` |
-| `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*) | `postgres:17`                             |
-| `flyway.image.repository`       | docker image repository for flyway, used in initContainer                 | `flyway/flyway`                           |
-| `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                  | `IfNotPresent`                            |
-| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                   | `12.0.2`                                  |
-| `flyway.dbpath`                 | The path to the directory containing the flyway migration files           | `/opt/local/flyway/db`                    |
+| Name                            | Description                                                                | Value                                     |
+| ------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
+| `database.name`                 | The name of the postgres database to be used by VegBank                    | `vegbank`                                 |
+| `database.host`                 | hostname of database to be used by VegBank (RW svc name of CNPG or pooler) | `vegbankdb2-cnpg-rw`                      |
+| `database.port`                 | port to connect to the database (Must match CNPG or pooler port number)    | `5432`                                    |
+| `databaseRestore.enabled`       | Restores a full (schema+data) database dump file defined below             | `false`                                   |
+| `databaseRestore.pvc`           | PVC containing the (schema+data) database dump file to restore             | `vegbankdb-init-pgdata`                   |
+| `databaseRestore.mountpath`     | Mount path inside the container for the pvc/dump file volume               | `/tmp/databaseRestore`                    |
+| `databaseRestore.filepath`      | dump file path, relative to databaseRestore.mountpath                      | `vegbank_full_fc_v1.9_pg16_20250924.dump` |
+| `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
+| `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
+| `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.0.2`                                  |
+| `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
+| `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb2-cnpg-rw`                      |
+| `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
 
 ### VegBank API Docker Image
 

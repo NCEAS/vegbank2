@@ -18,10 +18,10 @@ database:
   ## @param database.name The name of the postgres database to be used by VegBank
   ##
   name: vegbank
-  ## @param database.host hostname of database to be used by VegBank (Must match CNPG RW service)
+  ## @param database.host hostname of database to be used by VegBank (RW svc name of CNPG or pooler)
   ##
   host: vegbankdb2-cnpg-rw
-  ## @param database.port port to connect to the database (Must match CNPG port number)
+  ## @param database.port port to connect to the database (Must match CNPG or pooler port number)
   ##
   port: 5432
 
@@ -58,6 +58,12 @@ flyway:
   ## @param flyway.dbpath The path to the directory containing the flyway migration files
   ##
   dbpath: /opt/local/flyway/db
+  ## @param flyway.dbHost hostname for flyway's direct connection to the database (not via pooler!)
+  ##
+  dbHost: vegbankdb2-cnpg-rw
+  ## @param flyway.dbPort port for flyway's direct connection to the database (not via pooler!)
+  ##
+  dbPort: 5432
 
 ## @section VegBank API Docker Image
 ## Configuration for the docker image of the Flask API.
