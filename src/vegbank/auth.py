@@ -32,9 +32,7 @@ from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
-
-oauth = OAuth()
-auth_bp = Blueprint("auth", __name__)
+MAX_TOKEN_LEN = 16_384  # sanity check to prevent DoS with huge tokens
 
 # VegBank-specific scopes
 SCOPE_ADMIN = "vegbank:admin"
@@ -44,6 +42,8 @@ SCOPE_USER = "vegbank:user"
 # Initialize  module-level logger
 logger = logging.getLogger(__name__)
 
+oauth = OAuth()
+auth_bp = Blueprint("auth", __name__)
 
 def load_client_secrets(filepath: str | None = None) -> dict:
     """Load client secrets from a JSON file.
@@ -129,7 +129,12 @@ def _extract_bearer_token():
     """
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
-        return auth_header[7:]
+        token = auth_header[7:]
+
+        # caps the token length to prevent huge tokens from causing DoS issues in downstream processing.
+        if len(token) > MAX_TOKEN_LEN:
+            return None       # triggers 401
+        return token
     return None
 
 
