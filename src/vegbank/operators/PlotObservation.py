@@ -454,9 +454,14 @@ class PlotObservation(Operator):
                 },
                 'search': {
                     'sql': """\
-                         ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR ob.observation_id = CASE
+                              WHEN %s ~ '^ob\.\d+$'
+                              THEN regexp_replace(%s, '^ob\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 'ob': {
                     'sql': "ob.observation_id = %s",
