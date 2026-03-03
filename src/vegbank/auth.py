@@ -221,6 +221,30 @@ def _token_error_response(exc):
     return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
 
 
+def _token_response(token: dict, message: str = "Token exchange successful"):
+    """Produce a uniform JSON response with access and refresh tokens.
+    
+    Args:
+        token: Dict containing token data with 'access_token' and 'refresh_token' keys.
+        message: Optional message to include in response.
+        
+    Returns:
+        Tuple of (JSON response, 200 status code).
+    """
+    return (
+        jsonify(
+            {
+                "message": message,
+                "token": {
+                    "access_token": token.get("access_token"),
+                    "refresh_token": token.get("refresh_token"),
+                },
+            }
+        ),
+        200,
+    )
+
+
 def _store_user_context(claims):
     """Store decoded token claims in request and session context."""
     g.token_claims = claims
@@ -383,13 +407,24 @@ def login():
 
     Returns:
         302 redirect to the provider's authorization endpoint.
+        200 JSON response if already authenticated.
+        401/500 JSON error response if login fails.
 
     Environment Variables:
         OIDC_REDIRECT_URI: Optional explicit redirect URI. If not set,
                           defaults to ``/authorize`` endpoint.
     """
-    redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
-    return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
+    # Check if user is already authenticated
+    if "token" in session and session.get("token"):
+        token = session.get("token")
+        return _token_response(token, message="Already authenticated")
+
+    try:
+        redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
+        return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
+    except (OAuthError, RequestException) as exc:
+        logger.error("OIDC authorize_redirect error: %s", exc)
+        return _token_error_response(exc)
 
 
 @auth_bp.route("/authorize", methods=["GET"])
@@ -411,19 +446,7 @@ def authorize():
         return _token_error_response(exc)
 
     session["token"] = token
-
-    return (
-        jsonify(
-            {
-                "message": "Authorization successful",
-                "token": {
-                    "access_token": token.get("access_token"),
-                    "refresh_token": token.get("refresh_token"),
-                },
-            }
-        ),
-        200,
-    )
+    return _token_response(token, message="Authorization successful")
 
 
 def get_deployment_mode() -> str:
