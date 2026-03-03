@@ -1,6 +1,8 @@
 import os
+import pandas as pd
+import numpy as np
 from vegbank.operators.operator_parent_class import Operator
-from vegbank.operators import table_defs_config
+from vegbank.operators import table_defs_config, Validator
 from .Party import Party
 from .Reference import Reference
 from vegbank.utilities import (
@@ -354,7 +356,12 @@ class PlantConcept(Operator):
             },
             'pc': {
                 'file_name': 'plant_concepts',
-                'required': True
+                'required': True,
+                'user_codes':[
+                    ('user_rf_code', 'user_rf_code', 'rf'),
+                    ('user_status_rf_code', 'user_rf_code', 'rf'),
+                    ('user_status_py_code', 'user_py_code', 'py')
+                ]
             },
             'pn': {
                 'file_name': 'plant_names',
@@ -367,13 +374,25 @@ class PlantConcept(Operator):
         }
         # Read each Parquet file from the request into a Pandas DataFrame
         data = {}
+        validation = {
+            "has_error": False,
+            "error": ""
+        }
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
+                if data[name] is not None:
+                    data[name].replace({pd.NA: None, np.nan:None}, inplace=True)
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation.get('error') + user_code_validation.get('error')
+                    validation['has_error'] = validation['has_error'] or file_validation['has_error'] or user_code_validation['has_error']
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
 
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
             to_return = None
