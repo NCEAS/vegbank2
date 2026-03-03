@@ -56,6 +56,16 @@ config = {
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
         "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    },
+    "plant_concepts":{
+        "required_fields": ['user_pc_code', 'name', 'start_date',
+                           'plant_concept_status'],
+        "table_defs":[table_defs_config.plant_concept],
+        "xor_fields":[
+            ('user_rf_code', 'vb_rf_code'), 
+            ('user_status_py_code', 'vb_status_py_code'),
+            ('user_parent_pc_code', 'vb_parent_pc_code')
+        ]
     }
 
 }
