@@ -428,6 +428,7 @@ def stem_data():
 @app.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def taxon_interpretations(vb_code):
     """
     Retrieve either an individual taxon interpretation or a collection, or
@@ -510,6 +511,7 @@ def taxon_interpretations(vb_code):
 @app.route("/community-classifications/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
 @app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def community_classifications(vb_code):
     """
     Retrieve either an individual community classification or a collection.

@@ -354,7 +354,7 @@ def authorize():
 
     Keycloak redirects here after a successful login with a short-lived
     authorization code. This endpoint exchanges that code for an access
-    token, stores both the token and returns it to the caller.
+    token, stores the token and returns it to the caller.
 
     Returns:
         200 JSON with ``token`` on success.
