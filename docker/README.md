@@ -77,33 +77,15 @@ Password:
 Login Succeeded
 ```
 
-### Step 4: Update your Dockerfile
+### Step 4: Build & push your image
 
-Every image we push should have a unique and immutable version number, and this should be recorded in the (docker) image metadata.
-
-So first confirm that you are in the correct github branch that you would like to push an image for, and then go to `docker/Dockerfile` and update the image.version label:
-
-```sh
-# docker/Dockerfile
-FROM python:3.13
-
-LABEL org.opencontainers.image.title="vegbank2 Flask API"
-LABEL org.opencontainers.image.source="http://github.com/nceas/vegbank2"
-# Update this label
-# ex. LABEL org.opencontainers.image.version="0.0.3-develop"
-LABEL org.opencontainers.image.version="#.#.#-unique-name"
-
-...
-
-```
-
-### Step 5: Build & push your image
-
-After you've updated the label metadata, you are now ready to push your updated image to the Github container registry. You can do so like such, and be sure to replace the image.version with your specified one in the image metadata:
+You are now ready to push your updated image to the Github container registry:
 
 ```sh
 # Example with 0.0.3-develop image version
-$ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t ghcr.io/nceas/vegbank:0.0.3-develop
+TAG=0.0.3-develop
+$ docker buildx build --build-arg IMG_VER="$TAG" --platform linux/amd64 -f docker/Dockerfile ./ \
+      --push -t ghcr.io/nceas/vegbank:$TAG
 
 # Example output
 [+] Building 4.5s (16/16) FINISHED                                                                                                                             docker-container:multi-platform-builder
@@ -136,7 +118,7 @@ $ docker buildx build --platform linux/amd64 -f docker/Dockerfile ./ --push -t g
  => [auth] nceas/vegbank:pull,push token for ghcr.io                                                                                                                                              0.0s
 ```
 
-### Step 6: Re-deploy the kubernetes pod
+### Step 5: Re-deploy the kubernetes pod
 
 After the image has been deployed, navigate to your helm's `Chart.yaml` and update the `appVersion` to your new chart name. In the example below, I used `0.0.3-develop'.
 - Note: You can find the different images available for you to select from [here](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank)
