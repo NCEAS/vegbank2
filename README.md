@@ -54,7 +54,7 @@ vegetation plot records, plant concepts, community types, and other supporting i
 as submit and upload new data to the archive.
 
 - **Comprehensive API documentation** (WIP): https://nceas.github.io/vegbank2/api/
-- **API Authorization Guide**: [API_AUTHORIZATION.md](./API_AUTHORIZATION.md) – Instructions for obtaining and using API tokens
+- **API Authorization Guide**: [API_AUTHORIZATION.md](./API_AUTHORIZATION.md) – Detailed authentication, token usage, and scope system
 - **Development API**: https://api-dev.vegbank.org
 
 ## Development build

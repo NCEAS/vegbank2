@@ -2,8 +2,21 @@
 
 Implements OIDC / OAuth 2.0 login via a configurable OIDC provider using authlib.
 
+Deployment Modes
+----------------
+The API supports three deployment modes controlled by the ``VB_DEPLOYMENT_MODE`` environment variable:
+
+``read_only``
+    Authentication disabled. All endpoints are public. File uploads disabled.
+
+``open``
+    Authentication disabled. All endpoints are public. File uploads allowed.
+
+``authenticated``
+    Full authentication and authorization enabled. Protected endpoints require valid JWT tokens with appropriate scopes.
+
 Decorator overview
-------------------
+--------------------------------------------------
 ``require_token``
     Protects an endpoint that requires *any* valid, unexpired JWT issued by
     the configured OIDC provider.
@@ -32,18 +45,24 @@ from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
-MAX_TOKEN_LEN = 16_384  # sanity check to prevent DoS with huge tokens
+MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent DoS attacks
 
 # VegBank-specific scopes
 SCOPE_ADMIN = "vegbank:admin"
 SCOPE_CONTRIBUTOR = "vegbank:contributor"
 SCOPE_USER = "vegbank:user"
 
+# Deployment modes
+DEPLOYMENT_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
+DEPLOYMENT_MODE_OPEN = "open"                 # Open mode: uploads allowed, no auth
+DEPLOYMENT_MODE_AUTHENTICATED = "authenticated"  # Authenticated mode: auth required, full access control
+
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
 
 oauth = OAuth()
 auth_bp = Blueprint("auth", __name__)
+
 
 def load_client_secrets(filepath: str | None = None) -> dict:
     """Load client secrets from a JSON file.
@@ -249,6 +268,9 @@ def _validate_and_extract_claims(required_scope=None):
 def require_token(methods=None):
     """Decorator – protect an endpoint that requires *any* valid JWT.
 
+    **Only enforces authentication when deploymentMode='authenticated'.**
+    In 'read_only' and 'open' modes, this decorator allows all requests.
+
     Returns ``401`` if the token is missing, expired, or otherwise invalid.
     
     Can enforce auth on specific HTTP methods only. If ``methods`` is None,
@@ -265,6 +287,13 @@ def require_token(methods=None):
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
+            mode = get_deployment_mode()
+            
+            # In read_only or open mode, skip auth entirely
+            if mode != DEPLOYMENT_MODE_AUTHENTICATED:
+                logger.debug(f"Deployment mode '{mode}': skipping token validation")
+                return f(None, *args, **kwargs)
+            
             # If methods are specified, only enforce auth for those methods
             if methods is not None and request.method not in methods:
                 # No auth required for this method; pass None as claims
@@ -284,6 +313,9 @@ def require_token(methods=None):
 
 def require_scope(required_scope: str, methods=None):
     """Decorator factory – protect an endpoint that requires a specific scope.
+
+    **Only enforces authentication when deploymentMode='authenticated'.**
+    In 'read_only' and 'open' modes, this decorator allows all requests.
 
     Supported VegBank scopes:
 
@@ -309,6 +341,13 @@ def require_scope(required_scope: str, methods=None):
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
+            mode = get_deployment_mode()
+            
+            # In read_only or open mode, skip auth entirely
+            if mode != DEPLOYMENT_MODE_AUTHENTICATED:
+                logger.debug(f"Deployment mode '{mode}': skipping scope validation")
+                return f(None, *args, **kwargs)
+            
             # If methods are specified, only enforce auth for those methods
             if methods is not None and request.method not in methods:
                 # No auth required for this method; pass None as claims
@@ -380,3 +419,16 @@ def authorize():
         ),
         200,
     )
+
+
+def get_deployment_mode() -> str:
+    """Get the current deployment mode from environment.
+    
+    Returns:
+        str: One of 'read_only', 'open', or 'authenticated'. Defaults to 'authenticated'.
+    """
+    mode = os.getenv("VB_DEPLOYMENT_MODE", DEPLOYMENT_MODE_AUTHENTICATED).lower()
+    if mode not in (DEPLOYMENT_MODE_READ_ONLY, DEPLOYMENT_MODE_OPEN, DEPLOYMENT_MODE_AUTHENTICATED):
+        logger.warning(f"Invalid deployment mode '{mode}', falling back to '{DEPLOYMENT_MODE_AUTHENTICATED}'")
+        return DEPLOYMENT_MODE_AUTHENTICATED
+    return mode

@@ -8,8 +8,18 @@ import io
 import time
 import traceback
 import os
+import logging
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from vegbank.auth import auth_bp, init_oauth, require_token, require_scope, SCOPE_ADMIN, SCOPE_CONTRIBUTOR, SCOPE_USER
+from vegbank.auth import (
+    auth_bp, 
+    init_oauth, 
+    require_scope, 
+    SCOPE_ADMIN, 
+    SCOPE_CONTRIBUTOR, 
+    SCOPE_USER,
+    get_deployment_mode,
+    DEPLOYMENT_MODE_READ_ONLY
+)
 from vegbank.repositories import (
     IdentifiersQueries,
     Overview,
@@ -43,6 +53,9 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
 
+# Initialize logging
+logger = logging.getLogger(__name__)
+
 init_oauth(app)
 app.register_blueprint(auth_bp)
 
@@ -53,8 +66,6 @@ params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
-allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
-
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
@@ -63,11 +74,19 @@ default_offset = 0
 def before_request():
     """
     Log the incoming request method and path, and check if uploads are allowed for POST requests.
+    
+    Upload behavior is determined by deploymentMode:
+    - 'read_only': No uploads allowed
+    - 'open': Uploads allowed
+    - 'authenticated': Uploads allowed (with scope restrictions on individual endpoints)
     """
-    print( f"Received {request.method} request for {request.path}" ) # This will eventually be a log statement
+    logger.info(f"Received {request.method} request for {request.path}")
+    
     if request.method == 'POST':
-        if allow_uploads is False:
-            return jsonify_error_message("Uploads not allowed."), 403
+        mode = get_deployment_mode()
+        
+        if mode == DEPLOYMENT_MODE_READ_ONLY:
+            return jsonify_error_message("Uploads not allowed in read_only deployment mode."), 403
 
 @app.route("/")
 def welcome_page():
