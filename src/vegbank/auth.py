@@ -352,13 +352,12 @@ def login():
 def authorize():
     """OIDC authorization callback endpoint.
 
-    The OIDC provider redirects here after a successful login with a
-    short-lived authorization code. This endpoint exchanges that code for an
-    access token, stores both the token and the user-info claims in the
-    session, and returns them to the user.
+    Keycloak redirects here after a successful login with a short-lived
+    authorization code. This endpoint exchanges that code for an access
+    token, stores both the token and returns it to the caller.
 
     Returns:
-        200 JSON with ``token`` and ``userinfo`` on success.
+        200 JSON with ``token`` on success.
         401 JSON with error details on failure.
     """
     try:
