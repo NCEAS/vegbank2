@@ -2620,7 +2620,7 @@ components:
         enum: [any, current, accepted, current_accepted]
         default: any
       description: |
-        Status criterion for returned plant concepts:
+        Status criterion for returned plant concepts and their children:
         - `any`: Returns matching concepts regardless of status
         - `current`: Only returns concepts that don't have (past) status stop dates
         - `accepted`: Only returns concepts that have an accepted status

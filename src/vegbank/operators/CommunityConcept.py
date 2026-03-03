@@ -17,6 +17,7 @@ from psycopg.rows import dict_row
 from psycopg import connect
 from flask import jsonify
 
+
 class CommunityConcept(Operator):
     """
     Defines operations related to the exchange of community concept data with
@@ -48,6 +49,54 @@ class CommunityConcept(Operator):
         query_type = self.detail
         if self.with_nested == 'true':
             query_type += "_nested"
+
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND stopdate IS NULL"""
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND commconceptstatus LIKE 'accepted%%'"""
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND commconceptstatus LIKE 'accepted%%'
+                 AND stopdate IS NULL"""
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+            and_child_status = ""
 
         base_columns = {'*': "*"}
         base_columns_search = {
@@ -107,7 +156,7 @@ class CommunityConcept(Operator):
                 WHERE commconcept_id = cc.commconcept_id
             ) cn ON true
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + f"""
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'cc_code', 'cc.' || ch_cc.commconcept_id,
@@ -115,7 +164,8 @@ class CommunityConcept(Operator):
                        )) AS children
                FROM commstatus ch_st
                JOIN commconcept ch_cc USING (commconcept_id)
-               WHERE ch_st.commparent_id = cc.commconcept_id
+               WHERE ch_st.commparent_id = cc.commconcept_id{
+                     and_child_status}
             ) children ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
@@ -141,46 +191,6 @@ class CommunityConcept(Operator):
             ORDER BY COALESCE(cc.d_obscount, 0) {self.direction},
                      cc.commconcept_id {self.direction}
             """
-
-        if self.request.args.get('status') == 'current':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND cs.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'current_accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
-                            AND cs.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        else:
-            always_condition = {
-                'sql': None,
-                'params': []
-            }
 
         self.query = {}
         self.query['base'] = {
