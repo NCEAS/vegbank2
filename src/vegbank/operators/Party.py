@@ -125,6 +125,16 @@ class Party(Operator):
                         """,
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT bb.observation_id
+                             FROM bundle bb
+                             JOIN observationcontributor obp USING (observation_id)
+                             WHERE py.party_id = obp.party_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],
@@ -202,7 +212,6 @@ class Party(Operator):
         required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
         contributor_defs = table_defs_config.contributor.copy()
         contributor_defs.append('vb_record_identifier')
-        contributor_defs.append('vb_py_code')
         table_defs = [contributor_defs]
 
         df.columns = map(str.lower, df.columns)

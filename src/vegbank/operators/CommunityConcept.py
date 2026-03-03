@@ -9,7 +9,9 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    process_option_param,
+    update_search_vector,
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -37,6 +39,10 @@ class CommunityConcept(Operator):
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.nested_options = ("true", "false")
         self.sort_options = ["default", "comm_name", "obs_count"]
+        self.status_options = ["any", "current", "accepted", "current_accepted"]
+        self.default_status = "any"
+        self.deactivation_options = ["none", "by_party"]
+        self.default_deactivation = "none"
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
@@ -136,6 +142,46 @@ class CommunityConcept(Operator):
                      cc.commconcept_id {self.direction}
             """
 
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+
         self.query = {}
         self.query['base'] = {
             'alias': "cc",
@@ -154,10 +200,7 @@ class CommunityConcept(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': None,
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -205,6 +248,17 @@ class CommunityConcept(Operator):
                     'sql': "reference_id = %s",
                     'params': ['vb_id']
                 },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT commconcept_id
+                              FROM comminterpretation ci
+                              JOIN commclass cl USING (commclass_id)
+                              JOIN bundle ob USING (observation_id)
+                              WHERE cc.commconcept_id = ci.commconcept_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],
@@ -249,6 +303,11 @@ class CommunityConcept(Operator):
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
+
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
 
         return params
 
@@ -350,7 +409,12 @@ class CommunityConcept(Operator):
                         rf_actions['resources']['rf'], data['cc'],
                         {"user_rf_code": "user_status_rf_code",
                          "vb_rf_code": "vb_status_rf_code"})
-                cc_actions = self.upload_community_concepts(data['cc'], conn)
+                what_to_deactivate = process_option_param('deactivation',
+                    request.args.get('deactivation', self.default_deactivation),
+                    self.deactivation_options)
+
+                cc_actions = self.upload_community_concepts(
+                    data['cc'], conn, what_to_deactivate = what_to_deactivate)
                 to_return = combine_json_return(to_return, cc_actions)
 
                 # Prep & insert any new community names
@@ -387,15 +451,24 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cc'], data['cx'],
                         {"user_cc_code": "user_cc_code",
                          "vb_cc_code": "vb_cc_code"})
-                    if 'user_correlated_cc_code' in data['cx'].columns:
-                        data['cx'] = merge_vb_codes(
-                            cc_actions['resources']['cc'], data['cx'],
-                            {"user_cc_code": "user_correlated_cc_code",
-                             "vb_cc_code": "vb_correlated_cc_code"})
+                    data['cx'] = merge_vb_codes(
+                        cc_actions['resources']['cc'], data['cx'],
+                        {"user_cc_code": "user_correlated_cc_code",
+                         "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
                     cx_actions = None
+
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
+                # Update comm concept search vector
+                commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
+                                   for code in to_return['resources']['cc']]
+                update_search_vector(conn, 'commconcept', commconcept_ids)
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
@@ -412,7 +485,7 @@ class CommunityConcept(Operator):
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
 
-    def upload_community_concepts(self, df, conn):
+    def upload_community_concepts(self, df, conn, what_to_deactivate = 'none'):
         """
         Take the Community Concepts loader DataFrame and insert its contents
         into the commname, commconcept, and commstatus tables.
@@ -477,7 +550,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
@@ -485,6 +558,8 @@ class CommunityConcept(Operator):
             table_defs, "community concepts")
         if validation['has_error']:
             raise ValueError(validation['error'])
+
+        to_return = None
 
         #
         # Upsert names into commnames table
@@ -496,6 +571,7 @@ class CommunityConcept(Operator):
         cn_actions = super().upload_to_table("comm_name", 'cn',
             config_comm_name, 'commname_id', df, False, conn,
             validate = False)
+        to_return = combine_json_return(to_return, cn_actions)
 
         # ... merge in newly created vb_cn_codes
         df = merge_vb_codes(
@@ -505,12 +581,21 @@ class CommunityConcept(Operator):
         config_comm_concept.append('vb_cn_code')
 
         #
+        # Optionally deactivate old concepts from the same parties
+        #
+
+        deactivation_actions = self.deactivate_old_concepts(conn, df,
+                                                            what_to_deactivate)
+        to_return = combine_json_return(to_return, deactivation_actions)
+
+        #
         # Insert concepts into commconcept table
         #
 
         df['user_cc_code'] = df['user_cc_code'].astype(str)
         cc_actions = super().upload_to_table("comm_concept", 'cc',
             config_comm_concept, 'commconcept_id', df, True, conn)
+        to_return = combine_json_return(to_return, cc_actions)
 
         #
         # Insert status into commstatus table
@@ -526,7 +611,8 @@ class CommunityConcept(Operator):
              "vb_cc_code": "vb_cc_code"})
         config_comm_status.append('vb_cc_code')
 
-        # ... merge in newly created vb_cc_codes
+        # ... merge in any newly created vb_cc_codes for user-uploaded
+        # parent concept references
         df = merge_vb_codes(
             cc_actions['resources']['cc'], df,
             {"user_cc_code": "user_parent_cc_code",
@@ -534,21 +620,8 @@ class CommunityConcept(Operator):
 
         cs_actions = super().upload_to_table("comm_status", 'cs',
             config_comm_status, 'commstatus_id', df, True, conn)
+        to_return = combine_json_return(to_return, cs_actions)
 
-        # TODO: decide which ones we actually want to return to the user -
-        # probably only `cc`?
-        to_return = {
-            'resources':{
-                'cn': cn_actions['resources']['cn'],
-                'cc': cc_actions['resources']['cc'],
-                'cs': cs_actions['resources']['cs']
-            },
-            'counts':{
-                'cn': cn_actions['counts']['cn'],
-                'cc': cc_actions['counts']['cc'],
-                'cs': cs_actions['counts']['cs']
-            }
-        }
         return to_return
 
     def upload_community_names(self, df, conn):
@@ -660,9 +733,9 @@ class CommunityConcept(Operator):
         into the commcorrelation table.
 
         Preconditions:
-        - Every vb_cc_code matches an existing plant concept record
+        - Every vb_cc_code matches an existing comm concept record
         - Every vb_correlated_cc_code matches a concept referenced by at least
-          one existing plant status record
+          one existing comm status record
         Step 1: (*) INSERT INTO commcorrelation:
                 commstatus_id <- using vb_correlated_cc_code (custom logic)
                 commconcept_id <- from vb_cc_code (upstream)
@@ -730,3 +803,93 @@ class CommunityConcept(Operator):
             }
         }
         return to_return
+
+    def deactivate_old_concepts(self, conn, df, what_to_deactivate):
+        """
+        Deactivate old concepts in VegBank
+
+        For a set of community status records defined jointly by the combination of
+        `df` and `what_to_deactivate`, set the `stopdate` to `now` if it is not
+        already set to some date, and then likewise set the `usagestop` to `now`
+        (if not already set) for all related community usage records.
+
+        Parameters:
+            conn (psycopg.Connection): Active database connection
+            df (pandas.DataFrame): Uploaded community concept data
+            what_to_deactivate (str): Concept deactivation strategy
+
+        Returns:
+            dict: A dictionary containing either error messages in the event of
+                an error, or details about what was existing records were
+                deactivated if successfully completed. Example:
+                {
+                    "counts": {
+                        "cc_existing": {"inserted": 1},
+                    },
+                    "resources": {
+                        "cc_existing": [{"action": "STOP",
+                                "user_cc_code": "my_new_concept_1",
+                                "vb_cc_code": "cc.123"}],
+                    }
+                }
+        """
+        print("Applying stop dates to old concepts...")
+        if what_to_deactivate == 'by_party':
+            sql_deactivate_status = """
+                UPDATE commstatus
+                   SET stopdate = NOW()
+                   WHERE stopdate IS NULL
+                     AND party_id = ANY(%s)
+                   RETURNING commconcept_id,
+                             party_id,
+                             'STOP' AS action"""
+        else:
+            return  {
+                "resources": {
+                    "cc_existing": []
+                },
+                "counts": {
+                    "cc_existing": {
+                        "deactivated": 0
+                    }
+                }
+            }
+
+        # Put stop dates on old concepts
+        unique_status_parties = (
+            df['vb_status_py_code']
+            .str.removeprefix('py.')
+            .astype(int)
+            .unique()
+            .tolist()
+        )
+        sql = f"""\
+            WITH updated_status AS (
+              {sql_deactivate_status}
+            ),
+            updated_usage AS (
+              UPDATE commusage
+                 SET usagestop = NOW()
+                 FROM updated_status
+                 WHERE commusage.commconcept_id = updated_status.commconcept_id
+                   AND commusage.usagestop IS NULL
+                 RETURNING commusage.commconcept_id
+            ) SELECT action,
+                     'py.' || party_id AS vb_py_code,
+                     'cc.' || commconcept_id AS vb_cc_code
+                FROM updated_status"""
+
+        with conn.cursor() as cur:
+            cur.execute(sql, (unique_status_parties,))
+            cc_deactivated = cur.fetchall()
+
+        return {
+            "resources": {
+                "cc_existing": cc_deactivated
+            },
+            "counts": {
+                "cc_existing": {
+                    "deactivated": len(cc_deactivated)
+                }
+            }
+        }

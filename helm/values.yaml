@@ -2,49 +2,78 @@
 # This is a YAML-formatted file.
 
 ## @param replicaCount  The number of API pods to be created when the chart is installed. 
-replicaCount: 1
+##
+replicaCount: 2
 
+## @param allowUploads  Whether to allow file uploads in the API.
+##
 allowUploads: false
 
 ## @param oidcRedirectUri - Explicit OIDC redirect URI used in the login flow.
 oidcRedirectUri: "https://api-dev.vegbank.org/authorize"
 
 ## @section Database
-## configuration for the PostgreSQL database used by VegBank.
+## Configuration for the PostgreSQL database used by VegBank. The username and password are
+## stored in a kubernetes secret named 'vegbankdbcreds', which is created separately from this
+## chart.
+##
 database:
-  ## @param name - The name of the database on the postgres pod to be used by VegBank.
+  ## @param database.name The name of the postgres database to be used by VegBank
+  ##
   name: vegbank
-  ## @param host - The host name of the database to be used by VegBank. Currently defined by bitnami, but will change. 
+  ## @param database.host hostname of database to be used by VegBank (RW svc name of CNPG or pooler)
+  ##
   host: vegbankdb2-cnpg-rw
-  ## @param port - The port to connect to on the database pod. 
+  ## @param database.port port to connect to the database (Must match CNPG or pooler port number)
+  ##
   port: 5432
 
 databaseRestore:
-  ## @param databaseRestore.enabled - Restores a given dump file defined below
-  ## Reminder, the deployment.yaml postgres image should be the same as the CNPG postgres version
+  ## @param databaseRestore.enabled Restores a full (schema+data) database dump file defined below
+  ## Reminder, the initContainer postgres image should be the same as the CNPG postgres version -
+  ## see below
+  ##
   enabled: false
+  ## @param databaseRestore.pvc PVC containing the (schema+data) database dump file to restore
+  ##
   pvc: "vegbankdb-init-pgdata"
+  ## @param databaseRestore.mountpath Mount path inside the container for the pvc/dump file volume
+  ## (No trailing slash)
+  ##
   mountpath: "/tmp/databaseRestore"
+  ## @param databaseRestore.filepath dump file path, relative to databaseRestore.mountpath
+  ## (No leading slash)
+  ##
   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
-  ## @param postgres_image - Version of postgres image to run the initContainer with.
-  ## This should match the version that is running on CNPG
+  ## @param databaseRestore.postgresImage postgres image used by initContainer (*must match CNPG postgres version*)
+  ##
   postgresImage: postgres:17
 
 flyway:
   image:
+    ## @param flyway.image.repository docker image repository for flyway, used in initContainer
     repository: flyway/flyway
+    ## @param flyway.image.pullPolicy How often should flyway image be pulled from repository?
     pullPolicy: IfNotPresent
-    ## Overrides the image tag whose default is the chart appVersion.
-    tag: "11.15.0"
-  configpath: /opt/local/flyway/flyway.conf
+    ## @param flyway.image.tag The tag of the flyway image to use in the initContainer
+    ##
+    tag: "12.0.2"
+  ## @param flyway.dbpath The path to the directory containing the flyway migration files
+  ##
   dbpath: /opt/local/flyway/db
+  ## @param flyway.dbHost hostname for flyway's direct connection to the database (not via pooler!)
+  ##
+  dbHost: vegbankdb2-cnpg-rw
+  ## @param flyway.dbPort port for flyway's direct connection to the database (not via pooler!)
+  ##
+  dbPort: 5432
 
-## @section Image 
-## configuration for the docker image of the Flask API. 
+## @section VegBank API Docker Image
+## Configuration for the docker image of the Flask API.
 image:
-  ## @param image.repository - github remote image repository address for the VegBank Docker Image
+  ## @param image.repository GitHub remote image repository address for the VegBank Docker Image
   repository: ghcr.io/nceas/vegbank
-  ## @param image.pullPolicy - How often should the image be pulled from the repository?
+  ## @param image.pullPolicy How often should the image be pulled from the repository?
   ## Set to Always for local development, IfNotPresent for production. 
   pullPolicy: IfNotPresent
 
@@ -54,18 +83,6 @@ imagePullSecrets: []
 nameOverride: ""
 ## @param fullnameOverride
 fullnameOverride: ""
-
-## @section serviceAccount
-serviceAccount:
-  ## @param serviceAccount.create Specifies whether a service account should be created
-  create: true
-  ## @param serviceAccount.automount Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  ## @param serviceAccount.annotations Annotations to add to the service account
-  annotations: {}
-  ## @param serviceAccount.name The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
 ## @param podAnnotations currently unused
 podAnnotations: {}
@@ -89,40 +106,36 @@ securityContext: {}
 ## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
 ## as the ingress automatically pulls the default named service for the pod via release name. 
 service: 
-  ## @param service.type - The type of service to create.
+  ## @param service.type The type of service to create.
   type: ClusterIP
-  ## @param service.port - The port on which the service will be exposed.
+  ## @param service.port The port on which the service will be exposed.
   port: 80
 
-## @section ingress
+## @section Ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
 ## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
 ingress: 
-  ## @param ingress.enabled - Enable ingress to allow web traffic
+  ## @param ingress.enabled Enable ingress to allow web traffic
   enabled: true
-  ## @param ingress.className - The class of the ingress controller to use.
+  ## @param ingress.className The class of the ingress controller to use.
   className: nginx
-  ## @section ingress.annotations - Annotations to add to the ingress resource.
-  annotations: 
+  annotations:
     ## @param ingress.annotations.cert-manager.io/cluster-issuer
     cert-manager.io/cluster-issuer: "letsencrypt-prod" 
-  ## @section ingress.hosts Host name information for the ingress. 
   hosts:
-    ## @param ingress.hosts[0].host - The host names for the ingress.
+    ## @param ingress.hosts[0].host The host names for the ingress.
     - host: api-dev.vegbank.org
-      ## @section ingress.hosts[0].paths - The paths for the ingress.
       paths:
-        ## @param ingress.hosts[0].paths[0].path - The path for the ingress.
+        ## @param ingress.hosts[0].paths[0].path The path for the ingress.
         - path: /
-        ## @param ingress.hosts[0].paths[0].pathType - The type of path matching to use.
+        ## @param ingress.hosts[0].paths[0].pathType The type of path matching to use.
           pathType: Prefix 
-  ## @section tls 
-  ## Host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.     
+  ## Host name and secret name for the TLS certification. Host name must be changed between DEV and PRD, secret name does not.
   tls: 
-      ## @param ingress.tls[0].hosts - The host names for the TLS certification.
+      ## @param ingress.tls[0].hosts The host names for the TLS certification.
     - hosts: 
         - api-dev.vegbank.org 
-      ## @param ingress.tls[0].secretName - The name of the secret containing the TLS certificate.
+      ## @param ingress.tls[0].secretName The name of the secret containing the TLS certificate.
       secretName: ingress-nginx-tls-cert 
 
 ## @param resources
@@ -138,25 +151,33 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-## @section livenessProbe
+## @section Probes
 livenessProbe:
-  ## @section livenessProbe.httpGet
   httpGet:
-    ## @param livenessProbe.httpGet.path - The path to use for the liveness probe.
+    ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
-    ## @param livenessProbe.httpGet.port - The port to use for the liveness probe.
+    ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
     port: 80
-
-## @section readinessProbe
 readinessProbe:
-  ## @section readinessProbe.httpGet
   httpGet:
-    ## @param readinessProbe.httpGet.path - The path to use for the readiness probe.
+    ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /
-    ## @param readinessProbe.httpGet.port - The port to use for the readiness probe.
+    ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
     port: 80
 
-## @section autoscaling
+## @section Miscellaneous
+
+serviceAccount:
+  ## @param serviceAccount.create Specifies whether a service account should be created
+  create: true
+  ## @param serviceAccount.automount Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  ## @param serviceAccount.annotations Annotations to add to the service account
+  annotations: {}
+  ## @param serviceAccount.name The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
 autoscaling:
   ## @param autoscaling.enabled
   enabled: false

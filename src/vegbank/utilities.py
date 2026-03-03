@@ -1,11 +1,95 @@
 from __future__ import annotations
 import os
+import re
 from pathlib import Path
 from importlib.resources import files
+from itertools import islice
 from flask import jsonify
 import pandas as pd
+from urllib.parse import quote_plus
+from flask import jsonify
 
 ALLOWED_EXTENSIONS = 'parquet'
+
+def create_adbc_uri(params):
+    """Create a PostgreSQL connection URI from connection parameters.
+
+    Constructs a standard PostgreSQL connection URI string in the format
+    postgresql://user:password@host:port/dbname from a dictionary of connection
+    parameters. Validates that required parameters are present and provides
+    sensible defaults for optional parameters.
+
+    Args:
+        params (dict): Dictionary containing connection parameters. Required keys:
+            - 'user' (str): Database username
+            - 'port' (str or int): Database port number
+            - 'dbname' (str): Database name
+            Optional keys:
+            - 'password' (str): Database password. If not provided, URI will not
+              include password component
+            - 'host' (str): Database host. Defaults to 'localhost' if not provided
+
+    Returns:
+        str: A PostgreSQL connection URI in the format:
+            - With password: "postgresql://user:password@host:port/dbname"
+            - Without password: "postgresql://user@host:port/dbname"
+
+    Raises:
+        ValueError: If any required parameters ('user', 'port', 'dbname') are
+            missing from the params dictionary. The error message lists all
+            missing parameters.
+    """
+    required = ['user', 'port', 'dbname']
+    missing = [k for k in required if not params.get(k)]
+    if missing:
+        raise ValueError(f"Missing required parameters: {', '.join(missing)}")
+
+    user = quote_plus(params['user'])
+    host = params.get('host') or 'localhost'
+    port = params.get('port') or '5432'
+    dbname = params['dbname']
+
+    # Build URI with optional password
+    password = params.get('password')
+    if password:
+        password_encoded = quote_plus(password)
+        return f"postgresql://{user}:{password_encoded}@{host}:{port}/{dbname}"
+    else:
+        return f"postgresql://{user}@{host}:{port}/{dbname}"
+
+def convert_psycopg_sql_to_adbc(sql):
+    """Convert SQL query from psycopg2/psycopg3 format to ADBC parameter format.
+
+    Transforms parameterized SQL queries from psycopg's %s placeholder style to
+    ADBC's $1, $2, $3... positional parameter style. Handles escaped percent
+    signs (%%) correctly by preserving them unchanged.
+
+    Args:
+        sql (str): SQL query string using psycopg-style placeholders. May
+            contain:
+            - %s for parameter placeholders
+            - %% for literal percent signs (escaped)
+            - Mix of both
+
+    Returns:
+        str: SQL query string with placeholders converted to ADBC format ($1,
+            $2, etc.). Each %s is replaced with a sequential $n placeholder,
+            while %% remains as %%.
+
+    Note:
+        The function uses a regex pattern that matches both %% and %s, ensuring
+        escaped percent signs are preserved while only actual placeholders are
+        converted.
+    """
+    counter = 1
+    def replacer(match):
+        nonlocal counter
+        if match.group(0) == '%%':
+            return '%%'  # Keep escaped percent signs
+        result = f"${counter}"
+        counter += 1
+        return result
+    return re.sub(r'%%|%s', replacer, sql)
 
 def allowed_file(filename):
     '''
@@ -129,8 +213,8 @@ def merge_vb_codes(inserted_codes, df, mapping):
             where keys are column names and values are lists of code values.
             Must contain columns that will be renamed according to the mapping.
         df (pandas.DataFrame): The target dataframe to merge the new codes into.
-            Should contain a column matching the user code field specified in
-            the mapping.
+            If the user code column specified in the mapping is not present, df
+            is returned unchanged.
         mapping (dict): A dictionary mapping the column names from
             inserted_codes to the column names in the target dataframe. Should
             have exactly two key-value pairs: one for the user code column and
@@ -138,11 +222,15 @@ def merge_vb_codes(inserted_codes, df, mapping):
             "user_status_py_code", "vb_py_code": "vb_status_py_code"}).
 
     Returns:
-        pandas.DataFrame: The modified dataframe with the new VB codes merged in.
-            Existing VB code values are preserved when conflicts occur.
+        pandas.DataFrame: The modified dataframe with the new VB codes merged
+            in, or the original dataframe unchanged if the user code column is
+            absent. Existing VB code values are preserved when conflicts occur.
     '''
     codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
     user_col, vb_col = list(mapping.values())
+    if user_col not in df.columns:
+        print(f"No '{user_col}' column found in df -- skipping merge.")
+        return df
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
     if f'{vb_col}_x' in df:
         df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
@@ -237,6 +325,51 @@ def load_sql(package: str, relative_path: str, encoding: str = "utf-8") -> str:
 
     parts = relative_path.split("/")
     return files(package).joinpath(*parts).read_text(encoding=encoding)
+
+def batch_of_ids(list_of_ids, batch_size):
+    """
+    Yield successive batches from a list of IDs.
+
+    Args:
+        list_of_ids: An iterable of IDs to be batched.
+        batch_size (int): The maximum number of IDs per batch.
+
+    Returns:
+        Generator yielding lists of IDs, each of length <= batch_size.
+    """
+    it = iter(list_of_ids)
+    while batch := list(islice(it, batch_size)):
+        yield batch
+
+def update_search_vector(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the search_vector column for a set of records identified by ID.
+
+    Executes the database function build_<table>_search_vector() for
+    each given ID, processing records in batches to avoid overloading the
+    database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with search_vector to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(
+                f"""
+                UPDATE {table}
+                  SET search_vector = build_{table}_search_vector({table}_id)
+                  WHERE {table}_id = ANY(%s)
+                """,
+                (chunk,)
+        )
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""

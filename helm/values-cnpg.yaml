@@ -46,23 +46,34 @@ backup:
   enabled: true
 
 resources:
+  ## CNPG recommends "Guaranteed" QoS for DB workloads
+  ## see https://cloudnative-pg.io/documentation/1.20/resource_management/
+  ## To do so, set limits and requests for both CPU and memory TO THE SAME VALUES!
   requests:
-    cpu: 750m
-    memory: 2Gi
+    cpu: 4
+    memory: 16Gi
   limits:
-    cpu: 750m
-    memory: 2Gi
+    cpu: 4
+    memory: 16Gi
 
 persistence:
   size: 100Gi
 
 postgresql:
   parameters:
+    ## See https://oneuptime.com/blog/post/2026-01-25-postgresql-shared-buffers-work-mem-tuning/view
+    max_connections: 100
+    max_wal_size: 8192MB
+    min_wal_size: 2048MB
+    shared_buffers: 4096MB  # rule of thumb is about 25% of total RAM
+    work_mem: 64MB          # per request
+    temp_buffers: 32MB
+    effective_cache_size: 10GB
     max_wal_senders: 16
-  pg_hba:
-    # TYPE        DATABASE      USER          ADDRESS         METHOD
-    - host        vegbank       vegbank       0.0.0.0/0       password
-    - host        vegbank       vegbank       ::0/0           password
-    - local       all           all                           trust
-    - host        all           all           127.0.0.1/32    trust
-    - host        postgres      postgres      0.0.0.0/0       password
+    # Log any query that takes longer than 1 second
+    log_min_duration_statement: '2s'
+    # Log whenever a temporary file larger than 0kb is created
+    log_temp_files: 0
+    # Log details about why a query was slow (optional but helpful)
+    log_checkpoints: on
+    log_lock_waits: on
