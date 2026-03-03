@@ -124,6 +124,11 @@ def init_oauth(app) -> bool:
 def get_jwks_keys():
     """Fetch and cache the JWKS signing keys from the OIDC provider.
 
+    These keys are used to validate JWT token signatures. Care must be taken to fetch
+    them only from trustworthy sources (via the OIDC provider's metadata endpoint over
+    HTTPS). The keys may change periodically, so the cache will be invalidated and keys
+    will be refetched on the next call after the application is restarted.
+
     Returns:
         authlib.jose.JsonWebKey: A ``JsonWebKeySet`` ready for ``jwt.decode``.
 
