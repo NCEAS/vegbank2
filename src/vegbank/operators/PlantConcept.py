@@ -213,9 +213,14 @@ class PlantConcept(Operator):
                 'always': always_condition,
                 'search': {
                     'sql': """\
-                         pc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (pc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR pc.plantconcept_id = CASE
+                              WHEN %s ~ '^pc\.\d+$'
+                              THEN regexp_replace(%s, '^pc\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "pc": {
                     'sql': "pc.plantconcept_id = %s",

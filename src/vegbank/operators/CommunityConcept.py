@@ -213,9 +213,14 @@ class CommunityConcept(Operator):
                 'always': always_condition,
                 'search': {
                     'sql': """\
-                         cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR cc.commconcept_id = CASE
+                              WHEN %s ~ '^cc\.\d+$'
+                              THEN regexp_replace(%s, '^cc\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "cc": {
                     'sql': "cc.commconcept_id = %s",

@@ -92,9 +92,14 @@ class Project(Operator):
                 },
                 'search': {
                     'sql': """\
-                         pj.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (pj.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR pj.project_id = CASE
+                              WHEN %s ~ '^pj\.\d+$'
+                              THEN regexp_replace(%s, '^pj\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "pj": {
                     'sql': "pj.project_id = %s",
