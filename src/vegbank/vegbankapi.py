@@ -17,8 +17,8 @@ from vegbank.auth import (
     SCOPE_ADMIN, 
     SCOPE_CONTRIBUTOR, 
     SCOPE_USER,
-    get_deployment_mode,
-    DEPLOYMENT_MODE_READ_ONLY
+    get_access_mode,
+    ACCESS_MODE_READ_ONLY
 )
 from vegbank.repositories import (
     IdentifiersQueries,
@@ -75,7 +75,7 @@ def before_request():
     """
     Log the incoming request method and path, and check if uploads are allowed for POST requests.
     
-    Upload behavior is determined by deploymentMode:
+    Upload behavior is determined by accessMode:
     - 'read_only': No uploads allowed
     - 'open': Uploads allowed
     - 'authenticated': Uploads allowed (with scope restrictions on individual endpoints)
@@ -83,9 +83,9 @@ def before_request():
     logger.info(f"Received {request.method} request for {request.path}")
     
     if request.method == 'POST':
-        mode = get_deployment_mode()
+        mode = get_access_mode()
         
-        if mode == DEPLOYMENT_MODE_READ_ONLY:
+        if mode == ACCESS_MODE_READ_ONLY:
             return jsonify_error_message("Uploads not allowed in read_only deployment mode."), 403
 
 @app.route("/")

@@ -4,7 +4,7 @@ Implements OIDC / OAuth 2.0 login via a configurable OIDC provider using authlib
 
 Deployment Modes
 ----------------
-The API supports three deployment modes controlled by the ``VB_DEPLOYMENT_MODE`` environment variable:
+The API supports three access modes controlled by the ``VB_ACCESS_MODE`` environment variable:
 
 ``read_only``
     Authentication disabled. All endpoints are public. File uploads disabled.
@@ -53,9 +53,9 @@ SCOPE_CONTRIBUTOR = "vegbank:contributor"
 SCOPE_USER = "vegbank:user"
 
 # Deployment modes
-DEPLOYMENT_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
-DEPLOYMENT_MODE_OPEN = "open"                 # Open mode: uploads allowed, no auth
-DEPLOYMENT_MODE_AUTHENTICATED = "authenticated"  # Authenticated mode: auth required, full access control
+ACCESS_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
+ACCESS_MODE_OPEN = "open"                 # Open mode: uploads allowed, no auth
+ACCESS_MODE_AUTHENTICATED = "authenticated"  # Authenticated mode: auth required, full access control
 
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
@@ -297,7 +297,7 @@ def _validate_and_extract_claims(required_scope=None):
 def require_token(methods=None):
     """Decorator – protect an endpoint that requires *any* valid JWT.
 
-    **Only enforces authentication when deploymentMode='authenticated'.**
+    **Only enforces authentication when accessMode='authenticated'.**
     In 'read_only' and 'open' modes, this decorator allows all requests.
 
     Returns ``401`` if the token is missing, expired, or otherwise invalid.
@@ -316,11 +316,11 @@ def require_token(methods=None):
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
-            mode = get_deployment_mode()
+            mode = get_access_mode()
             
             # In read_only or open mode, skip auth entirely
-            if mode != DEPLOYMENT_MODE_AUTHENTICATED:
-                logger.debug(f"Deployment mode '{mode}': skipping token validation")
+            if mode != ACCESS_MODE_AUTHENTICATED:
+                logger.debug(f"Access mode '{mode}': skipping token validation")
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -343,7 +343,7 @@ def require_token(methods=None):
 def require_scope(required_scope: str, methods=None):
     """Decorator factory – protect an endpoint that requires a specific scope.
 
-    **Only enforces authentication when deploymentMode='authenticated'.**
+    **Only enforces authentication when accessMode='authenticated'.**
     In 'read_only' and 'open' modes, this decorator allows all requests.
 
     Supported VegBank scopes:
@@ -370,11 +370,11 @@ def require_scope(required_scope: str, methods=None):
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
-            mode = get_deployment_mode()
+            mode = get_access_mode()
             
             # In read_only or open mode, skip auth entirely
-            if mode != DEPLOYMENT_MODE_AUTHENTICATED:
-                logger.debug(f"Deployment mode '{mode}': skipping scope validation")
+            if mode != ACCESS_MODE_AUTHENTICATED:
+                logger.debug(f"Access mode '{mode}': skipping scope validation")
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -449,14 +449,14 @@ def authorize():
     return _token_response(token, message="Authorization successful")
 
 
-def get_deployment_mode() -> str:
-    """Get the current deployment mode from environment.
+def get_access_mode() -> str:
+    """Get the current access mode from environment.
     
     Returns:
         str: One of 'read_only', 'open', or 'authenticated'. Defaults to 'authenticated'.
     """
-    mode = os.getenv("VB_DEPLOYMENT_MODE", DEPLOYMENT_MODE_AUTHENTICATED).lower()
-    if mode not in (DEPLOYMENT_MODE_READ_ONLY, DEPLOYMENT_MODE_OPEN, DEPLOYMENT_MODE_AUTHENTICATED):
-        logger.warning(f"Invalid deployment mode '{mode}', falling back to '{DEPLOYMENT_MODE_AUTHENTICATED}'")
-        return DEPLOYMENT_MODE_AUTHENTICATED
+    mode = os.getenv("VB_ACCESS_MODE", ACCESS_MODE_AUTHENTICATED).lower()
+    if mode not in (ACCESS_MODE_READ_ONLY, ACCESS_MODE_OPEN, ACCESS_MODE_AUTHENTICATED):
+        logger.warning(f"Invalid access mode '{mode}', falling back to '{ACCESS_MODE_AUTHENTICATED}'")
+        return ACCESS_MODE_AUTHENTICATED
     return mode

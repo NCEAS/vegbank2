@@ -147,8 +147,8 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
-            - name: VB_DEPLOYMENT_MODE
-              value: {{ .Values.deploymentMode | quote }}
+            - name: VB_ACCESS_MODE
+              value: {{ .Values.accessMode | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:

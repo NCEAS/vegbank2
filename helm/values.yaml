@@ -9,13 +9,13 @@ replicaCount: 2
 ## Controls authentication and upload behavior across the deployment.
 ## This is the primary configuration for the API's operational state.
 
-## @param deploymentMode Deployment mode controlling API behavior.
+## @param accessMode Access mode controlling API behavior.
 ## - `read_only`: No authentication, no uploads.
 ## - `open`: No authentication, uploads allowed.
 ## - `authenticated`: Full authentication and authorization required.
 ##
 ## Default: `authenticated`
-deploymentMode: "authenticated"
+accessMode: "authenticated"
 
 ## @param oidcRedirectUri - Explicit OIDC redirect URI used in the login flow.
 oidcRedirectUri: "https://api-dev.vegbank.org/authorize"
