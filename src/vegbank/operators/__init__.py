@@ -1,4 +1,5 @@
 from .operator_parent_class import Operator
+from .operator_parent_class import table_code_lookup
 
 from .CommunityClassification import CommunityClassification
 from .CommunityConcept import CommunityConcept
@@ -8,6 +9,7 @@ from .NamedPlace import NamedPlace
 from .Party import Party
 from .PlantConcept import PlantConcept
 from .PlotObservation import PlotObservation
+from .PlotObservationBundle import PlotObservationBundle
 from .Project import Project
 from .Reference import Reference
 from .Role import Role

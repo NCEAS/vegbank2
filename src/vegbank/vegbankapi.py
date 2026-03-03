@@ -19,6 +19,7 @@ from vegbank.operators import (
     TaxonInterpretation,
     TaxonObservation,
     PlotObservation,
+    PlotObservationBundle,
     Party,
     PlantConcept,
     CommunityClassification,
@@ -146,6 +147,10 @@ def plot_observations(claims, vb_code):
         create_parquet (str, optional): Whether to return data as Parquet
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
+        bundle (str, optional): Return plot observations and numerous related
+            resources in a multi-file bundle. Currently accepts only 'csv', in
+            which case a zip archive of CSV files will be returned. Defaults to
+            None.
 
     Returns:
         flask.Response: A Flask response object containing:
@@ -159,7 +164,10 @@ def plot_observations(claims, vb_code):
     if request.method == 'POST':
         return PlotObservation(params).upload_all(request)
     elif request.method == 'GET':
-        return plot_observation_operator.get_vegbank_resources(request, vb_code)
+        if request.args.get('bundle') is not None:
+            return PlotObservationBundle(params).get_vegbank_resources(request, vb_code)
+        else:
+            return plot_observation_operator.get_vegbank_resources(request, vb_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
@@ -190,7 +198,7 @@ def taxon_observations(claims, vb_code):
 
     Parameters:
         vb_code (str or None): The unique identifier for the taxon
-            observation concept being retrieved, or for a resource of a
+            observation being retrieved, or for a resource of a
             different type used to focus taxon observation retrieval. If
             None, retrieves all taxon observations.
 
@@ -639,14 +647,41 @@ def community_concepts(claims, vb_code):
     be further mediated by pagination parameters and other filtering query
     parameters.
 
+    POST: Upload a set of files conforming with the comm concept loader schema,
+    and return counts and created codes of newly inserted records. Includes an
+    option for deactivating existing concepts superseded by the newly uploaded
+    data.
+
     Parameters:
         vb_code (str or None): The unique identifier for the community concept
             being retrieved, or for a resource of a different type used to focus
             community concept retrieval. If None, retrieves all community
             concepts.
 
+    POST Parameters:
+        community_concepts (FileStorage): Parquet file containing new community
+            concepts and corresponding status details.
+        community_names (FileStorage, optional): Parquet file containing zero or
+            more community name usages (and related details) for each concept.
+        community_correlations (FileStorage, optional): Parquet file containing
+            correlations between concepts.
+        parties (FileStorage, optional): Parquet file containing one or more new
+            parties (people or organizations) providing perspectives on the
+            uploaded concepts.
+        references (FileStorage, optional): Parquet file containing one or more
+            new references associated with the uploaded community concepts.
+        deactivation (str, optional): Which existing community concepts in VegBank
+            should be deactivated when inserting the new concepts. Can be "none"
+            (don't deactivate any records) or "by_party" (deactivate all existing
+            community status and related usage records associated with any
+            parties that are also associated with the uploaded concepts).
+            Defaults to "none".
+
     GET Query Parameters:
         search (str, optional): Community name search query.
+        status (str, optional): Status criterion for returned community concepts.
+            Can be 'any', 'current', 'accepted', or 'current_accepted'. Defaults
+            to 'any'.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
@@ -702,6 +737,11 @@ def plant_concepts(claims, vb_code):
     plant concept records. Collection responses may be further mediated by
     pagination parameters and other filtering query parameters.
 
+    POST: Upload a set of files conforming with the plant concept loader schema,
+    and return counts and created codes of newly inserted records. Includes an
+    option for deactivating existing concepts superseded by the newly uploaded
+    data.
+
     Parameters:
         vb_code (str or None): The unique identifier for the plant
             concept being retrieved, or for a resource of a different type used
@@ -710,6 +750,9 @@ def plant_concepts(claims, vb_code):
 
     GET Query Parameters:
         search (str, optional): Plant name search query.
+        status (str, optional): Status criterion for returned plant concepts.
+            Can be 'any', 'current', 'accepted', or 'current_accepted'. Defaults
+            to 'any'.
         detail (str, optional): Level of detail for the response.
             Only 'full' is defined for this method. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
@@ -725,6 +768,27 @@ def plant_concepts(claims, vb_code):
         create_parquet (str, optional): Whether to return data as Parquet
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
+
+    POST Parameters:
+        plant_concepts (FileStorage): Parquet file containing new plant concepts
+            and corresponding status details.
+        plant_names (FileStorage, optional): Parquet file containing zero or
+            more plant name usages (and related details) for each concept.
+        plant_correlations (FileStorage, optional): Parquet file containing
+            correlations between concepts.
+        parties (FileStorage, optional): Parquet file containing one or more new
+            parties (people or organizations) providing perspectives on the
+            uploaded concepts.
+        references (FileStorage, optional): Parquet file containing one or more
+            new references associated with the uploaded plant concepts.
+        deactivation (str, optional): Which existing plant concepts in VegBank
+            should be deactivated when inserting the new concepts. Can be "none"
+            (don't deactivate any records), "by_party" (deactivate all existing
+            plant status and related usage records associated with any parties
+            that are also associated with the uploaded concepts), or
+            "by_party_below_order" (like "by_party", but only apply to concepts
+            at the family taxonomic level or lower, or with unspecified level).
+            Defaults to "none".
 
     Returns:
         flask.Response: A Flask response object containing:

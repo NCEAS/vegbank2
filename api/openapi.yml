@@ -104,6 +104,7 @@ paths:
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
       responses:
         '200':
           $ref: "#/components/responses/PlotObservations"
@@ -134,6 +135,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -166,6 +168,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -198,6 +201,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -231,6 +235,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -264,6 +269,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -296,6 +302,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -328,6 +335,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -360,6 +368,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -385,6 +394,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -438,6 +448,7 @@ paths:
           schema:
             type: string
           example: "cc.1"
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -464,6 +475,7 @@ paths:
             type: string
           example: "cl.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -493,6 +505,7 @@ paths:
             type: string
           example: "ob.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -522,6 +535,7 @@ paths:
             type: string
           example: "py.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -550,6 +564,7 @@ paths:
             type: string
           example: "rf.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -572,6 +587,7 @@ paths:
         based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -851,6 +867,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -877,6 +894,7 @@ paths:
             type: string
           example: "py.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -905,6 +923,7 @@ paths:
             type: string
           example: "rf.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -934,6 +953,7 @@ paths:
             type: string
           example: "to.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -963,6 +983,7 @@ paths:
             type: string
           example: "ob.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -985,6 +1006,7 @@ paths:
         based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -2433,13 +2455,24 @@ components:
         type: boolean
         default: false
       description: If true, return data payload in binary Parquet format
+    bundle:
+      name: bundle
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        If 'csv', return a zip archive of CSVs. When set, the `limit` parameter
+        will default to 20000 (and higher values will be ignored), the `detail`
+        parameter will be set to 'full', and the `with_nested` parameter will be
+        set to `false`.
     sort_ob:
       name: sort
       in: query
       required: false
       description: |
-        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
-        Ascending order is the default if no prefix is provided.
+        Sort order for results. Prefix with `-` for descending order or `+` for
+        ascending order. Ascending order is the default if no prefix is provided.
 
         Available sort fields:
         - `default` - Default sort order
@@ -2608,6 +2641,20 @@ components:
         minimum: 0
         default: 5
       description: Number of communities to return per plot observation, ordered by commclass_id
+    status_concept:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [any, current, accepted, current_accepted]
+        default: any
+      description: |
+        Status criterion for returned plant concepts:
+        - `any`: Returns matching concepts regardless of status
+        - `current`: Only returns concepts that don't have (past) status stop dates
+        - `accepted`: Only returns concepts that have an accepted status
+        - `current_accepted`: Only returns concepts that are both current and accepted
 
   securitySchemes:
     oauth2:
@@ -2651,6 +2698,7 @@ components:
         - `detail=minimal&with_nested=true`: Basic fields + nested array fields
         - `detail=full&with_nested=false`: Extended fields, no nested array fields
         - `detail=full&with_nested=true`: Extended fields + nested array fields
+        - `bundle=csv`: ZIP archive containing related CSV files
       content:
         application/json:
           schema:
@@ -2665,6 +2713,30 @@ components:
             type: string
             format: binary
             description: Parquet file with same data as the JSON response.
+        application/zip:
+          schema:
+            type: string
+            format: binary
+            description: |
+              ZIP archive containing multiple related CSV files plus README.txt.
+              Returned when `bundle=csv` parameter is specified.
+
+              CSV files conform to the schemas of their respective API endpoints with
+              `detail=full&with_nested=false` applied. The archive typically includes:
+              - plot_observations.csv: Plot observations matching the request
+              - taxon_observations.csv: Plants observed on the plots
+              - strata.csv: Strata defined for the plot observations
+              - taxon_importances.csv: Importance data for observed plants, by strata
+              - stem_counts.csv: Stem counts of observed plants, by size group and strata
+              - taxon_intepretations.csv: Taxonomic interpretations of observed plants
+              - plant_concepts.csv: Plant concepts associated with the observations
+              - community_classifications.csv: Community classifications of the observed plots
+              - community_concepts.csv: Community types associated with the observed plots
+              - projects.csv: Projects associated with the plot observations
+              - parties.csv: Contributing parties (people and organizations)
+              - README.txt: Metadata, file descriptions, and citation
+
+              Files are linked via `ob_code` and other identifier code columns.
 
     CommunityConcepts:
       description: |

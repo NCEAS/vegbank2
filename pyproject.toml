@@ -17,6 +17,7 @@ dependencies = [
     "pandas>=3.0.0",
     "pyarrow>=23.0.0",
     "numpy>=2.4.2",
+    "adbc-driver-postgresql>=1.10.0",
     "authlib>=1.6.8",
     "pyjwt>=2.11.0",
     "requests>=2.32.5",
