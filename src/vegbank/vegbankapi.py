@@ -1293,7 +1293,7 @@ def user_datasets(ds_code):
             - 400: Invalid parameters
             - 405: Unsupported HTTP method
     """
-    user_dataset_operator = UserDataset(params)
+
     if request.method == 'POST':
         if not request.is_json:
             return jsonify_error_message("Request body must be JSON."), 400
@@ -1302,17 +1302,19 @@ def user_datasets(ds_code):
             dataset = request.get_json()
             validate_dataset_json(dataset)
             with connect(**params, row_factory=dict_row) as conn:
-                to_return = user_dataset_operator.upload_user_dataset(dataset, conn, validate=True)
+                to_return = UserDataset(params).upload_user_dataset(dataset, conn, validate=True)
                 to_return = dry_run_check(conn, to_return, request)
             conn.close()
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
+        print("TESTING")
+        print(to_return)
         return jsonify(to_return)
             
     elif request.method == 'GET':
-        return user_dataset_operator.get_vegbank_resources(request, ds_code)
+        return UserDataset(params).get_vegbank_resources(request, ds_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

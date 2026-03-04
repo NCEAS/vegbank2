@@ -872,7 +872,7 @@ def test_user_datasets_get_dispatches_to_operator(test_client):
 
 
 def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
-    """Test that a post request to the user-datasets endpoint returns 400 when
+    """Test that a post request to the user-datasets endpoint returns 200 when
     allow_uploads is true."""
     payload = {
         "user_ds_code": "test_ds_001",
@@ -883,8 +883,8 @@ def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
             "observation":[
                 "ob.1"
             ]
+        }
     }
-}
     with patch.object(
         vegbankapi.UserDataset,
             "upload_user_dataset",
@@ -895,7 +895,7 @@ def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
             ),  # Note: The return value above is purely placeholder data
         ) as mock_upload_user_dataset:
             response = test_client.post("/user-datasets?dry_run=true", json=payload)
-    
+    print(response)
     assert response.status_code == 200
     assert mock_upload_user_dataset.call_count == 1
 
