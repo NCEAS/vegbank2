@@ -193,6 +193,12 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ## Parameters
 
+### API Access Mode
+
+| Name         | Description                           | Value           |
+| ------------ | ------------------------------------- | --------------- |
+| `accessMode` | Access mode controlling API behavior. | `authenticated` |
+
 ### Database
 
 | Name                            | Description                                                                | Value                                     |
