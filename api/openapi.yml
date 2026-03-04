@@ -2660,8 +2660,9 @@ components:
     oauth2:
       type: oauth2
       flows:
-        implicit:
+        authorizationCode:
           authorizationUrl: https://api.vegbank.org/login
+          tokenUrl: https://api.vegbank.org/login
           scopes:
             vegbank:admin: Administrator access with full permissions
             vegbank:contributor: Contributor access to create and update plot observations

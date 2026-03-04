@@ -80,7 +80,7 @@ def before_request():
     - 'open': Uploads allowed
     - 'authenticated': Uploads allowed (with scope restrictions on individual endpoints)
     """
-    logger.info(f"Received {request.method} request for {request.path}")
+    logger.debug(f"Received {request.method} request for {request.path}")
     
     if request.method == 'POST':
         mode = get_access_mode()

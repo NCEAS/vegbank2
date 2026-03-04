@@ -3,7 +3,7 @@
 ## Table of Contents
 
 - [For API Users](#for-api-users)
-  - [Authentication Scopes](#authentication-scopes)
+  - [Authorization Scopes](#authorization-scopes)
   - [Obtaining a Token](#obtaining-a-token)
   - [Using Your Token](#using-your-token)
   - [Example Requests](#example-requests)
@@ -15,7 +15,7 @@
 
 ## For API Users
 
-### Authentication Scopes
+### Authorization Scopes
 
 VegBank API uses three authorization scopes that determine what operations user can perform:
 
@@ -25,7 +25,12 @@ VegBank API uses three authorization scopes that determine what operations user 
 | `vegbank:contributor` | Create/update access | Upload new data, submit plot observations, create new records |
 | `vegbank:admin` | Administrative access | All operations, including administrative functions |
 
-Your token can contain one or more scopes, granting you highest level of access associated with your scopes.
+When you authenticate, you may request one or more scopes to be included in your OIDC token. These scopes then determine the levels of access you have for the various Vegbank API methods.
+
+#### Overview
+
+VegBank API uses OAuth 2.0 with OpenID Connect (OIDC) for secure authentication and authorization. When you log in, you receive a token that grants you access to specific API operations based on your requested scopes. For more information on these standards, see the [OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749) and [OpenID Connect Core documentation](https://openid.net/specs/openid-connect-core-1_0.html).
+
 
 ### Obtaining a Token
 
@@ -33,7 +38,7 @@ VegBank uses Keycloak for token management. To obtain a token:
 
 #### Log In via ORCID
 
-Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to ORCID authentication page. Login with your ORCID credentials. Once login is successful you'll receive a JSON response containing your OAuth access token
+Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to the ORCID authentication page. Login with your ORCID credentials. Once login is successful you'll receive a JSON response containing your OAuth access token
 
    Response example:
    ```json
@@ -121,7 +126,7 @@ def taxon_observations(claims, vb_code):
 
 #### Using `@require_scope(scope)`
 
-Protects an endpoint to require a specific scope:
+Protects an endpoint to require a valid token and a specific scope:
 
 ```python
 from vegbank.auth import require_scope, SCOPE_CONTRIBUTOR, SCOPE_ADMIN
@@ -136,7 +141,7 @@ def taxon_observations(claims, vb_code):
 
 #### Using `@require_scope(scope, methods)`
 
-Protects specific HTTP methods for an endpoint that require a specific scope:
+Protects specific HTTP methods for an endpoint that require a valid token and a specific scope:
 
 ```python
 from vegbank.auth import require_scope, SCOPE_CONTRIBUTOR, SCOPE_ADMIN

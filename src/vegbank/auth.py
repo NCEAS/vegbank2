@@ -320,7 +320,7 @@ def require_token(methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.debug(f"Access mode '{mode}': skipping token validation")
+                logger.warning(f"Access mode '{mode}': skipping token validation")
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -343,7 +343,7 @@ def require_token(methods=None):
 def require_scope(required_scope: str, methods=None):
     """Decorator factory – protect an endpoint that requires a specific scope.
 
-    **Only enforces authentication when accessMode='authenticated'.**
+    **Only enforces authorization when accessMode='authenticated'.**
     In 'read_only' and 'open' modes, this decorator allows all requests.
 
     Supported VegBank scopes:
@@ -374,7 +374,7 @@ def require_scope(required_scope: str, methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.debug(f"Access mode '{mode}': skipping scope validation")
+                logger.warning(f"Access mode '{mode}': skipping scope validation")
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods

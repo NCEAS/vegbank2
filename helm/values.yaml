@@ -5,8 +5,8 @@
 ##
 replicaCount: 2
 
-## @section API Deployment Mode
-## Controls authentication and upload behavior across the deployment.
+## @section API Access Mode
+## Controls authentication and upload behavior for accessing the API.
 ## This is the primary configuration for the API's operational state.
 
 ## @param accessMode Access mode controlling API behavior.
@@ -17,8 +17,6 @@ replicaCount: 2
 ## Default: `authenticated`
 accessMode: "authenticated"
 
-## @param oidcRedirectUri - Explicit OIDC redirect URI used in the login flow.
-oidcRedirectUri: "https://api-dev.vegbank.org/authorize"
 
 ## @section Database
 ## Configuration for the PostgreSQL database used by VegBank. The username and password are

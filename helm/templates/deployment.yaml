@@ -35,7 +35,10 @@ spec:
       {{- end }}
       - name: oidc-config
         secret:
-          secretName: vegbank-oidc-config
+          secretName: {{ .Values.oidcConfig.secretName | default "vegbank-oidc-config" }}
+          {{- if not (has .Values.accessMode (list "read_only" "open" "authenticated")) }}
+              {{- fail "accessMode must be either 'read_only', 'open' or 'authenticated'" }}
+          {{- end }}
           defaultMode: 0440
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
