@@ -104,7 +104,7 @@ def welcome_page():
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def plot_observations(claims, vb_code):
+def plot_observations(vb_code, claims=None):
     """
     Retrieve either an individual plot observation or a collection, or
     upload a new set of plot observations.
@@ -139,10 +139,14 @@ def plot_observations(claims, vb_code):
     further mediated by pagination parameters and other filtering query
     parameters.
 
-    Parameters (for GET requests only):
+    Parameters:
         vb_code (str or None): The unique identifier for the plot observation
             being retrieved, or for a resource of a different type used to focus
             plot observation retrieval. If None, retrieves all plot observations.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         search (str, optional): Plot observation search query.
@@ -196,7 +200,7 @@ def plot_observations(claims, vb_code):
 @app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def taxon_observations(claims, vb_code):
+def taxon_observations(vb_code, claims=None):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
     set of taxon observations.
@@ -220,6 +224,10 @@ def taxon_observations(claims, vb_code):
             observation being retrieved, or for a resource of a
             different type used to focus taxon observation retrieval. If
             None, retrieves all taxon observations.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
@@ -448,7 +456,7 @@ def stem_data():
 @app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def taxon_interpretations(vb_code):
+def taxon_interpretations(vb_code, claims=None):
     """
     Retrieve either an individual taxon interpretation or a collection, or
     upload a new set of taxon interpretations.
@@ -531,7 +539,7 @@ def taxon_interpretations(vb_code):
 @app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
 @app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def community_classifications(vb_code):
+def community_classifications(vb_code, claims=None):
     """
     Retrieve either an individual community classification or a collection.
 
@@ -651,7 +659,7 @@ def community_interpretations(vb_code):
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/references/<vb_code>/community-concepts", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def community_concepts(claims, vb_code):
+def community_concepts(vb_code, claims=None):
     """
     Retrieve either an individual community concept or a collection.
 
@@ -678,6 +686,10 @@ def community_concepts(claims, vb_code):
             being retrieved, or for a resource of a different type used to focus
             community concept retrieval. If None, retrieves all community
             concepts.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     POST Parameters:
         community_concepts (FileStorage): Parquet file containing new community
@@ -742,7 +754,7 @@ def community_concepts(claims, vb_code):
 @app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def plant_concepts(claims, vb_code):
+def plant_concepts(vb_code, claims=None):
     """
     Retrieve either an individual plant concept or a collection.
 
@@ -833,7 +845,7 @@ def plant_concepts(claims, vb_code):
 @app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
 @app.route("/projects/<vb_code>/parties", methods=['GET'])
 @require_scope(SCOPE_ADMIN, methods=['POST'])
-def parties(claims, vb_code):
+def parties(vb_code, claims=None):
     """
     Retrieve either an individual party or a collection.
 
@@ -901,7 +913,7 @@ def parties(claims, vb_code):
 @app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<pj_code>", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def projects(claims, pj_code):
+def projects(pj_code, claims=None):
     """
     Retrieve either an individual project or a collection, or upload a new set
     of projects.
@@ -913,9 +925,13 @@ def projects(claims, pj_code):
     requests, it facilitates uploading of new projects if permitted via an
     environment variable. For any other HTTP method, it returns a 405 error.
 
-    Parameters (for GET requests only):
+    Parameters:
         pj_code (str or None): The unique identifier for the project being
             retrieved. If None, retrieves all projects.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         search (str, optional): Project name search query.
@@ -943,19 +959,16 @@ def projects(claims, pj_code):
     """
     project_operator = Project(params)
     if request.method == 'POST':
-        if (allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            try:
-                pj_df = read_parquet_file(request, 'file', required=True)
-                with connect(**params, row_factory=dict_row) as conn:
-                    to_return = project_operator.upload_project(pj_df, conn)
-                    to_return = dry_run_check(conn, to_return, request)
-                conn.close()
-            except Exception as e:
-                print(traceback.format_exc())
-                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-            return jsonify(to_return)
+        try:
+            pj_df = read_parquet_file(request, 'file', required=True)
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = project_operator.upload_project(pj_df, conn)
+                to_return = dry_run_check(conn, to_return, request)
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
     elif request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:
@@ -965,7 +978,7 @@ def projects(claims, pj_code):
 @app.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
 @app.route("/cover-methods/<cm_code>")
 @require_scope(SCOPE_ADMIN, methods=['POST'])
-def cover_methods(claims, cm_code):
+def cover_methods(cm_code, claims=None):
     """
     Retrieve either an individual cover method or a collection, or upload a new
     cover method.
@@ -1015,7 +1028,7 @@ def cover_methods(claims, cm_code):
 @app.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
 @app.route("/stratum-methods/<sm_code>", methods=['GET'])
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def stratum_methods(claims, sm_code):
+def stratum_methods(sm_code, claims=None):
     """
     Retrieve either an individual stratum method or a collection, or upload a
     new stratum method.
@@ -1121,7 +1134,7 @@ def strata(vb_code):
 @app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
 @app.route("/references/<rf_code>")
 @require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
-def references(claims, rf_code):
+def references(rf_code, claims=None):
     """
     Retrieve either an individual reference or a collection.
 
@@ -1181,7 +1194,7 @@ def references(claims, rf_code):
 @app.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
 @app.route("/roles/<ar_code>")
 @require_scope(SCOPE_ADMIN, methods=['POST'])
-def roles(claims, ar_code):
+def roles(ar_code, claims=None):
     """
     Retrieve either an individual role or a collection.
 
@@ -1277,7 +1290,7 @@ def named_places(vb_code):
 @app.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
 @app.route("/user-datasets/<ds_code>")
 @require_scope(SCOPE_USER, methods=['POST'])
-def user_datasets(claims, ds_code):
+def user_datasets(ds_code, claims=None):
     """
     Retrieve either an individual user dataset listing or a collection.
 

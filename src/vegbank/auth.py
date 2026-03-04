@@ -358,6 +358,14 @@ def require_scope(required_scope: str, methods=None):
     Can enforce auth on specific HTTP methods only. If ``methods`` is None,
     protects all methods.
 
+    **Claims Parameter Injection:**
+    
+    This decorator injects a ``claims`` keyword argument into wrapped functions.
+    The ``claims`` dict contains user info (e.g., preferred_username, email, scopes)
+    extracted from the JWT token. Claims are only populated in 'authenticated' mode;
+    in other modes, claims is None. Route handlers that need audit logging should
+    accept a ``claims=None`` parameter and check it before use.
+
     Args:
         required_scope: Valid OAuth 2.0 scope string that must be present in the token's ``scope`` claim.
         methods: Optional list of HTTP method names (e.g., ``['POST', 'PUT', 'DELETE']``) to protect.
@@ -366,6 +374,9 @@ def require_scope(required_scope: str, methods=None):
 
     Example:
         ``@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])`` – only protect POST operations
+        
+    Handler Example:
+        ``def my_handler(vb_code, claims=None):`` – claims are injected as kwargs
     """
     def decorator(f):
         @functools.wraps(f)
@@ -375,19 +386,24 @@ def require_scope(required_scope: str, methods=None):
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
                 logger.warning(f"Access mode '{mode}': skipping scope validation")
-                return f(None, *args, **kwargs)
+                # Store None in g for consistency
+                g.token_claims = None
+                return f(*args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
             if methods is not None and request.method not in methods:
-                # No auth required for this method; pass None as claims
-                return f(None, *args, **kwargs)
+                # No auth required for this method; store None as claims
+                g.token_claims = None
+                return f(*args, **kwargs)
             
             claims, error = _validate_and_extract_claims(required_scope=required_scope)
             if error:
                 return error
 
             _store_user_context(claims)
-            return f(claims, *args, **kwargs)
+            # Pass claims as keyword argument for explicit access in handlers
+            kwargs['claims'] = claims
+            return f(*args, **kwargs)
 
         return decorated
 
