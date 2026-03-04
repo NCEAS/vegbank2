@@ -16,9 +16,9 @@ def setup_test_client():
 
 
 @pytest.fixture(autouse=True)
-def default_allow_uploads_true(monkeypatch):
-    """Default uploads to enabled unless a test overrides it."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", True)
+def default_access_mode_open(monkeypatch):
+    """Default to open access mode (uploads enabled) unless a test overrides it."""
+    monkeypatch.setenv("VB_ACCESS_MODE", "open")
 
 
 @pytest.fixture(name="mock_db_connection_context")
@@ -35,8 +35,8 @@ def test_plot_observations_post_rejected_when_allow_uploads_false(
     monkeypatch, test_client
 ):
     """Test that a post request to the plot-observations endpoint is rejected when
-    allow_uploads is false."""
-    monkeypatch.setattr("vegbank.vegbankapi.allow_uploads", False)
+    access mode is read_only."""
+    monkeypatch.setenv("VB_ACCESS_MODE", "read_only")
     with patch.object(
         vegbankapi.PlotObservation, "upload_all", autospec=True
     ) as mock_upload_all:
@@ -66,7 +66,7 @@ def test_plot_observations_get_dispatches_to_operator(test_client):
 
 def test_plot_observations_post_calls_upload_all_when_uploads_allowed(test_client):
     """Test that a post request to the plot-observations endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.PlotObservation,
         "upload_all",
@@ -104,7 +104,7 @@ def test_taxon_observations_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the taxon-observations endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="taxon_observations_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
@@ -158,7 +158,7 @@ def test_taxon_importances_get_dispatches_to_operator(test_client):
 
 def test_taxon_importances_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the taxon-importances endpoint returns 405
-    when allow_uploads is true."""
+    when access mode allows uploads."""
     response = test_client.post("/taxon-importances")
 
     assert response.status_code == 405
@@ -184,7 +184,7 @@ def test_stem_counts_get_dispatches_to_operator(test_client):
 
 def test_stem_counts_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the stem-counts endpoint returns 405 when
-    allow_uploads is true."""
+    access mode allows uploads."""
     response = test_client.post("/stem-counts")
 
     assert response.status_code == 405
@@ -194,7 +194,7 @@ def test_strata_cover_data_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the strata-cover-data endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="strata_cover_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
@@ -241,7 +241,7 @@ def test_stem_data_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the stem-data endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="stem_data_dataframe")
     fake_response = ({"uploaded": True}, 201)
 
@@ -306,7 +306,7 @@ def test_taxon_interpretations_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the taxon-interpretations endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="taxon_interpretations_dataframe")
     fake_response = {"uploaded": True}
 
@@ -371,7 +371,7 @@ def test_community_classifications_post_calls_upload_all_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the community-classifications endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.CommunityClassification,
         "upload_all",
@@ -409,7 +409,7 @@ def test_community_interpretations_post_returns_405_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the community-interpretations endpoint returns 405
-    when allow_uploads is true."""
+    when access mode allows uploads."""
     response = test_client.post("/community-interpretations")
 
     assert response.status_code == 405
@@ -437,7 +437,7 @@ def test_community_concepts_post_calls_upload_all_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the community-concepts endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.CommunityConcept,
         "upload_all",
@@ -475,7 +475,7 @@ def test_plant_concepts_post_calls_upload_all_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the plant-concepts endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.PlantConcept,
         "upload_all",
@@ -513,7 +513,7 @@ def test_parties_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the parties endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="parties_dataframe")
     fake_response = {"uploaded": True}
 
@@ -584,7 +584,7 @@ def test_projects_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the projects endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="projects_dataframe")
     fake_response = {"uploaded": True}
 
@@ -649,7 +649,7 @@ def test_cover_methods_post_calls_upload_cover_method_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the cover-methods endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.CoverMethod,
         "upload_cover_method",
@@ -687,7 +687,7 @@ def test_stratum_methods_post_calls_upload_stratum_method_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the stratum-methods endpoint is accepted when
-    allow_uploads is true."""
+    access mode allows uploads."""
     with patch.object(
         vegbankapi.StratumMethod,
         "upload_stratum_method",
@@ -723,7 +723,7 @@ def test_strata_get_dispatches_to_operator(test_client):
 
 def test_strata_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the strata endpoint returns 405 when
-    allow_uploads is true."""
+    access mode allows uploads."""
     response = test_client.post("/strata")
 
     assert response.status_code == 405
@@ -751,7 +751,7 @@ def test_references_post_calls_upload_pipeline_when_uploads_allowed(
     test_client, mock_db_connection_context
 ):
     """Test that a post request to the references endpoint is accepted
-    when allow_uploads is true and follows the expected upload sequence."""
+    when access mode allows uploads and follows the expected upload sequence."""
     mock_df = MagicMock(name="references_dataframe")
     fake_response = {"uploaded": True}
 
@@ -847,7 +847,7 @@ def test_named_places_get_dispatches_to_operator(test_client):
 
 def test_named_places_post_returns_405_when_uploads_allowed(test_client):
     """Test that a post request to the named-places endpoint returns 405 when
-    allow_uploads is true."""
+    access mode allows uploads."""
     response = test_client.post("/named-places")
 
     assert response.status_code == 405
