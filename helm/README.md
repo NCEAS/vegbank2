@@ -2,6 +2,23 @@
 
 This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see several pods. One or more instances of the VegBank python pod, which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/plant-concepts/pc.92413`) and three CloudNative PostgreSQL (CNPG) pods which contain the postgres database used by the API. The CNPG pods consist of a primary read-write pod and two replica read-only pods.
 
+### See also:
+
+- [./docs/prod-deployment.md](./docs/prod-deployment.md) for details on production deployment
+- [./docs/db-recovery.md](./docs/db-recovery.md) for details on database backup and recovery
+- [./admin/bootstrap/README.md](./admin/bootstrap/README.md) for an automated method of restoring from a data-only dump file taken from the original VegBank database.
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Requirements](#requirements)
+- [Prerequisite: CNPG Cluster Deployment](#prerequisite-cnpg-cluster-deployment)
+- [API Application Deployment](#api-application-deployment)
+  - [Step 1: Getting the Dump File (if Deploying With Data)](#step-1-getting-the-dump-file-if-deploying-with-data)
+  - [Step 2: Helm Install and Uninstall](#step-2-helm-install-and-uninstall)
+  - [Step 3: Watch the `initContainers`](#step-3-watch-the-initcontainers)
+  - [Step 4: Applying New Flyway Migration Files](#step-4-applying-new-flyway-migration-files)
+- [Parameters](#parameters)
+
 ## Requirements
 - Helm 4.x
 - Kubernetes 1.26+
@@ -28,7 +45,7 @@ Before we deploy the VegBank API helm chart, we must first deploy a PostgreSQL d
 ```sh
 # Deploy the latest version of the chart by leaving out the --version parameter.
 # Using the deployment name 'vegbankdb':
-# 
+#
 $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./helm/admin/values-cnpg.yaml
 
 $ kubectl -n dev-vegbank get pods
@@ -76,9 +93,9 @@ To restore the database using a dump file containing both the schema and data de
 Now deploy the helm chart by running one of the following commands from the root folder of this repo:
 
 ```sh
-# Deploy the latest published helm chart 
-$ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank 
-# deploy a specific version by adding: --version <version-#> 
+# Deploy the latest published helm chart
+$ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank
+# deploy a specific version by adding: --version <version-#>
 # See more info by adding: --debug
 
 # Deploy from the local helm chart in this repo (e.g. for testing changes to the chart)
@@ -91,7 +108,7 @@ To uninstall, use:
 $ helm uninstall vegbankapi -n vegbank
 ```
 
-### Development Values File: 'values-overrides-dev.yaml'
+#### Development Values File: `values-overrides-dev.yaml`
 
 The above commands deploy VegBank API on the Kubernetes cluster in the default configuration that is defined by the parameters in the [values.yaml file](./values.yaml). The [Parameters](#parameters) section, below, lists the parameters that can be configured during installation.
 
@@ -119,17 +136,16 @@ $ helm install vegbankapi . -f values-overrides-dev.yaml
 $ helm install vegbankapi . --set ingress.enabled=false
 ```
 
-
 > [!TIP]
 > If you wish to access the API without ingress, you can do so by port forwarding to the API service.
 >
 > ```sh
 > # 1. Find the name of the API service
-> # 
+> #
 > $  kubectl get svc | grep api    # or grep for your vegbank api release name
-> 
+>
 >    vegbankapi           ClusterIP   10.104.197.36    <none>     80/TCP     26d
-> 
+>
 > # 2. Set up port forwarding using kubectl port-forward service/<svc-name> <local-port>:80
 > #
 > $ kubectl port-forward service/vegbankapi 8080:80
@@ -139,7 +155,7 @@ $ helm install vegbankapi . --set ingress.enabled=false
 > $ curl -s https://localhost:8080/plant-concepts/pc.92413
 > ```
 
-## Step 3: Watch the `initContainers`
+### Step 3: Watch the `initContainers`
 
 There are two `initContainers`:
 1) vegbank-reconcile-postgres
@@ -159,7 +175,7 @@ There are two `initContainers`:
 > vegbankdb-cnpg-1              1/1     Running    0          5m4s
 > vegbankdb-cnpg-2              1/1     Running    0          3m36s
 > vegbankdb-cnpg-3              1/1     Running    0          2m19s
-> 
+>
 > # Watch the container logs:
 > $ kubectl logs -f vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres
 > # or:
@@ -168,12 +184,12 @@ There are two `initContainers`:
 
 After the `initContainers` complete, you will now have an up-to-date copy of the current `vegbank` postgres database - which has applied all migrations found in `helm/db/mgrations`.
 
-### Step 4: Applying new migration files 
+### Step 4: Applying New Flyway Migration Files
 
 If you are testing new schema updates, add them to `helm/db/migrations` with the correct naming convention and run a `helm` upgrade command, as described above.
 
 > [!IMPORTANT]
-> Before upgrading, do not forget to change the `databaseRestore.enabled` value back to `false` if you enabled it earlier.
+> Before upgrading or redeploying, don't forget to change the `databaseRestore.enabled` value back to `false` if you enabled it earlier.
 
 ## Parameters
 
