@@ -87,9 +87,14 @@ class Party(Operator):
                 },
                 'search': {
                     'sql': """\
-                         py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR py.party_id = CASE
+                              WHEN %s ~ '^py\.\d+$'
+                              THEN regexp_replace(%s, '^py\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "py": {
                     'sql': "py.party_id = %s",
@@ -124,6 +129,16 @@ class Party(Operator):
                                 AND pjc.project_id = %s)
                         """,
                     'params': ['vb_id']
+                },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT bb.observation_id
+                             FROM bundle bb
+                             JOIN observationcontributor obp USING (observation_id)
+                             WHERE py.party_id = obp.party_id)
+                        """,
+                    'params': []
                 },
             },
             'order_by': {
@@ -202,7 +217,6 @@ class Party(Operator):
         required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
         contributor_defs = table_defs_config.contributor.copy()
         contributor_defs.append('vb_record_identifier')
-        contributor_defs.append('vb_py_code')
         table_defs = [contributor_defs]
 
         df.columns = map(str.lower, df.columns)

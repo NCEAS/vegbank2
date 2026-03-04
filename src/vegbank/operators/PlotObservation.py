@@ -3,9 +3,11 @@ import textwrap
 import time
 from datetime import datetime
 import pandas as pd
+import numpy as np
 import traceback
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
+from vegbank.operators import Validator
 from .CommunityClassification import CommunityClassification
 from .Party import Party
 from .Project import Project
@@ -20,7 +22,8 @@ from vegbank.utilities import (
     UploadDataError,
     merge_vb_codes,
     combine_json_return,
-    dry_run_check
+    dry_run_check,
+    update_search_vector,
 )
 from flask import jsonify
 from psycopg import connect
@@ -454,9 +457,14 @@ class PlotObservation(Operator):
                 },
                 'search': {
                     'sql': """\
-                         ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR ob.observation_id = CASE
+                              WHEN %s ~ '^ob\.\d+$'
+                              THEN regexp_replace(%s, '^ob\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 'ob': {
                     'sql': "ob.observation_id = %s",
@@ -533,7 +541,16 @@ class PlotObservation(Operator):
                 'sm': {
                     'sql': "stratummethod_id = %s",
                     'params': ['vb_id']
-                }
+                },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT observation_id
+                             FROM bundle bb
+                             WHERE ob.observation_id = bb.observation_id)
+                        """,
+                    'params': []
+                },
             },
             'order_by': {
                 'sql': order_by_sql[self.order_by],
@@ -618,8 +635,7 @@ class PlotObservation(Operator):
                           df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        new_pl_required_fields = ['author_plot_code', 'real_latitude', 'real_longitude',
-                                  'confidentiality_status', 'latitude', 'longitude', 'user_ob_code', 'vb_pj_code']
+        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
         new_validation = validate_required_and_missing_fields(
             new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
@@ -636,9 +652,9 @@ class PlotObservation(Operator):
         df['user_pl_code'] = df['user_pl_code'].astype(str)
         to_return = None
         if not new_plots_df.empty:
-            plot_codes = super().upload_to_table("plot", 'pl', table_defs_config.plot,
-                                                 'plot_id', new_plots_df, True, conn)
-
+            plot_codes = super().upload_to_table("plot", 'pl', 
+                table_defs_config.plot, 'plot_id', new_plots_df, True, conn)
+            
             pl_codes_df = pd.DataFrame(plot_codes['resources']['pl'])
             pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
 
@@ -649,8 +665,8 @@ class PlotObservation(Operator):
             to_return = combine_json_return(to_return, plot_codes)
 
         df['user_ob_code'] = df['user_ob_code'].astype(str)
-        observation_codes = super().upload_to_table("observation", 'ob',
-                                                    table_defs_config.observation, 'observation_id', df, True, conn)
+        observation_codes = super().upload_to_table("observation", 'ob', 
+            table_defs_config.observation, 'observation_id', df, True, conn)
         to_return = combine_json_return(to_return, observation_codes)
 
         return to_return
@@ -706,51 +722,80 @@ class PlotObservation(Operator):
             },
             'pl': {
                 'file_name': 'plot_observations',
-                'required': True
+                'required': True,
+                'user_codes': [('user_pj_code','user_pj_code', 'pj')] 
+                #user code format is source_code, target_code, target_df
             },
             'so': {
                 'file_name': 'soils',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'do': {
                 'file_name': 'disturbances',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'cl': {
                 'file_name': 'community_classifications',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
             },
             'sr': {
                 'file_name': 'strata',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl')]
             },
             'sc': {
                 'file_name': 'strata_cover_data',
-                'required': False
+                'required': False,
+                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
+                               ('user_sr_code','user_sr_code', 'sr')]
             },
             'sd': {
                 'file_name': 'stem_data',
-                'required': False
+                'required': False,
+                'user_codes': [('user_tm_code','user_tm_code', 'sc')]
             },
             'ti': {
                 'file_name': 'taxon_interpretations',
-                'required': False
+                'required': False,
+                'user_codes': [('user_to_code','user_to_code', 'sc'),
+                               ('user_rf_code','user_rf_code', 'rf'),
+                               ('user_py_code', 'user_py_code', 'py')]
             },
             'cr': {
                 'file_name': 'contributors',
-                'required': False
+                'required': False,
+                'user_codes': [('user_py_code','user_py_code', 'py')] 
+                #record_identifier has a special validation in Validator
             }
         }
         data = {}
+        validation = {
+            "has_error":False,
+            "error": ""
+        }
         dataset = {}
         to_return = None
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
+                if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
+
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
-
+        
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
+        
         try:
             with connect(**self.params, row_factory=dict_row) as conn:
                 if data['pj'] is not None:
@@ -823,13 +868,13 @@ class PlotObservation(Operator):
                             data['cl'] = merge_vb_codes(
                                 rfs['resources']['rf'], data['cl'],
                                 {'user_rf_code': 'user_comm_class_rf_code',
-                                 'vb_rf_code': 'vb_comm_class_rf_code'})
+                                'vb_rf_code': 'vb_comm_class_rf_code'})
                         # ... merge in newly created interp authority vb_rf_codes
-                        if 'user_interp_authority_rf_code' in data['cl'].columns:
+                        if 'user_authority_rf_code' in data['cl'].columns:
                             data['cl'] = merge_vb_codes(
                                 rfs['resources']['rf'], data['cl'],
                                 {'user_rf_code': 'user_authority_rf_code',
-                                 'vb_rf_code': 'vb_authority_rf_code'})
+                                'vb_rf_code': 'vb_authority_rf_code'})
                     cls = CommunityClassification(self.params) \
                         .upload_community_classifications(data['cl'], conn)
                     dataset['commclass'] = [item['vb_cl_code']
@@ -948,6 +993,22 @@ class PlotObservation(Operator):
                     crs = Party(self.params).upload_contributors(
                         data['cr'], conn)
                     to_return = combine_json_return(to_return, crs)
+
+                # Update party search vector
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
+                # Update project search vector
+                if 'pj' in to_return['resources'].keys():
+                    project_ids = [self.extract_id_from_vb_code(code['vb_pj_code'], 'pj')
+                                   for code in to_return['resources']['pj']]
+                    update_search_vector(conn, 'project', project_ids)
+                # Update observation search vector
+                observation_ids = [self.extract_id_from_vb_code(code['vb_ob_code'], 'ob')
+                                   for code in to_return['resources']['ob']]
+                update_search_vector(conn, 'observation', observation_ids)
+
 
                 dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
                 dataset_description = 'Dataset created from upload on ' + \

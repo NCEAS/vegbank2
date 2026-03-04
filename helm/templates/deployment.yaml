@@ -95,7 +95,8 @@ spec:
               mountPath: {{ .Values.flyway.dbpath }}/migrations
           env:
             - name: FLYWAY_URL
-              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+              value: "jdbc:postgresql://{{ .Values.flyway.dbHost }}:{{ .Values.flyway.dbPort }}/{{
+              .Values.database.name }}"
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
@@ -113,7 +114,7 @@ spec:
             - -c
             - >
               echo "## Flyway Env";
-              env | grep '^FLYWAY_' || true;
+              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE vegbankdbcreds SECRET)/' || true;
               echo "## Listing Migrations";
               ls {{ .Values.flyway.dbpath }}/migrations || true;
               echo "Applying all migrations in db/migrations";

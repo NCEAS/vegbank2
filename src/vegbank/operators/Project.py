@@ -92,13 +92,28 @@ class Project(Operator):
                 },
                 'search': {
                     'sql': """\
-                         pj.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (pj.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR pj.project_id = CASE
+                              WHEN %s ~ '^pj\.\d+$'
+                              THEN regexp_replace(%s, '^pj\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "pj": {
                     'sql': "pj.project_id = %s",
                     'params': ['vb_id']
+                },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT bb.observation_id
+                             FROM bundle bb
+                             JOIN observation ob USING (observation_id)
+                             WHERE pj.project_id = ob.project_id)
+                        """,
+                    'params': []
                 },
             },
             'order_by': {
