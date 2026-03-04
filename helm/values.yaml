@@ -24,6 +24,12 @@ database:
   ## @param database.port port to connect to the database (Must match CNPG or pooler port number)
   ##
   port: 5432
+  ## @param database.existingSecret Secret containing the database username and password)
+  ## The secret should be manually created before deploying the database or this chart.
+  ## It must be of type kubernetes.io/basic-auth; must contain the exact key names: 'username'
+  ## and 'password', and the username must match the value of dbUser in your cnpg cluster config.
+  ##
+  existingSecret: vegbankdbcreds
 
 databaseRestore:
   ## @param databaseRestore.enabled Restores a full (schema+data) database dump file defined below
