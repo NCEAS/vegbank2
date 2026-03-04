@@ -410,9 +410,6 @@ def login():
         200 JSON response if already authenticated.
         401/500 JSON error response if login fails.
 
-    Environment Variables:
-        OIDC_REDIRECT_URI: Optional explicit redirect URI. If not set,
-                          defaults to ``/authorize`` endpoint.
     """
     # Check if user is already authenticated
     if "token" in session and session.get("token"):
@@ -420,8 +417,7 @@ def login():
         return _token_response(token, message="Already authenticated")
 
     try:
-        redirect_uri = os.getenv("OIDC_REDIRECT_URI") or url_for("auth.authorize", _external=True)
-        return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
+        return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
     except (OAuthError, RequestException) as exc:
         logger.error("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)
