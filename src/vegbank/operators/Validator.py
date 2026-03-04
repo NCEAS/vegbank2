@@ -60,11 +60,18 @@ config = {
     "plant_concepts":{
         "required_fields": ['user_pc_code', 'name', 'start_date',
                            'plant_concept_status'],
-        "table_defs":[table_defs_config.plant_concept],
+        "table_defs":[table_defs_config.plant_concept, table_defs_config.plant_status],
         "xor_fields":[
             ('user_rf_code', 'vb_rf_code'), 
             ('user_status_py_code', 'vb_status_py_code'),
             ('user_parent_pc_code', 'vb_parent_pc_code')
+        ]
+    },
+    "plant_correlations":{
+        "required_fields":['convergence_type', 'correlation_start'],
+        "table_defs":[table_defs_config.plant_correlation],
+        "xor_fields":[
+            ('user_correlated_pc_code', 'vb_correlated_pc_code')
         ]
     }
 
