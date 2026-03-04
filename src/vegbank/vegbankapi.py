@@ -8,8 +8,18 @@ import io
 import time
 import traceback
 import os
+import logging
 from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
-from vegbank.auth import auth_bp, init_oauth
+from vegbank.auth import (
+    auth_bp, 
+    init_oauth, 
+    require_scope, 
+    SCOPE_ADMIN, 
+    SCOPE_CONTRIBUTOR, 
+    SCOPE_USER,
+    get_access_mode,
+    ACCESS_MODE_READ_ONLY
+)
 from vegbank.repositories import (
     IdentifiersQueries,
     Overview,
@@ -43,6 +53,9 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
 
+# Initialize logging
+logger = logging.getLogger(__name__)
+
 init_oauth(app)
 app.register_blueprint(auth_bp)
 
@@ -53,8 +66,6 @@ params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
 
-allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
-
 default_detail = "full"
 default_limit = 1000
 default_offset = 0
@@ -63,11 +74,19 @@ default_offset = 0
 def before_request():
     """
     Log the incoming request method and path, and check if uploads are allowed for POST requests.
+    
+    Upload behavior is determined by accessMode:
+    - 'read_only': No uploads allowed
+    - 'open': Uploads allowed
+    - 'authenticated': Uploads allowed (with scope restrictions on individual endpoints)
     """
-    print( f"Received {request.method} request for {request.path}" ) # This will eventually be a log statement
+    logger.debug(f"Received {request.method} request for {request.path}")
+    
     if request.method == 'POST':
-        if allow_uploads is False:
-            return jsonify_error_message("Uploads not allowed."), 403
+        mode = get_access_mode()
+        
+        if mode == ACCESS_MODE_READ_ONLY:
+            return jsonify_error_message("Uploads not allowed in read_only deployment mode."), 403
 
 @app.route("/")
 def welcome_page():
@@ -84,7 +103,8 @@ def welcome_page():
 @app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
-def plot_observations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def plot_observations(claims, vb_code):
     """
     Retrieve either an individual plot observation or a collection, or
     upload a new set of plot observations.
@@ -175,7 +195,8 @@ def plot_observations(vb_code):
 @app.route("/taxon-observations/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
-def taxon_observations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def taxon_observations(claims, vb_code):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
     set of taxon observations.
@@ -426,6 +447,7 @@ def stem_data():
 @app.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def taxon_interpretations(vb_code):
     """
     Retrieve either an individual taxon interpretation or a collection, or
@@ -508,6 +530,7 @@ def taxon_interpretations(vb_code):
 @app.route("/community-classifications/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
 @app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def community_classifications(vb_code):
     """
     Retrieve either an individual community classification or a collection.
@@ -627,7 +650,8 @@ def community_interpretations(vb_code):
 @app.route("/parties/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/references/<vb_code>/community-concepts", methods=['GET'])
-def community_concepts(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def community_concepts(claims, vb_code):
     """
     Retrieve either an individual community concept or a collection.
 
@@ -717,7 +741,8 @@ def community_concepts(vb_code):
 @app.route("/references/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
-def plant_concepts(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def plant_concepts(claims, vb_code):
     """
     Retrieve either an individual plant concept or a collection.
 
@@ -807,7 +832,8 @@ def plant_concepts(vb_code):
 @app.route("/plot-observations/<vb_code>/parties", methods=['GET'])
 @app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
 @app.route("/projects/<vb_code>/parties", methods=['GET'])
-def parties(vb_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def parties(claims, vb_code):
     """
     Retrieve either an individual party or a collection.
 
@@ -874,7 +900,8 @@ def parties(vb_code):
 
 @app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<pj_code>", methods=['GET'])
-def projects(pj_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def projects(claims, pj_code):
     """
     Retrieve either an individual project or a collection, or upload a new set
     of projects.
@@ -937,7 +964,8 @@ def projects(pj_code):
 
 @app.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
 @app.route("/cover-methods/<cm_code>")
-def cover_methods(cm_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def cover_methods(claims, cm_code):
     """
     Retrieve either an individual cover method or a collection, or upload a new
     cover method.
@@ -986,7 +1014,8 @@ def cover_methods(cm_code):
 
 @app.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
 @app.route("/stratum-methods/<sm_code>", methods=['GET'])
-def stratum_methods(sm_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def stratum_methods(claims, sm_code):
     """
     Retrieve either an individual stratum method or a collection, or upload a
     new stratum method.
@@ -1091,7 +1120,8 @@ def strata(vb_code):
 
 @app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
 @app.route("/references/<rf_code>")
-def references(rf_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def references(claims, rf_code):
     """
     Retrieve either an individual reference or a collection.
 
@@ -1150,7 +1180,8 @@ def references(rf_code):
 
 @app.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
 @app.route("/roles/<ar_code>")
-def roles(ar_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def roles(claims, ar_code):
     """
     Retrieve either an individual role or a collection.
 
@@ -1245,7 +1276,8 @@ def named_places(vb_code):
 
 @app.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
 @app.route("/user-datasets/<ds_code>")
-def user_datasets(ds_code):
+@require_scope(SCOPE_USER, methods=['POST'])
+def user_datasets(claims, ds_code):
     """
     Retrieve either an individual user dataset listing or a collection.
 

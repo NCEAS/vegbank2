@@ -5,12 +5,18 @@
 ##
 replicaCount: 2
 
-## @param allowUploads  Whether to allow file uploads in the API.
-##
-allowUploads: false
+## @section API Access Mode
+## Controls authentication and upload behavior for accessing the API.
+## This is the primary configuration for the API's operational state.
 
-## @param oidcRedirectUri - Explicit OIDC redirect URI used in the login flow.
-oidcRedirectUri: "https://api-dev.vegbank.org/authorize"
+## @param accessMode Access mode controlling API behavior.
+## - `read_only`: No authentication, no uploads.
+## - `open`: No authentication, uploads allowed.
+## - `authenticated`: Full authentication and authorization required.
+##
+## Default: `authenticated`
+accessMode: "authenticated"
+
 
 ## @section Database
 ## Configuration for the PostgreSQL database used by VegBank. The username and password are

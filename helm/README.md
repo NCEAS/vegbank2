@@ -210,6 +210,12 @@ $ kubectl -n dev-vegbank port-forward vegbank-745779dccd-994r6 2580:80
 
 ## Parameters
 
+### API Access Mode
+
+| Name         | Description                           | Value           |
+| ------------ | ------------------------------------- | --------------- |
+| `accessMode` | Access mode controlling API behavior. | `authenticated` |
+
 ### Database
 
 | Name                            | Description                                                                | Value                                     |
