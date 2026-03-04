@@ -216,6 +216,12 @@ $ kubectl -n dev-vegbank port-forward vegbank-745779dccd-994r6 2580:80
 | ------------ | ------------------------------------- | --------------- |
 | `accessMode` | Access mode controlling API behavior. | `authenticated` |
 
+### OIDC Configuration
+
+| Name                    | Description                                                  | Value                 |
+| ----------------------- | ------------------------------------------------------------ | --------------------- |
+| `oidcConfig.secretName` | Name of the Kubernetes secret containing client_secrets.json | `vegbank-oidc-config` |
+
 ### Database
 
 | Name                            | Description                                                                | Value                                     |
