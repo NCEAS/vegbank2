@@ -1,9 +1,11 @@
 import os
 from datetime import datetime
 import pandas as pd
+from psycopg import connect
+from psycopg.rows import dict_row
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config as table_defs
-from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql
+from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql, jsonify_error_message, validate_dataset_json, dry_run_check
 
 
 class UserDataset(Operator):
@@ -171,4 +173,28 @@ class UserDataset(Operator):
                     'di': new_dataset_items['resources']['di']
                 }
             }
+        return to_return
+
+    def upload_user_dataset_from_endpoint(self, request):
+        '''
+        Handler for uploading a user dataset from the endpoint. To facilitate
+        testing, the conneciton needs to be opened here instead of from 
+        vegbankapi.py
+        Parameters:
+            - dataset: dict with the same structure as the dataset parameter for upload_user_dataset
+            - conn: a connection to the VegBank database
+            - validate: boolean indicating whether to validate the dataset before uploading
+        Returns:
+            - dict with counts of inserted records and their codes
+        '''
+        if not request.is_json:
+            return jsonify_error_message("Request body must be JSON."), 400
+        
+        dataset = request.get_json()
+        validate_dataset_json(dataset)
+        to_return = None
+        with connect(**self.params, row_factory=dict_row) as conn:
+            to_return = self.upload_user_dataset(dataset, conn, validate=True)
+            to_return = dry_run_check(conn, to_return, request)
+        conn.close()
         return to_return

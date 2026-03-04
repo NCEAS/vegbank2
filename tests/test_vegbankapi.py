@@ -895,7 +895,7 @@ def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
             ),  # Note: The return value above is purely placeholder data
         ) as mock_upload_user_dataset:
             response = test_client.post("/user-datasets?dry_run=true", json=payload)
-    print(response)
+
     assert response.status_code == 200
     assert mock_upload_user_dataset.call_count == 1
 

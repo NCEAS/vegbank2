@@ -1295,22 +1295,12 @@ def user_datasets(ds_code):
     """
 
     if request.method == 'POST':
-        if not request.is_json:
-            return jsonify_error_message("Request body must be JSON."), 400
-        to_return = None
         try:
-            dataset = request.get_json()
-            validate_dataset_json(dataset)
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = UserDataset(params).upload_user_dataset(dataset, conn, validate=True)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
+            to_return = UserDataset(params).upload_user_dataset_from_endpoint(request)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
-        print("TESTING")
-        print(to_return)
         return jsonify(to_return)
             
     elif request.method == 'GET':
