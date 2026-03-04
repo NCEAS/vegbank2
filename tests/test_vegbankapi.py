@@ -887,7 +887,7 @@ def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
     }
     with patch.object(
         vegbankapi.UserDataset,
-            "upload_user_dataset",
+            "upload_user_dataset_from_endpoint",
             autospec=True,
             return_value=(
                 {"uploaded": True},
