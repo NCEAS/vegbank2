@@ -1,7 +1,22 @@
-# Default values for VegBank.
-# This is a YAML-formatted file.
+## Default values for VegBank.
+##
+## Install or upgrade using:
+##      $ helm install --upgrade myrelease -n mynamespace-f myValues.yaml \
+##                 oci://ghcr.io/nceas/charts/vegbank --version [version]
+##
+##    ...assuming release name is "myrelease"; values-override filename is "myValues.yaml" and
+##    namespace is "mynamespace". Charts and their version numbers can be found at:
+##            https://github.com/NCEAS/metacat/pkgs/container/charts%2Fvegbank
+##
+## If you wish to deploy using a local copy of the helm chart (e.g. for development), then get a
+## copy of the code from GitHub (https://github.com/NCEAS/vegbank2/tree/develop), and install or
+## upgrade using:
+##
+## $ helm install --upgrade myrelease -n mynamespace-f myValues.yaml ./helm
+##
 
-## @param replicaCount  The number of API pods to be created when the chart is installed. 
+## @param replicaCount  The number of API pods to be created when the chart is installed.
+## Setting greater than 1 ensures no downtime during upgrades
 ##
 replicaCount: 2
 
