@@ -153,8 +153,12 @@ class UserDataset(Operator):
 
             to_return = {
                 'counts': {
-                    'di': len(new_dataset_items),
-                    'ds': 1
+                    'di': {
+                        "inserted" : len(new_dataset_items['resources']['di'])
+                    },
+                    'ds': {
+                        "inserted" : 1
+                    }
                 },
                 'resources': {
                     'ds': [
