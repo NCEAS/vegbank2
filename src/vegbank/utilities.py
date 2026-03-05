@@ -213,8 +213,8 @@ def merge_vb_codes(inserted_codes, df, mapping):
             where keys are column names and values are lists of code values.
             Must contain columns that will be renamed according to the mapping.
         df (pandas.DataFrame): The target dataframe to merge the new codes into.
-            Should contain a column matching the user code field specified in
-            the mapping.
+            If the user code column specified in the mapping is not present, df
+            is returned unchanged.
         mapping (dict): A dictionary mapping the column names from
             inserted_codes to the column names in the target dataframe. Should
             have exactly two key-value pairs: one for the user code column and
@@ -222,11 +222,15 @@ def merge_vb_codes(inserted_codes, df, mapping):
             "user_status_py_code", "vb_py_code": "vb_status_py_code"}).
 
     Returns:
-        pandas.DataFrame: The modified dataframe with the new VB codes merged in.
-            Existing VB code values are preserved when conflicts occur.
+        pandas.DataFrame: The modified dataframe with the new VB codes merged
+            in, or the original dataframe unchanged if the user code column is
+            absent. Existing VB code values are preserved when conflicts occur.
     '''
     codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
     user_col, vb_col = list(mapping.values())
+    if user_col not in df.columns:
+        print(f"No '{user_col}' column found in df -- skipping merge.")
+        return df
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
     if f'{vb_col}_x' in df:
         df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])

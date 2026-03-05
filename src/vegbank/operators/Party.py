@@ -87,9 +87,14 @@ class Party(Operator):
                 },
                 'search': {
                     'sql': """\
-                         py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR py.party_id = CASE
+                              WHEN %s ~ '^py\.\d+$'
+                              THEN regexp_replace(%s, '^py\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "py": {
                     'sql': "py.party_id = %s",
