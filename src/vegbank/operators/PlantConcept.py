@@ -379,11 +379,19 @@ class PlantConcept(Operator):
             },
             'pn': {
                 'file_name': 'plant_names',
-                'required': False
+                'required': False,
+                'user_codes':[
+                    ('user_pc_code', 'user_pc_code', 'pc'),
+                    ('user_usage_py_code', 'user_py_code', 'py')
+                ]
             },
             'px': {
                 'file_name': 'plant_correlations',
-                'required': False
+                'required': False,
+                'user_codes':[
+                    ('user_pc_code', 'user_pc_code', 'pc'),
+                    ('user_correlated_pc_code', 'user_pc_code', 'pc')
+                ]
             },
         }
         # Read each Parquet file from the request into a Pandas DataFrame

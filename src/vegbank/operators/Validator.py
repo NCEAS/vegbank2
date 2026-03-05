@@ -73,6 +73,12 @@ config = {
         "xor_fields":[
             ('user_correlated_pc_code', 'vb_correlated_pc_code')
         ]
+    },
+    "plant_names":{
+        "required_fields": ['user_pc_code', 'name',
+                           'name_type', 'name_status'],
+        "table_defs":[table_defs_config.plant_name, 
+                      table_defs_config.plant_usage]
     }
 
 }
