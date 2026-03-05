@@ -20,6 +20,7 @@ The production k8s release process for VegBank follows the same steps described 
 See detailed information in the [helm README file](../README.md) for each step, unless otherwise noted below.
 
 1. Create Secrets
+
     Follow the steps in the Helm README to create the necessary secrets for the CNPG cluster, Flask and OpenID Connect (OIDC).
     - The production credentials for CNPG can be found in a GPG-encrypted YAML file in the GHE `Security` repo. Decrypt, then use:
 
@@ -31,10 +32,9 @@ See detailed information in the [helm README file](../README.md) for each step, 
    - The Flask Session-Signing Secret creation is exactly as described in the Helm README. It does NOT need to be stored in the GHE repo; it should be regenerated if needed.
 
 2. Deploy CNPG Cluster
+
     - Do not use the `helm/admin/values-cnpg.yaml` overrides file described in the README. Instead, use the production overrides file (`values-prod-vegbank-cnpg.yaml`) stored in the GHE `k8s-cluster-config` repo.
-    - Inspect the values to make sure they are correct for your deployment. For more details, see documentation in:
-      - The `dataone-cnpg` [GitHub repo](https://github.com/DataONEorg/dataone-cnpg)
-      - `values-prod-vegbank-cnpg.yaml` in the GHE `k8s-cluster-config` repo
+    - Inspect the values to make sure they are correct for your deployment. For more details, see documentation in the `dataone-cnpg` [GitHub repo](https://github.com/DataONEorg/dataone-cnpg)
     - Pay particular attention to the following:
 
       ```yaml
@@ -55,22 +55,23 @@ See detailed information in the [helm README file](../README.md) for each step, 
       helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f values-prod-vegbank-cnpg.yaml
       ```
 
-3. (Optional) Restore from Data-Only Dump File
+3. (Optional) Restore from Data-Only Postgres v10 Dump File
 
-> [!NOTE]
-> This step is required only if bootstrapping from the (data-only) dump file, taken from the original VegBank Postgres version 10 database.
->
-> This dump file (created immediately after the legacy (v1) vegbank.org site was taken down on 3/2/2026) is stored on the production ("pdg") cephfs subvolume, which can be accessed on `datateam` at:
->
-> ```shell
-> /mnt/ceph/repos/vegbank/vegbank_dataonly_fc_20260302.dump
-> ```
+    This step is required only if bootstrapping from the (data-only) dump file, taken from the original VegBank Postgres version 10 database.
 
-  If you need to restore from the legacy data-only dump file, follow the instructions in the [bootstrap README](../admin/bootstrap/README.md). This should be done directly against the CNPG cluster (via the RRW service), and NOT via a pooler layer (see below).
+    This dump file (created immediately after the legacy (v1) vegbank.org site was taken down on 3/2/2026) is stored on the production ("pdg") cephfs subvolume, which can be accessed on `datateam` at:
+ 
+    ```shell
+    /mnt/ceph/repos/vegbank/vegbank_dataonly_fc_20260302.dump
+    ```
 
-  If you need to restore from a CNPG Backup object instead, see the [db-recovery file](./db-recovery.md) for instructions.
+    - If you need to restore from the legacy data-only dump file, follow the instructions in the [bootstrap README](../admin/bootstrap/README.md). This should be done directly against the CNPG cluster (via the RW service), and NOT via a pooler layer (see below). Note that the dump file will need to be renamed or symlinked to match the name shown in the bootstrap README.
 
-4. Deploy the PGBouncer Pooler
+4. (Optional) Restore from a CNPG Backup Object
+
+    If you need to restore from a CNPG Backup object instead, see the [db-recovery.md file](./db-recovery.md) for instructions.
+
+5. Deploy the PGBouncer Pooler
 
     This step is NOT described in the Helm README, but the PGBouncer deployment is required for production deployments of VegBank, in order to avoid database connection starvation. For more details, see the [`DataONEorg/k8s-cluster` documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#using-a-connection-pooler).
 
@@ -95,7 +96,7 @@ See detailed information in the [helm README file](../README.md) for each step, 
       kubectl create -f pooler--prod-vegbank-cnpg.yaml
       ```
 
-5. Deploy the API Application
+6. Deploy the API Application
 
   - Do not use the `values-overrides-dev.yaml` overrides file described in the README. Instead, use the production overrides file (`values-prod-cluster-vegbank.yaml`) stored in the GHE `k8s-cluster-config` repo.
   - Inspect the values to make sure they are correct for your deployment. For more details, see the ["Parameters" section of the helm README](../README.md#parameters), and the comments in the VegBank [`values.yaml`](../values.yaml) file
@@ -116,4 +117,7 @@ See detailed information in the [helm README file](../README.md) for each step, 
             oci://ghcr.io/nceas/charts/vegbank --version <version#>
     ```
 
-    Chart release versions are [available here](https://github.com/NCEAS/vegbank2/pkgs/container/charts%2Fvegbank)
+    Watch the initContainers and pod startup as described in the helm README
+
+> [!TIP]
+> Chart release versions are [available here](https://github.com/NCEAS/vegbank2/pkgs/container/charts%2Fvegbank)
