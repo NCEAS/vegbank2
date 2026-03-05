@@ -24,8 +24,7 @@ If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by
   Tip: You can check if there is an existing `ScheduledBackup` by executing the following:
 
   ```sh
-  # Note, you must have admin privileges to check for `ScheduledBackup`s
-  $ kubectl get scheduledbackup -n vegbank-dev --context=dev-k8s 
+  $ kubectl get scheduledbackup -n vegbank-dev
 
   NAME                         AGE   CLUSTER          LAST BACKUP
   vegbankdb-scheduled-backup   57s   vegbankdb-cnpg   57s

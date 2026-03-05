@@ -33,6 +33,13 @@ spec:
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
       {{- end }}
+      - name: oidc-config
+        secret:
+          secretName: {{ .Values.oidcConfig.secretName | default "vegbank-oidc-config" }}
+          {{- if not (has .Values.accessMode (list "read_only" "open" "authenticated")) }}
+              {{- fail "accessMode must be either 'read_only', 'open' or 'authenticated'" }}
+          {{- end }}
+          defaultMode: 0440
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -53,12 +60,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_HOST
               value: {{ .Values.database.host | quote }}
@@ -95,16 +102,17 @@ spec:
               mountPath: {{ .Values.flyway.dbpath }}/migrations
           env:
             - name: FLYWAY_URL
-              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+              value: "jdbc:postgresql://{{ .Values.flyway.dbHost }}:{{ .Values.flyway.dbPort }}/{{
+              .Values.database.name }}"
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
@@ -113,7 +121,7 @@ spec:
             - -c
             - >
               echo "## Flyway Env";
-              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE vegbankdbcreds SECRET)/' || true;
+              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE {{ .Values.database.existingSecret }} SECRET)/' || true;
               echo "## Listing Migrations";
               ls {{ .Values.flyway.dbpath }}/migrations || true;
               echo "Applying all migrations in db/migrations";
@@ -134,20 +142,25 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            - name: oidc-config
+              mountPath: /etc/vegbank/oidc
+              readOnly: true
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
+            - name: VB_ACCESS_MODE
+              value: {{ .Values.accessMode | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_NAME
               value: {{ .Values.database.name | quote }}
@@ -155,8 +168,15 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
-            - name: VB_ALLOW_UPLOADS
-              value: {{ .Values.allowUploads | quote }}
+            # Path to the mounted OIDC client secrets JSON file
+            - name: OIDC_CLIENT_SECRETS_FILE
+              value: /etc/vegbank/oidc/client_secrets.json
+            # Secret key for signing Flask sessions (must be stable across restarts)
+            - name: FLASK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-flask-secret
+                  key: secret_key
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
