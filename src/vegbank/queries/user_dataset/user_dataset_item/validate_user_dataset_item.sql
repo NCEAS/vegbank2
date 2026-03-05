@@ -1,6 +1,6 @@
 -- Validate observation codes
 
-SELECT user_dataset_item_temp.itemrecord
+SELECT user_dataset_item_temp.itemaccessioncode as ob_code
 FROM 
     user_dataset_item_temp LEFT JOIN observation 
 ON
