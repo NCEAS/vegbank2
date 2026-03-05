@@ -153,20 +153,11 @@ Parameters may also be provided on the command line to override those in [values
 
 ```shell
 $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
-                        --set database.existingSecret=myrelease-secret-name
-```
-
-The `values-overrides-dev.yaml` overrides file disables the database restore process and the ingress.
-
-```sh
-$ helm install vegbankapi . -f values-overrides-dev.yaml
-
-# Alternatively, without using the overrides file:
-$ helm install vegbankapi . --set ingress.enabled=false
+                        --set ingress.enabled=false
 ```
 
 > [!TIP]
-> If you wish to access the API without ingress, you can do so by port forwarding to the API service.
+> If you wish to access the API without ingress (after setting `ingress.enabled` to `false`), you can do so by port-forwarding to the API service.
 >
 > ```sh
 > # 1. Find the name of the API service
