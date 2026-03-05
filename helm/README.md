@@ -80,7 +80,7 @@ kubectl create secret generic vegbank-flask-secret \
 
 This secret will be mounted into the pod at `/etc/vegbank/oidc/client_secrets.json` and read by the app via the `OIDC_CLIENT_SECRETS_FILE` environment variable. Steps:
 
-1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use rthe template `helm/admin/client-secrets.json` as a starting point to fill i nyour own details (client_id, client_secret, server_metadata_url, redirect_uris)
+1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use the template `helm/admin/client-secrets.json` as a starting point to fill in your own details (client_id, client_secret, server_metadata_url, redirect_uris)
 
 2. Create the secret from this file:
 
