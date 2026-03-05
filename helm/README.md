@@ -1,6 +1,6 @@
 # Introduction
 
-This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see several pods. One or more instances of the VegBank python pod, which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/plant-concepts/pc.92413`) and three CloudNative PostgreSQL (CNPG) pods which contain the postgres database used by the API. The CNPG pods consist of a primary read-write pod and two replica read-only pods.
+This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see one or more instances of the VegBank python pod, which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/plant-concepts/pc.92413`) and three CloudNative PostgreSQL (CNPG) pods which contain the postgres database used by the API. The CNPG pods consist of a primary read-write pod and two replica read-only pods.
 
 ### See also:
 
@@ -12,6 +12,7 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Prerequisite: CNPG Cluster Deployment](#prerequisite-cnpg-cluster-deployment)
+- [Prerequisite: Secret Creation](#prerequisite-secret-creation)
 - [API Application Deployment](#api-application-deployment)
   - [Step 1: Getting the Dump File (if Deploying With Data)](#step-1-getting-the-dump-file-if-deploying-with-data)
   - [Step 2: Helm Install and Uninstall](#step-2-helm-install-and-uninstall)
@@ -28,7 +29,7 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ## Prerequisite: CNPG Cluster Deployment
 
-Before we deploy the VegBank API helm chart, we must first deploy a PostgreSQL database, using the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready - and check their logs are free of errors - before proceeding.
+Before deploying the VegBank API helm chart, first deploy a PostgreSQL database, using the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready - and check their logs are free of errors - before proceeding.
 
 > [!CAUTION]
 > This is only a one-time deployment. DO NOT helm uninstall or helm delete this chart, unless you really need to! Doing so will result in the dynamically provisioned PVCs being deleted (You won't lose the PVs or the data, but re-binding new PVCs to the existing data is non-trivial.) If you chose to have CNPG auto-generate a DB credentials secret, that will also be deleted.
