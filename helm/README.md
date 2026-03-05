@@ -42,25 +42,52 @@ Before we deploy the VegBank API helm chart, we must first deploy a PostgreSQL d
 
 2. Install the cnpg chart with the appropriate overrides file.
 
-```sh
-# Deploy the latest version of the chart by leaving out the --version parameter.
-# Using the deployment name 'vegbankdb':
-#
-$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./helm/admin/values-cnpg.yaml
+    ```sh
+    # Deploy the latest version of the chart by leaving out the --version parameter.
+    # Using the deployment name 'vegbankdb':
+    #
+    $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./helm/admin/values-cnpg.yaml
+    
+    $ kubectl -n dev-vegbank get pods
+    NAME                         READY   STATUS    RESTARTS   AGE
+    vegbankdb-cnpg-1             1/1     Running   0          5m
+    vegbankdb-cnpg-2             1/1     Running   0          6m
+    vegbankdb-cnpg-3             1/1     Running   0          7m
+    ```
 
-$ kubectl -n dev-vegbank get pods
-NAME                         READY   STATUS    RESTARTS   AGE
-vegbankdb-cnpg-1             1/1     Running   0          5m
-vegbankdb-cnpg-2             1/1     Running   0          6m
-vegbankdb-cnpg-3             1/1     Running   0          7m
+3. Database Backup & Recovery
+
+    Scheduled backups can be enabled as described in the `dataone-cnpg` [helm chart documentation](https://github.com/DataONEorg/dataone-cnpg?tab=readme-ov-file#scheduled-backup). This is disabled by default, but can be overridden in [`./admin/values-cnpg.yaml`](./admin/values-cnpg.yaml)
+    
+    See the [database recovery documentation at `./docs/db-recovery.md`](./docs/db-recovery.md) for details of how to recover the database from backups.
+
+## Prerequisite: Secret Creation
+
+### 1. Flask Session-Signing Secret for the API Application
+
+This secret MUST be stable across pod restarts so that user sessions remain valid after a deployment or pod reschedule. Without it, a new random key is generated every restart, invalidating all active sessions. The secret is consumed by the deployment as the `FLASK_SECRET_KEY` environment variable. Steps:
+
+```shell
+# 1. Generate a strong random key locally:
+RND_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+
+# 2. Create the secret:
+kubectl create secret generic vegbank-flask-secret \
+    --from-literal=secret_key=$RND_KEY
 ```
 
-### Database Backup & Recovery
+### 2. OIDC Client Secret for the API Application
 
-Scheduled backups can be enabled as described in the `dataone-cnpg` [helm chart documentation](https://github.com/DataONEorg/dataone-cnpg?tab=readme-ov-file#scheduled-backup). This is disabled by default, but can be overridden in [`./admin/values-cnpg.yaml`](./admin/values-cnpg.yaml)
+This secret will be mounted into the pod at `/etc/vegbank/oidc/client_secrets.json` and read by the app via the `OIDC_CLIENT_SECRETS_FILE` environment variable. Steps:
 
-See the [database recovery documentation at `./docs/db-recovery.md`](./docs/db-recovery.md) for details of how to recover the database from backups.
+1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use rthe template `helm/admin/client-secrets.json` as a starting point to fill i nyour own details (client_id, client_secret, server_metadata_url, redirect_uris)
 
+2. Create the secret from this file:
+
+    ```shell
+    kubectl create secret generic vegbank-oidc-config \
+        --from-file=client_secrets.json=path/to/my-client-secrets.json
+   ```
 
 ## API Application Deployment
 
