@@ -7,7 +7,7 @@ The production k8s release process for VegBank follows the same steps described 
 > [!NOTE]
 > For simplicity, our private NCEAS GitHub Enterprise repositories will be referred to as "GHE repos" in this document. The GHE repos are accessible only to NCEAS staff.
 
-> [!IMPORTANT]
+> [!CAUTION]
 > In the event of catastrophic failure, it may be necessary to redeploy from scratch. It is therefore CRITICAL that:
 > 1. The VegBank `CHANGELOG.md` file in the GHE `k8s-cluster-config` repo **MUST** be updated for every deployment
 > 2. The latest versions of all config files needed for production deployments **MUST** be stored in the GHE `k8s-cluster-config` repo (including values overrides, manually applied YAML templates, etc.)
