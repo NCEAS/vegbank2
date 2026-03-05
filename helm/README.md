@@ -4,9 +4,10 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ### See also:
 
-- [./docs/prod-deployment.md](./docs/prod-deployment.md) for details on production deployment
-- [./docs/db-recovery.md](./docs/db-recovery.md) for details on database backup and recovery
-- [./admin/bootstrap/README.md](./admin/bootstrap/README.md) for an automated method of restoring from a data-only dump file taken from the original VegBank database.
+- **API Authorization Guide**: [api-authorization.md](./helm/docs/api-authorization.md) – Detailed authentication, token usage, and scope system
+- **Production Deployment to Kubernetes**: [prod-deployment.md](./docs/prod-deployment.md) - Details on production deployment
+- **Database Recovery from Backups**: [db-recovery.md](./docs/db-recovery.md) - Details on database backup and recovery
+- **VegBank Database Bootstrap**: [README](./admin/bootstrap/README.md) - Automated method of restoring from a data-only dump file taken from the original VegBank database.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -81,7 +82,7 @@ kubectl create secret generic vegbank-flask-secret \
 
 This secret will be mounted into the pod at `/etc/vegbank/oidc/client_secrets.json` and read by the app via the `OIDC_CLIENT_SECRETS_FILE` environment variable. Steps:
 
-1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use the template `helm/admin/client-secrets.json` as a starting point to fill in your own details (client_id, client_secret, server_metadata_url, redirect_uris)
+1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use the template `helm/admin/client-secrets.json` as a starting point to fill in your own details (`client_id`, `client_secret`, `server_metadata_url`, `redirect_uris`)
 
 2. Create the secret from this file:
 
@@ -116,7 +117,7 @@ For a fresh database installation with no data, leave `databaseRestore.enabled` 
 To restore the database using a dump file containing both the schema and data definitions, set `databaseRestore.enabled` to `true` and set `databaseRestore.filepath` to the name of the dump file.
 
 > [!NOTE]
-> 1. Double check that the postgres image in the `databaseRestore.postgres_image` section in `values.yaml` has the same major version as the `cnpg`. Postgres major versions must match otherwise the restore process will not be able to proceed with connecting and restoring.
+> 1. Double check that the postgres image in the `databaseRestore.postgresImage` section in `values.yaml` has the same major version as the `cnpg`. Postgres major versions must match otherwise the restore process will not be able to proceed with connecting and restoring.
 
 Now deploy the helm chart by running one of the following commands from the root folder of this repo:
 
@@ -186,10 +187,10 @@ $ helm install vegbankapi . --set ingress.enabled=false
 ### Step 3: Watch the `initContainers`
 
 There are two `initContainers`:
-1) vegbank-reconcile-postgres
+1) `vegbank-reconcile-postgres`
    - This waits until the `postgres` pod is accepting connections before proceeding with the next `initContainer`
    - If `databaseRestore.enabled` is set to `true` in `values.yaml`, the dump file defined in `databaseRestore` is restored to the empty cluster
-2) vegbank-apply-flyway
+2) `vegbank-apply-flyway`
    - This executes `flyway migrate`, which applies the migration files found in `/db/migrations`
 
 > [!TIP]
