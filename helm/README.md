@@ -4,9 +4,10 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ### See also:
 
-- [./docs/prod-deployment.md](./docs/prod-deployment.md) for details on production deployment
-- [./docs/db-recovery.md](./docs/db-recovery.md) for details on database backup and recovery
-- [./admin/bootstrap/README.md](./admin/bootstrap/README.md) for an automated method of restoring from a data-only dump file taken from the original VegBank database.
+- **API Authorization Guide**: [api-authorization.md](./helm/docs/api-authorization.md) – Detailed authentication, token usage, and scope system
+- **Production Deployment to Kubernetes**: [prod-deployment.md](./docs/prod-deployment.md) - Details on production deployment
+- **Database Recovery from Backups**: [db-recovery.md](./docs/db-recovery.md) - Details on database backup and recovery
+- **VegBank Database Bootstrap**: [README](./admin/bootstrap/README.md) - Automated method of restoring from a data-only dump file taken from the original VegBank database.
 
 ## Table of Contents
 - [Introduction](#introduction)

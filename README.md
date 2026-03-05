@@ -54,7 +54,7 @@ vegetation plot records, plant concepts, community types, and other supporting i
 as submit and upload new data to the archive.
 
 - **Comprehensive API documentation** (WIP): https://nceas.github.io/vegbank2/api/
-- **API Authorization Guide**: [API_AUTHORIZATION.md](./helm/docs/API_AUTHORIZATION.md) – Detailed authentication, token usage, and scope system
+- **API Authorization Guide**: [api-authorization.md](./helm/docs/api-authorization.md) – Detailed authentication, token usage, and scope system
 - **Development API**: https://api-dev.vegbank.org
 
 ## Development build
@@ -182,4 +182,3 @@ Work on this package was supported by:
 - National Science Foundation
 
 [![nceas_footer](https://www.nceas.ucsb.edu/sites/default/files/2020-03/NCEAS-full%20logo-4C.png)](https://www.nceas.ucsb.edu)
-
