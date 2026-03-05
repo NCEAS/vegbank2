@@ -9,33 +9,23 @@ This document describes how to build and push a docker image to the github conta
 - Docker CLI/Docker Desktop
 - Helm (Optional - only if you want to deploy the newly uploaded image)
 
+> [!TIP]
+> You can install `docker`, either as part of [Rancher Desktop](https://rancherdesktop.io), [Docker Desktop](https://www.docker.com/products/docker-desktop/), or on the command line via [HomeBrew](https://brew.sh) etc.
+
 ## Steps to Deploy A Docker Image
 
-- [1. Log into Docker](#step-1-log-into-docker)
-- [2. Getting your Personal Access Token](#step-2-getting-your-personal-access-token)
-- [3. Creating a new personal access token (classic)](#step-3-creating-a-new-personal-access-token-classic)
-- [4. Update your Dockerfile](#step-4-update-your-dockerfile)
-- [5. Build & push your image](#step-5-build--push-your-image)
-- [6. Re-deploy the kubernetes pod](#step-6-re-deploy-the-kubernetes-pod)
+- [1. Create a New Personal Access Token (PAT)](#step-1-create-a-new-personal-access-token-pat)
+- [2. Log into GitHub Container Repository (GHCR)](#step-2-log-into-github-container-repository-ghcr)
+- [3. Build & push your image](#step-3-build--push-your-image)
+- [4. Redeploy the Kubernetes Pod](#step-4-redeploy-the-kubernetes-pod)
 
-### Step 1. Log into Docker
+### Step 1. Create a New Personal Access Token (PAT)
 
-There are different ways to push an image to the `vegbank2` github container registry - in this `README.md`, we will be using Docker / Docker Desktop. I feel that this is the simplest way to get set quickly. You can install `docker` through the command line, or download Docker Desktop [here](https://www.docker.com/products/docker-desktop/).
-
-Afterwards, you can run the following command to log in to docker:
-
-```sh
-$ docker login ghcr.io -u youremail@domain.com
-# Ex. docker login ghcr.io -u mok@nceas.ucsb.edu
-```
-
-Upon entering that command, you will be asked to enter a password. The password it is expecting is a personal access token (classic) that you will have to create. You can follow my instructions below on how to create one - or learn in detail [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
-
-### Step 2. Getting your Personal Access Token
+(For more-detailed instructions, [see GitHub's documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens))
 
 First, navigate to the GitHub website and go to your GitHub Settings / Developer Settings. Click on your profile in the upper-right corner, which will trigger a drop-down menu, and then click `Settings`.
 
-On the lefthand side, scroll all the way down until you see the menu/tab option `<> Developer Settings`.
+On the left side, scroll all the way down until you see the menu/tab option `<> Developer Settings`.
 
 You will then be brought to a page with 3 options:
 - GitHub Apps
@@ -44,13 +34,13 @@ You will then be brought to a page with 3 options:
 
 Click `Personal Access Tokens` which will trigger a dropdown menu, and then select `Tokens (classic)`. Once you select this, you may see the list of tokens you have created in the past (which may or may not be expired) or an empty list. We want to generate a new token - so click the button/tab `Generate new token`, and then `Generate new token (classic) for general use`.
 
-### Step 3. Creating a new personal access token (classic)
-
 You will be asked to add a `Note`. Enter here a short string to remind yourself what this token will be used for, for example, `vegbank2-dockerpush`.
 
 Then select an `Expiration` date - or leave it as the default (30 days).
 
-Lastly, you will need to `Select scopes`. We do not want to provide this token with full unlimited access to everything and hurt our future selves, so let's limit this token to:
+Lastly, `Select scopes`. Full unlimited access is not required; instead, limit this token to:
+
+```
 - repo:
    - repo:status
    - repo:deployment
@@ -59,29 +49,32 @@ Lastly, you will need to `Select scopes`. We do not want to provide this token w
    - security_events
 - write:packages
    - read:packages
-
-You will notice that if you select `write:packages`, it will automatically select the required scopes to support it.
-
-After you click the button `Generate token`, you will then be shown a string for your new personal access token. Copy and save this string somewhere safe:
-
-```sh
-# Example personal access token string
-ghp_kEePtHiSsTrInGS4FeAnDaDDn0TesToR3m3mb3r
 ```
 
-After you generate your personal access token, log into docker. Your workflow in the command line may now look like this:
+Selecting `write:packages` will automatically select the required scopes
 
-```sh
+After clicking the `Generate token` button, you will see your new personal access token. Copy and save this string somewhere safe:
+
+```shell
+# Example personal access token string
+ghp_kEePtHiSsTrIxGS4FeAnDaDDn0TxsToR3m3mb3r
+```
+
+### Step 2. Log into GitHub Container Repository (GHCR)
+
+After you generate your PAT, log into GHCR. When prompted for a password, use the PAT you generated above:
+
+```shell
 $ docker login ghcr.io -u youremail@domain.com
 Password: 
 Login Succeeded
 ```
 
-### Step 4: Build & push your image
+### Step 3: Build & Push Your Image
 
 You are now ready to push your updated image to the Github container registry:
 
-```sh
+```shell
 # Example with 0.0.3-develop image version
 TAG=0.0.3-develop
 $ docker buildx build --build-arg IMG_VER="$TAG" --platform linux/amd64 -f docker/Dockerfile ./ \
@@ -118,32 +111,33 @@ $ docker buildx build --build-arg IMG_VER="$TAG" --platform linux/amd64 -f docke
  => [auth] nceas/vegbank:pull,push token for ghcr.io                                                                                                                                              0.0s
 ```
 
-### Step 5: Re-deploy the kubernetes pod
+### Step 4: Redeploy the Kubernetes Pod
 
-After the image has been deployed, navigate to your helm's `Chart.yaml` and update the `appVersion` to your new chart name. In the example below, I used `0.0.3-develop'.
-- Note: You can find the different images available for you to select from [here](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank)
+After the image has been published, a `helm upgrade` is needed in order to pull this new image version. For example, using version `2.0.0-beta02`:
 
-```sh
-# helm/Chart.yaml
-
-...
-appVersion: "0.0.3-develop"
+Simply override the existing image version in the helm chart...
+```shell
+# Either add to your values overrides yaml file, or set on command line, as follows:
+helm upgrade --install vegbankapi oci://ghcr.io/nceas/charts/vegbank --set image.tag="2.0.0-beta02"
 ```
 
-Once you've updated your chart version, use `helm` to re-deploy the `vegbankapi` pod.
+...or permanently add to the helm chart by updating the `appVersion` in `helm/Chart.yaml`:
 
-```sh
-$ helm upgrade vegbankapi . -f values.yaml
+```shell
+# edit Chart.yaml to include this value:
+#
+appVersion: "2.0.0-beta02"
+
+# then upgrade
+#
+$ helm upgrade vegbankapi ./helm
 ```
 
-You can check whether your upgrade succeeded by executing the following command:
+The pods must restart in order to pick up the change. If the helm upgrade did not cause a restart, trigger one manually:
 
-```sh
-$ helm history vegbankapi
-```
-
-If you notice that the deployment has been applied, but the pods did not appear to have been updated, you can also restart the pods like such:
-
-```sh
+```shell
 $ kubectl rollout restart deployment vegbankapi
 ```
+
+> [!TIP]
+> Available images are [listed here](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank)
