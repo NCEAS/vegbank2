@@ -1018,7 +1018,11 @@ def cover_methods(cm_code, claims=None):
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
-        return cover_method_operator.upload_cover_method(request, params)
+        df = read_parquet_file(request, 'file', required=True)
+        with connect(**params, row_factory=dict_row) as conn:
+            to_return = cover_method_operator.upload_cover_methods(df, conn)
+            to_return = dry_run_check(conn, to_return, request)
+        return jsonify(to_return)
     elif request.method == 'GET':
         return cover_method_operator.get_vegbank_resources(request, cm_code)
     else:
