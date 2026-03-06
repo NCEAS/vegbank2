@@ -24,6 +24,7 @@ from vegbank.utilities import (
     combine_json_return,
     dry_run_check,
     update_search_vector,
+    update_obs_counts,
 )
 from flask import jsonify
 from psycopg import connect
@@ -686,6 +687,11 @@ class PlotObservation(Operator):
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         observation_codes = super().upload_to_table("observation", 'ob', 
             table_defs_config.observation, 'observation_id', df, True, conn)
+
+        # update observation counts for related projects
+        pj_ids = list(set(self.extract_id_from_vb_code(code, 'pj')
+                  for code in df['vb_pj_code']))
+        update_obs_counts(conn, 'project', pj_ids)
         to_return = combine_json_return(to_return, observation_codes)
 
         return to_return

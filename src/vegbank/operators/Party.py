@@ -2,7 +2,11 @@ import os
 import pandas as pd
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
-from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
+from vegbank.utilities import (
+    QueryParameterError,
+    validate_required_and_missing_fields,
+    update_obs_counts
+)
 
 
 class Party(Operator):
@@ -253,6 +257,12 @@ class Party(Operator):
         new_records_count = {
             'inserted' : int(new_cl_contributors['counts']['cr']['inserted']) + int(new_ob_contributors['counts']['cr']['inserted']) + int(new_pj_contributors['counts']['cr']['inserted'])
         }
+
+        # update observation counts for related parties
+        py_ids = list(set(self.extract_id_from_vb_code(code, 'py')
+                  for code in df['vb_py_code']))
+        update_obs_counts(conn, 'party', py_ids)
+
         to_return = {
             'resources':{
                 'cr': new_records,

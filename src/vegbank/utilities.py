@@ -341,6 +341,121 @@ def batch_of_ids(list_of_ids, batch_size):
     while batch := list(islice(it, batch_size)):
         yield batch
 
+def update_obs_counts(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the d_obscount column for a set of records identified by ID.
+
+    Executes SQL to update obs counts for each given ID in the context
+    of a caller-specified table, processing records in batches if needed
+    to avoid overloading the database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update counts for a batch of records, by table
+    SQL = {
+        'project': """
+            UPDATE project pj
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT project_id,
+                     COUNT(observation_id) AS cnt
+                FROM observation ob
+                WHERE (emb_observation < 6 OR emb_observation IS NULL)
+                  AND project_id = ANY(%s)
+                GROUP BY project_id
+              ) obs
+            WHERE pj.project_id = obs.project_id
+            """,
+        'commconcept': """
+            UPDATE commconcept cc
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT ci.commconcept_id,
+                     COUNT(DISTINCT cl.observation_id) AS cnt
+                FROM commclass cl
+                JOIN comminterpretation ci USING (commclass_id)
+                WHERE (cl.emb_commclass < 6 OR cl.emb_commclass IS NULL)
+                  AND ci.commconcept_id = ANY(%s)
+                GROUP BY ci.commconcept_id
+              ) obs
+            WHERE cc.commconcept_id = obs.commconcept_id
+            """,
+        'plantconcept': """
+            UPDATE plantconcept pc
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT txi.plantconcept_id,
+                     COUNT(DISTINCT txo.observation_id) AS cnt
+                FROM taxonobservation txo
+                JOIN taxoninterpretation txi USING (taxonobservation_id)
+                WHERE (txo.emb_taxonobservation < 6 OR txo.emb_taxonobservation IS NULL)
+                  AND txi.plantconcept_id = ANY(%s)
+                GROUP BY txi.plantconcept_id
+              ) obs
+            WHERE pc.plantconcept_id = obs.plantconcept_id
+            """,
+        'party': """
+            WITH party AS (
+              SELECT party_id
+                FROM party
+                WHERE party_id = ANY(%s)
+            ) UPDATE party py
+            SET d_obscount = contrib.cnt
+            FROM (
+              SELECT party_id,
+                     COUNT(DISTINCT observation_id) AS cnt
+                FROM (
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN observationcontributor obc USING (observation_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                  UNION
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN projectcontributor pjc USING (project_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                  UNION
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN commclass USING (observation_id)
+                    JOIN classcontributor ccc USING (commclass_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                ) GROUP BY party_id
+              ) contrib
+            WHERE py.party_id = contrib.party_id
+            """,
+    }
+
+    if (sql := SQL.get(table)) is None:
+        raise ValueError(f"Invalid table: '{table}'. Must be one of: {', '.join(SQL)}")
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk,))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating d_obscount for {count} {table} record(s)')
+
 def update_search_vector(conn, table, list_of_ids, batch_size=50000):
     """
     Update the search_vector column for a set of records identified by ID.
@@ -368,8 +483,7 @@ def update_search_vector(conn, table, list_of_ids, batch_size=50000):
                   SET search_vector = build_{table}_search_vector({table}_id)
                   WHERE {table}_id = ANY(%s)
                 """,
-                (chunk,)
-        )
+                (chunk,))
 
 def validate_dataset_json(json):
     """

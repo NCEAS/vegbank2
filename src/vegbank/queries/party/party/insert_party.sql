@@ -8,13 +8,15 @@ WHEN NOT MATCHED THEN
     givenname,
     middlename,
     organizationname,
-    email
+    email,
+    d_obscount
   ) VALUES (
     src.surname,
     src.givenname,
     src.middlename,
     src.organizationname,
-    src.email
+    src.email,
+    0
   )
 RETURNING merge_action(),
           src.user_py_code,
