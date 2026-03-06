@@ -1027,7 +1027,7 @@ class PlotObservation(Operator):
                 end = time.time()
                 print(f"Time to upload dataset: {end - start} seconds")
                 to_return['counts']['ds'] = {}
-                to_return['counts']['ds']['inserted'] = ds['counts']['ds']
+                to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']
                 # Checks if user supplied dry run param and rolls back if it is true
                 to_return = dry_run_check(conn, to_return, request)
