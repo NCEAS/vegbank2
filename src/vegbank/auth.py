@@ -95,6 +95,12 @@ def init_oauth(app) -> bool:
     Returns:
         True on success, False if the secrets file is missing (auth unavailable).
     """
+    # In read_only or open mode, skip OAuth initialization
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        logger.info("Access mode '%s': skipping OAuth initialisation.", mode)
+        return True
+
     try:
         secrets = load_client_secrets()
     except (FileNotFoundError, json.JSONDecodeError) as exc:
@@ -427,8 +433,13 @@ def login():
         302 redirect to the provider's authorization endpoint.
         200 JSON response if already authenticated.
         401/500 JSON error response if login fails.
+        403 JSON response if authentication is disabled for the current access mode.
 
     """
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        return jsonify({"error": {"message": f"Authentication is disabled in '{mode}' mode."}}), 403
+
     # Check if user is already authenticated
     if "token" in session and session.get("token"):
         token = session.get("token")
@@ -452,7 +463,12 @@ def authorize():
     Returns:
         200 JSON with ``token`` on success.
         401 JSON with error details on failure.
+        403 JSON response if authentication is disabled for the current access mode.
     """
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        return jsonify({"error": {"message": f"Authentication is disabled in '{mode}' mode."}}), 403
+
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
     except (OAuthError, RequestException) as exc:
