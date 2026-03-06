@@ -20,6 +20,7 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
   - [Step 3: Watch the `initContainers`](#step-3-watch-the-initcontainers)
   - [Step 4: Applying New Flyway Migration Files](#step-4-applying-new-flyway-migration-files)
 - [Parameters](#parameters)
+- [Packaging and Publishing the Helm Chart](#packaging-and-publishing-the-helm-chart)
 
 ## Requirements
 - Helm 4.x
@@ -304,3 +305,28 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `nodeSelector`                               |                                                              | `{}`    |
 | `tolerations`                                |                                                              | `[]`    |
 | `affinity`                                   |                                                              | `{}`    |
+
+## Packaging and Publishing the Helm Chart
+
+### Package the Chart
+
+1. Edit `Chart.yaml` as follows:
+   1. Update the `version` field to the new version number (e.g. `0.1.0`). This version number uses [semantic versioning](https://semver.org/), and should be updated according to the type of changes made to the chart since the last version. 
+   2. Ensure the `appVersion` field is set to match the version of the VegBank API that you wish to deploy with this chart. This should be a valid docker image tag for the VegBank API image in the [GitHub Container Registry](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank).
+2. Use the `helm package` command:
+
+    ```shell
+    helm package -u ./helm
+    ```
+
+    ...which will create a file named `vegbank-<x.x.x>.tgz` in the current directory, where `<x.x.x>` is the version number you set in `Chart.yaml`.
+
+### Publish the Chart to the GitHub Container Registry
+
+1. Prerequisite: you will need a GitHub Personal Access Token (PAT) with the appropriate permissions to publish to the GitHub Container Registry. See the [Docker README](../docker/README.md) for details on how to create a PAT and use it to log in.
+
+2. Once you have authenticated with the GitHub Container Registry, you can use the `helm push` command to publish the packaged chart:
+
+    ```shell
+    helm push vegbank-<x.x.x>.tgz oci://ghcr.io/nceas/charts
+    ```
