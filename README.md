@@ -29,8 +29,8 @@ discussions](https://github.com/NCEAS/vegbank2/discussions) to discuss these con
 ## Redesign
 
 VegBank was originally [designed and implemented](https://github.com/NCEAS/vegbank) in the early
-2000's using server technology of the time, particularly as a Java servlet providing access to data
-that is stored in a backend postgresql database, and using Apache Struts to build a web-based
+2000s using server technology of the time, particularly as a Java servlet providing access to data
+that is stored in a backend PostgreSQL database, and using Apache Struts to build a web-based
 interface for querying and viewing the data. While the system has served well, most of these
 technology components have become obsolete, and need to be replaced.
 
@@ -74,7 +74,7 @@ the standard poetry-maintained virtual environment. To test the action run local
 the `act` commandline client (e.g., `brew install act`) and then execute the actions from the local
 commandline. This depends on a local docker instance being configured, and the first run will take
 longer as the initial docker images are pulled. Thereafter, checking the action build before pushing
-commits can be run, for example, for the mac with:
+commits can be run, for example, for the Mac with:
 
 - `act --container-architecture linux/amd64`
 
@@ -130,11 +130,22 @@ dev = [
     "pylint>=3.2.7",
     "black>=24.8.0",
 ]
-
 ```
 
-Lastly, build and deploy your Docker image. If you are unsure of how to, please follow the `README.md` under `/docker`.
+### Building and Publishing the Docker Image
 
+The `vegbank` service is published as a Docker image, for deployment via Helm on Kubernetes (see below). See the [Docker README](./docker/README.md) for instructions on building and publishing the image.
+
+### Installing `vegbank` on a Kubernetes Cluster, Using Helm
+
+The vegbank Helm chart can be used to deploy the `vegbank` service on a Kubernetes cluster. See the [Helm README](./helm/README.md) for instructions. The deployment can use either:
+
+- the [local chart included](./helm) in the `vegbank` source code (useful for development and testing), or
+- a versioned, published chart from the [GitHub Container Registry](https://github.com/NCEAS/vegbank2/pkgs/container/charts%2Fvegbank). Details for packaging and publishing new charts can be found [in the Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart).
+
+## Release Process
+
+See the [Contributing Guide](./CONTRIBUTING.md) for details on the release process
 
 ## Current Contributors
 
@@ -143,6 +154,7 @@ Lastly, build and deploy your Docker image. If you are unsure of how to, please 
 - Robert Shelton (rshelton@nceas.ucsb.edu)
 - Darian Gill (dgill@nceas.ucsb.edu)
 - Dou Mok (mok@nceas.ucsb.edu): [ORCID: 0000-0002-6076-8092](https://orcid.org/0000-0002-6076-8092)
+- Matthew Brooke (brooke@nceas.ucsb.edu): [ORCID: 0000-0002-1472-913X](https://orcid.org/0000-0002-1472-913X)
 - Michael T. Lee
 - Robert K. Peet
 
@@ -164,7 +176,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
