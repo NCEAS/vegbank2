@@ -456,6 +456,52 @@ def update_obs_counts(conn, table, list_of_ids, batch_size=50000):
             count += cur.fetchone().get('count', 0)
     print(f'Updating d_obscount for {count} {table} record(s)')
 
+def update_last_obs_date(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the d_lastplotaddeddate column for a set of records identified by ID.
+
+    Executes SQL to update date of last associated observation upload for each
+    given project ID, processing records in batches if needed to avoid
+    overloading the database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update d_lastplotaddeddate for a batch of records, by table
+    SQL = {
+        'project': """
+            UPDATE project pj
+            SET d_lastplotaddeddate = NOW()
+            WHERE project_id = ANY(%s)
+            """,
+    }
+
+    if (sql := SQL.get(table)) is None:
+        raise ValueError(f"Invalid table: '{table}'. Must be one of: {', '.join(SQL)}")
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk,))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating d_lastplotaddeddate for {count} {table} record(s)')
+
 def update_search_vector(conn, table, list_of_ids, batch_size=50000):
     """
     Update the search_vector column for a set of records identified by ID.
