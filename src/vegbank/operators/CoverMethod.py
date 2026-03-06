@@ -1,13 +1,23 @@
-import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import time
 import traceback
-import psycopg
 from vegbank.operators.operator_parent_class import Operator
-from vegbank.operators import table_defs_config
-from vegbank.utilities import jsonify_error_message, allowed_file, QueryParameterError, load_sql, validate_required_and_missing_fields, merge_vb_codes, combine_json_return
+from .Reference import Reference
+from .UserDataset import UserDataset
+from vegbank.operators import table_defs_config, Validator
+from vegbank.utilities import (
+    jsonify_error_message, 
+    validate_required_and_missing_fields, 
+    merge_vb_codes, 
+    combine_json_return, 
+    read_parquet_file, 
+    UploadDataError, 
+    dry_run_check
+)
 from flask import jsonify
-from psycopg import ClientCursor
+from psycopg import connect
 from psycopg.rows import dict_row
 
 
@@ -148,3 +158,90 @@ class CoverMethod(Operator):
         to_return = combine_json_return(to_return, cover_index_codes)
 
         return to_return
+
+    def upload_all(self, request):
+        upload_files = {
+            'rf':{
+                'file_name': 'references',
+                'required': False
+            },
+            'cm':{
+                'file_name': 'cover_methods',
+                'required': True,
+                'user_codes':{
+                    ('user_rf_code', 'user_rf_code', 'rf')
+                }
+            }
+        }
+        data = {}
+        validation = {
+            'has_error': False,
+            'error': ''
+        }
+        dataset = {}
+        to_return = None
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required']
+                )
+                if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
+            
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
+
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
+        
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    if data['rf'] is not None:
+                        print("references are found")
+                        rfs = Reference(self.params).upload_references(
+                            data['rf'], conn)
+                        dataset['reference'] = [item['vb_rf_code']
+                                                for item in rfs['resources']['rf']]
+                        to_return = combine_json_return(to_return, rfs)
+                    if data['cm'] is not None:
+                        if data['rf'] is not None:
+                            data['cm'] = merge_vb_codes(rfs['resources']['rf'], data['cm'], 
+                                                        {'user_rf_code': 'user_rf_code',
+                                                        'vb_rf_code':'vb_rf_code' 
+                                                        })
+                        cms = self.upload_cover_methods(data['cm'], conn)
+                        dataset['cover_method'] = [item['vb_cm_code']
+                                                for item in cms['resources']['cm']]
+                        to_return = combine_json_return(to_return, cms)
+            
+                dataset_name = 'upload_cover_method_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from cover method upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
+                # Checks if user supplied dry run param and rolls back if it is true
+                to_return = dry_run_check(conn, to_return, request)
+            conn.close()
+            return jsonify(to_return)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
