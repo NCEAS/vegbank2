@@ -827,7 +827,8 @@ class PlotObservation(Operator):
 
                     pls = PlotObservation(
                         self.params).upload_plot_observations(data['pl'], conn)
-                    dataset['plot'] = [item['vb_pl_code']
+                    if 'pl' in pls['resources'] and pls['resources']['pls'] is not None:
+                        dataset['plot'] = [item['vb_pl_code']
                                        for item in pls['resources']['pl']]
                     dataset['observation'] = [item['vb_ob_code']
                                               for item in pls['resources']['ob']]
