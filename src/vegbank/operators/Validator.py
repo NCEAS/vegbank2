@@ -59,7 +59,7 @@ config = {
     },
     "cover_methods": {
         "required_fields": ['user_cm_code', 'covertype'],
-        "table_defs": [table_defs_config.cover_method, table_defs_config.cover_index],
+        "table_defs": [table_defs_config.cover_method, table_defs_config.cover_index]
     }
 }
 
@@ -223,7 +223,7 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
             to_return['error'] += f"Validation failed for {source_code} in {file_name} because the target table {target_table} is missing. "
         else:
             df_2 = data.get(target_table)
-            if df_2 is not None:
+            if df_2 is not None and target_code in df_2.columns:
                 missing_codes = set(df_1[source_code].astype(
                     str)) - set(df_2[target_code].astype(str))
                 # sometimes pandas reads empty cells as nan, which can cause
