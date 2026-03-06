@@ -216,9 +216,9 @@ def _token_error_response(exc):
     }
     for exc_types, (message, status) in error_map.items():
         if isinstance(exc, exc_types):
-            return jsonify({"error": message, "details": str(exc)}), status
+            return jsonify({"error": {"message": message, "details": str(exc)}}), status
     # Unexpected exception — treat as server error
-    return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
+    return jsonify({"error": {"message": "Internal authentication error", "details": str(exc)}}), 500
 
 
 def _token_response(token: dict, message: str = "Token exchange successful"):
@@ -267,7 +267,7 @@ def _validate_and_extract_claims(required_scope=None):
     """
     token_str = _extract_bearer_token()
     if not token_str:
-        error_resp = (jsonify({"error": "Missing or invalid Authorization header"}), 401)
+        error_resp = (jsonify({"error": {"message": "Missing or invalid Authorization header"}}), 401)
         return None, error_resp
 
     try:
@@ -282,8 +282,10 @@ def _validate_and_extract_claims(required_scope=None):
             error_resp = (
                 jsonify(
                     {
-                        "error": f"Insufficient scope. Required: {required_scope}",
-                        "available_scopes": token_scopes,
+                        "error": {
+                            "message": f"Insufficient scope. Required: {required_scope}",
+                            "available_scopes": token_scopes,
+                        }
                     }
                 ),
                 403,
