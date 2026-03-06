@@ -371,6 +371,46 @@ def update_search_vector(conn, table, list_of_ids, batch_size=50000):
                 (chunk,)
         )
 
+def validate_dataset_json(json):
+    """
+    Validate the structure of the dataset JSON object.
+    Parameters:
+        data: The JSON object to validate.
+    Raises:
+        QueryParameterError: If the JSON structure is invalid.
+    """
+    if not isinstance(json, dict):
+        raise QueryParameterError("Invalid JSON structure: expected a JSON object.")
+    if 'name' not in json:
+        raise QueryParameterError("Missing 'name' key in JSON: expected a 'name' key containing the name of the dataset.")
+    if not isinstance(json['name'], str) or json['name'].strip() == "":
+        raise QueryParameterError("Invalid 'name' value: 'name' must be a non-empty string.")
+    if 'description' not in json:
+        raise QueryParameterError("Missing 'description' key in JSON: expected a 'description' key containing a description of the dataset.")
+    if not isinstance(json['description'], str) or json['description'].strip() == "":
+        raise QueryParameterError("Invalid 'description' value: 'description' must be a non-empty string.")
+    if 'type' not in json:
+        raise QueryParameterError("Missing 'type' key in JSON: expected a 'type' key containing the type of the dataset.")
+    if not isinstance(json['type'], str) or json['type'].strip() == "":
+        raise QueryParameterError("Invalid 'type' value: 'type' must be a non-empty string.")
+    if 'data' not in json: 
+        raise QueryParameterError("Missing 'data' key in JSON: expected a 'data' key containing the dataset information.")
+    data = json['data']
+    if not isinstance(data, dict):
+        raise QueryParameterError("Invalid JSON structure: 'data' should be a dictionary with the element 'observation' containing a list of observation codes.")
+    if 'observation' not in data:
+        raise QueryParameterError("Missing 'observation' key in JSON: 'data' should contain an 'observation' key with a list of observation codes.")
+    if not isinstance(data['observation'], list):  
+        raise QueryParameterError("Invalid 'observation' structure: 'observation' should be a list of observation codes.")
+    extra_keys = set(data.keys()) - {'observation'}
+    if extra_keys:
+        raise QueryParameterError(f"Invalid keys in JSON: {', '.join(extra_keys)}. Only 'observation' key is allowed.")
+    if len(data['observation']) == 0:
+        raise QueryParameterError("Invalid 'observation' value: 'observation' list cannot be empty.")
+    for observation in data['observation']:
+        if not isinstance(observation, str) or not observation.startswith('ob.') or not observation[3:].isdigit():
+            raise QueryParameterError(f"Invalid observation code: '{observation}'. It must follow the pattern 'ob.' followed by an integer.")
+
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""
     def __init__(self, message, status_code=400):

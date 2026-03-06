@@ -466,3 +466,12 @@ contributor = [
     'record_identifier',
     'vb_py_code'
 ]
+
+user_dataset_item = [
+    'user_di_code',
+    'identifier',
+    'userdataset_id',
+    'item_database',
+    'item_table',
+    'item_record'
+]

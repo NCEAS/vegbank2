@@ -1,5 +1,7 @@
 import os
 import textwrap
+import time
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import traceback
@@ -11,7 +13,8 @@ from .Party import Party
 from .Project import Project
 from .Reference import Reference
 from .TaxonObservation import TaxonObservation
-from vegbank.utilities import(
+from .UserDataset import UserDataset
+from vegbank.utilities import (
     jsonify_error_message,
     process_integer_param,
     validate_required_and_missing_fields,
@@ -239,12 +242,12 @@ class PlotObservation(Operator):
             'named_places': "np.places",
         }
         # identify minimal columns
-        main_columns['minimal'] = {alias:col for alias, col in
-            main_columns['full'].items() if alias in [
-                'area', 'author_obs_code', 'author_plot_code', 'country',
-                'elevation', 'latitude', 'longitude', 'ob_code', 'pl_code',
-                'state_province', 'year'
-            ]}
+        main_columns['minimal'] = {alias: col for alias, col in
+                                   main_columns['full'].items() if alias in [
+                                       'area', 'author_obs_code', 'author_plot_code', 'country',
+                                       'elevation', 'latitude', 'longitude', 'ob_code', 'pl_code',
+                                       'state_province', 'year'
+                                   ]}
         # identify minimal columns with nesting
         main_columns['minimal_nested'] = main_columns['minimal'] | {
             'taxon_count': "taxon_count",
@@ -253,11 +256,11 @@ class PlotObservation(Operator):
             'top_classifications': "top_classifications",
         }
         # identify geo columns
-        main_columns['geo'] = {alias:col for alias, col in
-            main_columns['full'].items() if alias in [
-                'author_obs_code', 'latitude', 'longitude',
-                'ob_code'
-            ]}
+        main_columns['geo'] = {alias: col for alias, col in
+                               main_columns['full'].items() if alias in [
+                                   'author_obs_code', 'latitude', 'longitude',
+                                   'ob_code'
+                               ]}
         from_sql = {}
         from_sql['geo'] = """\
             FROM ob
@@ -591,15 +594,15 @@ class PlotObservation(Operator):
 
         # add params for limiting nested fields
         params['num_taxa'] = process_integer_param('num_taxa',
-            request_args.get('num_taxa', self.default_num_taxa))
+                                                   request_args.get('num_taxa', self.default_num_taxa))
         params['num_comms'] = process_integer_param('num_comms',
-            request_args.get('num_comms', self.default_num_comms))
+                                                    request_args.get('num_comms', self.default_num_comms))
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
 
         return params
-        
+
     def upload_plot_observations(self, df, conn):
         """
         takes a parquet file in the plot observation data format from the loader module and uploads it to the plot and observation tables. 
@@ -618,28 +621,52 @@ class PlotObservation(Operator):
             'error': "",
             'has_error': False
         }
-        
+
         if not df[(df['user_pl_code'].notnull()) & (df['vb_pl_code'].notnull())].empty:
             validation['error'] += "Rows cannot have both a vb_pl_code and a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
             validation['has_error'] = True
         if not df[(df['user_pl_code'].isnull()) & (df['vb_pl_code'].isnull())].empty:
             validation['error'] += "All rows must have either a vb_pl_code or a user_pl_code. For new plots, use user_pl_code. To reference existing plots, use vb_pl_code."
             validation['has_error'] = True
-        
-        new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()] 
-        old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()] 
+
+        new_plots_df = df[df['user_pl_code'].notnull() &
+                          df['vb_pl_code'].isnull()]
+        old_plots_df = df[df['user_pl_code'].isnull() &
+                          df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
         new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
-        new_validation = validate_required_and_missing_fields(new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
-        old_validation = validate_required_and_missing_fields(old_plots_df, old_pl_required_fields, table_defs, "observations on existing plots")
+        if not new_plots_df.empty:
+            print("found some new plots")
+            new_validation = validate_required_and_missing_fields(
+                new_plots_df,
+                new_pl_required_fields,
+                table_defs,
+                "observations on new plots")
+        else:
+            new_validation = {
+                'error': "",
+                'has_error': False
+            }
+        if not old_plots_df.empty:
+            old_validation = validate_required_and_missing_fields(
+                old_plots_df,
+                old_pl_required_fields,
+                table_defs,
+                "observations on existing plots")
+        else:
+            old_validation = {
+                'error': "",
+                'has_error': False
+            }
 
-        validation['error'] += new_validation['error'] + old_validation['error']
+        validation['error'] += new_validation['error'] + \
+            old_validation['error']
         validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or validation['has_error']
 
         if validation['has_error']:
-            raise ValueError(validation['error']) 
+            raise ValueError(validation['error'])
 
         df['user_pl_code'] = df['user_pl_code'].astype(str)
         to_return = None
@@ -651,7 +678,8 @@ class PlotObservation(Operator):
             pl_codes_df = pl_codes_df[['user_pl_code', 'vb_pl_code']]
 
             df = df.merge(pl_codes_df, on='user_pl_code', how='left')
-            df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(df['vb_pl_code_y'])
+            df['vb_pl_code'] = df['vb_pl_code_x'].combine_first(
+                df['vb_pl_code_y'])
             df.drop(columns=['vb_pl_code_y'], inplace=True)
             to_return = combine_json_return(to_return, plot_codes)
 
@@ -661,7 +689,7 @@ class PlotObservation(Operator):
         to_return = combine_json_return(to_return, observation_codes)
 
         return to_return
-    
+
     def upload_all(self, request):
         """
         Orchestrate the insertion of client-provided Plot Observation data into
@@ -756,7 +784,7 @@ class PlotObservation(Operator):
                                ('user_rf_code','user_rf_code', 'rf'),
                                ('user_py_code', 'user_py_code', 'py')]
             },
-            'cr':{
+            'cr': {
                 'file_name': 'contributors',
                 'required': False,
                 'user_codes': [('user_py_code','user_py_code', 'py')] 
@@ -768,6 +796,7 @@ class PlotObservation(Operator):
             "has_error":False,
             "error": ""
         }
+        dataset = {}
         to_return = None
         for name, config in upload_files.items():
             try:
@@ -790,12 +819,19 @@ class PlotObservation(Operator):
             with connect(**self.params, row_factory=dict_row) as conn:
                 if data['pj'] is not None:
                     pjs = Project(self.params).upload_project(data['pj'], conn)
+                    dataset['project'] = [item['vb_pj_code']
+                                          for item in pjs['resources']['pj']]
                     to_return = combine_json_return(to_return, pjs)
                 if data['py'] is not None:
                     pys = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code']
+                                        for item in pys['resources']['py']]
                     to_return = combine_json_return(to_return, pys)
                 if data['rf'] is not None:
-                    rfs = Reference(self.params).upload_references(data['rf'], conn)
+                    rfs = Reference(self.params).upload_references(
+                        data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code']
+                                            for item in rfs['resources']['rf']]
                     to_return = combine_json_return(to_return, rfs)
 
                 if data['pl'] is not None:
@@ -808,10 +844,17 @@ class PlotObservation(Operator):
                             }
                         )
 
-                    pls = PlotObservation(self.params).upload_plot_observations(data['pl'], conn)
+                    pls = PlotObservation(
+                        self.params).upload_plot_observations(data['pl'], conn)
+                    if 'pl' in pls['resources'] and pls['resources']['pl'] is not None:
+                        dataset['plot'] = [item['vb_pl_code']
+                                       for item in pls['resources']['pl']]
+                    dataset['observation'] = [item['vb_ob_code']
+                                              for item in pls['resources']['ob']]
                     to_return = combine_json_return(to_return, pls)
                 if data['so'] is not None:
-                    data['so']['user_ob_code'] = data['so']['user_ob_code'].astype(str)
+                    data['so']['user_ob_code'] = data['so']['user_ob_code'].astype(
+                        str)
                     data['so'] = merge_vb_codes(
                         pls['resources']['ob'], data['so'],
                         {'user_ob_code': 'user_ob_code',
@@ -819,7 +862,8 @@ class PlotObservation(Operator):
                     sos = self.upload_soil(data['so'], conn)
                     to_return = combine_json_return(to_return, sos)
                 if data['do'] is not None:
-                    data['do']['user_ob_code'] = data['do']['user_ob_code'].astype(str)
+                    data['do']['user_ob_code'] = data['do']['user_ob_code'].astype(
+                        str)
                     data['do'] = merge_vb_codes(
                         pls['resources']['ob'], data['do'],
                         {'user_ob_code': 'user_ob_code',
@@ -831,7 +875,8 @@ class PlotObservation(Operator):
                     # underlying comm class upload method called below won't
                     # check for it because it's not required in the context of
                     # standalone comm class uploads
-                    data['cl']['user_ob_code'] = data['cl']['user_ob_code'].astype(str)
+                    data['cl']['user_ob_code'] = data['cl']['user_ob_code'].astype(
+                        str)
                     # ... merge in newly created vb_ob_codes
                     data['cl'] = merge_vb_codes(
                         pls['resources']['ob'], data['cl'],
@@ -852,6 +897,10 @@ class PlotObservation(Operator):
                                 'vb_rf_code': 'vb_authority_rf_code'})
                     cls = CommunityClassification(self.params) \
                         .upload_community_classifications(data['cl'], conn)
+                    dataset['commclass'] = [item['vb_cl_code']
+                                            for item in cls['resources']['cl']]
+                    dataset['comminterpretation'] = [item['vb_ci_code']
+                                                     for item in cls['resources']['ci']]
                     to_return = combine_json_return(to_return, cls)
                 if data['sr'] is not None:
                     if data['pl'] is not None:
@@ -862,7 +911,8 @@ class PlotObservation(Operator):
                                 'vb_ob_code': 'vb_ob_code'
                             }
                         )
-                    srs = TaxonObservation(self.params).upload_strata_definitions(data['sr'], conn)
+                    srs = TaxonObservation(
+                        self.params).upload_strata_definitions(data['sr'], conn)
                     to_return = combine_json_return(to_return, srs)
                 if data['sc'] is not None:
                     if data['pl'] is not None:
@@ -881,7 +931,8 @@ class PlotObservation(Operator):
                                 'vb_sr_code': 'vb_sr_code'
                             }
                         )
-                    scs = TaxonObservation(self.params).upload_strata_cover_data(data['sc'], conn)
+                    scs = TaxonObservation(
+                        self.params).upload_strata_cover_data(data['sc'], conn)
                     to_return = combine_json_return(to_return, scs)
 
                 if data['ti'] is not None:
@@ -909,7 +960,10 @@ class PlotObservation(Operator):
                                 'vb_to_code': 'vb_to_code'
                             }
                         )
-                    tis = TaxonObservation(self.params).upload_taxon_interpretations(data['ti'], conn)
+                    tis = TaxonObservation(
+                        self.params).upload_taxon_interpretations(data['ti'], conn)
+                    dataset['taxoninterpretation'] = [item['vb_ti_code']
+                                                      for item in tis['resources']['ti']]
                     to_return = combine_json_return(to_return, tis)
                 if data['sd'] is not None:
                     if data['sc'] is not None:
@@ -920,7 +974,8 @@ class PlotObservation(Operator):
                                 'vb_tm_code': 'vb_tm_code'
                             }
                         )
-                    sds = TaxonObservation(self.params).upload_stem_data(data['sd'], conn)
+                    sds = TaxonObservation(
+                        self.params).upload_stem_data(data['sd'], conn)
                     to_return = combine_json_return(to_return, sds)
                 if data['cr'] is not None:
                     if data['py'] is not None:
@@ -951,11 +1006,12 @@ class PlotObservation(Operator):
                         data['cr'] = merge_vb_codes(
                             cls['resources']['cl'], data['cr'],
                             {
-                                'user_cl_code':'record_identifier',
+                                'user_cl_code': 'record_identifier',
                                 'vb_cl_code': 'vb_record_identifier'
                             }
                         )
-                    crs = Party(self.params).upload_contributors(data['cr'], conn)
+                    crs = Party(self.params).upload_contributors(
+                        data['cr'], conn)
                     to_return = combine_json_return(to_return, crs)
 
                 # Update party search vector
@@ -973,7 +1029,29 @@ class PlotObservation(Operator):
                                    for code in to_return['resources']['ob']]
                 update_search_vector(conn, 'observation', observation_ids)
 
-                to_return = dry_run_check(conn, to_return, request)  #Checks if user supplied dry run param and rolls back if it is true
+
+                dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
+                # Checks if user supplied dry run param and rolls back if it is true
+                to_return = dry_run_check(conn, to_return, request)
+
             conn.close()
             return jsonify(to_return)
         except Exception as e:
@@ -1039,7 +1117,7 @@ class PlotObservation(Operator):
         config_soil_obs.append('vb_ob_code')
         # Run basic input data validation
         validation = validate_required_and_missing_fields(df, required_fields,
-            table_defs, "soil observations")
+                                                          table_defs, "soil observations")
         if validation['has_error']:
             raise ValueError(validation['error'])
 
@@ -1050,13 +1128,13 @@ class PlotObservation(Operator):
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         df['user_so_code'] = df['user_so_code'].astype(str)
         so_actions = super().upload_to_table("soil_obs", 'so',
-            config_soil_obs, 'soilobs_id', df, False, conn)
+                                             config_soil_obs, 'soilobs_id', df, False, conn)
 
         to_return = {
-            'resources':{
+            'resources': {
                 'so': so_actions['resources']['so'],
             },
-            'counts':{
+            'counts': {
                 'so': so_actions['counts']['so'],
             }
         }
@@ -1112,7 +1190,7 @@ class PlotObservation(Operator):
         config_disturbance_obs.append('vb_ob_code')
         # Run basic input data validation
         validation = validate_required_and_missing_fields(df, required_fields,
-            table_defs, "disturbance observations")
+                                                          table_defs, "disturbance observations")
         if validation['has_error']:
             raise ValueError(validation['error'])
 
@@ -1123,13 +1201,13 @@ class PlotObservation(Operator):
         df['user_ob_code'] = df['user_ob_code'].astype(str)
         df['user_do_code'] = df['user_do_code'].astype(str)
         do_actions = super().upload_to_table("disturbance_obs", 'do',
-            config_disturbance_obs, 'disturbanceobs_id', df, False, conn)
+                                             config_disturbance_obs, 'disturbanceobs_id', df, False, conn)
 
         to_return = {
-            'resources':{
+            'resources': {
                 'do': do_actions['resources']['do'],
             },
-            'counts':{
+            'counts': {
                 'do': do_actions['counts']['do'],
             }
         }
