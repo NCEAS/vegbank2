@@ -166,7 +166,7 @@ class UserDataset(Operator):
                     'ds': [
                         {
                             'action': 'inserted',
-                            'user_ds_code': None,
+                            'user_ds_code': dataset['name'],
                             'vb_ds_code': 'ds.' + str(user_dataset_id)
                         }
                     ],
