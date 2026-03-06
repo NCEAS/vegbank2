@@ -637,10 +637,29 @@ class PlotObservation(Operator):
         table_defs = [table_defs_config.plot, table_defs_config.observation]
         new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
-        new_validation = validate_required_and_missing_fields(
-            new_plots_df, new_pl_required_fields, table_defs, "observations on new plots")
-        old_validation = validate_required_and_missing_fields(
-            old_plots_df, old_pl_required_fields, table_defs, "observations on existing plots")
+        if not new_plots_df.empty:
+            print("found some new plots")
+            new_validation = validate_required_and_missing_fields(
+                new_plots_df,
+                new_pl_required_fields,
+                table_defs,
+                "observations on new plots")
+        else:
+            new_validation = {
+                'error': "",
+                'has_error': False
+            }
+        if not old_plots_df.empty:
+            old_validation = validate_required_and_missing_fields(
+                old_plots_df,
+                old_pl_required_fields,
+                table_defs,
+                "observations on existing plots")
+        else:
+            old_validation = {
+                'error': "",
+                'has_error': False
+            }
 
         validation['error'] += new_validation['error'] + \
             old_validation['error']
@@ -827,7 +846,7 @@ class PlotObservation(Operator):
 
                     pls = PlotObservation(
                         self.params).upload_plot_observations(data['pl'], conn)
-                    if 'pl' in pls['resources'] and pls['resources']['pls'] is not None:
+                    if 'pl' in pls['resources'] and pls['resources']['pl'] is not None:
                         dataset['plot'] = [item['vb_pl_code']
                                        for item in pls['resources']['pl']]
                     dataset['observation'] = [item['vb_ob_code']
