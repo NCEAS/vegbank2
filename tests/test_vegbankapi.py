@@ -652,7 +652,7 @@ def test_cover_methods_post_calls_upload_cover_method_when_uploads_allowed(
     access mode allows uploads."""
     with patch.object(
         vegbankapi.CoverMethod,
-        "upload_cover_method",
+        "upload_all",
         autospec=True,
         return_value=(
             {"uploaded": True},
