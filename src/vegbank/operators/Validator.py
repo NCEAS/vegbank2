@@ -215,7 +215,7 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
     for source_code, target_code, target_table in user_codes:
         print(
             f"validating {source_code} from {df_1_name} against {target_code}  in {target_table}")
-        if source_code not in df_1.columns:
+        if source_code not in df_1.columns or df_1[source_code].isnull().all():
             print(
                 f"{source_code} is not present in {file_name}, skipping user code validation for {source_code}")
         elif data[target_table] is None:
