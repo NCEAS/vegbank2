@@ -127,6 +127,15 @@ class CoverMethod(Operator):
         }
 
     def upload_cover_methods(self, df, conn):
+        '''
+        Handles the upload of cover method and cover index data to the database.
+        Expects a dataframe with all cover method and cover index data, including user codes.
+        Parameters:
+            - df: A pandas dataframe containing the cover method and cover index data to be uploaded. Must include user codes for both cover method and cover index.
+            - conn: An active database connection to be used for the upload.
+        Returns:
+            - A dictionary containing the results of the upload, including any new codes generated for the cover methods and cover indices.
+        '''
         config_cover_method = table_defs_config.cover_method[:]
         config_cover_index = table_defs_config.cover_index[:]
         table_defs = [config_cover_method, config_cover_index]
@@ -160,6 +169,14 @@ class CoverMethod(Operator):
         return to_return
 
     def upload_all(self, request):
+        '''
+        Handles the upload of cover method data, including associated reference data if provided, and cover index data. Validates the uploaded data, uploads it to the database, and creates a new user dataset with the uploaded data. Expects a multipart/form-data request with parquet files for cover methods and optionally references. The cover method file must include user codes for both cover methods and cover indices. If reference data is provided, it will be uploaded first and the generated vb_rf_codes will be merged into the cover method data before uploading cover methods and cover indices.
+        
+        Parameters:
+            - request: A Flask request object containing the uploaded files and any additional parameters. Expects parquet files for cover methods and optionally references, with specific naming conventions for the files and user code fields.
+        Returns:
+            - A JSON response containing the results of the upload, including any new codes generated for the cover methods and cover indices, and the new user dataset created. If any validation errors occur, returns a JSON response with the error message and a 400 status code. If any other errors occur during the upload process, returns a JSON response with the error message and a 500 status code.
+        '''
         upload_files = {
             'rf':{
                 'file_name': 'references',
