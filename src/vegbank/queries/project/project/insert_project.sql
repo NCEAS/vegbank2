@@ -7,12 +7,14 @@ WHEN NOT MATCHED THEN
     projectname, 
     projectdescription,
     startdate,
-    stopdate
+    stopdate,
+    d_obscount
   ) VALUES (
     projectname,
     projectdescription,
     startdate,
-    stopdate
+    stopdate,
+    0
   )
 RETURNING merge_action(),
           src.user_pj_code,

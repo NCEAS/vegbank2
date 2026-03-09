@@ -4,10 +4,14 @@ import pandas as pd
 import numpy as np
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
-from vegbank.utilities import QueryParameterError, validate_required_and_missing_fields
 from flask import jsonify
 from psycopg.rows import dict_row
 from psycopg import ClientCursor
+from vegbank.utilities import (
+    QueryParameterError,
+    validate_required_and_missing_fields,
+    update_obs_counts,
+)
 
 
 class TaxonObservation(Operator):
@@ -308,4 +312,9 @@ class TaxonObservation(Operator):
 
         df['user_ti_code'] = df['user_ti_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
         new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', table_defs_config.taxon_interpretation, 'taxoninterpretation_id', df, True, conn)
+
+        # update observation counts for related plant concepts
+        pc_ids = list(set(self.extract_id_from_vb_code(code, 'pc')
+                  for code in df['vb_pc_code']))
+        update_obs_counts(conn, 'plantconcept', pc_ids)
         return new_taxon_interpretations

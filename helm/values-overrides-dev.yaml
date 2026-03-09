@@ -1,18 +1,38 @@
-# Overrides files to assist with development
-# This override allows you to modify common variables that need to be adjusted during testing and development.
+## Overrides common settings that need to be adjusted during testing and development.
+##
+## Example usage:
+## # From the ./helm directory:
+## $ helm upgrade vegbankapi . -f values-overrides-dev.yaml
+##
 
-# If you execute with helm like such:
-# `helm upgrade vegbankapi . -f values-overrides-dev.yaml`
-# This will override the default values found in `values.yaml` for the following components
+## @param accessMode Access mode controlling API behavior.
+## - `read_only`: No authentication, no uploads.
+## - `open`: No authentication, uploads allowed.
+## - `authenticated`: Full authentication and authorization required.
+##
+## Default: `authenticated`
+accessMode: "authenticated"
 
-databaseRestore:
-  ## @param databseRestore.enabled - Setting this to true will activate the 'pg_restore' process
-  enabled: false
-
+## If not using an ingress, you will need to use port forwarding to access the API, e.g.:
+## $ kubectl port-forward svc/vegbankapi 8080:80    # then access API at http://localhost:8080
+##
 ingress:
-  ## @param ingress.enabled - If ingress is not available, setting this to 'true' will cause errors
   enabled: false
+
+## Uncomment if needed; defaults to false:
+# databaseRestore:
+#   enabled: true
+#   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
 
 image:
-  ## @param image.pullPolicy - Set image pull policy to 'Always' for development to ensure latest image is used
+  ## Set image pull policy to 'Always' for development to ensure latest image is used
   pullPolicy: Always
+  # tag: ""  # Override docker image version for development builds
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 4Gi

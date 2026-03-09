@@ -4,13 +4,19 @@ This directory contains a one-time bootstrap process to initialize the VegBank d
 
 ## Prerequisites
 - Ensure the target Postgres cluster (CNPG) is running
-- As `prod-k8s` admin, apply the existing PV definition in `helm/admin/bootstrap/pv--vegbankdb-bootstrap-cephfs.yaml` to create the PV `cephfs-vegbankdb-init-pgdata`
 - Ensure the `vegbankdbcreds` secret exists, containing postgres username and password
 - Ensure the data dump file is present at `knbvm:/mnt/ceph/repos/vegbank/vegbank_pg10_dataonly.dump`
 
+## Create the Persistent Volume (`prod-k8s` admin access required) 
+
+Create the PV `cephfs-vegbankdb-init-pgdata` by applying the existing PV definition:
+```shell
+kubectl apply -f helm/admin/bootstrap/pv--vegbankdb-bootstrap-cephfs.yaml --context=prod-k8s
+```
+
 ## Run the Bootstrap Pod
 
-Your working directory should be the same as the `kustomization.yaml` file in this directory.
+Your working directory should be the root directory of this repo.
 
 Because we are referencing local SQL files from outside the Kustomize directory, you must bypass load restrictions:
 
@@ -30,6 +36,8 @@ Once the database is successfully populated, remove the bootstrap resources (Pod
 
 ```shell
 kubectl kustomize helm/admin/bootstrap/ --load-restrictor LoadRestrictionsNone | kubectl delete -f -
+
+kubectl delete -f helm/admin/bootstrap/pv--vegbankdb-bootstrap-cephfs.yaml --context=prod-k8s
 ```
 
 ## Notes
