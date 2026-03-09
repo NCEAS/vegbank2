@@ -428,15 +428,9 @@ def login():
 
     Returns:
         302 redirect to the provider's authorization endpoint.
-        200 JSON response if already authenticated.
         401/500 JSON error response if login fails.
 
     """
-    # Check if user is already authenticated
-    if "token" in session and session.get("token"):
-        token = session.get("token")
-        return _token_response(token, message="Already authenticated")
-
     try:
         return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
     except (OAuthError, RequestException) as exc:
@@ -462,7 +456,6 @@ def authorize():
         logger.warning("OIDC token exchange error: %s", exc)
         return _token_error_response(exc)
 
-    session["token"] = token
     return _token_response(token, message="Authorization successful")
 
 @auth_bp.route("/refresh", methods=["POST"])
