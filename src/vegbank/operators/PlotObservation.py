@@ -350,11 +350,14 @@ class PlotObservation(Operator):
                        txo.int_currplantscinamenoauth,
                        txo.authorplantname,
                        sr.stratum_id,
-                       sr.stratumname,
+                       CASE WHEN sr.stratum_id IS NULL THEN '<All>'
+                            ELSE COALESCE(sr.stratumname, sy.stratumname)
+                        END AS stratumname,
                        tm.cover
                   FROM taxonobservation txo
                   LEFT JOIN taxonimportance tm USING (taxonobservation_id)
                   LEFT JOIN stratum sr USING (stratum_id)
+                  LEFT JOIN stratumtype sy USING (stratumtype_id)
                   WHERE txo.observation_id = ob.observation_id
               ), returned_taxon_observations AS (
                 SELECT *
@@ -371,7 +374,7 @@ class PlotObservation(Operator):
                          'plant_name', COALESCE(int_currplantscinamenoauth,
                                                 authorplantname),
                          'sr_code', 'sr.' || stratum_id,
-                         'stratum_name', COALESCE(stratumname, '-all-'),
+                         'stratum_name', stratumname,
                          'cover', cover
                          )) AS top_taxon_observations
                         FROM returned_taxon_observations) AS top_taxon_observations,
