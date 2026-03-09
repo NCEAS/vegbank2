@@ -169,7 +169,7 @@ def _extract_bearer_token():
 def _decode_and_validate_token(token_str: str):
     """Decode *and* full-validate a JWT against the OIDC provider's JWKS.
 
-    Validates signature, issuer (``iss``), and authorized-party (``azp``) claims.
+    Validates signature, issuer (``iss``), audience (``aud``), and authorized-party (``azp``) claims.
 
     Args:
         token_str: Raw JWT string
@@ -189,15 +189,15 @@ def _decode_and_validate_token(token_str: str):
     metadata = oauth.vegbank_oidc.load_server_metadata()
     issuer = metadata.get("issuer")
 
-    # load_client_secrets is cheap (file read) but we only need client_id.
-    secrets = load_client_secrets()
+    client_id = load_client_secrets().get("client_id")
 
     claims = jwt.decode(
         token_str,
         jwks,
         claims_options={
             "iss": {"essential": True, "value": issuer},
-            "azp": {"essential": True, "value": secrets.get("client_id")},
+            "aud": {"essential": True, "value": client_id},
+            "azp": {"essential": True, "value": client_id},
         },
     )
     claims.validate()
