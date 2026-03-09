@@ -40,6 +40,8 @@ from authlib.integrations.base_client.errors import OAuthError
 from authlib.integrations.flask_client import OAuth
 from authlib.jose import JsonWebKey, jwt
 from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenError
+from authlib.oauth2 import OAuth2Error
+from authlib.oauth2.rfc6749.errors import InvalidGrantError, InvalidClientError
 
 from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -206,9 +208,12 @@ def _token_error_response(exc):
     """Produce a uniform JSON error response for token validation/exchange failures."""
     error_map = {
         DecodeError: ("Token decoding failed", 401),
+        InvalidClientError: ("OIDC client authentication failed", 401),
         InvalidTokenError: ("Token validation failed", 401),
+        InvalidGrantError: ("Invalid or expired refresh token", 401),
         BadSignatureError: ("Token signature verification failed", 401),
         OAuthError: ("Authorization failed", 401),
+        OAuth2Error: ("An OAuth2 error occurred", 401),
         KeyError: ("Invalid token structure", 401),
         TypeError: ("Invalid token structure", 401),
         ValueError: ("OIDC provider configuration error", 500),
@@ -460,6 +465,72 @@ def authorize():
     session["token"] = token
     return _token_response(token, message="Authorization successful")
 
+@auth_bp.route("/refresh", methods=["POST"])
+def refresh_token():
+    """Re-validate the user session and return a new access token using the refresh token.
+
+    When an access token expires, the client can call this endpoint with the refresh token 
+    to obtain a new access token without requiring the user to log in again. The client 
+    can also pass the desired scopes for the new access token, which must be a subset 
+    of the original scopes granted to the refresh token.
+
+    Parameters (in JSON body):
+    - ``refresh_token`` (string, required): The refresh token issued by the OIDC provider.
+    - ``scope`` (string, optional): Space-separated list of scopes to request for the new access token. If omitted, the new access token will have the same scopes as the original
+
+    Returns:
+    200 JSON with new ``access_token`` and ``refresh_token`` on success.
+    400 JSON if the request is missing required parameters.
+    401 JSON if the refresh token is invalid, expired, or if client authentication fails.
+    500 JSON for unexpected server errors.
+    """
+    # Get the refresh token and desired scopes from the frontend JSON body
+    data = request.get_json()
+
+    user_refresh_token = data.get("refresh_token")
+    if not user_refresh_token:
+        # TODO: fold this error into `_token_error_response` for consistency
+        return jsonify({"error": "Missing refresh_token"}), 400
+
+    # The client should pass the scopes that it would like to request for the
+    # new access token. If no scopes are provided, we will attempt to get a
+    # new access token with the same scopes as the original token. The
+    # requested scopes must match or be a subset of the original scopes granted
+    # to the token, otherwise the OIDC provider will reject the request.
+    requested_scope = data.get("scope")
+
+    # Use Authlib to exchange the refresh token for a new access token
+    try:
+        if not requested_scope:
+            # If no scope is provided, omit the scope parameter to get the same scopes as the original token
+            new_tokens = oauth.vegbank_oidc.fetch_access_token(
+                grant_type="refresh_token",
+                refresh_token=user_refresh_token,
+            )
+        else:
+            new_tokens = oauth.vegbank_oidc.fetch_access_token(
+                grant_type="refresh_token",
+                refresh_token=user_refresh_token,
+                scope=requested_scope,
+            )
+
+        # 3. Return the new tokens (Access + Refresh) as JSON to the frontend
+        return _token_response(new_tokens, message="Authorization successful")
+    except InvalidGrantError as exc:
+        # The refresh token was invalid, expired, or revoked by the provider
+        logger.warning("The refresh token is invalid or expired: %s", exc)
+        return _token_error_response(exc)
+    except InvalidClientError as exc:
+        # The client_id or client_secret is wrong
+        logger.warning("OIDC client authentication failed: %s", exc)
+        return _token_error_response(exc)
+    except OAuth2Error as exc:
+        logger.warning("An OAuth2 error occurred: %s", exc)
+        return _token_error_response(exc)
+    except Exception as exc:
+        # A safety net for non-OAuth errors (e.g., network issues)
+        logger.warning("Unexpected Exception during refresh: %s", exc)
+        return _token_error_response(exc)
 
 def get_access_mode() -> str:
     """Get the current access mode from environment.
