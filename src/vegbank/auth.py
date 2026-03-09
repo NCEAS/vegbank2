@@ -59,11 +59,6 @@ ACCESS_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
 ACCESS_MODE_OPEN = "open"                 # Open mode: uploads allowed, no auth
 ACCESS_MODE_AUTHENTICATED = "authenticated"  # Authenticated mode: auth required, full access control
 
-# TODO: REMOVE BEFORE MERGING — temporary redirect URI override for local/integration testing.
-# Set OIDC_REDIRECT_URI_OVERRIDE to point the OIDC callback at a specific endpoint
-# (e.g. "https://dev.vegbank.org/authorize") instead of the auto-generated one.
-OIDC_REDIRECT_URI_OVERRIDE = os.getenv("OIDC_REDIRECT_URI_OVERRIDE")
-
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
 
@@ -437,8 +432,7 @@ def login():
 
     """
     try:
-        # TODO: REMOVE BEFORE MERGING — use override URI for testing if set.
-        redirect_uri = OIDC_REDIRECT_URI_OVERRIDE or url_for("auth.authorize", _external=True)
+        redirect_uri = url_for("auth.authorize", _external=True)
         return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
     except (OAuthError, RequestException) as exc:
         logger.warning("OIDC authorize_redirect error: %s", exc)
@@ -464,6 +458,7 @@ def authorize():
         return _token_error_response(exc)
 
     return _token_response(token, message="Authorization successful")
+
 
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh_token():
@@ -517,17 +512,21 @@ def refresh_token():
         # 3. Return the new tokens (Access + Refresh) as JSON to the frontend
         return _token_response(new_tokens, message="Authorization successful")
     except InvalidGrantError as exc:
-        logger.debug("Refresh token is invalid or expired: %s", exc)
+        # The refresh token was invalid, expired, or revoked by the provider
+        logger.debug("The refresh token is invalid or expired: %s", exc)
         return _token_error_response(exc)
     except InvalidClientError as exc:
+        # The client_id or client_secret is wrong
         logger.warning("OIDC client authentication failed: %s", exc)
         return _token_error_response(exc)
     except OAuth2Error as exc:
-        logger.debug("OAuth2 error during token refresh: %s", exc)
+        logger.debug("An OAuth2 error occurred: %s", exc)
         return _token_error_response(exc)
     except Exception as exc:
-        logger.error("Unexpected exception during token refresh: %s", exc, exc_info=True)
+        # A safety net for non-OAuth errors (e.g., network issues)
+        logger.error("Unexpected Exception during refresh: %s", exc, exc_info=True)
         return _token_error_response(exc)
+
 
 def get_access_mode() -> str:
     """Get the current access mode from environment.
