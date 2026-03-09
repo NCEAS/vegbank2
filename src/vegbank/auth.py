@@ -59,6 +59,11 @@ ACCESS_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
 ACCESS_MODE_OPEN = "open"                 # Open mode: uploads allowed, no auth
 ACCESS_MODE_AUTHENTICATED = "authenticated"  # Authenticated mode: auth required, full access control
 
+# TODO: REMOVE BEFORE MERGING — temporary redirect URI override for local/integration testing.
+# Set OIDC_REDIRECT_URI_OVERRIDE to point the OIDC callback at a specific endpoint
+# (e.g. "https://dev.vegbank.org/authorize") instead of the auto-generated one.
+OIDC_REDIRECT_URI_OVERRIDE = os.getenv("OIDC_REDIRECT_URI_OVERRIDE")
+
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
 
@@ -432,7 +437,9 @@ def login():
 
     """
     try:
-        return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
+        # TODO: REMOVE BEFORE MERGING — use override URI for testing if set.
+        redirect_uri = OIDC_REDIRECT_URI_OVERRIDE or url_for("auth.authorize", _external=True)
+        return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
     except (OAuthError, RequestException) as exc:
         logger.error("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)
