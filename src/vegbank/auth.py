@@ -330,7 +330,7 @@ def require_token(methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.warning(f"Access mode '{mode}': skipping token validation")
+                logger.debug("Access mode '%s': skipping token validation", mode)
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -395,7 +395,7 @@ def require_scope(required_scope: str, methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.warning(f"Access mode '{mode}': skipping scope validation")
+                logger.debug("Access mode '%s': skipping scope validation", mode)
                 # Store None in g for consistency
                 g.token_claims = None
                 return f(*args, **kwargs)
@@ -441,7 +441,7 @@ def login():
         redirect_uri = OIDC_REDIRECT_URI_OVERRIDE or url_for("auth.authorize", _external=True)
         return oauth.vegbank_oidc.authorize_redirect(redirect_uri)
     except (OAuthError, RequestException) as exc:
-        logger.error("OIDC authorize_redirect error: %s", exc)
+        logger.warning("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)
 
 
@@ -460,7 +460,7 @@ def authorize():
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
     except (OAuthError, RequestException) as exc:
-        logger.warning("OIDC token exchange error: %s", exc)
+        logger.debug("OIDC token exchange error: %s", exc)
         return _token_error_response(exc)
 
     return _token_response(token, message="Authorization successful")
@@ -517,19 +517,16 @@ def refresh_token():
         # 3. Return the new tokens (Access + Refresh) as JSON to the frontend
         return _token_response(new_tokens, message="Authorization successful")
     except InvalidGrantError as exc:
-        # The refresh token was invalid, expired, or revoked by the provider
-        logger.warning("The refresh token is invalid or expired: %s", exc)
+        logger.debug("Refresh token is invalid or expired: %s", exc)
         return _token_error_response(exc)
     except InvalidClientError as exc:
-        # The client_id or client_secret is wrong
         logger.warning("OIDC client authentication failed: %s", exc)
         return _token_error_response(exc)
     except OAuth2Error as exc:
-        logger.warning("An OAuth2 error occurred: %s", exc)
+        logger.debug("OAuth2 error during token refresh: %s", exc)
         return _token_error_response(exc)
     except Exception as exc:
-        # A safety net for non-OAuth errors (e.g., network issues)
-        logger.warning("Unexpected Exception during refresh: %s", exc)
+        logger.error("Unexpected exception during token refresh: %s", exc, exc_info=True)
         return _token_error_response(exc)
 
 def get_access_mode() -> str:
