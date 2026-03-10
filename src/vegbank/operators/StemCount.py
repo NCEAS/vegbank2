@@ -1,4 +1,5 @@
 import os
+import textwrap
 from vegbank.operators import Operator
 
 
@@ -29,7 +30,9 @@ class StemCount(Operator):
             'to_code': "'to.' || tm.taxonobservation_id",
             'tm_code': "'tm.' || sc.taxonimportance_id",
             'sr_code': "'sr.' || tm.stratum_id",
-            'stratum_name': "COALESCE(sr.stratumname, '<All>')",
+            'stratum_name': f"({textwrap.dedent("""\
+                CASE WHEN tm.stratum_id IS NULL THEN '<All>'
+                     ELSE COALESCE(sr.stratumname, sy.stratumname) END""")})",
             'sc_code': "'sc.' || sc.stemcount_id",
             'diameter': "sc.stemdiameter",
             'diameter_accuracy': "sc.stemdiameteraccuracy",
@@ -44,6 +47,7 @@ class StemCount(Operator):
             JOIN taxonimportance tm USING (taxonimportance_id)
             JOIN taxonobservation txo USING (taxonobservation_id)
             LEFT JOIN stratum sr USING (stratum_id)
+            LEFT JOIN stratumtype sy USING (stratumtype_id)
             """
         order_by_sql = """\
             ORDER BY sc.stemcount_id

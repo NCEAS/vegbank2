@@ -80,8 +80,8 @@ class TaxonObservation(Operator):
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'tm_code', 'tm.' || taxonimportance_id,
-                         'sm_code', 'sm.' || stratum_id,
-                         'stratum_name', COALESCE(stratumname, '<All>'),
+                         'sr_code', 'sr.' || stratum_id,
+                         'stratum_name', stratumname,
                          'cover', cover,
                          'cover_code', covercode,
                          'basal_area', basalarea,
@@ -99,10 +99,13 @@ class TaxonObservation(Operator):
                          tm.inferencearea,
                          tm.stratumbase,
                          tm.stratumheight,
-                         sr.stratumname,
+                         CASE WHEN tm.stratum_id IS NULL THEN '<All>'
+                              ELSE COALESCE(sr.stratumname, sy.stratumname)
+                          END AS stratumname,
                          sr.stratum_id
                     FROM taxonimportance tm
                     LEFT JOIN stratum sr USING (stratum_id)
+                    LEFT JOIN stratumtype sy USING (stratumtype_id)
                     WHERE tm.taxonobservation_id = txo.taxonobservation_id
                     ORDER BY stratum_id
                 )
