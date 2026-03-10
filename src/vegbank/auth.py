@@ -103,7 +103,7 @@ def init_oauth(app) -> bool:
     # In read_only or open mode, skip OAuth initialization
     mode = get_access_mode()
     if mode != ACCESS_MODE_AUTHENTICATED:
-        logger.info("Access mode '%s': skipping OAuth initialisation.", mode)
+        logger.warning("Access mode '%s': skipping OAuth initialisation.", mode)
         return True
 
     try:
@@ -213,6 +213,25 @@ def _decode_and_validate_token(token_str: str):
     return claims
 
 
+def _auth_error_response(message, status, details=None):
+    """Generate a uniform JSON error response for authentication/authorization errors.
+
+    All auth-related error responses should use this helper to guarantee a consistent ``{"error": {"message": ..., "details": ...}}`` object.
+
+    Args:
+        message: Error description.
+        status: HTTP status code.
+        details: Optional additional context (``str(exc)``).  Omitted from the response when *None*.
+
+    Returns:
+        Tuple of (JSON response, status code).
+    """
+    error = {"message": message}
+    if details is not None:
+        error["details"] = details
+    return jsonify({"error": error}), status
+
+
 def _token_error_response(exc):
     """Produce a uniform JSON error response for token validation/exchange failures."""
     error_map = {
@@ -231,9 +250,9 @@ def _token_error_response(exc):
     }
     for exc_types, (message, status) in error_map.items():
         if isinstance(exc, exc_types):
-            return jsonify({"error": {"message": message, "details": str(exc)}}), status
+            return _auth_error_response(message, status, details=str(exc))
     # Unexpected exception — treat as server error
-    return jsonify({"error": {"message": "Internal authentication error", "details": str(exc)}}), 500
+    return _auth_error_response("Internal authentication error", 500, details=str(exc))
 
 
 def _token_response(token: dict, message: str = "Token exchange successful"):
@@ -282,8 +301,7 @@ def _validate_and_extract_claims(required_scope=None):
     """
     token_str = _extract_bearer_token()
     if not token_str:
-        error_resp = (jsonify({"error": {"message": "Missing or invalid Authorization header"}}), 401)
-        return None, error_resp
+        return None, _auth_error_response("Missing or invalid Authorization header", 401)
 
     try:
         claims = _decode_and_validate_token(token_str)
@@ -294,18 +312,11 @@ def _validate_and_extract_claims(required_scope=None):
     if required_scope:
         token_scopes = claims.get("scope", "").split()
         if required_scope not in token_scopes:
-            error_resp = (
-                jsonify(
-                    {
-                        "error": {
-                            "message": f"Insufficient scope. Required: {required_scope}",
-                            "available_scopes": token_scopes,
-                        }
-                    }
-                ),
+            return None, _auth_error_response(
+                f"Insufficient scope. Required: {required_scope}",
                 403,
+                details=f"Available scopes: {' '.join(token_scopes)}",
             )
-            return None, error_resp
     
     return claims, None
 
@@ -446,7 +457,7 @@ def login():
     """
     mode = get_access_mode()
     if mode != ACCESS_MODE_AUTHENTICATED:
-        return jsonify({"error": {"message": f"Authentication is disabled in '{mode}' mode."}}), 403
+        return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
 
     try:
         return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
@@ -470,7 +481,7 @@ def authorize():
     """
     mode = get_access_mode()
     if mode != ACCESS_MODE_AUTHENTICATED:
-        return jsonify({"error": {"message": f"Authentication is disabled in '{mode}' mode."}}), 403
+        return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
 
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
