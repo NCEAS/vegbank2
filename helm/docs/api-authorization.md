@@ -83,7 +83,7 @@ curl -s -L -X POST 'https://api.vegbank.org/refresh' \
   -H "Content-Type: application/json" \
   -d "{
     \"refresh_token\": \"${REFRESH}\",
-    \"scope\": \"openid web-origins acr offline_access profile basic email\"
+    \"scope\": \"openid web-origins acr offline_access profile basic email vegbank:contributor vegbank:user\"
   }"
 ```
 
@@ -92,7 +92,9 @@ curl -s -L -X POST 'https://api.vegbank.org/refresh' \
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `refresh_token` | string | Yes | The refresh token returned from `/login` or a previous `/refresh` call |
-| `scope` | string | No | Space-separated list of scopes for the new access token. |
+| `scope` | string | No | Space-separated list of scopes for the new access token. If no scopes are provided, the new access token will have the same scopes as the original token. The requested scopes must match or be a subset of the original scopes granted. |
+
+> **Note:** In most cases, you can safely omit the `scope` parameter. The OIDC provider will reissue the token with the same scopes that were originally granted, which is typically the desired behavior. 
 
 #### Response
 
@@ -108,7 +110,7 @@ On success (`200 OK`):
 }
 ```
 
-Replace your stored tokens with the new values returned. Each refresh call issues a **new refresh token**, so the old one should be discarded.
+Replace your stored tokens with the new values returned. Because each refresh token can only be used once, each refresh call issues a new refresh token, and so the old one must be discarded.
 
 **Error responses:**
 

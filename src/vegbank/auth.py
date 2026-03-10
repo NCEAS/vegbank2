@@ -329,7 +329,7 @@ def require_token(methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.debug("Access mode '%s': skipping token validation", mode)
+                logger.warning("Access mode '%s': skipping token validation", mode)
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -394,7 +394,7 @@ def require_scope(required_scope: str, methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.debug("Access mode '%s': skipping scope validation", mode)
+                logger.warning("Access mode '%s': skipping scope validation", mode)
                 # Store None in g for consistency
                 g.token_claims = None
                 return f(*args, **kwargs)
@@ -474,7 +474,7 @@ def refresh_token():
 
     Parameters (in JSON body):
     - ``refresh_token`` (string, required): The refresh token issued by the OIDC provider.
-    - ``scope`` (string, optional): Space-separated list of scopes to request for the new access token. If omitted, the new access token will have the same scopes as the original
+    - ``scope`` (string, optional): Space-separated list of scopes to request for the new access token. If omitted, the new access token will have the same scopes as the original token.
 
     Returns:
     200 JSON with new ``access_token`` and ``refresh_token`` on success.
@@ -512,8 +512,6 @@ def refresh_token():
                 refresh_token=user_refresh_token,
                 scope=requested_scope,
             )
-
-        # 3. Return the new tokens (Access + Refresh) as JSON to the frontend
         return _token_response(new_tokens, message="Authorization successful")
     except InvalidGrantError as exc:
         # The refresh token was invalid, expired, or revoked by the provider
