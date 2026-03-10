@@ -10,7 +10,8 @@ WHEN NOT MATCHED THEN
     stemdiameteraccuracy,
     stemheight,
     stemheightaccuracy,
-    stemtaxonarea
+    stemtaxonarea,
+    emb_stemcount
   ) VALUES (
     CAST(SUBSTRING(vb_tm_code, 4) AS INT),
     stemcount,
@@ -18,7 +19,8 @@ WHEN NOT MATCHED THEN
     stemdiameteraccuracy,
     stemheight,
     stemheightaccuracy,
-    stemtaxonarea
+    stemtaxonarea,
+    0
   )
 RETURNING merge_action(),
           src.user_sc_code,
