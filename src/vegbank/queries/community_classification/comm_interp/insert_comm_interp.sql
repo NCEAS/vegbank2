@@ -11,7 +11,8 @@ WHEN NOT MATCHED THEN
     commauthority_id,
     notes,
     type,
-    nomenclaturaltype
+    nomenclaturaltype,
+    emb_comminterpretation
   ) VALUES (
     CAST(SUBSTRING(src.vb_cl_code, 4) AS INT),
     CAST(SUBSTRING(src.vb_cc_code, 4) AS INT),
@@ -20,7 +21,8 @@ WHEN NOT MATCHED THEN
     CAST(SUBSTRING(src.vb_rf_code, 4) AS INT),
     src.notes,
     src.type,
-    src.nomenclaturaltype
+    src.nomenclaturaltype,
+    0
   )
 RETURNING merge_action(),
           src.user_ci_code as user_ci_code,

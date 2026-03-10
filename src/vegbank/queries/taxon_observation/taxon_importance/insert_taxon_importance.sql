@@ -9,14 +9,16 @@ WHEN NOT MATCHED THEN
     cover,
     basalarea,
     biomass,
-    inferencearea
+    inferencearea,
+    emb_taxonimportance
   ) VALUES (
     CAST(SUBSTRING(vb_to_code, 4) AS INT),
     CAST(SUBSTRING(vb_sr_code, 4) AS INT),
     cover,
     basalarea,
     biomass,
-    inferencearea
+    inferencearea,
+    0
   )
 RETURNING merge_action(),
           src.user_tm_code,

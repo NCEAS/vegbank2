@@ -71,7 +71,8 @@ WHEN NOT MATCHED THEN
     totalcover,
     notespublic,
     notesmgt,
-    hasobservationsynonym
+    hasobservationsynonym,
+    emb_observation
   ) VALUES (
     CAST(SUBSTRING(vb_pl_code, 4) AS INT),
     CAST(SUBSTRING(vb_pj_code, 4) AS INT),
@@ -140,7 +141,8 @@ WHEN NOT MATCHED THEN
     totalcover,
     ob_notes_public,
     ob_notes_mgt,
-    hasobservationsynonym
+    hasobservationsynonym,
+    0
   )
 RETURNING merge_action(),
           src.user_ob_code,

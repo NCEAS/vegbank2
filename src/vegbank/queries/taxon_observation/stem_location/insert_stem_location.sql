@@ -8,13 +8,15 @@ WHEN NOT MATCHED THEN
     stemcode, 
     stemxposition,
     stemyposition,
-    stemhealth
+    stemhealth,
+    emb_stemlocation
   ) VALUES (
     CAST(SUBSTRING(vb_sc_code, 4) AS INT),
     stemcode, 
     stemxposition,
     stemyposition,
-    stemhealth
+    stemhealth,
+    0
   )
 RETURNING merge_action(),
           src.user_sl_code,

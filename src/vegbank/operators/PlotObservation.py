@@ -316,9 +316,12 @@ class PlotObservation(Operator):
                        int_currplantconcept_id,
                        int_currplantscinamenoauth,
                        authorplantname,
-                       maxcover
-                  FROM view_taxonobs_withmaxcover txmc
-                  WHERE txmc.observation_id = ob.observation_id
+                       (SELECT max(txi.cover) AS max
+                          FROM taxonimportance txi
+                          WHERE txi.taxonobservation_id = txo.taxonobservation_id) AS maxcover
+                  FROM taxonobservation txo
+                  WHERE txo.observation_id = ob.observation_id
+                    AND (emb_taxonobservation < 6 OR emb_taxonobservation IS NULL)
               ), returned_taxa AS (
                 SELECT *
                   FROM all_taxa

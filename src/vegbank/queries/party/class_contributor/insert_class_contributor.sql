@@ -6,11 +6,13 @@ WHEN NOT MATCHED THEN
   INSERT (
     commclass_id,
     party_id,
-    role_id
+    role_id,
+    emb_classcontributor
   ) VALUES (
     CAST(SUBSTRING(vb_record_identifier, 4)AS INT),
     CAST(SUBSTRING(vb_py_code, 4) AS INT),
-    CAST(SUBSTRING(vb_ar_code, 4) AS INT)
+    CAST(SUBSTRING(vb_ar_code, 4) AS INT),
+    0
   )
 RETURNING merge_action(),
           src.user_cr_code,

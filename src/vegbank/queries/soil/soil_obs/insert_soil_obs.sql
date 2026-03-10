@@ -18,7 +18,8 @@ WHEN NOT MATCHED THEN
       soilph,
       exchangecapacity,
       basesaturation,
-      soildescription
+      soildescription,
+      emb_soilobs
   ) VALUES (
     CAST(SUBSTRING(src.vb_ob_code, 4) AS INT),
     src.soilhorizon,
@@ -34,7 +35,8 @@ WHEN NOT MATCHED THEN
     src.soilph,
     src.exchangecapacity,
     src.basesaturation,
-    src.soildescription
+    src.soildescription,
+    0
   )
 RETURNING merge_action(),
           src.user_so_code,
