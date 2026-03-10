@@ -6,6 +6,7 @@
   - [Authorization Scopes](#authorization-scopes)
   - [Obtaining a Token](#obtaining-a-token)
   - [Using Your Token](#using-your-token)
+  - [Refreshing Your Token](#refreshing-your-token)
   - [Example Requests](#example-requests)
 - [For Developers](#for-developers)
   - [Environment Configuration](#environment-configuration)
@@ -38,14 +39,30 @@ VegBank uses Keycloak for token management. To obtain a token:
 
 #### Log In via ORCID
 
-Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to the ORCID authentication page. Login with your ORCID credentials. Once login is successful you'll receive a JSON response containing your OAuth access token
+Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to the ORCID authentication page. Login with your ORCID credentials.
 
-   Response example:
-   ```json
-   {
-     "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
-   }
-   ```
+#### Response
+
+On success (`200 OK`):
+
+```json
+{
+  "message": "Authorization successful",
+  "token": {
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+}
+```
+
+Store both tokens. The `access_token` is used for API requests and has a short expiry. The `refresh_token` is long-lived and can be used to obtain a new access token without logging in again (see [Refreshing Your Token](#refreshing-your-token)).
+
+**Error responses:**
+
+| Status | Cause |
+|--------|-------|
+| `401` | Authentication failed   |
+| `500` | Unexpected server error |
 
 ### Using Your Token
 
@@ -54,6 +71,54 @@ Include your token in the `Authorization` header of your requests to api.vegbank
 ```http
 Authorization: Bearer <YOUR_TOKEN_HERE>
 ```
+
+### Refreshing Your Token
+
+Access tokens are short-lived. When your access token expires, use the `POST /refresh` endpoint to obtain a new access token and refresh token without requiring the user to log in again.
+
+#### Request
+
+```bash
+curl -s -L -X POST 'https://api.vegbank.org/refresh' \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"refresh_token\": \"${REFRESH}\",
+    \"scope\": \"openid web-origins acr offline_access profile basic email vegbank:contributor vegbank:user\"
+  }"
+```
+
+**Request body (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `refresh_token` | string | Yes | The refresh token returned from `/login` or a previous `/refresh` call |
+| `scope` | string | No | Space-separated list of scopes for the new access token. If no scopes are provided, the new access token will have the same scopes as the original token. The requested scopes must match or be a subset of the original scopes granted. |
+
+> **Note:** In most cases, you can safely omit the `scope` parameter. The OIDC provider will reissue the token with the same scopes that were originally granted, which is typically the desired behavior. 
+
+#### Response
+
+On success (`200 OK`):
+
+```json
+{
+  "message": "Authorization successful",
+  "token": {
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+}
+```
+
+Replace your stored tokens with the new values returned. Because each refresh token can only be used once, each refresh call issues a new refresh token, and so the old one must be discarded.
+
+**Error responses:**
+
+| Status | Cause |
+|--------|-------|
+| `400` | `refresh_token` field missing from the request body |
+| `401` | Refresh token is invalid, expired, or revoked; or client authentication failed |
+| `500` | Unexpected server error |
 
 ### Example Requests
 

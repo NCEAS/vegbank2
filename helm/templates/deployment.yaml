@@ -60,12 +60,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_HOST
               value: {{ .Values.database.host | quote }}
@@ -107,12 +107,12 @@ spec:
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
@@ -121,7 +121,7 @@ spec:
             - -c
             - >
               echo "## Flyway Env";
-              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE vegbankdbcreds SECRET)/' || true;
+              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE {{ .Values.database.existingSecret }} SECRET)/' || true;
               echo "## Listing Migrations";
               ls {{ .Values.flyway.dbpath }}/migrations || true;
               echo "Applying all migrations in db/migrations";
@@ -155,12 +155,12 @@ spec:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_NAME
               value: {{ .Values.database.name | quote }}
@@ -168,16 +168,9 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
-            - name: VB_ALLOW_UPLOADS
-              value: {{ .Values.allowUploads | quote }}
             # Path to the mounted OIDC client secrets JSON file
             - name: OIDC_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
-            {{- if .Values.oidcRedirectUri }}
-            # Explicit OIDC redirect URI - required when behind a path-rewriting ingress
-            - name: OIDC_REDIRECT_URI
-              value: {{ .Values.oidcRedirectUri | quote }}
-            {{- end }}
             # Secret key for signing Flask sessions (must be stable across restarts)
             - name: FLASK_SECRET_KEY
               valueFrom:

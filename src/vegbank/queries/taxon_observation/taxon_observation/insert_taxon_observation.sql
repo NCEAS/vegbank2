@@ -7,12 +7,14 @@ WHEN NOT MATCHED THEN
     observation_id,
     authorplantname,
     reference_id,
-    taxoninferencearea
+    taxoninferencearea,
+    emb_taxonobservation
   ) VALUES (
     CAST(SUBSTRING(src.vb_ob_code, 4) AS INT),
     src.authorplantname,
     CAST(SUBSTRING(src.vb_rf_code, 4) AS INT),
-    src.taxoninferencearea
+    src.taxoninferencearea,
+    0
   )
 RETURNING merge_action(),
           src.user_to_code,

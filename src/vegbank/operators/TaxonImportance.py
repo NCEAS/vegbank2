@@ -1,4 +1,5 @@
 import os
+import textwrap
 from vegbank.operators.operator_parent_class import Operator
 
 
@@ -36,7 +37,9 @@ class TaxonImportance(Operator):
             'to_code': "'to.' || tm.taxonobservation_id",
             'ob_code': "'ob.' || txo.observation_id",
             'sr_code': "'sr.' || tm.stratum_id",
-            'stratum_name': "COALESCE(sr.stratumname, '<All>')",
+            'stratum_name': f"({textwrap.dedent("""\
+                CASE WHEN tm.stratum_id IS NULL THEN '<All>'
+                     ELSE COALESCE(sr.stratumname, sy.stratumname) END""")})",
             'cover': "tm.cover",
             'cover_code': "tm.covercode",
             'basal_area': "tm.basalarea",
@@ -54,6 +57,7 @@ class TaxonImportance(Operator):
             FROM tm
             JOIN taxonobservation txo USING (taxonobservation_id)
             LEFT JOIN stratum sr USING (stratum_id)
+            LEFT JOIN stratumtype sy USING (stratumtype_id)
             """
         from_sql['full_nested'] = from_sql['full'].rstrip() + """
             LEFT JOIN LATERAL (

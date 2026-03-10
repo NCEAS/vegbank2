@@ -871,12 +871,33 @@ def test_user_datasets_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_user_datasets_post_returns_405_when_uploads_allowed(test_client):
-    """Test that a post request to the user-datasets endpoint returns 405 when
-    access mode allows uploads."""
-    response = test_client.post("/user-datasets")
+def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
+    """Test that a post request to the user-datasets endpoint returns 200 when
+    allow_uploads is true."""
+    payload = {
+        "user_ds_code": "test_ds_001",
+        "name": "Test Dataset 001",
+        "description": "A test dataset containing 1 observation.",
+        "type": "upload",
+        "data": {
+            "observation":[
+                "ob.1"
+            ]
+        }
+    }
+    with patch.object(
+        vegbankapi.UserDataset,
+            "upload_user_dataset_from_endpoint",
+            autospec=True,
+            return_value=(
+                {"uploaded": True},
+                201,
+            ),  # Note: The return value above is purely placeholder data
+        ) as mock_upload_user_dataset:
+            response = test_client.post("/user-datasets?dry_run=true", json=payload)
 
-    assert response.status_code == 405
+    assert response.status_code == 200
+    assert mock_upload_user_dataset.call_count == 1
 
 
 def test_overview_get_dispatches_to_repository(test_client):

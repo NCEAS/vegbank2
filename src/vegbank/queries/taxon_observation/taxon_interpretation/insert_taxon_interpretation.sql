@@ -23,7 +23,8 @@ WHEN NOT MATCHED THEN
     grouptype,
     notes,
     notespublic,
-    notesmgt
+    notesmgt,
+    emb_taxoninterpretation
   ) VALUES (
     CAST(SUBSTRING(vb_to_code, 4) AS INT),
     CAST(SUBSTRING(vb_pc_code, 4) AS INT),
@@ -44,7 +45,8 @@ WHEN NOT MATCHED THEN
     grouptype,
     notes,
     notespublic,
-    notesmgt
+    notesmgt,
+    0
   )
 RETURNING merge_action(),
           src.user_ti_code,

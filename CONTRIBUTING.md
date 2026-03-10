@@ -2,15 +2,15 @@
 
 **🎉 First off, thanks for contributing! 🎉**
 
-- [✨ Types of contributions](#types-of-contributions)
-- [📤 Pull Requests](#pull-requests)
-- [🚀 Development Workflow](#development-workflow)
-- [🔀 Release process](#release-process)
-- [🔬 Testing](#testing)
-- [🎨 Code style](#code-style)
-- [📄 Contributor license agreement](#contributor-license-agreement)
+- [✨ Types of contributions](#-types-of-contributions)
+- [📤 Pull Requests](#-pull-requests)
+- [🚀 Development Workflow](#-development-workflow)
+- [🔀 Release process](#-release-process)
+- [🔬 Testing](#-testing)
+- [🎨 Code style](#-code-style)
+- [📄 Contributor license agreement](#-contributor-license-agreement)
 
-## ✨ Types of contributions
+## ✨ Types of Contributions
 
 We welcome all types of contributions, including bug fixes, feature enhancements,
 bug reports, documentation, graphics, and many others.  You might consider contributing by:
@@ -113,7 +113,19 @@ the full set of tests on a clean checkout of the `develop` branch.
 the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will 
 reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to 
 start work on the next release.
-3. Releases can be downloaded from the [GitHub releases page](https://github.com/NCEAS/vegbank2/releases).
+3. The release is tagged on GitHub, and the metadata for the reserved DOI is added and published with the correct softwareheritage url. Finally, the release is added to the GitHub `Releases` page
+4. The new release is then built and published as a Docker image (see the [Docker README for details](./docker/README.md)), and the Helm chart is packaged and published to the GitHub Container Registry (see the [Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart)). The Helm chart release should also be tagged, using the chart version (which may differ from the application code version) with a `chart-` prefix. For example, if the application code version is `2.0.1` and the chart version is `1.0.1`, then the chart should be tagged with `chart-1.0.1`.
+5. An email announcement is sent out to users and contributors.
+6. Availability:
+   - Releases can be downloaded from the [GitHub releases page](https://github.com/NCEAS/vegbank2/releases).
+   - Versioned Docker images are available from [the VegBank GHCR image repo](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank), and can be downloaded using:
+    ```shell
+    docker pull ghcr.io/nceas/vegbank:<version-tag>
+    ```
+  - Versioned Helm charts are available from [the VegBank GHCR chart repo](https://github.com/NCEAS/vegbank2/pkgs/container/charts%2Fvegbank), and can be accessed using:
+    ```shell
+    helm pull oci://ghcr.io/nceas/charts/vegbank --version <chart-version>
+    ```
 
 ## 🔬 Testing
 

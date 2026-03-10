@@ -110,18 +110,28 @@ def validate_plot_observations(df):
 
     new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()]
     old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()]
-
-    new_validation = validate_required_and_missing_fields(
-        new_plots_df,
-        pl_obs_config['new_pl_required_fields'],
-        pl_obs_config['table_defs'],
-        "observations on new plots")
-    old_validation = validate_required_and_missing_fields(
-        old_plots_df,
-        pl_obs_config['old_pl_required_fields'],
-        pl_obs_config['table_defs'],
-        "observations on existing plots")
-
+    if not new_plots_df.empty:
+        new_validation = validate_required_and_missing_fields(
+            new_plots_df,
+            pl_obs_config['new_pl_required_fields'],
+            pl_obs_config['table_defs'],
+            "observations on new plots")
+    else:
+        new_validation = {
+            'error': "",
+            'has_error': False
+        }
+    if not old_plots_df.empty:
+        old_validation = validate_required_and_missing_fields(
+            old_plots_df,
+            pl_obs_config['old_pl_required_fields'],
+            pl_obs_config['table_defs'],
+            "observations on existing plots")
+    else:
+        old_validation = {
+            'error': "",
+            'has_error': False
+        }
     xor_validation = validate_xor_pairs(
         df, pl_obs_config['xor_fields'], "plot_observations")
 
@@ -145,7 +155,6 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         'has_error': False,
         'error': ""
     }
-    print(df.columns)
 
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair
