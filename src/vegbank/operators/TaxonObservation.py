@@ -11,6 +11,7 @@ from vegbank.utilities import (
     QueryParameterError,
     validate_required_and_missing_fields,
     update_obs_counts,
+    update_interpreted_observations,
 )
 
 
@@ -320,4 +321,12 @@ class TaxonObservation(Operator):
         pc_ids = list(set(self.extract_id_from_vb_code(code, 'pc')
                   for code in df['vb_pc_code']))
         update_obs_counts(conn, 'plantconcept', pc_ids)
+
+        # update orig and curr interpretations in taxon observation table
+        ti_codes  = [row['vb_ti_code'] for row in
+                     new_taxon_interpretations['resources']['ti']]
+        ti_ids = list(set(self.extract_id_from_vb_code(code, 'ti')
+                  for code in ti_codes))
+        update_interpreted_observations(conn, 'taxonobservation', ti_ids)
+
         return new_taxon_interpretations
