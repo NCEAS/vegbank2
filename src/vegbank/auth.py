@@ -49,6 +49,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent DoS attacks
 
+class MissingParameterError(Exception):
+    """Raised when a required request parameter is missing."""
+
 # VegBank-specific scopes
 SCOPE_ADMIN = "vegbank:admin"
 SCOPE_CONTRIBUTOR = "vegbank:contributor"
@@ -216,6 +219,7 @@ def _token_error_response(exc):
         OAuth2Error: ("An OAuth2 error occurred", 401),
         KeyError: ("Invalid token structure", 401),
         TypeError: ("Invalid token structure", 401),
+        MissingParameterError: ("Missing required parameter", 400),
         ValueError: ("OIDC provider configuration error", 500),
         _requests.RequestException: ("Failed to fetch OIDC provider keys", 502),
     }
@@ -478,13 +482,14 @@ def refresh_token():
     401 JSON if the refresh token is invalid, expired, or if client authentication fails.
     500 JSON for unexpected server errors.
     """
-    # Get the refresh token and desired scopes from the frontend JSON body
-    data = request.get_json()
+    # Get the refresh token and desired scopes from the JSON body
+    data = request.get_json(silent=True)
+    if not data:
+        return _token_error_response(MissingParameterError("refresh_token"))
 
     user_refresh_token = data.get("refresh_token")
     if not user_refresh_token:
-        # TODO: fold this error into `_token_error_response` for consistency
-        return jsonify({"error": "Missing refresh_token"}), 400
+        return _token_error_response(MissingParameterError("refresh_token"))
 
     # The client should pass the scopes that it would like to request for the
     # new access token. If no scopes are provided, we will attempt to get a
