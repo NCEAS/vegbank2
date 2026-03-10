@@ -52,8 +52,8 @@ config = {
         "xor_fields": [('vb_py_code', 'user_py_code')]
     },
     "plot_observations": {  # This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
-        "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code'],
-        "old_pl_required_fields": ['vb_pl_code', 'user_ob_code'],
+        "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code'],
+        "old_pl_required_fields": ['vb_pl_code', 'user_ob_code', 'author_obs_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
         "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
     }

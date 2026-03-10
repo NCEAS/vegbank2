@@ -643,8 +643,8 @@ class PlotObservation(Operator):
                           df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
-        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
+        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
+        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
             print("found some new plots")
             new_validation = validate_required_and_missing_fields(
