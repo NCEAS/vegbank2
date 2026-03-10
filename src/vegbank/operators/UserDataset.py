@@ -107,14 +107,17 @@ class UserDataset(Operator):
             values are lists of vb_codes (e.g. ['ob.123', 'ob.456'])
         '''
         user_dataset_insert_sql = """
-            INSERT INTO userdataset (datasetname, datasetdescription, 
-                datasettype, datasetstart)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO userdataset (
+                datasettype,
+                datasetsharing,
+                datasetname,
+                datasetdescription,
+                datasetstart)
+            VALUES ('normal', 'public', %s, %s, %s)
             RETURNING userdataset_id"""
         dataset_insert_data = (
             dataset['name'],
             dataset.get('description', ''),
-            dataset['type'],
             datetime.now()
             # TODO This will eventually need to be the user id of the person
             # uploading the dataset. Once we have the auth token we can
