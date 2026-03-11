@@ -11,7 +11,13 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ## Quick Reference: NCEAS Dev Deployments
 
-- Set `image.tag` in [`values-overrides-dev-vb.yaml`](./examples/values-overrides-dev-vb.yaml) to the Docker image version you wish to deploy, (or leave blank to use the default specified in `Chart.yaml`.
+First:
+
+- Set `image.tag` to the Docker image version you wish to deploy, in:
+  - [`examples/values-overrides-dev-vb.yaml`](./examples/values-overrides-dev-vb.yaml) for the `dev-vegbank` context, or
+  - [`examples/values-overrides-dev-vb-dev.yaml`](./examples/values-overrides-dev-vb-dev.yaml) for the `dev-vegbank-dev` context
+
+  (or leave blank to use the default specified in `Chart.yaml`)
 
 ...then:
 
