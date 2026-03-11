@@ -11,25 +11,19 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ## Quick Reference: NCEAS Dev Deployments
 
-First:
-
-- Set `image.tag` to the Docker image version you wish to deploy, in:
-  - [`examples/values-overrides-dev-vb.yaml`](./examples/values-overrides-dev-vb.yaml) for the `dev-vegbank` context, or
-  - [`examples/values-overrides-dev-vb-dev.yaml`](./examples/values-overrides-dev-vb-dev.yaml) for the `dev-vegbank-dev` context
-
-  (or leave blank to use the default specified in `Chart.yaml`)
-
-...then:
+From the `vegbank2` repo root directory, either:
 
 - ```shell
   # Deploy the local helm chart to the `dev-vegbank` context:
-  helm upgrade vegbankapi -n vegbank ./helm -f ./helm/examples/values-overrides-dev-vb.yaml
+  helm upgrade vegbankapi -n vegbank ./helm -f ./helm/examples/values-overrides-dev-vb.yaml \
+          --set image.tag="docker-img-tag-#"    # set to the Docker image version you wish to deploy
   ```
 ...or:
 
 - ```shell
   # Deploy the local helm chart to the `dev-vegbank-dev` context:
-  helm upgrade vegbankapi -n vegbank-dev ./helm -f ./helm/examples/values-overrides-dev-vb-dev.yaml
+  helm upgrade vegbankapi -n vegbank-dev ./helm -f ./helm/examples/values-overrides-dev-vb-dev.yaml \
+          --set image.tag="docker-img-tag-#"    # set to the Docker image version you wish to deploy
   ```
 
 ## Table of Contents
@@ -46,7 +40,7 @@ First:
 - [Packaging and Publishing the Helm Chart](#packaging-and-publishing-the-helm-chart)
   - [Package the Chart](#package-the-chart)
   - [Publish the Chart to the GitHub Container Registry](#publish-the-chart-to-the-github-container-registry)
-- [Appendix 1: Prerequisite: Install a PostgreSQL Database ](#appendix-1-prerequisite-install-a-postgresql-database-)
+- [Appendix 1: Prerequisite: Install a PostgreSQL Database ](#appendix-1-prerequisite-install-a-postgresql-database)
 - [Appendix 2: Prerequisite: Create K8s Secrets](#appendix-2-prerequisite-create-k8s-secrets)
 - [Appendix 3: Initial Database Population with a Dump File](#appendix-3-initial-database-population-with-a-dump-file)
 
@@ -61,7 +55,7 @@ First:
 
 Before the initial deployment of the VegBank API helm chart, these prerequisites must be met:
 
-1. A PostgreSQL database must be deployed and running in the cluster. At NCEAS, we use the [`dataone-cnpg` helm chart](https://github.com/DataONEorg/dataone-cnpg) to deploy a CloudNative PostgreSQL cluster. See [Appendix 1](#appendix-1-prerequisite-install-a-postgresql-database-) for details.
+1. A PostgreSQL database must be deployed and running in the cluster. At NCEAS, we use the [`dataone-cnpg` helm chart](https://github.com/DataONEorg/dataone-cnpg) to deploy a CloudNative PostgreSQL cluster. See [Appendix 1](#appendix-1-prerequisite-install-a-postgresql-database) for details.
 2. The necessary Kubernetes secrets must be created. See [Appendix 2](#appendix-2-prerequisite-create-k8s-secrets).
 3. If you wish to pre-populate the database with data from an existing dump file, that file must be made accessible to the helm chart via a PVC, and the appropriate parameters in `values.yaml` must be overridden to enable the restore process. See [Appendix 3](#appendix-3-initial-database-population-with-a-dump-file) for details.
 
