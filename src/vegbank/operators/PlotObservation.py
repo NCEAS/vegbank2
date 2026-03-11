@@ -336,9 +336,9 @@ class PlotObservation(Operator):
                                           authorplantname),
                          'max_cover', maxcover
                        )) AS top_taxon_observations,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM all_taxa) AS taxon_count,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM returned_taxa) AS taxon_count_returned
                 FROM returned_taxa
             ) AS txo ON true
@@ -381,7 +381,7 @@ class PlotObservation(Operator):
                          'cover', cover
                          )) AS top_taxon_observations
                         FROM returned_taxon_observations) AS top_taxon_observations,
-                     (SELECT COUNT(DISTINCT int_currplantconcept_id)
+                     (SELECT COUNT(DISTINCT taxonobservation_id)
                         FROM all_taxon_observations) AS taxon_count,
                      (SELECT COUNT(1)
                         FROM all_taxon_observations) AS taxon_importance_count,
