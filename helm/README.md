@@ -57,7 +57,7 @@ Before the first deployment of the VegBank API helm chart, there are two prerequ
     $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
           -f ./helm/examples/values-overrides-dev-vb.yaml
     ```
-  
+
     where `values-overrides-dev-vb.yaml` contains only the values we wish to override. Similarly, we would use the [`helm/examples/values-overrides-dev-vb-dev.yaml`](./examples/values-overrides-dev-vb-dev.yaml) file when deploying in the `dev-vegbank-dev` context.
 
   - Parameters may also be overridden on the command line; e.g.
@@ -81,7 +81,7 @@ This example uses the `dev-vegbank` context and the `values-overrides-dev-vb.yam
   $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
         -f ./helm/examples/values-overrides-dev-vb.yaml
   ```
-  
+
   - Deploy a specific version by adding: `--version <version-#>` ([List of published chart versions](https://github.com/NCEAS/metacat/pkgs/container/charts%2Fvegbank))
   - See more info by adding: `--debug`
   - `--dry-run` can be used to test the installation without actually deploying
@@ -256,7 +256,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 ### Package the Chart
 
 1. Edit `Chart.yaml` as follows:
-   1. Update the `version` field to the new version number (e.g. `0.1.0`). This version number uses [semantic versioning](https://semver.org/), and should be updated according to the type of changes made to the chart since the last version. 
+   1. Update the `version` field to the new version number (e.g. `0.1.0`). This version number uses [semantic versioning](https://semver.org/), and should be updated according to the type of changes made to the chart since the last version.
    2. Ensure the `appVersion` field is set to match the version of the VegBank API that you wish to deploy with this chart. This should be a valid docker image tag for the VegBank API image in the [GitHub Container Registry](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank).
 2. Use the `helm package` command:
 
@@ -276,7 +276,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
     helm push vegbank-<x.x.x>.tgz oci://ghcr.io/nceas/charts
     ```
 
-## Appendix 1: Prerequisite: Install a PostgreSQL Database 
+## Appendix 1: Prerequisite: Install a PostgreSQL Database
 
 Before deploying the VegBank API helm chart, first deploy a PostgreSQL database, using the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready - and check their logs are free of errors - before proceeding.
 
@@ -297,7 +297,7 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
     # Using the deployment name 'vegbankdb':
     #
     $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./helm/admin/values-cnpg.yaml
-    
+
     $ kubectl -n dev-vegbank get pods
     NAME                         READY   STATUS    RESTARTS   AGE
     vegbankdb-cnpg-1             1/1     Running   0          5m
@@ -352,7 +352,7 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
     $ kc get pvc -n vegbank-dev
     NAME                    STATUS   VOLUME                        CAPACITY   ACCESS MODES   AGE
     vegbankdb-init-pgdata   Bound    cephfs-vegbankdb-init-pgdata  100Gi      RWO            182d
-    
+
     # Admin access is needed for additional PV creation
     ```
 
