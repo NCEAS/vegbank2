@@ -27,11 +27,11 @@ WHERE party.party_id IS NULL;
 
 -- Validate role codes
 
-SELECT taxon_interpretation_temp.vb_ro_code
+SELECT taxon_interpretation_temp.vb_ar_code
 FROM 
     taxon_interpretation_temp LEFT JOIN aux_role
 ON
-    taxon_interpretation_temp.vb_ro_code = 'ar.' || aux_role.role_id
+    taxon_interpretation_temp.vb_ar_code = 'ar.' || aux_role.role_id
 WHERE aux_role.role_id IS NULL;
 
 -- Validate reference codes. Additional AND statement is added because this is an optional foreign key. 

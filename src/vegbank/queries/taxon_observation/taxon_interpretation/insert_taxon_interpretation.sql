@@ -30,7 +30,7 @@ WHEN NOT MATCHED THEN
     CAST(SUBSTRING(vb_pc_code, 4) AS INT),
     interpretationdate,
     CAST(SUBSTRING(vb_py_code, 4) AS INT),
-    CAST(SUBSTRING(vb_ro_code, 4) AS INT),
+    CAST(SUBSTRING(vb_ar_code, 4) AS INT),
     interpretationtype,
     CAST(SUBSTRING(vb_rf_code, 4) AS INT),
     originalinterpretation,

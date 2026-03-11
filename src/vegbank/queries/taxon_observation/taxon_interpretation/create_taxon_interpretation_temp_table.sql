@@ -7,7 +7,7 @@ CREATE TEMPORARY TABLE taxon_interpretation_temp(
     user_py_code TEXT,
     vb_py_code TEXT,
     user_ro_code TEXT,
-    vb_ro_code TEXT,
+    vb_ar_code TEXT,
     interpretationtype character varying(30),
     user_rf_code TEXT,
     vb_rf_code TEXT,

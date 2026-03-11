@@ -42,9 +42,11 @@ config = {
         "table_defs": [table_defs_config.stem_count, table_defs_config.stem_location]
     },
     "taxon_interpretations": {
-        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation'],
+        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation'],
         "table_defs": [table_defs_config.taxon_interpretation],
-        "xor_fields": [('user_py_code', 'vb_py_code')]
+        "xor_fields": [('user_py_code', 'vb_py_code'),
+                       ('user_rf_code', 'vb_rf_code'),
+                       ('user_to_code', 'vb_to_code')]
     },
     "contributors": {
         "required_fields": ['vb_ar_code', 'contributor_type', 'record_identifier'],

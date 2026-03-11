@@ -8,8 +8,7 @@ INSERT INTO taxon_interpretation_temp
     interpretationdate,
     user_py_code,
     vb_py_code,
-    user_ro_code,
-    vb_ro_code,
+    vb_ar_code,
     interpretationtype,
     user_rf_code,
     vb_rf_code,
@@ -31,5 +30,5 @@ INSERT INTO taxon_interpretation_temp
 )
 VALUES
 (
-    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
 );
