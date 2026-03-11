@@ -9,8 +9,26 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 - **Database Recovery from Backups**: [db-recovery.md](./docs/db-recovery.md) - Details on database backup and recovery
 - **VegBank Database Bootstrap**: [README](./admin/bootstrap/README.md) - Automated method of restoring from a data-only dump file taken from the original VegBank database.
 
+## Quick Reference: NCEAS Dev Deployments
+
+- Set `image.tag` in [`values-overrides-dev-vb.yaml`](./examples/values-overrides-dev-vb.yaml) to the Docker image version you wish to deploy, (or leave blank to use the default specified in `Chart.yaml`.
+
+...then:
+
+- ```shell
+  # Deploy the local helm chart to the `dev-vegbank` context:
+  helm upgrade vegbankapi -n vegbank ./helm -f ./helm/examples/values-overrides-dev-vb.yaml
+  ```
+...or:
+
+- ```shell
+  # Deploy the local helm chart to the `dev-vegbank-dev` context:
+  helm upgrade vegbankapi -n vegbank-dev ./helm -f ./helm/examples/values-overrides-dev-vb-dev.yaml
+  ```
+
 ## Table of Contents
 - [Introduction](#introduction)
+- [Quick Reference: NCEAS Dev Deployments](#quick-reference-nceas-dev-deployments)
 - [Requirements](#requirements)
 - [Prerequisites](#prerequisites)
 - [API Application Deployment](#api-application-deployment)
@@ -35,7 +53,8 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 
 ## Prerequisites
 
-Before the first deployment of the VegBank API helm chart, there are two prerequisites that must be met:
+Before the initial deployment of the VegBank API helm chart, these prerequisites must be met:
+
 1. A PostgreSQL database must be deployed and running in the cluster. At NCEAS, we use the [`dataone-cnpg` helm chart](https://github.com/DataONEorg/dataone-cnpg) to deploy a CloudNative PostgreSQL cluster. See [Appendix 1](#appendix-1-prerequisite-install-a-postgresql-database-) for details.
 2. The necessary Kubernetes secrets must be created. See [Appendix 2](#appendix-2-prerequisite-create-k8s-secrets).
 3. If you wish to pre-populate the database with data from an existing dump file, that file must be made accessible to the helm chart via a PVC, and the appropriate parameters in `values.yaml` must be overridden to enable the restore process. See [Appendix 3](#appendix-3-initial-database-population-with-a-dump-file) for details.
