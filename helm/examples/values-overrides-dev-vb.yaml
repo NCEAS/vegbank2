@@ -6,7 +6,6 @@
 ## - `open`: No authentication, uploads allowed.
 ## - `authenticated`: Full authentication and authorization required.
 ##
-## Default: `authenticated`
 accessMode: "authenticated"
 
 replicaCount: 2

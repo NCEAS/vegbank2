@@ -185,8 +185,10 @@ ingress:
         - path: /
         ## @param ingress.hosts[0].paths[0].pathType The type of path matching to use.
           pathType: Prefix
-  ## @param ingress.tls The TLS configuration. Ignored unless ingress.enabled is true.
+  ## TLS configuration. Ignored unless ingress.enabled is true.
   ## If set, cert-manager will attempt to provision TLS certificates for the specified hosts
+  ## @param ingress.tls[0].hosts The hostname for TLS config
+  ## @param ingress.tls[0].secretName Name of the secret holding the TLS cert(s)
   ##
   ## Example:
   ##  tls:

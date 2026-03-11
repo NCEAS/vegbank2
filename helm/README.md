@@ -159,9 +159,9 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### API Access Mode
 
-| Name         | Description                           | Value           |
-| ------------ | ------------------------------------- | --------------- |
-| `accessMode` | Access mode controlling API behavior. | `authenticated` |
+| Name         | Description                           | Value       |
+| ------------ | ------------------------------------- | ----------- |
+| `accessMode` | Access mode controlling API behavior. | `read_only` |
 
 ### OIDC Configuration
 
@@ -174,8 +174,9 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | Name                            | Description                                                                | Value                                     |
 | ------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
 | `database.name`                 | The name of the postgres database to be used by VegBank                    | `vegbank`                                 |
-| `database.host`                 | hostname of database to be used by VegBank (RW svc name of CNPG or pooler) | `vegbankdb2-cnpg-rw`                      |
+| `database.host`                 | hostname of database to be used by VegBank (RW svc name of CNPG or pooler) | `vegbankdb-cnpg-rw`                       |
 | `database.port`                 | port to connect to the database (Must match CNPG or pooler port number)    | `5432`                                    |
+| `database.existingSecret`       | Secret containing the database username and password)                      | `vegbankdbcreds`                          |
 | `databaseRestore.enabled`       | Restores a full (schema+data) database dump file defined below             | `false`                                   |
 | `databaseRestore.pvc`           | PVC containing the (schema+data) database dump file to restore             | `vegbankdb-init-pgdata`                   |
 | `databaseRestore.mountpath`     | Mount path inside the container for the pvc/dump file volume               | `/tmp/databaseRestore`                    |
@@ -183,24 +184,28 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
 | `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
 | `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
-| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.0.2`                                  |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.0.3`                                  |
 | `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
-| `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb2-cnpg-rw`                      |
+| `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
 | `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
 
 ### VegBank API Docker Image
 
-| Name                 | Description                                                         | Value                   |
-| -------------------- | ------------------------------------------------------------------- | ----------------------- |
-| `image.repository`   | GitHub remote image repository address for the VegBank Docker Image | `ghcr.io/nceas/vegbank` |
-| `image.pullPolicy`   | How often should the image be pulled from the repository?           | `IfNotPresent`          |
-| `imagePullSecrets`   |                                                                     | `[]`                    |
-| `nameOverride`       |                                                                     | `""`                    |
-| `fullnameOverride`   |                                                                     | `""`                    |
-| `podAnnotations`     | currently unused                                                    | `{}`                    |
-| `podLabels`          |                                                                     | `{}`                    |
-| `podSecurityContext` |                                                                     | `{}`                    |
-| `securityContext`    |                                                                     | `{}`                    |
+| Name               | Description                                                                 | Value                   |
+| ------------------ | --------------------------------------------------------------------------- | ----------------------- |
+| `image.repository` | GitHub remote image repository address for the VegBank Docker Image         | `ghcr.io/nceas/vegbank` |
+| `image.pullPolicy` | How often should the image be pulled from the repository?                   | `IfNotPresent`          |
+| `image.tag`        | version/tag of the VB Docker Image to use. Leave blank to use Chart default | `""`                    |
+| `resources`        |                                                                             | `{}`                    |
+
+### Probes
+
+| Name                          | Description                              | Value |
+| ----------------------------- | ---------------------------------------- | ----- |
+| `livenessProbe.httpGet.path`  | The path to use for the liveness probe.  | `/`   |
+| `livenessProbe.httpGet.port`  | The port to use for the liveness probe.  | `80`  |
+| `readinessProbe.httpGet.path` | The path to use for the readiness probe. | `/`   |
+| `readinessProbe.httpGet.port` | The port to use for the readiness probe. | `80`  |
 
 ### Service
 
@@ -211,26 +216,16 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### Ingress
 
-| Name                                                 | Description                                            | Value                     |
-| ---------------------------------------------------- | ------------------------------------------------------ | ------------------------- |
-| `ingress.enabled`                                    | Enable ingress to allow web traffic                    | `true`                    |
-| `ingress.className`                                  | The class of the ingress controller to use.            | `nginx`                   |
-| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                        | `letsencrypt-prod`        |
-| `ingress.hosts[0].host`                              | The host names for the ingress.                        | `api-dev.vegbank.org`     |
-| `ingress.hosts[0].paths[0].path`                     | The path for the ingress.                              | `/`                       |
-| `ingress.hosts[0].paths[0].pathType`                 | The type of path matching to use.                      | `Prefix`                  |
-| `ingress.tls[0].hosts`                               | The host names for the TLS certification.              | `["api-dev.vegbank.org"]` |
-| `ingress.tls[0].secretName`                          | The name of the secret containing the TLS certificate. | `ingress-nginx-tls-cert`  |
-| `resources`                                          |                                                        | `{}`                      |
-
-### Probes
-
-| Name                          | Description                              | Value |
-| ----------------------------- | ---------------------------------------- | ----- |
-| `livenessProbe.httpGet.path`  | The path to use for the liveness probe.  | `/`   |
-| `livenessProbe.httpGet.port`  | The port to use for the liveness probe.  | `80`  |
-| `readinessProbe.httpGet.path` | The path to use for the readiness probe. | `/`   |
-| `readinessProbe.httpGet.port` | The port to use for the readiness probe. | `80`  |
+| Name                                                 | Description                                                              | Value                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------- |
+| `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false' | `false`                    |
+| `ingress.className`                                  | The class of the ingress controller to use.                              | `nginx`                    |
+| `ingress.hosts[0].host`                              | The host names for the ingress.                                          | `api-dev2.vegbank.org`     |
+| `ingress.hosts[0].paths[0].path`                     | The path for the ingress.                                                | `/`                        |
+| `ingress.hosts[0].paths[0].pathType`                 | The type of path matching to use.                                        | `Prefix`                   |
+| `ingress.tls[0].hosts`                               | The hostname for TLS config                                              | `["api-dev2.vegbank.org"]` |
+| `ingress.tls[0].secretName`                          | Name of the secret holding the TLS cert(s)                               | `ingress-nginx-tls-cert`   |
+| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                          | `letsencrypt-prod`         |
 
 ### Miscellaneous
 
@@ -248,6 +243,13 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `nodeSelector`                               |                                                              | `{}`    |
 | `tolerations`                                |                                                              | `[]`    |
 | `affinity`                                   |                                                              | `{}`    |
+| `imagePullSecrets`                           |                                                              | `[]`    |
+| `nameOverride`                               |                                                              | `""`    |
+| `fullnameOverride`                           |                                                              | `""`    |
+| `podAnnotations`                             | currently unused                                             | `{}`    |
+| `podLabels`                                  |                                                              | `{}`    |
+| `podSecurityContext`                         |                                                              | `{}`    |
+| `securityContext`                            |                                                              | `{}`    |
 
 ## Packaging and Publishing the Helm Chart
 
