@@ -1,0 +1,49 @@
+## Values overrides for deploying Vegbank in the k8s dev-vegbank-dev context.
+## See the helm README for instructions.
+
+## @param accessMode Access mode controlling API behavior.
+## - `read_only`: No authentication, no uploads.
+## - `open`: No authentication, uploads allowed.
+## - `authenticated`: Full authentication and authorization required.
+##
+## Default: `authenticated`
+accessMode: "open"
+
+replicaCount: 1
+
+image:
+  ## Set image pull policy to 'Always' for development to ensure latest image is used
+  pullPolicy: Always
+  tag: ""  # Override docker image version for development builds
+
+## Uncomment if needed; defaults to false:
+# databaseRestore:
+#   enabled: true
+#   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
+
+ingress:
+  enabled: false
+#  className: nginx
+#  hosts:
+#    - host: &hostname api-dev2.vegbank.org
+#      paths:
+#        - path: /
+#          pathType: Prefix
+#  tls:
+#    - hosts:
+#        - *hostname
+#      secretName: ingress-nginx-tls-cert
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 4Gi
+
+flyway:
+  dbHost: vegbankdb2-cnpg-rw
+
+database:
+  host: vegbankdb2-cnpg-rw

@@ -118,7 +118,7 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 
 2. If you are NOT running a pooler (e.g. dev systems), update api values overrides and redeploy:
     ```yaml
-    ## e.g. 'values-overrides-dev.yaml'
+    ## e.g. 'values-overrides-dev-vb.yaml'
     ##
     database:
       host: vegbankdb-cnpg-rw      # point this to the new cluster name
