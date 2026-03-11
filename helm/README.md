@@ -13,7 +13,18 @@ This document describes how to deploy the helm charts for VegBank API and the Ve
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Prerequisites](#prerequisites)
-- 
+- [API Application Deployment](#api-application-deployment)
+  - [Step 1: Values Configuration](#step-1-values-configuration)
+  - [Step 2: Deploying the Helm Chart](#step-2-deploying-the-helm-chart)
+  - [Step 3: Watch the `initContainers`](#step-3-watch-the-initcontainers)
+  - [Step 4: Applying New Flyway Migration Files](#step-4-applying-new-flyway-migration-files)
+- [Parameters](#parameters)
+- [Packaging and Publishing the Helm Chart](#packaging-and-publishing-the-helm-chart)
+  - [Package the Chart](#package-the-chart)
+  - [Publish the Chart to the GitHub Container Registry](#publish-the-chart-to-the-github-container-registry)
+- [Appendix 1: Prerequisite: Install a PostgreSQL Database ](#appendix-1-prerequisite-install-a-postgresql-database-)
+- [Appendix 2: Prerequisite: Create K8s Secrets](#appendix-2-prerequisite-create-k8s-secrets)
+- [Appendix 3: Initial Database Population with a Dump File](#appendix-3-initial-database-population-with-a-dump-file)
 
 ## Requirements
 - Helm 4.x
