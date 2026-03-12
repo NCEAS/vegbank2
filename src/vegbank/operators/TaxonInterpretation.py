@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import time
+from datetime import datetime
 from psycopg import connect
 from psycopg.rows import dict_row
 from flask import jsonify
@@ -7,6 +9,7 @@ from vegbank.operators.operator_parent_class import Operator
 from .TaxonObservation import TaxonObservation
 from .Reference import Reference
 from .Party import Party
+from .UserDataset import UserDataset
 from vegbank.operators import Validator
 from vegbank.utilities import (
     read_parquet_file, 
@@ -228,6 +231,7 @@ class TaxonInterpretation(Operator):
                 'error': "",
                 'has_error': False
         }
+        dataset = {}
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
@@ -249,6 +253,8 @@ class TaxonInterpretation(Operator):
                 # Insert any new parties
                 if data['py'] is not None:
                     py_actions = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code']
+                                        for item in py_actions['resources']['py']]
                     to_return = combine_json_return(to_return, py_actions)
                 else:
                     py_actions = None
@@ -256,6 +262,8 @@ class TaxonInterpretation(Operator):
                 # Insert any new references
                 if data['rf'] is not None:
                     rf_actions = Reference(self.params).upload_references(data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code']
+                                            for item in rf_actions['resources']['rf']]
                     to_return = combine_json_return(to_return, rf_actions)
                 else:
                     rf_actions = None
@@ -287,6 +295,8 @@ class TaxonInterpretation(Operator):
                          "vb_rf_code": "vb_collector_rf_code"})
 
                 ti_actions = TaxonObservation(self.params).upload_taxon_interpretations(data['ti'], conn, reinterpret=True)
+                dataset['taxoninterpretation'] = [item['vb_ti_code']
+                                                      for item in ti_actions['resources']['ti']]
                 to_return = combine_json_return(to_return, ti_actions)
 
 
@@ -296,6 +306,27 @@ class TaxonInterpretation(Operator):
                                  for code in to_return['resources']['py']]
                     update_search_vector(conn, 'party', party_ids)
                 
+                # Add Dataset
+                dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
