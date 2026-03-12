@@ -217,7 +217,7 @@ class TaxonInterpretation(Operator):
                 'required': False
             },
             'ti': {
-                'file_name': 'taxon_reinterpretations',
+                'file_name': 'taxon_interpretations',
                 'required': True,
                 'user_codes': [
                     ('user_py_code', 'user_py_code', 'py'),
@@ -238,7 +238,11 @@ class TaxonInterpretation(Operator):
                     request, config['file_name'], required=config['required'])
                 if data[name] is not None:
                     data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
-                    file_validation = Validator.validate(data[name], config['file_name'])
+                    endpoint_name = None
+                    print(name)
+                    if name == 'ti':
+                        endpoint_name = 'taxon-interpretations'
+                    file_validation = Validator.validate(data[name], config['file_name'], endpoint_name)
                     user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
                     validation['error'] += file_validation['error'] + user_code_validation['error']
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']

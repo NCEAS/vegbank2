@@ -48,7 +48,11 @@ config = {
                        ('user_rf_code', 'vb_rf_code'),
                        ('user_to_code', 'vb_to_code')]
     },
-    "taxon_reinterpretations": {
+    "taxon_reinterpretations": { 
+        # This is for taxon interpretations that are uploaded through the taxon 
+        # interpretation endpoint, which require some different fields than taxon 
+        # interpretations uploaded through the plot observation endpoint, so we have 
+        # a separate config for those.
         "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
                             'vb_ar_code', 'original_interpretation', 'current_interpretation'],
         "table_defs": [table_defs_config.reinterpretation],
@@ -70,12 +74,17 @@ config = {
 }
 
 
-def validate(df, file_name):
+def validate(df, file_name, endpoint_name=None):
     '''
     Runs validation checks on the provided dataframe based on the file name and the corresponding configuration in the config dictionary. If the file name is not found in the config, it returns a successful validation result. For "plot_observations", it runs a specialized validation function. For other files, it checks for required fields and XOR field pairs as defined in the config.
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
         file_name (str): The name of the file being validated, which determines the validation rules to apply.
+        endpoint_name(str): we have a few files where there are different required
+        fields based on which endpoint the request comes from. Example: Taxon 
+        interpetations require different fields if they are uploaded through the 
+        plot observation endpoint vs the taxon interpretation endpoint. This parameter allows us to specify which one and set the required fields 
+        accordingly.  
     Returns:
         dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
     '''
@@ -85,8 +94,16 @@ def validate(df, file_name):
             "has_error": False,
             "error": ""
         }
+    
     if file_name == "plot_observations":
         return validate_plot_observations(df)
+    required_fields = config[file_name]['required_fields']
+    table_defs = config[file_name]['table_defs']
+    print('file name is ' + file_name)
+    if endpoint_name and endpoint_name == 'taxon-interpretations' and file_name == 'taxon_interpretations':
+        print("using taxon reinterpretation config for validation of taxon interpretations because endpoint is taxon-interpretations")
+        required_fields = config['taxon_reinterpretations']['required_fields']
+        table_defs = config['taxon_reinterpretations']['table_defs']
     xor_validation = {
         'error': "",
         'has_error': False
@@ -96,8 +113,8 @@ def validate(df, file_name):
             df, config[file_name]['xor_fields'], file_name)
     field_validation = validate_required_and_missing_fields(
         df,
-        config[file_name]['required_fields'],
-        config[file_name]['table_defs'],
+        required_fields,
+        table_defs,
         file_name)
     to_return = {
         'has_error': xor_validation.get('has_error', False) or field_validation.get('has_error', False),
