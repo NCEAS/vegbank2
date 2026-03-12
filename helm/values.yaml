@@ -24,25 +24,24 @@
 ##
 replicaCount: 1
 
-## @section API Access Mode
-## Controls authentication and upload behavior for accessing the API.
-## This is the primary configuration for the API's operational state.
-
-## @param accessMode Access mode controlling API behavior.
-## - `read_only`: No authentication, no uploads (default, for security)
-## - `open`: No authentication, uploads allowed
-## - `authenticated`: Full authentication and authorization required
+## @section API Access - Authentication and Authorization
 ##
-accessMode: "read_only"
-
-## @section OIDC Configuration
-## Configuration for OpenID Connect (OIDC) authentication. Credentials are mounted as a Kubernetes
-## secret into the pod and read by the Flask app. Never commit sensitive credentials to git.
-##
-oidcConfig:
-  ## @param oidcConfig.secretName Name of the Kubernetes secret containing client_secrets.json
+auth:
+  ## @param auth.accessMode Controls authentication & upload behavior (RW or RO) for API access
+  ## - "read_only": No authentication, no uploads (default, for security)
+  ## - "authenticated": Full authentication and authorization required
+  ## - "open": No authentication, uploads allowed
   ##
-  secretName: vegbank-oidc-config
+  ## "read_only" (the default) or "authenticated" should be used for public-facing deployments.
+  ## "open" should be used only for testing in secure environments.
+  ##
+  accessMode: "read_only"
+
+  ## @param auth.oidcSecretName Name of the Kubernetes secret containing client_secrets.json
+  ## Credentials for OpenID Connect (OIDC) authentication are mounted as a Kubernetes secret into
+  ## the pod and read by the Flask app. Never commit sensitive credentials to git.
+  ##
+  oidcSecretName: vegbank-oidc-config
 
 ## @section Database
 ## Configuration for the PostgreSQL database used by VegBank. The username and password are
