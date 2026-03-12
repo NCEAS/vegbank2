@@ -230,16 +230,16 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### Ingress
 
-| Name                                                 | Description                                                              | Value                      |
-| ---------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------- |
-| `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false' | `false`                    |
-| `ingress.className`                                  | The class of the ingress controller to use.                              | `nginx`                    |
-| `ingress.hosts[0].host`                              | The host names for the ingress.                                          | `api-dev2.vegbank.org`     |
-| `ingress.hosts[0].paths[0].path`                     | The path for the ingress.                                                | `/`                        |
-| `ingress.hosts[0].paths[0].pathType`                 | The type of path matching to use.                                        | `Prefix`                   |
-| `ingress.tls[0].hosts`                               | The hostname for TLS config                                              | `["api-dev2.vegbank.org"]` |
-| `ingress.tls[0].secretName`                          | Name of the secret holding the TLS cert(s)                               | `ingress-nginx-tls-cert`   |
-| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                          | `letsencrypt-prod`         |
+| Name                                                 | Description                                                               | Value                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
+| `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false'  | `false`                  |
+| `ingress.className`                                  | The class of the ingress controller to use.                               | `nginx`                  |
+| `ingress.hostname`                                   | Simple hostname mode: ingress auto-generated if `ingress.hosts` empty     | `localhost`              |
+| `ingress.hosts`                                      | Full ingress host/path subtree (advanced mode).                           | `[]`                     |
+| `ingress.tlsEnabled`                                 | Set to 'false', to disable rendering Ingress TLS (HTTP-only).             | `true`                   |
+| `ingress.tlsSecretName`                              | Secret name used by inferred TLS when `ingress.tls` is empty.             | `ingress-nginx-tls-cert` |
+| `ingress.tls`                                        | Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true. | `[]`                     |
+| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                           | `letsencrypt-prod`       |
 
 ### Miscellaneous
 
