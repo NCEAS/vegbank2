@@ -48,6 +48,13 @@ config = {
                        ('user_rf_code', 'vb_rf_code'),
                        ('user_to_code', 'vb_to_code')]
     },
+    "taxon_reinterpretations": {
+        "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
+                            'vb_ar_code', 'original_interpretation', 'current_interpretation'],
+        "table_defs": [table_defs_config.reinterpretation],
+        "xor_fields": [('user_py_code', 'vb_py_code'),
+                       ('user_rf_code', 'vb_rf_code')]
+    },
     "contributors": {
         "required_fields": ['vb_ar_code', 'contributor_type', 'record_identifier'],
         "table_defs": [table_defs_config.contributor],
@@ -72,6 +79,7 @@ def validate(df, file_name):
     Returns:
         dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
     '''
+    print("validating " + file_name)
     if file_name not in config:
         return {
             "has_error": False,
@@ -222,7 +230,7 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
             to_return['error'] += f"Validation failed for {source_code} in {file_name} because the target table {target_table} is missing. "
         else:
             df_2 = data.get(target_table)
-            if df_2 is not None:
+            if df_2 is not None and target_code in df_2.columns:
                 missing_codes = set(df_1[source_code].astype(
                     str)) - set(df_2[target_code].astype(str))
                 # sometimes pandas reads empty cells as nan, which can cause

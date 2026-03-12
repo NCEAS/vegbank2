@@ -1,12 +1,11 @@
 CREATE TEMPORARY TABLE taxon_interpretation_temp(
     user_ti_code TEXT NOT NULL,
-    user_to_code TEXT NOT NULL,
+    user_to_code TEXT,
     vb_to_code TEXT NOT NULL,
     vb_pc_code TEXT NOT NULL,
     interpretationdate timestamp with time zone NOT NULL,
     user_py_code TEXT,
     vb_py_code TEXT,
-    user_ro_code TEXT,
     vb_ar_code TEXT,
     interpretationtype character varying(30),
     user_rf_code TEXT,

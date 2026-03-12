@@ -296,7 +296,7 @@ class TaxonObservation(Operator):
         }
         return to_return
     
-    def upload_taxon_interpretations(self, df, conn):
+    def upload_taxon_interpretations(self, df, conn, reinterpret=False):
         """
         takes a parquet file of taxon interpretations and uploads it to the taxon interpretation table.
         Parameters:
@@ -305,17 +305,31 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
+        
+        if reinterpret: 
+            taxon_interpretation_defs = table_defs_config.reinterpretation.copy()
+        else:
+            taxon_interpretation_defs = table_defs_config.taxon_interpretation.copy()
+            taxon_interpretation_defs.append('vb_to_code')
+        table_defs = [taxon_interpretation_defs]
 
-        table_defs = [table_defs_config.taxon_interpretation]
-        required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation']
+        if reinterpret:
+            required_fields = ['user_ti_code', 'vb_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation']
+        else:
+            required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "taxon interpretations")
         if validation['has_error']:
             raise ValueError(validation['error'])
 
+        # If this is a reinterpret, we need to add the user_to_code at the right 
+        # index for the insert to the temp table ordering. 
+        if reinterpret: 
+            taxon_interpretation_defs.insert(len(taxon_interpretation_defs) - 1, 'user_to_code') 
+        print(taxon_interpretation_defs)
         df['interpretation_date'] = pd.Timestamp.now()
 
         df['user_ti_code'] = df['user_ti_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
-        new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', table_defs_config.taxon_interpretation, 'taxoninterpretation_id', df, True, conn)
+        new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', taxon_interpretation_defs, 'taxoninterpretation_id', df, True, conn)
 
         # update observation counts for related plant concepts
         pc_ids = list(set(self.extract_id_from_vb_code(code, 'pc')

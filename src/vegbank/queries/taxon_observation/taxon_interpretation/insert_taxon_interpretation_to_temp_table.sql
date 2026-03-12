@@ -2,8 +2,6 @@
 INSERT INTO taxon_interpretation_temp
 (
     user_ti_code,
-    user_to_code,
-    vb_to_code,
     vb_pc_code,
     interpretationdate,
     user_py_code,
@@ -26,7 +24,9 @@ INSERT INTO taxon_interpretation_temp
     grouptype,
     notes,
     notespublic,
-    notesmgt
+    notesmgt,
+    user_to_code,
+    vb_to_code
 )
 VALUES
 (

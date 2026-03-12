@@ -518,16 +518,11 @@ def taxon_interpretations(vb_code, claims=None):
         to_return = None
         
         try:
-            ti_df = read_parquet_file(request, 'file', required=True)
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
+            return taxon_interpretation_operator.upload_all(request)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
     elif request.method == 'GET':
         return taxon_interpretation_operator.get_vegbank_resources(request, vb_code)
     else:
