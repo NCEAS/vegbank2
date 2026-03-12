@@ -7,12 +7,14 @@ WHEN NOT MATCHED THEN
     plantname_id,
     reference_id,
     plantname,
-    plantdescription
+    plantdescription,
+    d_obscount
   ) VALUES (
     CAST(SUBSTRING(src.vb_pn_code, 4) AS INT),
     CAST(SUBSTRING(src.vb_rf_code, 4) AS INT),
     src.plantname,
-    src.plantdescription
+    src.plantdescription,
+    0
   )
 RETURNING merge_action(),
           src.user_pc_code,

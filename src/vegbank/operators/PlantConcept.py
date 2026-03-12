@@ -50,6 +50,54 @@ class PlantConcept(Operator):
         if self.with_nested == 'true':
             query_type += "_nested"
 
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT plantconcept_id
+                          FROM plantstatus ps
+                          WHERE pc.plantconcept_id = ps.plantconcept_id
+                            AND ps.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND stopdate IS NULL"""
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT plantconcept_id
+                          FROM plantstatus ps
+                          WHERE pc.plantconcept_id = ps.plantconcept_id
+                            AND ps.plantconceptstatus LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND plantconceptstatus LIKE 'accepted%%'"""
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT plantconcept_id
+                          FROM plantstatus ps
+                          WHERE pc.plantconcept_id = ps.plantconcept_id
+                            AND ps.plantconceptstatus LIKE 'accepted%%'
+                            AND ps.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND plantconceptstatus LIKE 'accepted%%'
+                 AND stopdate IS NULL"""
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+            and_child_status = ""
+
         base_columns = {'*': "*"}
         base_columns_search = {
             'search_rank': "TS_RANK(pc.search_vector, " +
@@ -108,7 +156,7 @@ class PlantConcept(Operator):
                 WHERE plantconcept_id = pc.plantconcept_id
             ) pn ON true
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + f"""
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'pc_code', 'pc.' || ch_pc.plantconcept_id,
@@ -116,7 +164,8 @@ class PlantConcept(Operator):
                        )) AS children
                FROM plantstatus ch_st
                JOIN plantconcept ch_pc USING (plantconcept_id)
-               WHERE ch_st.plantparent_id = pc.plantconcept_id
+               WHERE ch_st.plantparent_id = pc.plantconcept_id{
+                     and_child_status}
             ) children ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
@@ -143,46 +192,6 @@ class PlantConcept(Operator):
                      pc.plantconcept_id {self.direction}
             """
 
-        if self.request.args.get('status') == 'current':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT plantconcept_id
-                          FROM plantstatus ps
-                          WHERE pc.plantconcept_id = ps.plantconcept_id
-                            AND ps.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT plantconcept_id
-                          FROM plantstatus ps
-                          WHERE pc.plantconcept_id = ps.plantconcept_id
-                            AND ps.plantconceptstatus LIKE 'accepted%%')
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'current_accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT plantconcept_id
-                          FROM plantstatus ps
-                          WHERE pc.plantconcept_id = ps.plantconcept_id
-                            AND ps.plantconceptstatus LIKE 'accepted%%'
-                            AND ps.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        else:
-            always_condition = {
-                'sql': None,
-                'params': []
-            }
-
         self.query = {}
         self.query['base'] = {
             'alias': "pc",
@@ -204,9 +213,14 @@ class PlantConcept(Operator):
                 'always': always_condition,
                 'search': {
                     'sql': """\
-                         pc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (pc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR pc.plantconcept_id = CASE
+                              WHEN %s ~ '^pc\.\d+$'
+                              THEN regexp_replace(%s, '^pc\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "pc": {
                     'sql': "pc.plantconcept_id = %s",
@@ -554,7 +568,7 @@ class PlantConcept(Operator):
                       config_plant_concept,
                       config_plant_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_pc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_pc_code', 'name', 'vb_rf_code', 'start_date',
                            'plant_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
@@ -615,7 +629,8 @@ class PlantConcept(Operator):
              "vb_pc_code": "vb_pc_code"})
         config_plant_status.append('vb_pc_code')
 
-        # ... merge in newly created vb_pc_codes
+        # ... merge in any newly created vb_pc_codes for user-uploaded
+        # parent concept references
         df = merge_vb_codes(
             pc_actions['resources']['pc'], df,
             {"user_pc_code": "user_parent_pc_code",

@@ -7,7 +7,8 @@ from vegbank.utilities import (
     validate_required_and_missing_fields,
     merge_vb_codes,
     combine_json_return,
-    jsonify_error_message
+    jsonify_error_message,
+    update_obs_counts
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -309,6 +310,11 @@ class CommunityClassification(Operator):
 
         ci_actions = super().upload_to_table("comm_interp", 'ci',
             config_comm_interp, 'comminterpretation_id', df, True, conn)
+
+        # update observation counts for related comm concepts
+        cc_ids = list(set(self.extract_id_from_vb_code(code, 'cc')
+                  for code in df['vb_cc_code']))
+        update_obs_counts(conn, 'commconcept', cc_ids)
 
         # TODO: decide which ones we actually want to return to the user -
         # maybe only `cl`? Or maybe both?

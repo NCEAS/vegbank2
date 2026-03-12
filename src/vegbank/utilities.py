@@ -213,8 +213,8 @@ def merge_vb_codes(inserted_codes, df, mapping):
             where keys are column names and values are lists of code values.
             Must contain columns that will be renamed according to the mapping.
         df (pandas.DataFrame): The target dataframe to merge the new codes into.
-            Should contain a column matching the user code field specified in
-            the mapping.
+            If the user code column specified in the mapping is not present, df
+            is returned unchanged.
         mapping (dict): A dictionary mapping the column names from
             inserted_codes to the column names in the target dataframe. Should
             have exactly two key-value pairs: one for the user code column and
@@ -222,11 +222,15 @@ def merge_vb_codes(inserted_codes, df, mapping):
             "user_status_py_code", "vb_py_code": "vb_status_py_code"}).
 
     Returns:
-        pandas.DataFrame: The modified dataframe with the new VB codes merged in.
-            Existing VB code values are preserved when conflicts occur.
+        pandas.DataFrame: The modified dataframe with the new VB codes merged
+            in, or the original dataframe unchanged if the user code column is
+            absent. Existing VB code values are preserved when conflicts occur.
     '''
     codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
     user_col, vb_col = list(mapping.values())
+    if user_col not in df.columns:
+        print(f"No '{user_col}' column found in df -- skipping merge.")
+        return df
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
     if f'{vb_col}_x' in df:
         df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
@@ -337,6 +341,261 @@ def batch_of_ids(list_of_ids, batch_size):
     while batch := list(islice(it, batch_size)):
         yield batch
 
+def update_obs_counts(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the d_obscount column for a set of records identified by ID.
+
+    Executes SQL to update obs counts for each given ID in the context
+    of a caller-specified table, processing records in batches if needed
+    to avoid overloading the database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update counts for a batch of records, by table
+    SQL = {
+        'project': """
+            UPDATE project pj
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT project_id,
+                     COUNT(observation_id) AS cnt
+                FROM observation ob
+                WHERE (emb_observation < 6 OR emb_observation IS NULL)
+                  AND project_id = ANY(%s)
+                GROUP BY project_id
+              ) obs
+            WHERE pj.project_id = obs.project_id
+            """,
+        'commconcept': """
+            UPDATE commconcept cc
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT ci.commconcept_id,
+                     COUNT(DISTINCT cl.observation_id) AS cnt
+                FROM commclass cl
+                JOIN comminterpretation ci USING (commclass_id)
+                WHERE (cl.emb_commclass < 6 OR cl.emb_commclass IS NULL)
+                  AND ci.commconcept_id = ANY(%s)
+                GROUP BY ci.commconcept_id
+              ) obs
+            WHERE cc.commconcept_id = obs.commconcept_id
+            """,
+        'plantconcept': """
+            UPDATE plantconcept pc
+            SET d_obscount = COALESCE(obs.cnt, 0)
+            FROM (
+              SELECT txi.plantconcept_id,
+                     COUNT(DISTINCT txo.observation_id) AS cnt
+                FROM taxonobservation txo
+                JOIN taxoninterpretation txi USING (taxonobservation_id)
+                WHERE (txo.emb_taxonobservation < 6 OR txo.emb_taxonobservation IS NULL)
+                  AND txi.plantconcept_id = ANY(%s)
+                GROUP BY txi.plantconcept_id
+              ) obs
+            WHERE pc.plantconcept_id = obs.plantconcept_id
+            """,
+        'party': """
+            WITH party AS (
+              SELECT party_id
+                FROM party
+                WHERE party_id = ANY(%s)
+            ) UPDATE party py
+            SET d_obscount = contrib.cnt
+            FROM (
+              SELECT party_id,
+                     COUNT(DISTINCT observation_id) AS cnt
+                FROM (
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN observationcontributor obc USING (observation_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                  UNION
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN projectcontributor pjc USING (project_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                  UNION
+                  SELECT party_id, observation_id
+                    FROM observation ob
+                    JOIN commclass USING (observation_id)
+                    JOIN classcontributor ccc USING (commclass_id)
+                    JOIN party USING (party_id)
+                    WHERE (ob.emb_observation < 6 OR ob.emb_observation IS NULL)
+                ) GROUP BY party_id
+              ) contrib
+            WHERE py.party_id = contrib.party_id
+            """,
+    }
+
+    if (sql := SQL.get(table)) is None:
+        raise ValueError(f"Invalid table: '{table}'. Must be one of: {', '.join(SQL)}")
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk,))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating d_obscount for {count} {table} record(s)')
+
+def update_last_obs_date(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the d_lastplotaddeddate column for a set of records identified by ID.
+
+    Executes SQL to update date of last associated observation upload for each
+    given project ID, processing records in batches if needed to avoid
+    overloading the database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update d_lastplotaddeddate for a batch of records, by table
+    SQL = {
+        'project': """
+            UPDATE project pj
+            SET d_lastplotaddeddate = NOW()
+            WHERE project_id = ANY(%s)
+            """,
+    }
+
+    if (sql := SQL.get(table)) is None:
+        raise ValueError(f"Invalid table: '{table}'. Must be one of: {', '.join(SQL)}")
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk,))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating d_lastplotaddeddate for {count} {table} record(s)')
+
+def update_interpreted_observations(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update denorm interp columns for a set of records identified by ID.
+
+    Executes SQL to update denormalized original and current interpretation
+    fields in the taxon observation table for each given taxon interpretation
+    ID, processing records in batches if needed to avoid overloading the
+    database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update counts for a batch of records, by table
+    sql = """
+        WITH interp_data AS (
+            SELECT
+                ti.taxonobservation_id,
+                ti.plantconcept_id,
+                ti.originalinterpretation,
+                ti.currentinterpretation,
+                scif.plantname AS scif,
+                scin.plantname AS scin,
+                comm.plantname AS comm,
+                code.plantname AS code
+            FROM taxoninterpretation ti
+            JOIN plantconcept pc USING (plantconcept_id)
+            LEFT JOIN plantusage u_scif ON pc.plantconcept_id = u_scif.plantconcept_id
+                                        AND LOWER(u_scif.classsystem) = 'scientific'
+            LEFT JOIN plantname scif ON u_scif.plantname_id = scif.plantname_id
+            LEFT JOIN plantusage u_scin ON pc.plantconcept_id = u_scin.plantconcept_id
+                                        AND LOWER(u_scin.classsystem) = 'scientific without authors'
+            LEFT JOIN plantname scin ON u_scin.plantname_id = scin.plantname_id
+            LEFT JOIN plantusage u_comm ON pc.plantconcept_id = u_comm.plantconcept_id
+                                        AND LOWER(u_comm.classsystem) = 'english common'
+            LEFT JOIN plantname comm ON u_comm.plantname_id = comm.plantname_id
+            LEFT JOIN plantusage u_code ON pc.plantconcept_id = u_code.plantconcept_id
+                                        AND LOWER(u_code.classsystem) = 'code'
+            LEFT JOIN plantname code ON u_code.plantname_id = code.plantname_id
+            WHERE ti.taxoninterpretation_id = ANY(%s)
+              AND (ti.originalinterpretation = true OR ti.currentinterpretation = true)
+        ),
+        orig AS (
+            SELECT DISTINCT ON (taxonobservation_id)
+                taxonobservation_id, plantconcept_id, scif, scin, comm, code
+            FROM interp_data
+            WHERE originalinterpretation = true
+            ORDER BY taxonobservation_id, plantconcept_id ASC
+        ),
+        curr AS (
+            SELECT DISTINCT ON (taxonobservation_id)
+                taxonobservation_id, plantconcept_id, scif, scin, comm, code
+            FROM interp_data
+            WHERE currentinterpretation = true
+            ORDER BY taxonobservation_id, plantconcept_id DESC
+        )
+        UPDATE taxonobservation tobs
+        SET int_origplantconcept_id = orig.plantconcept_id,
+            int_origplantscifull = orig.scif,
+            int_origplantscinamenoauth = orig.scin,
+            int_origplantcommon = orig.comm,
+            int_origplantcode = orig.code,
+            int_currplantconcept_id = curr.plantconcept_id,
+            int_currplantscifull = curr.scif,
+            int_currplantscinamenoauth = curr.scin,
+            int_currplantcommon = curr.comm,
+            int_currplantcode = curr.code
+        FROM orig
+        FULL JOIN curr ON orig.taxonobservation_id = curr.taxonobservation_id
+        WHERE tobs.taxonobservation_id = COALESCE(orig.taxonobservation_id, curr.taxonobservation_id)
+        """
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk, ))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating orig and curr interpretations for {count} {table} record(s)')
+
 def update_search_vector(conn, table, list_of_ids, batch_size=50000):
     """
     Update the search_vector column for a set of records identified by ID.
@@ -364,8 +623,47 @@ def update_search_vector(conn, table, list_of_ids, batch_size=50000):
                   SET search_vector = build_{table}_search_vector({table}_id)
                   WHERE {table}_id = ANY(%s)
                 """,
-                (chunk,)
-        )
+                (chunk,))
+
+def validate_dataset_json(json):
+    """
+    Validate the structure of the dataset JSON object.
+    Parameters:
+        data: The JSON object to validate.
+    Raises:
+        QueryParameterError: If the JSON structure is invalid.
+    """
+    if not isinstance(json, dict):
+        raise QueryParameterError("Invalid JSON structure: expected a JSON object.")
+    if 'name' not in json:
+        raise QueryParameterError("Missing 'name' key in JSON: expected a 'name' key containing the name of the dataset.")
+    if not isinstance(json['name'], str) or json['name'].strip() == "":
+        raise QueryParameterError("Invalid 'name' value: 'name' must be a non-empty string.")
+    if 'description' not in json:
+        raise QueryParameterError("Missing 'description' key in JSON: expected a 'description' key containing a description of the dataset.")
+    if not isinstance(json['description'], str) or json['description'].strip() == "":
+        raise QueryParameterError("Invalid 'description' value: 'description' must be a non-empty string.")
+    if 'type' not in json:
+        raise QueryParameterError("Missing 'type' key in JSON: expected a 'type' key containing the type of the dataset.")
+    if not isinstance(json['type'], str) or json['type'].strip() == "":
+        raise QueryParameterError("Invalid 'type' value: 'type' must be a non-empty string.")
+    if 'data' not in json: 
+        raise QueryParameterError("Missing 'data' key in JSON: expected a 'data' key containing the dataset information.")
+    data = json['data']
+    if not isinstance(data, dict):
+        raise QueryParameterError("Invalid JSON structure: 'data' should be a dictionary with the element 'observation' containing a list of observation codes.")
+    if 'observation' not in data:
+        raise QueryParameterError("Missing 'observation' key in JSON: 'data' should contain an 'observation' key with a list of observation codes.")
+    if not isinstance(data['observation'], list):  
+        raise QueryParameterError("Invalid 'observation' structure: 'observation' should be a list of observation codes.")
+    extra_keys = set(data.keys()) - {'observation'}
+    if extra_keys:
+        raise QueryParameterError(f"Invalid keys in JSON: {', '.join(extra_keys)}. Only 'observation' key is allowed.")
+    if len(data['observation']) == 0:
+        raise QueryParameterError("Invalid 'observation' value: 'observation' list cannot be empty.")
+    for observation in data['observation']:
+        if not isinstance(observation, str) or not observation.startswith('ob.') or not observation[3:].isdigit():
+            raise QueryParameterError(f"Invalid observation code: '{observation}'. It must follow the pattern 'ob.' followed by an integer.")
 
 class QueryParameterError(Exception):
     """Exception raised for invalid query parameters."""

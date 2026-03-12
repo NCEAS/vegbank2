@@ -17,6 +17,7 @@ from psycopg.rows import dict_row
 from psycopg import connect
 from flask import jsonify
 
+
 class CommunityConcept(Operator):
     """
     Defines operations related to the exchange of community concept data with
@@ -48,6 +49,54 @@ class CommunityConcept(Operator):
         query_type = self.detail
         if self.with_nested == 'true':
             query_type += "_nested"
+
+        if self.request.args.get('status') == 'current':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND stopdate IS NULL"""
+        elif self.request.args.get('status') == 'accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND commconceptstatus LIKE 'accepted%%'"""
+        elif self.request.args.get('status') == 'current_accepted':
+            always_condition = {
+                'sql': """\
+                    EXISTS (
+                        SELECT commconcept_id
+                          FROM commstatus cs
+                          WHERE cc.commconcept_id = cs.commconcept_id
+                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
+                            AND cs.stopdate IS NULL)
+                    """,
+                'params': []
+            }
+            and_child_status = """
+                 AND commconceptstatus LIKE 'accepted%%'
+                 AND stopdate IS NULL"""
+        else:
+            always_condition = {
+                'sql': None,
+                'params': []
+            }
+            and_child_status = ""
 
         base_columns = {'*': "*"}
         base_columns_search = {
@@ -107,7 +156,7 @@ class CommunityConcept(Operator):
                 WHERE commconcept_id = cc.commconcept_id
             ) cn ON true
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + f"""
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'cc_code', 'cc.' || ch_cc.commconcept_id,
@@ -115,7 +164,8 @@ class CommunityConcept(Operator):
                        )) AS children
                FROM commstatus ch_st
                JOIN commconcept ch_cc USING (commconcept_id)
-               WHERE ch_st.commparent_id = cc.commconcept_id
+               WHERE ch_st.commparent_id = cc.commconcept_id{
+                     and_child_status}
             ) children ON true
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
@@ -142,46 +192,6 @@ class CommunityConcept(Operator):
                      cc.commconcept_id {self.direction}
             """
 
-        if self.request.args.get('status') == 'current':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND cs.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%')
-                    """,
-                'params': []
-            }
-        elif self.request.args.get('status') == 'current_accepted':
-            always_condition = {
-                'sql': """\
-                    EXISTS (
-                        SELECT commconcept_id
-                          FROM commstatus cs
-                          WHERE cc.commconcept_id = cs.commconcept_id
-                            AND LOWER(cs.commconceptstatus) LIKE 'accepted%%'
-                            AND cs.stopdate IS NULL)
-                    """,
-                'params': []
-            }
-        else:
-            always_condition = {
-                'sql': None,
-                'params': []
-            }
-
         self.query = {}
         self.query['base'] = {
             'alias': "cc",
@@ -203,9 +213,14 @@ class CommunityConcept(Operator):
                 'always': always_condition,
                 'search': {
                     'sql': """\
-                         cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                         (cc.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR cc.commconcept_id = CASE
+                              WHEN %s ~ '^cc\.\d+$'
+                              THEN regexp_replace(%s, '^cc\.', '')::integer
+                              ELSE NULL
+                            END)
                     """,
-                    'params': ['search']
+                    'params': ['search', 'search', 'search']
                 },
                 "cc": {
                     'sql': "cc.commconcept_id = %s",
@@ -396,8 +411,7 @@ class CommunityConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new community concepts
-                if (py_actions is not None and
-                        'user_status_py_code' in data['cc'].columns):
+                if py_actions is not None:
                     # ... merge in newly created vb_py_codes
                     data['cc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['cc'],
@@ -439,8 +453,7 @@ class CommunityConcept(Operator):
                         {"user_cs_code": "user_cc_code",
                          "vb_cs_code": "vb_cs_code"})
                     # ... merge in newly created usage vb_py_codes
-                    if (py_actions is not None and
-                            'user_usage_py_code' in data['cn'].columns):
+                    if py_actions is not None:
                         data['cn'] = merge_vb_codes(
                             py_actions['resources']['py'], data['cn'],
                             {"user_py_code": "user_usage_py_code",
@@ -457,11 +470,10 @@ class CommunityConcept(Operator):
                         cc_actions['resources']['cc'], data['cx'],
                         {"user_cc_code": "user_cc_code",
                          "vb_cc_code": "vb_cc_code"})
-                    if 'user_correlated_cc_code' in data['cx'].columns:
-                        data['cx'] = merge_vb_codes(
-                            cc_actions['resources']['cc'], data['cx'],
-                            {"user_cc_code": "user_correlated_cc_code",
-                             "vb_cc_code": "vb_correlated_cc_code"})
+                    data['cx'] = merge_vb_codes(
+                        cc_actions['resources']['cc'], data['cx'],
+                        {"user_cc_code": "user_correlated_cc_code",
+                         "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
@@ -557,7 +569,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code',
+        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
@@ -618,7 +630,8 @@ class CommunityConcept(Operator):
              "vb_cc_code": "vb_cc_code"})
         config_comm_status.append('vb_cc_code')
 
-        # ... merge in newly created vb_cc_codes
+        # ... merge in any newly created vb_cc_codes for user-uploaded
+        # parent concept references
         df = merge_vb_codes(
             cc_actions['resources']['cc'], df,
             {"user_cc_code": "user_parent_cc_code",

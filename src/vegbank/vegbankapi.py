@@ -8,7 +8,18 @@ import io
 import time
 import traceback
 import os
-from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
+import logging
+from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file, validate_dataset_json
+from vegbank.auth import (
+    auth_bp, 
+    init_oauth, 
+    require_scope, 
+    SCOPE_ADMIN, 
+    SCOPE_CONTRIBUTOR, 
+    SCOPE_USER,
+    get_access_mode,
+    ACCESS_MODE_READ_ONLY
+)
 from vegbank.repositories import (
     IdentifiersQueries,
     Overview,
@@ -40,6 +51,13 @@ UPLOAD_FOLDER = '/vegbank2/uploads' #For future use with uploading parquet files
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32).hex())
+
+# Initialize logging
+logger = logging.getLogger(__name__)
+
+init_oauth(app)
+app.register_blueprint(auth_bp)
 
 params = {}
 params['dbname'] = os.getenv('VB_DB_NAME')
@@ -47,8 +65,6 @@ params['user'] = os.getenv('VB_DB_USER')
 params['host'] = os.getenv('VB_DB_HOST')
 params['port'] = os.getenv('VB_DB_PORT')
 params['password'] = os.getenv('VB_DB_PASS')
-
-allow_uploads = os.getenv('VB_ALLOW_UPLOADS', 'false').lower() == 'true'
 
 default_detail = "full"
 default_limit = 1000
@@ -58,11 +74,19 @@ default_offset = 0
 def before_request():
     """
     Log the incoming request method and path, and check if uploads are allowed for POST requests.
+    
+    Upload behavior is determined by accessMode:
+    - 'read_only': No uploads allowed
+    - 'open': Uploads allowed
+    - 'authenticated': Uploads allowed (with scope restrictions on individual endpoints)
     """
-    print( f"Received {request.method} request for {request.path}" ) # This will eventually be a log statement
+    logger.debug(f"Received {request.method} request for {request.path}")
+    
     if request.method == 'POST':
-        if allow_uploads is False:
-            return jsonify_error_message("Uploads not allowed."), 403
+        mode = get_access_mode()
+        
+        if mode == ACCESS_MODE_READ_ONLY:
+            return jsonify_error_message("Uploads not allowed in read_only deployment mode."), 403
 
 @app.route("/")
 def welcome_page():
@@ -79,7 +103,8 @@ def welcome_page():
 @app.route("/cover-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/stratum-methods/<vb_code>/plot-observations", methods=['GET'])
 @app.route("/user-datasets/<vb_code>/plot-observations", methods=['GET'])
-def plot_observations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def plot_observations(vb_code, claims=None):
     """
     Retrieve either an individual plot observation or a collection, or
     upload a new set of plot observations.
@@ -114,10 +139,14 @@ def plot_observations(vb_code):
     further mediated by pagination parameters and other filtering query
     parameters.
 
-    Parameters (for GET requests only):
+    Parameters:
         vb_code (str or None): The unique identifier for the plot observation
             being retrieved, or for a resource of a different type used to focus
             plot observation retrieval. If None, retrieves all plot observations.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         search (str, optional): Plot observation search query.
@@ -170,7 +199,8 @@ def plot_observations(vb_code):
 @app.route("/taxon-observations/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
-def taxon_observations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def taxon_observations(vb_code, claims=None):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
     set of taxon observations.
@@ -194,6 +224,10 @@ def taxon_observations(vb_code):
             observation being retrieved, or for a resource of a
             different type used to focus taxon observation retrieval. If
             None, retrieves all taxon observations.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         detail (str, optional): Level of detail for the response.
@@ -421,7 +455,8 @@ def stem_data():
 @app.route("/taxon-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-interpretations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-interpretations", methods=['GET'])
-def taxon_interpretations(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def taxon_interpretations(vb_code, claims=None):
     """
     Retrieve either an individual taxon interpretation or a collection, or
     upload a new set of taxon interpretations.
@@ -503,7 +538,8 @@ def taxon_interpretations(vb_code):
 @app.route("/community-classifications/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-classifications", methods=['GET'])
 @app.route("/community-concepts/<vb_code>/community-classifications", methods=['GET'])
-def community_classifications(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def community_classifications(vb_code, claims=None):
     """
     Retrieve either an individual community classification or a collection.
 
@@ -622,7 +658,8 @@ def community_interpretations(vb_code):
 @app.route("/parties/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-concepts", methods=['GET'])
 @app.route("/references/<vb_code>/community-concepts", methods=['GET'])
-def community_concepts(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def community_concepts(vb_code, claims=None):
     """
     Retrieve either an individual community concept or a collection.
 
@@ -649,6 +686,10 @@ def community_concepts(vb_code):
             being retrieved, or for a resource of a different type used to focus
             community concept retrieval. If None, retrieves all community
             concepts.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     POST Parameters:
         community_concepts (FileStorage): Parquet file containing new community
@@ -712,7 +753,8 @@ def community_concepts(vb_code):
 @app.route("/references/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/taxon-observations/<vb_code>/plant-concepts", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/plant-concepts", methods=['GET'])
-def plant_concepts(vb_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def plant_concepts(vb_code, claims=None):
     """
     Retrieve either an individual plant concept or a collection.
 
@@ -802,7 +844,8 @@ def plant_concepts(vb_code):
 @app.route("/plot-observations/<vb_code>/parties", methods=['GET'])
 @app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
 @app.route("/projects/<vb_code>/parties", methods=['GET'])
-def parties(vb_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def parties(vb_code, claims=None):
     """
     Retrieve either an individual party or a collection.
 
@@ -869,7 +912,8 @@ def parties(vb_code):
 
 @app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
 @app.route("/projects/<pj_code>", methods=['GET'])
-def projects(pj_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def projects(pj_code, claims=None):
     """
     Retrieve either an individual project or a collection, or upload a new set
     of projects.
@@ -881,9 +925,13 @@ def projects(pj_code):
     requests, it facilitates uploading of new projects if permitted via an
     environment variable. For any other HTTP method, it returns a 405 error.
 
-    Parameters (for GET requests only):
+    Parameters:
         pj_code (str or None): The unique identifier for the project being
             retrieved. If None, retrieves all projects.
+        claims (dict, optional): User claims extracted from JWT token during
+            authentication. Contains user info (preferred_username, email, scopes).
+            Only populated when VB_ACCESS_MODE=authenticated. Used for audit
+            logging and validation. Injected by @require_scope decorator.
 
     GET Query Parameters:
         search (str, optional): Project name search query.
@@ -911,19 +959,16 @@ def projects(pj_code):
     """
     project_operator = Project(params)
     if request.method == 'POST':
-        if (allow_uploads is False):
-            return jsonify_error_message("Uploads not allowed."), 403
-        else:
-            try:
-                pj_df = read_parquet_file(request, 'file', required=True)
-                with connect(**params, row_factory=dict_row) as conn:
-                    to_return = project_operator.upload_project(pj_df, conn)
-                    to_return = dry_run_check(conn, to_return, request)
-                conn.close()
-            except Exception as e:
-                print(traceback.format_exc())
-                return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-            return jsonify(to_return)
+        try:
+            pj_df = read_parquet_file(request, 'file', required=True)
+            with connect(**params, row_factory=dict_row) as conn:
+                to_return = project_operator.upload_project(pj_df, conn)
+                to_return = dry_run_check(conn, to_return, request)
+            conn.close()
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
     elif request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:
@@ -932,7 +977,8 @@ def projects(pj_code):
 
 @app.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
 @app.route("/cover-methods/<cm_code>")
-def cover_methods(cm_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def cover_methods(cm_code, claims=None):
     """
     Retrieve either an individual cover method or a collection, or upload a new
     cover method.
@@ -981,7 +1027,8 @@ def cover_methods(cm_code):
 
 @app.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
 @app.route("/stratum-methods/<sm_code>", methods=['GET'])
-def stratum_methods(sm_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def stratum_methods(sm_code, claims=None):
     """
     Retrieve either an individual stratum method or a collection, or upload a
     new stratum method.
@@ -1086,7 +1133,8 @@ def strata(vb_code):
 
 @app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
 @app.route("/references/<rf_code>")
-def references(rf_code):
+@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+def references(rf_code, claims=None):
     """
     Retrieve either an individual reference or a collection.
 
@@ -1145,7 +1193,8 @@ def references(rf_code):
 
 @app.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
 @app.route("/roles/<ar_code>")
-def roles(ar_code):
+@require_scope(SCOPE_ADMIN, methods=['POST'])
+def roles(ar_code, claims=None):
     """
     Retrieve either an individual role or a collection.
 
@@ -1240,7 +1289,8 @@ def named_places(vb_code):
 
 @app.route("/user-datasets", defaults={'ds_code': None}, methods=['GET', 'POST'])
 @app.route("/user-datasets/<ds_code>")
-def user_datasets(ds_code):
+@require_scope(SCOPE_USER, methods=['POST'])
+def user_datasets(ds_code, claims=None):
     """
     Retrieve either an individual user dataset listing or a collection.
 
@@ -1270,6 +1320,23 @@ def user_datasets(ds_code):
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
 
+    POST Query Parameters:
+        dry_run (str, optional): If 'true', validates the dataset and returns any
+            errors or created codes without committing to the database. Defaults to 'false'.
+
+    POST Body:
+        JSON object with the following structure:
+        {
+          "name": str, # Dataset name
+          "description": str, # Human-readable description
+          "data": {
+            "observation": [str]  # List of ob_codes, e.g. ["ob.1", "ob.2"]
+          }
+        }
+
+        NOTE: This endpoint does not accept user datasets containing anything
+              other than observations. Anything else will result in an error.
+
     Returns:
         flask.Response: A Flask response object containing:
             - 200: Successfully retrieved user dataset(s) as JSON or
@@ -1277,12 +1344,18 @@ def user_datasets(ds_code):
             - 400: Invalid parameters
             - 405: Unsupported HTTP method
     """
-    user_dataset_operator = UserDataset(params)
+
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for user-datasets."), 405
+        try:
+            to_return = UserDataset(params).upload_user_dataset_from_endpoint(request)
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(
+                f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
+            
     elif request.method == 'GET':
-        return user_dataset_operator.get_vegbank_resources(request, ds_code)
+        return UserDataset(params).get_vegbank_resources(request, ds_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

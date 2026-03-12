@@ -7,12 +7,14 @@ WHEN NOT MATCHED THEN
     commname_id,
     reference_id,
     commname,
-    commdescription
+    commdescription,
+    d_obscount
   ) VALUES (
     CAST(SUBSTRING(src.vb_cn_code, 4) AS INT),
     CAST(SUBSTRING(src.vb_rf_code, 4) AS INT),
     src.commname,
-    src.commdescription
+    src.commdescription,
+    0
   )
 RETURNING merge_action(),
           src.user_cc_code,
