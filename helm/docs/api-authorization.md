@@ -79,8 +79,8 @@ Store both tokens. The `access_token` is used for API requests and has a short e
 | Status | Cause |
 |--------|-------|
 | `401` | Authentication failed |
-| `500` | Unexpected server error |
 | `403` | Authentication is not available in the current deployment mode |
+| `500` | Unexpected server error |
 
 ### Using Your Token
 
