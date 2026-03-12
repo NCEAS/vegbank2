@@ -366,6 +366,10 @@ class CommunityConcept(Operator):
         }
         # Read each Parquet file from the request into a Pandas DataFrame
         data = {}
+        validation = {
+            "has_error": False,
+            "error": None
+        }
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(

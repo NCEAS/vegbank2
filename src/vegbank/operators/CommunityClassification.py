@@ -357,10 +357,28 @@ class CommunityClassification(Operator):
         # users to add new references that they link to in their
         # classification/intepretation records
         upload_files = {
-            'cl': {
-                'file_name': 'community_classifications',
+            'rf':{
+                'file_name': 'references',
                 'required': False
             },
+            'py':{
+                'file_name': 'parties',
+                'required': False
+            },
+            'cl': {
+                'file_name': 'community_classifications',
+                'required': True,
+                'user_codes':[
+                    ('user_comm_class_rf_code', 'user_rf_code', 'rf')
+                ]
+            },
+            'cr':{
+                'file_name': 'contributors',
+                'required': False,
+                'user_codes':[
+                    ('user_py_code', 'user_py_code', 'py')
+                ]
+            }
         }
         # Read each Parquet file from the request into a Pandas DataFrame
         data = {}
