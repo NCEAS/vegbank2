@@ -1,12 +1,13 @@
 ## Values overrides for deploying Vegbank in the k8s dev-vegbank-dev context.
 ## See the helm README for instructions.
 
-## @param accessMode Access mode controlling API behavior.
+## @param auth.accessMode Access mode controlling API behavior.
 ## - `read_only`: No authentication, no uploads.
 ## - `open`: No authentication, uploads allowed.
 ## - `authenticated`: Full authentication and authorization required.
 ##
-accessMode: "open"
+auth:
+  accessMode: "open"
 
 replicaCount: 1
 

@@ -176,17 +176,12 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ## Parameters
 
-### API Access Mode
+### API Access - Authentication and Authorization
 
-| Name         | Description                           | Value       |
-| ------------ | ------------------------------------- | ----------- |
-| `accessMode` | Access mode controlling API behavior. | `read_only` |
-
-### OIDC Configuration
-
-| Name                    | Description                                                  | Value                 |
-| ----------------------- | ------------------------------------------------------------ | --------------------- |
-| `oidcConfig.secretName` | Name of the Kubernetes secret containing client_secrets.json | `vegbank-oidc-config` |
+| Name                  | Description                                                         | Value                 |
+| --------------------- | ------------------------------------------------------------------- | --------------------- |
+| `auth.accessMode`     | Controls authentication & upload behavior (RW or RO) for API access | `read_only`           |
+| `auth.oidcSecretName` | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config` |
 
 ### Database
 

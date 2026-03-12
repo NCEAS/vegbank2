@@ -35,9 +35,9 @@ spec:
       {{- end }}
       - name: oidc-config
         secret:
-          secretName: {{ .Values.oidcConfig.secretName | default "vegbank-oidc-config" }}
-          {{- if not (has .Values.accessMode (list "read_only" "open" "authenticated")) }}
-              {{- fail "accessMode must be either 'read_only', 'open' or 'authenticated'" }}
+          secretName: {{ .Values.auth.oidcSecretName | default "vegbank-oidc-config" }}
+          {{- if not (has .Values.auth.accessMode (list "read_only" "open" "authenticated")) }}
+              {{- fail "auth.accessMode must be either 'read_only', 'open' or 'authenticated'" }}
           {{- end }}
           defaultMode: 0440
       {{- with .Values.imagePullSecrets }}
@@ -151,7 +151,7 @@ spec:
           {{- end }}
           env:
             - name: VB_ACCESS_MODE
-              value: {{ .Values.accessMode | quote }}
+              value: {{ .Values.auth.accessMode | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
