@@ -23,8 +23,6 @@ image:
 
 ingress:
   enabled: false
-#  hostname: api-dev2.vegbank.org
-#  tlsEnabled: true
 
 resources:
   requests:

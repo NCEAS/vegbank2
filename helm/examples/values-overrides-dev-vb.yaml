@@ -24,7 +24,6 @@ image:
 ingress:
   enabled: true
   hostname: api-dev.vegbank.org
-  tlsEnabled: true
 
 resources:
   requests:
