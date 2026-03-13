@@ -1,6 +1,13 @@
 import os
+import time
+from datetime import datetime
+import pandas as pd
+import numpy as np
 from vegbank.operators.operator_parent_class import Operator
-from vegbank.operators import table_defs_config
+from vegbank.operators import table_defs_config, Validator
+from .Party import Party
+from .Reference import Reference
+from .UserDataset import UserDataset
 from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
@@ -8,7 +15,8 @@ from vegbank.utilities import (
     merge_vb_codes,
     combine_json_return,
     jsonify_error_message,
-    update_obs_counts
+    update_obs_counts,
+    update_search_vector
 )
 from psycopg.rows import dict_row
 from psycopg import connect
@@ -207,7 +215,7 @@ class CommunityClassification(Operator):
             'params': []
         }
 
-    def upload_community_classifications(self, df, conn):
+    def upload_community_classifications(self, df, conn, reclassify=False):
         """
         Take the Community Classifications loader DataFrame and insert its contents
         into the commclass and comminterpretation tables.
@@ -388,20 +396,111 @@ class CommunityClassification(Operator):
         }
         # Read each Parquet file from the request into a Pandas DataFrame
         data = {}
+        validation = {
+            "has_error":False,
+            "error": ""
+        }
+        dataset = {}
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
+                if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
+                    endpoint_name = "community-classifications"
+                    file_validation = Validator.validate(data[name], config['file_name'], endpoint_name)
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
 
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
+        
         # Run the upload pipeline!
         try:
             to_return = None
             with connect(**self.params, row_factory=dict_row) as conn:
+                if data['py'] is not None:
+                    pys = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code']
+                                        for item in pys['resources']['py']]
+                    to_return = combine_json_return(to_return, pys)
+                if data['rf'] is not None:
+                    rfs = Reference(self.params).upload_references(
+                        data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code']
+                                            for item in rfs['resources']['rf']]
+                    to_return = combine_json_return(to_return, rfs)
+                
+                if data['rf'] is not None:
+                        # ... merge in newly created comm class vb_rf_codes
+                        if 'user_comm_class_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_comm_class_rf_code',
+                                'vb_rf_code': 'vb_comm_class_rf_code'})
+                        # ... merge in newly created interp authority vb_rf_codes
+                        if 'user_authority_rf_code' in data['cl'].columns:
+                            data['cl'] = merge_vb_codes(
+                                rfs['resources']['rf'], data['cl'],
+                                {'user_rf_code': 'user_authority_rf_code',
+                                'vb_rf_code': 'vb_authority_rf_code'})
+                            
                 # Prep & insert any new community classifications
                 cl_actions = self.upload_community_classifications(data['cl'], conn)
+                dataset['commclass'] = [item['vb_cl_code']
+                                            for item in cl_actions['resources']['cl']]
+                dataset['comminterpretation'] = [item['vb_ci_code']
+                                                    for item in cl_actions['resources']['ci']]
                 to_return = combine_json_return(to_return, cl_actions)
+                
+                if data['cr'] is not None:
+                    if data['py'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            pys['resources']['py'], data['cr'],
+                            {
+                                'user_py_code': 'user_py_code',
+                                'vb_py_code': 'vb_py_code'
+                            }
+                        )
+                    if data['cl'] is not None:
+                        data['cr'] = merge_vb_codes(
+                            cl_actions['resources']['cl'], data['cr'],
+                            {
+                                'user_cl_code': 'record_identifier',
+                                'vb_cl_code': 'vb_record_identifier'
+                            }
+                        )
+                    crs = Party(self.params).upload_contributors(
+                        data['cr'], conn)
+                    to_return = combine_json_return(to_return, crs)  
+                
+                if 'py' in to_return['resources'].keys():
+                    party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
+                                 for code in to_return['resources']['py']]
+                    update_search_vector(conn, 'party', party_ids)
+                
+                dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message

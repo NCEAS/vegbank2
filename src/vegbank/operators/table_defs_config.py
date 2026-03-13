@@ -237,6 +237,21 @@ comm_class = [
     'class_notes'
 ]
 
+comm_reclass = [
+    'user_ob_code',
+    'user_cl_code',
+    'class_start_date',
+    'class_stop_date',
+    'inspection',
+    'table_analysis',
+    'multivariate_analysis',
+    'expert_system',
+    'vb_comm_class_rf_code',
+    'user_comm_class_rf_code',
+    'class_notes',
+    'vb_ob_code'
+]
+
 # system added:
 # - 'user_ci_code'
 # - 'vb_cl_code'

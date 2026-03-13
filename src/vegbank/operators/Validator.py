@@ -29,6 +29,10 @@ config = {
         "required_fields": ['user_cl_code', 'vb_cc_code'],
         "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp]
     },
+    "community_reclassifications": {
+        "required_fields": ['user_cl_code', 'vb_ob_code', 'vb_cc_code'],
+        "table_defs": [table_defs_config.comm_reclass, table_defs_config.comm_interp]
+    },
     "strata": {
         "required_fields": ['user_ob_code', 'user_sr_code', 'vb_sy_code'],
         "table_defs": [table_defs_config.stratum]
@@ -61,7 +65,7 @@ config = {
 }
 
 
-def validate(df, file_name):
+def validate(df, file_name, endpoint_name):
     '''
     Runs validation checks on the provided dataframe based on the file name and the corresponding configuration in the config dictionary. If the file name is not found in the config, it returns a successful validation result. For "plot_observations", it runs a specialized validation function. For other files, it checks for required fields and XOR field pairs as defined in the config.
     Parameters:
@@ -77,6 +81,11 @@ def validate(df, file_name):
         }
     if file_name == "plot_observations":
         return validate_plot_observations(df)
+    required_fields = config[file_name]['required_fields']
+    table_defs = config[file_name]['table_defs']
+    if endpoint_name == "community-classifications" and file_name == "community_classifications":
+        required_fields = config['community_reclassifications']['required_fields']
+        table_defs = config['community_reclassifications']['table_defs']
     xor_validation = {
         'error': "",
         'has_error': False
@@ -86,8 +95,8 @@ def validate(df, file_name):
             df, config[file_name]['xor_fields'], file_name)
     field_validation = validate_required_and_missing_fields(
         df,
-        config[file_name]['required_fields'],
-        config[file_name]['table_defs'],
+        required_fields,
+        table_defs,
         file_name)
     to_return = {
         'has_error': xor_validation.get('has_error', False) or field_validation.get('has_error', False),
@@ -273,11 +282,11 @@ def validate_contributor_record_identifier_codes(df, data):
         'error': ""
     }
     set_list = []
-    if data['cl'] is not None:
+    if data.get('cl') is not None:
         set_list.append(set(data['cl']['user_cl_code'].astype(str)))
-    if data['pj'] is not None:
+    if data.get('pj') is not None:
         set_list.append(set(data['pj']['user_pj_code'].astype(str)))
-    if data['pl'] is not None:
+    if data.get('pl') is not None:
         set_list.append(set(data['pl']['user_ob_code'].astype(str)))
     print(set_list)
     missing_codes = set(df['record_identifier'].astype(str))
