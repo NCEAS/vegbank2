@@ -1,5 +1,5 @@
 ![VegBank](http://vegbank.org/vegbank/images/vegbank_logo69x100trans.gif)
-![VegBank](http://vegbank.org/vegbank/images/vegbank_caps170x40outline.jpg)
+![VegBank](https://raw.githubusercontent.com/NCEAS/vegbank2/refs/heads/main/assets/vegbank-favicon.svg)
 
 
 ## VegBank
