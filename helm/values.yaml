@@ -167,27 +167,43 @@ ingress:
   ## @param ingress.className The class of the ingress controller to use.
   ##
   className: nginx
-  ## NOTE: if overriding the default host name, you must override 'paths' too (by repeating the same
-  ## values shown here). Example:
+  ## @param ingress.hostname Simple hostname mode: ingress auto-generated if `ingress.hosts` empty
+  ## The chart uses this hostname and infers a default path (Prefix "/") and TLS block if
+  ## `ingress.hosts` and `ingress.tls` are empty. If `ingress.hosts` or `ingress.tls` are not
+  ## empty, those take precedence over this hostname and the inferred TLS settings.
   ##
-  ## hosts:
-  ##   - host: mycustomdomain.org
-  ##     paths:
-  ##       - path: /
-  ##         pathType: Prefix
+  hostname: localhost
+  ## @param ingress.hosts Full ingress host/path subtree (advanced mode).
+  ## If provided (non-empty), this takes precedence over `ingress.hostname`.
+  ## Example:
+  ##  hosts:
+  ##    - host: "api-dev.vegbank.org"
+  ##      http:
+  ##        paths:
+  ##          - path: /
+  ##            pathType: Prefix
+  ##            backend:
+  ##              service:
+  ##                name: vegbankapi
+  ##                port:
+  ##                  number: 80
   ##
-  hosts:
-    ## @param ingress.hosts[0].host The host names for the ingress.
-    - host: &hostname api-dev2.vegbank.org
-      paths:
-        ## @param ingress.hosts[0].paths[0].path The path for the ingress.
-        - path: /
-        ## @param ingress.hosts[0].paths[0].pathType The type of path matching to use.
-          pathType: Prefix
-  ## TLS configuration. Ignored unless ingress.enabled is true.
+  hosts: []
+  ## @param ingress.tlsEnabled Set to 'false', to disable rendering Ingress TLS (HTTP-only).
+  ## If true, and ingress.tls is empty, the ingress TLS entry will be inferred from ingress.hostname
+  ## and the TLS secret name will be pulled from ingress.tlsSecretName.
+  ## If true, and ingress.tls is NOT empty, that takes precedence over the inferred TLS settings.
+  ##
+  tlsEnabled: true
+  ## @param ingress.tlsSecretName Secret name used by inferred TLS when `ingress.tls` is empty.
+  ##
+  tlsSecretName: ingress-nginx-tls-cert
+
+  ## @param ingress.tls Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true.
+  ## If provided (non-empty), this takes precedence over inferred TLS from `ingress.hostname`.
   ## If set, cert-manager will attempt to provision TLS certificates for the specified hosts
-  ## @param ingress.tls[0].hosts The hostname for TLS config
-  ## @param ingress.tls[0].secretName Name of the secret holding the TLS cert(s)
+  ## ingress.tls.hosts: The hostname for TLS config
+  ## ingress.tls.secretName: Name of the secret holding the TLS cert(s)
   ##
   ## Example:
   ##  tls:
@@ -196,12 +212,9 @@ ingress:
   ##      secretName: ingress-nginx-tls-cert
   ##
   ## To disable TLS altogether (i.e. use http only), set:
-  ##    tls: []
+  ##    tlsEnabled: false
   ##
-  tls:
-    - hosts:
-        - *hostname
-      secretName: ingress-nginx-tls-cert
+  tls: []
 
   annotations:
     ## @param ingress.annotations.cert-manager.io/cluster-issuer

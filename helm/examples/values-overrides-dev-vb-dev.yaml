@@ -23,16 +23,6 @@ image:
 
 ingress:
   enabled: false
-#  className: nginx
-#  hosts:
-#    - host: &hostname api-dev2.vegbank.org
-#      paths:
-#        - path: /
-#          pathType: Prefix
-#  tls:
-#    - hosts:
-#        - *hostname
-#      secretName: ingress-nginx-tls-cert
 
 resources:
   requests:
