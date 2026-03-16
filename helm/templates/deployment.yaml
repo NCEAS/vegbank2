@@ -175,7 +175,7 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
-            {{- if eq .Values.accessMode "authenticated" }}
+            {{- if eq .Values.auth.accessMode "authenticated" }}
             # Path to the mounted OIDC client secrets JSON file
             - name: OIDC_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
