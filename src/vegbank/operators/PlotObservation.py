@@ -316,9 +316,12 @@ class PlotObservation(Operator):
                        int_currplantconcept_id,
                        int_currplantscinamenoauth,
                        authorplantname,
-                       maxcover
-                  FROM view_taxonobs_withmaxcover txmc
-                  WHERE txmc.observation_id = ob.observation_id
+                       (SELECT max(txi.cover) AS max
+                          FROM taxonimportance txi
+                          WHERE txi.taxonobservation_id = txo.taxonobservation_id) AS maxcover
+                  FROM taxonobservation txo
+                  WHERE txo.observation_id = ob.observation_id
+                    AND (emb_taxonobservation < 6 OR emb_taxonobservation IS NULL)
               ), returned_taxa AS (
                 SELECT *
                   FROM all_taxa
@@ -333,9 +336,9 @@ class PlotObservation(Operator):
                                           authorplantname),
                          'max_cover', maxcover
                        )) AS top_taxon_observations,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM all_taxa) AS taxon_count,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM returned_taxa) AS taxon_count_returned
                 FROM returned_taxa
             ) AS txo ON true
@@ -350,11 +353,14 @@ class PlotObservation(Operator):
                        txo.int_currplantscinamenoauth,
                        txo.authorplantname,
                        sr.stratum_id,
-                       sr.stratumname,
+                       CASE WHEN sr.stratum_id IS NULL THEN '<All>'
+                            ELSE COALESCE(sr.stratumname, sy.stratumname)
+                        END AS stratumname,
                        tm.cover
                   FROM taxonobservation txo
                   LEFT JOIN taxonimportance tm USING (taxonobservation_id)
                   LEFT JOIN stratum sr USING (stratum_id)
+                  LEFT JOIN stratumtype sy USING (stratumtype_id)
                   WHERE txo.observation_id = ob.observation_id
               ), returned_taxon_observations AS (
                 SELECT *
@@ -371,11 +377,11 @@ class PlotObservation(Operator):
                          'plant_name', COALESCE(int_currplantscinamenoauth,
                                                 authorplantname),
                          'sr_code', 'sr.' || stratum_id,
-                         'stratum_name', COALESCE(stratumname, '-all-'),
+                         'stratum_name', stratumname,
                          'cover', cover
                          )) AS top_taxon_observations
                         FROM returned_taxon_observations) AS top_taxon_observations,
-                     (SELECT COUNT(DISTINCT int_currplantconcept_id)
+                     (SELECT COUNT(DISTINCT taxonobservation_id)
                         FROM all_taxon_observations) AS taxon_count,
                      (SELECT COUNT(1)
                         FROM all_taxon_observations) AS taxon_importance_count,
