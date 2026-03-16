@@ -11,6 +11,8 @@
 - [For Developers](#for-developers)
   - [Environment Configuration](#environment-configuration)
   - [Protecting Endpoints](#protecting-endpoints)
+  - [Error Response Format](#error-response-format)
+  - [Error Code Reference](#error-code-reference)
 
 ---
 
@@ -31,6 +33,21 @@ When you authenticate, you may request one or more scopes to be included in your
 #### Overview
 
 VegBank API uses OAuth 2.0 with OpenID Connect (OIDC) for secure authentication and authorization. When you log in, you receive a token that grants you access to specific API operations based on your requested scopes. For more information on these standards, see the [OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749) and [OpenID Connect Core documentation](https://openid.net/specs/openid-connect-core-1_0.html).
+
+#### Error Response Format
+
+All authentication and authorization error responses use a consistent JSON format:
+
+```json
+{
+  "error": {
+    "message": "Description of the error",
+    "details": "Additional context (optional)"
+  }
+}
+```
+
+The `details` field is included when there is additional context about the error (e.g., exception details) and omitted otherwise.
 
 
 ### Obtaining a Token
@@ -61,7 +78,8 @@ Store both tokens. The `access_token` is used for API requests and has a short e
 
 | Status | Cause |
 |--------|-------|
-| `401` | Authentication failed   |
+| `401` | Authentication failed |
+| `403` | Authentication is not available in the current deployment mode |
 | `500` | Unexpected server error |
 
 ### Using Your Token
@@ -219,6 +237,45 @@ def taxon_observations(claims, vb_code):
     """
 ```
 The require scope only applies to the list of HTTP methods passed to the decorator. If no methods are passed the scope requirement is applied to all methods. 
+
+### Error Response Format
+
+All authentication and authorization errors return a consistent JSON structure via `_auth_error_response()`:
+
+```json
+{
+  "error": {
+    "message": "Description of the error",
+    "details": "Additional context (present when available)"
+  }
+}
+```
+
+### Error Code Reference
+
+The `_token_error_response()` helper maps exceptions to HTTP status codes:
+
+| Exception | Message | Status |
+|-----------|---------|--------|
+| `DecodeError` | Token decoding failed | `401` |
+| `InvalidClientError` | OIDC client authentication failed | `401` |
+| `InvalidTokenError` | Token validation failed | `401` |
+| `InvalidGrantError` | Invalid or expired refresh token | `401` |
+| `BadSignatureError` | Token signature verification failed | `401` |
+| `OAuthError` | Authorization failed | `401` |
+| `OAuth2Error` | An OAuth2 error occurred | `401` |
+| `KeyError` / `TypeError` | Invalid token structure | `401` |
+| `MissingParameterError` | Missing required parameter | `400` |
+| `ValueError` | OIDC provider configuration error | `500` |
+| `RequestException` | Failed to fetch OIDC provider keys | `502` |
+
+Protected endpoints (`@require_token` / `@require_scope`) return:
+
+| Status | Cause |
+|--------|-------|
+| `401` | Missing or invalid `Authorization` header, or any token validation failure from the table above |
+| `403` | Token is valid but missing the required scope |
+| `403` | Upload attempted in `read_only` deployment mode |
 
 ## Support
 
