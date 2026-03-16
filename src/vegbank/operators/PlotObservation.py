@@ -325,7 +325,7 @@ class PlotObservation(Operator):
               ), returned_taxa AS (
                 SELECT *
                   FROM all_taxa
-                  ORDER BY maxcover DESC,
+                  ORDER BY maxcover DESC NULLS LAST,
                            authorplantname
                   LIMIT %s
               )
