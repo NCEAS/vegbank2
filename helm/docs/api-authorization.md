@@ -164,7 +164,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI..." \
 
 ### Environment Configuration
 
-To enable auth support we require the following environment variables. See [helm/admin/secret-oidc.yaml](helm/admin/secret-oidc.yaml) and [helm/admin/secret-flask.yaml](helm/admin/secret-flask.yaml) for more details.
+To enable auth support we require the following environment variables. See [the helm README](../README.md#appendix-2-prerequisite-create-k8s-secrets) for more details.
 
 ```bash
 # Flask secret key

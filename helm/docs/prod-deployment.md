@@ -98,7 +98,7 @@ See detailed information in the [helm README file](../README.md) for each step, 
 
 6. Deploy the API Application
 
-  - Do not use the `values-overrides-dev.yaml` overrides file described in the README. Instead, use the production overrides file (`values-prod-cluster-vegbank.yaml`) stored in the GHE `k8s-cluster-config` repo.
+  - Do not use the `values-overrides-dev-vb*.yaml` overrides files described in the README. Instead, use the production overrides file (`values-prod-cluster-vegbank.yaml`) stored in the GHE `k8s-cluster-config` repo.
   - Inspect the values to make sure they are correct for your deployment. For more details, see the ["Parameters" section of the helm README](../README.md#parameters), and the comments in the VegBank [`values.yaml`](../values.yaml) file
   - Check all the overrides, and pay particular attention to the following:
 
