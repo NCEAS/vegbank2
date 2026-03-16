@@ -230,7 +230,7 @@ ingress:
     ## Sets the maximum allowed size of the client request body. Setting to 0 disables checking of
     ## client request body size
     ##
-    nginx.ingress.kubernetes.io/client_max_body_size: "0"
+    nginx.ingress.kubernetes.io/client-max-body-size: "0"
 
     ## @skip ingress.annotations.nginx.ingress.kubernetes.io/send-timeout See docs:
     ## https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
