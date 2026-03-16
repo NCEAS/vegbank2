@@ -46,7 +46,7 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- range .paths }}
+          {{- range .http.paths }}
           - path: {{ .path }}
             pathType: {{ .pathType | default "Prefix" }}
             backend:
