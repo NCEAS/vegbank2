@@ -192,12 +192,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: vegbank-ezid-creds
-                  key: username
+                  key: EZID_USERNAME
             - name: EZID_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: vegbank-ezid-creds
-                  key: password
+                  key: EZID_PASSWORD
             # Secret key for signing Flask sessions (must be stable across restarts)
             - name: FLASK_SECRET_KEY
               valueFrom:

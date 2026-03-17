@@ -25,7 +25,7 @@ See detailed information in the [helm README file](../README.md) for each step, 
     - The production credentials for CNPG can be found in a GPG-encrypted YAML file in the GHE `Security` repo. Decrypt, then use:
 
       ```shell
-      kubectl create -f vegbank-cnpg-secret.yaml
+      kubectl create -f helm/admin/vegbank-cnpg-secret.yaml
       ```
 
    - The production KeyCloak client secret credentials can be found in a GPG-encrypted JSON file in the GHE `Security` repo. Decrypt, then follow the steps in the Helm README
