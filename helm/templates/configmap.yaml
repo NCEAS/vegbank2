@@ -13,3 +13,14 @@ metadata:
     {{- include "vegbank.labels" . | nindent 4 }}
 data:
 {{ (tpl (.Files.Glob "db/migrations/*").AsConfig . ) | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-ezid-config
+  labels:
+    {{- include "vegbank.labels" . | nindent 4 }}
+data:
+  EZID_BASE_URL: {{ .Values.ezid.baseUrl | quote }}
+  EZID_DOI_PREFIX: {{ .Values.ezid.doiPrefix | quote }}
+  EZID_DOI_SHOULDER: {{ .Values.ezid.doiShoulder | quote }}
