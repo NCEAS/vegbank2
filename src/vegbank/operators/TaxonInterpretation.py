@@ -283,20 +283,20 @@ class TaxonInterpretation(Operator):
                         py_actions['resources']['py'], data['ti'],
                         {"user_py_code": "user_status_py_code",
                          "vb_py_code": "vb_status_py_code"})
+                    data['ti'] = merge_vb_codes(
+                        py_actions['resources']['py'], data['ti'],
+                        {"user_py_code": "user_collector_py_code",
+                         "vb_py_code": "vb_collector_py_code"})
+                    data['ti'] = merge_vb_codes(
+                        py_actions['resources']['py'], data['ti'],
+                        {"user_py_code": "user_museum_py_code",
+                         "vb_py_code": "vb_museum_py_code"})
                 if rf_actions is not None:
                     # ... merge in newly created concept vb_rf_codes
                     data['ti'] = merge_vb_codes(
                         rf_actions['resources']['rf'], data['ti'],
                         {"user_rf_code": "user_rf_code",
                          "vb_rf_code": "vb_rf_code"})
-                    data['ti'] = merge_vb_codes(
-                        rf_actions['resources']['rf'], data['ti'],
-                        {"user_rf_code": "user_museum_rf_code",
-                         "vb_rf_code": "vb_museum_rf_code"})
-                    data['ti'] = merge_vb_codes(
-                        rf_actions['resources']['rf'], data['ti'],
-                        {"user_rf_code": "user_collector_rf_code",
-                         "vb_rf_code": "vb_collector_rf_code"})
 
                 ti_actions = TaxonObservation(self.params).upload_taxon_interpretations(data['ti'], conn, reinterpret=True)
                 dataset['taxoninterpretation'] = [item['vb_ti_code']

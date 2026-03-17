@@ -423,12 +423,12 @@ taxon_interpretation = [
     'current_interpretation',
     'taxon_fit',
     'taxon_confidence',
-    'user_collector_rf_code',
-    'vb_collector_rf_code', #Currently always null
+    'user_collector_py_code',
+    'vb_collector_py_code',
     'collection_number',
     'collection_date',
-    'user_museum_rf_code',
-    'vb_museum_rf_code', #Currently always null
+    'user_museum_py_code',
+    'vb_museum_py_code',
     'museum_accession_number',
     'group_type',
     'notes',
@@ -450,12 +450,12 @@ reinterpretation = [
     'current_interpretation',
     'taxon_fit',
     'taxon_confidence',
-    'user_collector_rf_code',
-    'vb_collector_rf_code', #Currently always null
+    'user_collector_py_code',
+    'vb_collector_py_code',
     'collection_number',
     'collection_date',
-    'user_museum_rf_code',
-    'vb_museum_rf_code', #Currently always null
+    'user_museum_py_code',
+    'vb_museum_py_code',
     'museum_accession_number',
     'group_type',
     'notes',

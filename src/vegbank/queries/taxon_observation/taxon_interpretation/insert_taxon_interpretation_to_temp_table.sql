@@ -14,12 +14,12 @@ INSERT INTO taxon_interpretation_temp
     currentinterpretation,
     taxonfit,
     taxonconfidence,
-    user_collector_rf_code,
-    vb_collector_rf_code, -- This has no nonzero values currently
+    user_collector_py_code,
+    vb_collector_py_code,
     collectionnumber,
     collectiondate,
-    user_museum_rf_code,
-    vb_museum_rf_code, -- This has no nonzero values currently
+    user_museum_py_code,
+    vb_museum_py_code,
     museumaccessionnumber,
     grouptype,
     notes,

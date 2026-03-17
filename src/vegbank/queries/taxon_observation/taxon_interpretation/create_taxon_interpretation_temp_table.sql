@@ -14,12 +14,12 @@ CREATE TEMPORARY TABLE taxon_interpretation_temp(
     currentinterpretation boolean NOT NULL,
     taxonfit character varying(50),
     taxonconfidence character varying(50),
-    user_collector_rf_code TEXT,
-    vb_collector_rf_code TEXT, -- This has no nonzero values currently
+    user_collector_py_code TEXT,
+    vb_collector_py_code TEXT, -- This has no nonzero values currently
     collectionnumber character varying(100),
     collectiondate timestamp with time zone,
-    user_museum_rf_code TEXT,
-    vb_museum_rf_code TEXT, -- This has no nonzero values currently
+    user_museum_py_code TEXT,
+    vb_museum_py_code TEXT, -- This has no nonzero values currently
     museumaccessionnumber character varying(100),
     grouptype character varying(20),
     notes text,
