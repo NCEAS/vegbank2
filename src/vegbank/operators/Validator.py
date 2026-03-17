@@ -44,9 +44,11 @@ config = {
     "taxon_interpretations": {
         "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation'],
         "table_defs": [table_defs_config.taxon_interpretation],
-        "xor_fields": [('user_py_code', 'vb_py_code'),
-                       ('user_rf_code', 'vb_rf_code'),
-                       ('user_to_code', 'vb_to_code')]
+        "xor_fields": [
+            ('user_py_code', 'vb_py_code'),
+            ('user_rf_code', 'vb_rf_code', 'optional'),
+            ('user_to_code', 'vb_to_code')
+            ]
     },
     "taxon_reinterpretations": { 
         # This is for taxon interpretations that are uploaded through the taxon 
@@ -56,19 +58,26 @@ config = {
         "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
                             'vb_ar_code', 'original_interpretation', 'current_interpretation'],
         "table_defs": [table_defs_config.reinterpretation],
-        "xor_fields": [('user_py_code', 'vb_py_code'),
-                       ('user_rf_code', 'vb_rf_code')]
+        "xor_fields": [
+            ('user_py_code', 'vb_py_code'),
+            ('user_rf_code', 'vb_rf_code', 'optional')
+            ]
     },
     "contributors": {
         "required_fields": ['vb_ar_code', 'contributor_type', 'record_identifier'],
         "table_defs": [table_defs_config.contributor],
-        "xor_fields": [('vb_py_code', 'user_py_code')]
+        "xor_fields": [
+            ('vb_py_code', 'user_py_code')
+            ]
     },
     "plot_observations": {  # This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
         "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code'],
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
-        "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+        "xor_fields": [
+            ('user_pj_code', 'vb_pj_code'), 
+            ('user_pl_code', 'vb_pl_code')
+            ]
     }
 
 }
@@ -99,18 +108,20 @@ def validate(df, file_name, endpoint_name=None):
         return validate_plot_observations(df)
     required_fields = config[file_name]['required_fields']
     table_defs = config[file_name]['table_defs']
+    xor_fields = config[file_name].get('xor_fields', [])
     print('file name is ' + file_name)
     if endpoint_name and endpoint_name == 'taxon-interpretations' and file_name == 'taxon_interpretations':
         print("using taxon reinterpretation config for validation of taxon interpretations because endpoint is taxon-interpretations")
         required_fields = config['taxon_reinterpretations']['required_fields']
         table_defs = config['taxon_reinterpretations']['table_defs']
+        xor_fields = config['taxon_reinterpretations'].get('xor_fields', [])
     xor_validation = {
         'error': "",
         'has_error': False
     }
     if 'xor_fields' in config[file_name]:
         xor_validation = validate_xor_pairs(
-            df, config[file_name]['xor_fields'], file_name)
+            df, xor_fields, file_name)
     field_validation = validate_required_and_missing_fields(
         df,
         required_fields,
@@ -184,23 +195,27 @@ def validate_xor_pairs(df, xor_pairs, file_name):
     }
 
     for xor_pair in xor_pairs:
-        col1, col2 = xor_pair
-        if col1 not in df.columns and col2 not in df.columns:
+        col1, col2 = xor_pair[0], xor_pair[1]
+        required = False if len(xor_pair) > 2 and xor_pair[2] == 'optional' else True
+        print(f"validating xor pair {col1} and {col2} in {file_name} with required set to {required}")
+        if col1 not in df.columns and col2 not in df.columns and required:
+            print(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing")
             to_return['has_error'] = True
             to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
             continue
         elif (col1 in df.columns and col2 not in df.columns) | (col1 not in df.columns and col2 in df.columns):
             if col1 in df.columns:
-                if df[col1].isnull().any():
+                if df[col1].isnull().any() and required:
                     to_return['has_error'] = True
                     to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
                     continue
             if col2 in df.columns:
-                if df[col2].isnull().any():
+                if df[col2].isnull().any() and required:
                     to_return['has_error'] = True
                     to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
                     continue
-        elif not df[((df[col1].notnull()) & (df[col2].notnull())) | ((df[col1].isnull()) & (df[col2].isnull()))].empty:
+        elif ((not df[((df[col1].notnull()) & (df[col2].notnull()))].empty) or
+            (not df[((df[col1].isnull()) & (df[col2].isnull()))].empty and required)):
             print(
                 "xor validation failed for " +
                 col1 +
