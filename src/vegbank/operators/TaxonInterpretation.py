@@ -26,12 +26,12 @@ class TaxonInterpretation(Operator):
         main_columns = {}
         # identify full columns
         main_columns['full'] = {
-            'ti_code': "'ti.' || txi.taxoninterpretation_id",
-            'to_code': "'to.' || txi.taxonobservation_id",
-            'pc_code': "'pc.' || txi.plantconcept_id",
             'ob_code': "'ob.' || txo.observation_id",
             'author_obs_code': "ob.authorobscode",
+            'to_code': "'to.' || txi.taxonobservation_id",
             'author_plant_name': "txo.authorplantname",
+            'ti_code': "'ti.' || txi.taxoninterpretation_id",
+            'pc_code': "'pc.' || txi.plantconcept_id",
             'plant_code': "code.plantname",
             'plant_name': "pc.plantname",
             'plant_label': "pc.plantconcept_id_transl",

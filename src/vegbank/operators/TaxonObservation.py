@@ -40,6 +40,7 @@ class TaxonObservation(Operator):
         self.name = "taxon_observation"
         self.table_code = "to"
         self.queries_package = f"{self.queries_package}.{self.name}"
+        self.detail_options = ("minimal", "full")
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):
@@ -51,33 +52,51 @@ class TaxonObservation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'to_code': "'to.' || txo.taxonobservation_id",
             'ob_code': "'ob.' || txo.observation_id",
+            'author_obs_code': "ob.authorobscode",
+            'to_code': "'to.' || txo.taxonobservation_id",
             'author_plant_name': "txo.authorplantname",
-            'int_curr_plant_code': "txo.int_currplantcode",
-            'int_curr_plant_common': "txo.int_currplantcommon",
             'int_curr_pc_code': "'pc.' || txo.int_currplantconcept_id",
+            'int_curr_plant_code': "txo.int_currplantcode",
             'int_curr_plant_sci_full': "txo.int_currplantscifull",
             'int_curr_plant_sci_name_no_auth': "txo.int_currplantscinamenoauth",
-            'int_orig_plant_code': "txo.int_origplantcode",
-            'int_orig_plant_common': "txo.int_origplantcommon",
+            'int_curr_plant_common': "txo.int_currplantcommon",
             'int_orig_pc_code': "'pc.' || txo.int_origplantconcept_id",
+            'int_orig_plant_code': "txo.int_origplantcode",
             'int_orig_plant_sci_full': "txo.int_origplantscifull",
             'int_orig_plant_sci_name_no_auth': "txo.int_origplantscinamenoauth",
+            'int_orig_plant_common': "txo.int_origplantcommon",
             'taxon_inference_area': "txo.taxoninferencearea",
-            'rf_code': "rf.reference_id",
+            'rf_code': "txo.reference_id",
             'rf_label': "rf.reference_id_transl",
         }
+        # identify minimal shallow columns
+        main_columns['minimal'] = {
+            name: col for name, col in main_columns['full'].items()
+            if name not in ['author_obs_code', 'author_plant_name',
+                            'int_curr_plant_code', 'int_curr_plant_sci_full',
+                            'int_curr_plant_sci_name_no_auth',
+                            'int_curr_plant_common', 'int_orig_plant_code',
+                            'int_orig_plant_sci_full',
+                            'int_orig_plant_sci_name_no_auth',
+                            'int_orig_plant_common', 'rf_label']}
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
             'taxon_importance': "importances",
         }
+        # identify minimal columns with nesting
+        main_columns['minimal_nested'] = main_columns['minimal'] | {
+            'taxon_importance': "importances",
+        }
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM txo
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            JOIN observation ob ON txo.observation_id = ob.observation_id
             LEFT JOIN view_reference_transl rf USING (reference_id)
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'tm_code', 'tm.' || taxonimportance_id,
@@ -112,6 +131,8 @@ class TaxonObservation(Operator):
                 )
             ) AS tm ON true
             """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + from_sql_nested
+        from_sql['minimal_nested'] = from_sql['minimal'].rstrip() + from_sql_nested
         order_by_sql = """\
             ORDER BY txo.taxonobservation_id
             """

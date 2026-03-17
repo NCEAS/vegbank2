@@ -71,10 +71,16 @@ class PlotObservation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'author_plot_code': "pl.authorplotcode",
+            'ob_code': "'ob.' || ob.observation_id",
+            'author_obs_code': "ob.authorobscode",
             'pl_code': "'pl.' || pl.plot_id",
+            'author_plot_code': "pl.authorplotcode",
+            'pj_code': "'pj.' || ob.project_id",
+            'project_name': "pj.projectname",
             'rf_code': "'rf.' || pl.reference_id",
             'rf_label': "rf.reference_id_transl",
+            'has_observation_synonym': "ob.hasobservationsynonym",
+            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
@@ -128,11 +134,9 @@ class PlotObservation(Operator):
             'pl_notes_public': "pl.notespublic",
             'pl_notes_mgt': "pl.notesmgt",
             'pl_revisions': "pl.revisions",
-            'ob_code': "'ob.' || ob.observation_id",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
             'project_name': "pj.projectname",
-            'author_obs_code': "ob.authorobscode",
             'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
             'obs_end_date': "ob.obsenddate",
@@ -228,9 +232,7 @@ class PlotObservation(Operator):
             'top_taxon2_name': "ob.toptaxon2name",
             'top_taxon3_name': "ob.toptaxon3name",
             'top_taxon4_name': "ob.toptaxon4name",
-            'top_taxon5_name': "ob.toptaxon5name",
-            'has_observation_synonym': "ob.hasobservationsynonym",
-            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id"
+            'top_taxon5_name': "ob.toptaxon5name"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
