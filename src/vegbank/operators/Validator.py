@@ -56,6 +56,23 @@ config = {
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
         "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    },
+    "community_concepts":{
+        "required_fields": ['user_cc_code', 'name', 'start_date',
+                           'comm_concept_status'],
+        "table_defs": [table_defs_config.comm_concept, table_defs_config.comm_name, table_defs_config.comm_status],
+        "xor_fields": [('user_status_py_code', 'vb_status_py_code'),
+                       ('user_rf_code', 'vb_rf_code')]
+    },
+    "community_names":{
+        "required_fields" : ['user_cc_code', 'name',
+                           'name_type', 'name_status'],
+        "table_defs": [table_defs_config.comm_name, table_defs_config.comm_usage]
+
+    },
+    "community_correlations":{
+        "required_fields": ['convergence_type', 'correlation_start'],
+        "table_defs": [table_defs_config.comm_correlation],
     }
 
 }
