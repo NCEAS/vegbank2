@@ -187,6 +187,17 @@ spec:
                 configMapKeyRef:
                   name: {{ .Release.Name }}-ezid-config
                   key: EZID_DOI_SHOULDER
+            # EZID API credentials
+            - name: EZID_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-ezid-creds
+                  key: username
+            - name: EZID_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-ezid-creds
+                  key: password
             # Secret key for signing Flask sessions (must be stable across restarts)
             - name: FLASK_SECRET_KEY
               valueFrom:
