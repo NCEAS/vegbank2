@@ -13,3 +13,11 @@ metadata:
     {{- include "vegbank.labels" . | nindent 4 }}
 data:
 {{ (tpl (.Files.Glob "db/migrations/*").AsConfig . ) | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-gunicorn-config
+  labels:
+    {{- include "vegbank.labels" . | nindent 4 }}
+{{ .Files.Get "config/gunicorn_config.py" | indent 4 }}
