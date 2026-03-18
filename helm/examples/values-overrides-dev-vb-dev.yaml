@@ -8,6 +8,7 @@
 ##
 auth:
   accessMode: "authenticated"
+  accessMode: "authenticated"
 
 replicaCount: 1
 
@@ -48,19 +49,14 @@ service:
 
 ingress:
   enabled: true
-  ## @param ingress.hostname Simple hostname mode: ingress auto-generated if `ingress.hosts` empty
-  ## The chart uses this hostname and infers a default path (Prefix "/") and TLS block if
-  ## `ingress.hosts` and `ingress.tls` are empty. If `ingress.hosts` or `ingress.tls` are not
-  ## empty, those take precedence over this hostname and the inferred TLS settings.
-  ##
-  hostname: "api-dev2.vegbank.org"
+  hostname: api-dev2.vegbank.org
 
 resources:
   requests:
-    cpu: 100m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
   limits:
-    cpu: 1
+    cpu: 2
     memory: 4Gi
 
 flyway:
