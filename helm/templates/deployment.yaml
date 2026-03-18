@@ -171,39 +171,16 @@ spec:
             # Path to the mounted OIDC client secrets JSON file
             - name: OIDC_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
-            # EZID DOI service configuration
-            - name: EZID_BASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-ezid-config
-                  key: EZID_BASE_URL
-            - name: EZID_DOI_PREFIX
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-ezid-config
-                  key: EZID_DOI_PREFIX
-            - name: EZID_DOI_SHOULDER
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Release.Name }}-ezid-config
-                  key: EZID_DOI_SHOULDER
-            # EZID API credentials
-            - name: EZID_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: vegbank-ezid-creds
-                  key: EZID_USERNAME
-            - name: EZID_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: vegbank-ezid-creds
-                  key: EZID_PASSWORD
             # Secret key for signing Flask sessions (must be stable across restarts)
             - name: FLASK_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: vegbank-flask-secret
                   key: secret_key
+            - configMapRef:  
+              name: {{ .Release.Name }}-ezid-config  
+            - secretRef:  
+              name: {{ .Release.Name }}-vegbank-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
