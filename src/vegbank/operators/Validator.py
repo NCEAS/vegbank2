@@ -27,7 +27,17 @@ config = {
     },
     "community_classifications": {
         "required_fields": ['user_cl_code', 'vb_cc_code'],
-        "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp]
+        "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp],
+        "xor_fields": [
+            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional')
+        ]
+    },
+    "community_reclassifications": {
+        "required_fields": ['user_cl_code', 'vb_ob_code', 'vb_cc_code'],
+        "table_defs": [table_defs_config.comm_reclass, table_defs_config.comm_interp],
+        "xor_fields": [
+            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional')
+        ]
     },
     "strata": {
         "required_fields": ['user_ob_code', 'user_sr_code', 'vb_sy_code'],
@@ -121,6 +131,10 @@ def validate(df, file_name, endpoint_name=None):
         required_fields = config['taxon_reinterpretations']['required_fields']
         table_defs = config['taxon_reinterpretations']['table_defs']
         xor_fields = config['taxon_reinterpretations'].get('xor_fields')
+    if endpoint_name and endpoint_name == "community-classifications" and file_name == "community_classifications":
+        required_fields = config['community_reclassifications']['required_fields']
+        table_defs = config['community_reclassifications']['table_defs']
+        xor_fields = config['community_reclassifications'].get('xor_fields')
     xor_validation = {
         'error': "",
         'has_error': False
@@ -322,11 +336,11 @@ def validate_contributor_record_identifier_codes(df, data):
         'error': ""
     }
     set_list = []
-    if data['cl'] is not None:
+    if data.get('cl') is not None:
         set_list.append(set(data['cl']['user_cl_code'].astype(str)))
-    if data['pj'] is not None:
+    if data.get('pj') is not None:
         set_list.append(set(data['pj']['user_pj_code'].astype(str)))
-    if data['pl'] is not None:
+    if data.get('pl') is not None:
         set_list.append(set(data['pl']['user_ob_code'].astype(str)))
     print(set_list)
     missing_codes = set(df['record_identifier'].astype(str))
