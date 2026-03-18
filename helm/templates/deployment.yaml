@@ -177,9 +177,9 @@ spec:
                 secretKeyRef:
                   name: vegbank-flask-secret
                   key: secret_key
-            - configMapRef:  
-              name: {{ .Release.Name }}-ezid-config  
-            - secretRef:  
+            - configMapRef:
+              name: {{ .Release.Name }}-ezid-config
+            - secretRef:
               name: {{ .Release.Name }}-vegbank-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -24,3 +24,4 @@ data:
   EZID_BASE_URL: {{ .Values.ezid.baseUrl | quote }}
   EZID_DOI_PREFIX: {{ .Values.ezid.doiPrefix | quote }}
   EZID_DOI_SHOULDER: {{ .Values.ezid.doiShoulder | quote }}
+  EZID_DEFAULT_TARGET_URL: {{ .Values.ezid.defaultTargetUrl | quote }}

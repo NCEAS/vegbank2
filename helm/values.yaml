@@ -119,6 +119,9 @@ ezid:
   ## @param ezid.doiShoulder DOI shoulder for minting (e.g. FK2 for test)
   ##
   doiShoulder: "FK2"
+  ## @param ezid.defaultTargetUrl Default target URL for minted DOIs
+  ##  
+  defaultTargetUrl: "https://vegbank.org/cite/"
 
 ## @section VegBank API Docker Image
 ## Configuration for the docker image of the Flask API.
