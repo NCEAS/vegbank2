@@ -7,7 +7,7 @@
 ## - `authenticated`: Full authentication and authorization required.
 ##
 auth:
-  accessMode: "open"
+  accessMode: "authenticated"
 
 replicaCount: 1
 
@@ -22,14 +22,15 @@ image:
 #   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
 
 ingress:
-  enabled: false
+  enabled: true
+  hostname: api-dev2.vegbank.org
 
 resources:
   requests:
-    cpu: 100m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
   limits:
-    cpu: 1
+    cpu: 2
     memory: 4Gi
 
 flyway:
