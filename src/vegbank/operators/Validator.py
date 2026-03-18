@@ -199,22 +199,23 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         col1, col2 = xor_pair[0], xor_pair[1]
         required = False if len(xor_pair) > 2 and xor_pair[2] == 'optional' else True
         print(f"validating xor pair {col1} and {col2} in {file_name} with required set to {required}")
+        xor_err_msg = f"Rows in {file_name} must have either {col1} or {col2}, but not both. "
         if col1 not in df.columns and col2 not in df.columns:
             if required:
                 print(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing")
                 to_return['has_error'] = True
-                to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both. "
+                to_return['error'] += xor_err_msg
                 continue
         elif (col1 in df.columns and col2 not in df.columns) | (col1 not in df.columns and col2 in df.columns):
             if col1 in df.columns:
                 if df[col1].isnull().any() and required:
                     to_return['has_error'] = True
-                    to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+                    to_return['error'] += xor_err_msg
                     continue
             if col2 in df.columns:
                 if df[col2].isnull().any() and required:
                     to_return['has_error'] = True
-                    to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+                    to_return['error'] += xor_err_msg
                     continue
         elif ((not df[((df[col1].notnull()) & (df[col2].notnull()))].empty) or
             (not df[((df[col1].isnull()) & (df[col2].isnull()))].empty and required)):
@@ -228,7 +229,7 @@ def validate_xor_pairs(df, xor_pairs, file_name):
             print(df[((df[col1].notnull()) & (df[col2].isnull()))
                   | ((df[col1].isnull()) & (df[col2].notnull()))])
             to_return['has_error'] = True
-            to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
+            to_return['error'] += xor_err_msg
     return to_return
 
 
