@@ -963,11 +963,16 @@ class PlotObservation(Operator):
                     if data['py'] is not None:
                         data['ti'] = merge_vb_codes(
                             pys['resources']['py'], data['ti'],
-                            {
-                                'user_py_code': 'user_py_code',
-                                'vb_py_code': 'vb_py_code'
-                            }
-                        )
+                            {'user_py_code': 'user_py_code',
+                             'vb_py_code': 'vb_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_collector_py_code',
+                             'vb_py_code': 'vb_collector_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_museum_py_code',
+                             'vb_py_code': 'vb_museum_py_code'})
                     if data['sc'] is not None:
                         data['ti'] = merge_vb_codes(
                             scs['resources']['to'], data['ti'],
