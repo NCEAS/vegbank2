@@ -1,4 +1,9 @@
 
+
+-- 1. DEFENSIVE CONFIGURATION
+-- abort if we can't get an exclusive lock within lock_timeout
+SET lock_timeout = '10s';
+
 START TRANSACTION;
 
 ----------------------------------------------------------------------------------------------------
@@ -178,11 +183,6 @@ ALTER TABLE "public"."dba_tabledescription" ALTER COLUMN "tablelabel" TYPE text;
 ALTER TABLE "public"."dba_xmlcache" ALTER COLUMN "accessioncode" TYPE text;
 ALTER TABLE "public"."disturbanceobs" ALTER COLUMN "disturbancetype" TYPE text;
 ALTER TABLE "public"."disturbanceobs" ALTER COLUMN "disturbanceintensity" TYPE text;
-ALTER TABLE "public"."flyway_schema_history" ALTER COLUMN "installed_by" TYPE text;
-ALTER TABLE "public"."flyway_schema_history" ALTER COLUMN "script" TYPE text;
-ALTER TABLE "public"."flyway_schema_history" ALTER COLUMN "type" TYPE text;
-ALTER TABLE "public"."flyway_schema_history" ALTER COLUMN "description" TYPE text;
-ALTER TABLE "public"."flyway_schema_history" ALTER COLUMN "version" TYPE text;
 ALTER TABLE "public"."graphic" ALTER COLUMN "graphicname" TYPE text;
 ALTER TABLE "public"."graphic" ALTER COLUMN "accessioncode" TYPE text;
 ALTER TABLE "public"."graphic" ALTER COLUMN "graphictype" TYPE text;
