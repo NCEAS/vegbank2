@@ -199,11 +199,12 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         col1, col2 = xor_pair[0], xor_pair[1]
         required = False if len(xor_pair) > 2 and xor_pair[2] == 'optional' else True
         print(f"validating xor pair {col1} and {col2} in {file_name} with required set to {required}")
-        if col1 not in df.columns and col2 not in df.columns and required:
-            print(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing")
-            to_return['has_error'] = True
-            to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both."
-            continue
+        if col1 not in df.columns and col2 not in df.columns:
+            if required:
+                print(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing")
+                to_return['has_error'] = True
+                to_return['error'] += f"Rows in {file_name} must have either {col1} or {col2}, but not both. "
+                continue
         elif (col1 in df.columns and col2 not in df.columns) | (col1 not in df.columns and col2 in df.columns):
             if col1 in df.columns:
                 if df[col1].isnull().any() and required:
