@@ -8,7 +8,6 @@
 ##
 auth:
   accessMode: "authenticated"
-  accessMode: "authenticated"
 
 replicaCount: 1
 
@@ -24,12 +23,20 @@ image:
 
 ## @section Probes
 livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
   httpGet:
     ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
     ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
     port: 8000
 readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
   httpGet:
     ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /

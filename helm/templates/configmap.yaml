@@ -17,7 +17,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-gunicorn-config
+  name: {{ .Release.Name }}-gunicorn-config-file
   labels:
     {{- include "vegbank.labels" . | nindent 4 }}
-{{ .Files.Get "config/gunicorn_config.py" | indent 4 }}
+data:
+  gunicorn.config.py: |
+{{ .Files.Get "config/gunicorn.config.py" | indent 4 }}
