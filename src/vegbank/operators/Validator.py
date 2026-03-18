@@ -105,25 +105,24 @@ def validate(df, file_name, endpoint_name=None):
             "has_error": False,
             "error": ""
         }
-    
+
     if file_name == "plot_observations":
         return validate_plot_observations(df)
     required_fields = config[file_name]['required_fields']
     table_defs = config[file_name]['table_defs']
-    xor_fields = config[file_name].get('xor_fields', [])
+    xor_fields = config[file_name].get('xor_fields')
     print('file name is ' + file_name)
     if endpoint_name and endpoint_name == 'taxon-interpretations' and file_name == 'taxon_interpretations':
         print("using taxon reinterpretation config for validation of taxon interpretations because endpoint is taxon-interpretations")
         required_fields = config['taxon_reinterpretations']['required_fields']
         table_defs = config['taxon_reinterpretations']['table_defs']
-        xor_fields = config['taxon_reinterpretations'].get('xor_fields', [])
+        xor_fields = config['taxon_reinterpretations'].get('xor_fields')
     xor_validation = {
         'error': "",
         'has_error': False
     }
-    if 'xor_fields' in config[file_name]:
-        xor_validation = validate_xor_pairs(
-            df, xor_fields, file_name)
+    if xor_fields is not None:
+        xor_validation = validate_xor_pairs(df, xor_fields, file_name)
     field_validation = validate_required_and_missing_fields(
         df,
         required_fields,
