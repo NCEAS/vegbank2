@@ -42,21 +42,23 @@ config = {
         "table_defs": [table_defs_config.stem_count, table_defs_config.stem_location]
     },
     "taxon_interpretations": {
-        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation'],
+        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code',
+                            'vb_ar_code', 'original_interpretation',
+                            'current_interpretation'],
         "table_defs": [table_defs_config.taxon_interpretation],
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
-            ('user_to_code', 'vb_to_code')
             ]
     },
-    "taxon_reinterpretations": { 
+    "taxon_reinterpretations": {
         # This is for taxon interpretations that are uploaded through the taxon 
         # interpretation endpoint, which require some different fields than taxon 
         # interpretations uploaded through the plot observation endpoint, so we have 
         # a separate config for those.
         "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
-                            'vb_ar_code', 'original_interpretation', 'current_interpretation'],
+                            'vb_ar_code', 'original_interpretation',
+                            'current_interpretation'],
         "table_defs": [table_defs_config.reinterpretation],
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
