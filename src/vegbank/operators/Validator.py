@@ -49,6 +49,8 @@ config = {
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
+            ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
+            ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
             ]
     },
     "taxon_reinterpretations": {
@@ -62,7 +64,9 @@ config = {
         "table_defs": [table_defs_config.reinterpretation],
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
-            ('user_rf_code', 'vb_rf_code', 'optional')
+            ('user_rf_code', 'vb_rf_code', 'optional'),
+            ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
+            ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
             ]
     },
     "contributors": {

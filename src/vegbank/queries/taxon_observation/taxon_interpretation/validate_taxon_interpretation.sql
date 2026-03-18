@@ -43,4 +43,14 @@ ON
     taxon_interpretation_temp.vb_rf_code = 'rf.' || reference.reference_id
 WHERE reference.reference_id IS NULL AND taxon_interpretation_temp.vb_rf_code IS NOT NULL;
 
--- Leaving out collector_id and museum_id for now as they are not used in the DB. Check with team. 
+-- Validate optional collector party codes
+SELECT temp.vb_collector_py_code
+  FROM taxon_interpretation_temp AS temp
+  LEFT JOIN party ON temp.vb_collector_py_code = 'py.' || party.party_id
+  WHERE party.party_id IS NULL AND temp.vb_collector_py_code IS NOT NULL;
+
+-- Validate optional museum party codes
+SELECT temp.vb_museum_py_code
+  FROM taxon_interpretation_temp AS temp
+  LEFT JOIN party ON temp.vb_museum_py_code = 'py.' || party.party_id
+  WHERE party.party_id IS NULL AND temp.vb_museum_py_code IS NOT NULL;
