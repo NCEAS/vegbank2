@@ -524,8 +524,8 @@ class CommunityConcept(Operator):
                                    for code in to_return['resources']['cc']]
                 update_search_vector(conn, 'commconcept', commconcept_ids)
 
-                dataset_name = 'upload_' + datetime.now().strftime("%Y%m%d%H%M%S")
-                dataset_description = 'Dataset created from upload on ' + \
+                dataset_name = 'upload_comm_concepts_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from comm concept upload on ' + \
                     datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 dataset_type = 'upload'
                 dataset_input = {
