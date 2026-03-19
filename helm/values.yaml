@@ -10,7 +10,7 @@
 ##                           -f helm/examples/values-overrides-dev-vb.yaml --debug
 ##
 ## (Published charts and their version numbers can be found at:
-##            https://github.com/NCEAS/metacat/pkgs/container/charts%2Fvegbank )
+##            https://github.com/NCEAS/vegbank/pkgs/container/charts%2Fvegbank )
 ##
 ## 2. to deploy a local copy of the helm chart (for development) to the dev-vegbank-dev context:
 ##
@@ -58,7 +58,7 @@ database:
   ## @param database.port port to connect to the database (Must match CNPG or pooler port number)
   ##
   port: 5432
-  ## @param database.existingSecret Secret containing the database username and password)
+  ## @param database.existingSecret Secret containing the database username and password.
   ## The secret should be manually created before deploying the database or this chart.
   ## It must be of type kubernetes.io/basic-auth; must contain the exact key names: 'username'
   ## and 'password', and the username must match the value of dbUser in your cnpg cluster config.
@@ -94,7 +94,7 @@ flyway:
     pullPolicy: IfNotPresent
     ## @param flyway.image.tag The tag of the flyway image to use in the initContainer
     ##
-    tag: "12.0.3"
+    tag: "12.1.1"
   ## @param flyway.dbpath The path to the directory containing the flyway migration files
   ##
   dbpath: /opt/local/flyway/db
@@ -134,18 +134,78 @@ resources: {}
   #   memory: 4Mi
 
 ## @section Probes
+
+## Startup Probe
+## Liveness and readiness probes are disabled until the startupProbe passes.
+## If the startupProbe fails more than 'failureThreshold' times, the container is restarted.
+## @param startupProbe.enabled Enable startupProbe
+## @param startupProbe.httpGet.path The url path to probe during startup
+## @param startupProbe.httpGet.port The named containerPort to probe
+##
+
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  ## Optional values:
+  ## @param startupProbe.successThreshold Min consecutive successes for probe to be successful
+  ## @param startupProbe.failureThreshold No. of consecutive failures before the container restarted
+  ## @param startupProbe.periodSeconds Interval (in seconds) between startup checks
+  ## @param startupProbe.timeoutSeconds Timeout (in seconds) for each startup check
+  successThreshold: 1
+  failureThreshold: 36
+  periodSeconds: 5
+  timeoutSeconds: 3
+
+## Liveness Probe
+## Periodic probe of container service liveness. If the probe fails, container will be restarted.
+## In production, where we usually have more than one container, livenessProbe does not need to be
+## too aggressive, because readinessProbe failures will remove unresponsive pods from service
+##
+## @param livenessProbe.enabled Enable livenessProbe
+## @param livenessProbe.httpGet.path The url path to probe
+## @param livenessProbe.httpGet.port The named containerPort to probe
+## Optional values:
+## @param livenessProbe.periodSeconds Period seconds for livenessProbe
+## @param livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+## @param livenessProbe.successThreshold Min consecutive successes for probe to be successful
+## @param livenessProbe.failureThreshold No. consecutive failures before container restarted
+##
 livenessProbe:
+  enabled: true
   httpGet:
-    ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
-    ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
     port: 80
+  periodSeconds: 20
+  timeoutSeconds: 10
+  successThreshold: 1
+  failureThreshold: 15
+
+## Readiness Probe
+## Periodic probe of container service readiness. If the probe fails, container will be removed
+## from service endpoints (but will not be restarted unless livenessProbe fails). In production,
+## where we usually have more than one container, this allows Kubernetes to stop sending traffic
+## to a container that is not ready to handle it, without causing downtime
+##
+## @param readinessProbe.enabled Enable readinessProbe
+## @param readinessProbe.httpGet.path The url path to probe
+## @param readinessProbe.httpGet.port The named containerPort to probe
+## Optional values:
+## @param readinessProbe.periodSeconds Period seconds for readinessProbe
+## @param readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+## @param readinessProbe.successThreshold Min consecutive successes for probe to be successful
+## @param readinessProbe.failureThreshold No. consecutive failures before container marked unhealthy
+##
 readinessProbe:
+  enabled: true
   httpGet:
-    ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /
-    ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
-    port: 80
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 ## @section Service
 ## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
@@ -225,7 +285,7 @@ ingress:
     ##
     nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
 
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client_max_body_size See docs:
+    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client-max-body-size See docs:
     ## https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
     ## Sets the maximum allowed size of the client request body. Setting to 0 disables checking of
     ## client request body size
