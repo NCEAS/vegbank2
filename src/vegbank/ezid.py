@@ -1,7 +1,6 @@
 """EZID client for DOI minting."""
 
 import os
-import re
 from enum import Enum
 
 import requests as _requests
