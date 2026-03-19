@@ -89,19 +89,25 @@ config = {
         "required_fields": ['user_cc_code', 'name', 'start_date',
                            'comm_concept_status'],
         "table_defs": [table_defs_config.comm_concept, table_defs_config.comm_name, table_defs_config.comm_status],
-        "xor_fields": [('user_status_py_code', 'vb_status_py_code'),
-                       ('user_rf_code', 'vb_rf_code'),
-                       ('user_parent_cc_code', 'vb_parent_cc_code')]
+        "xor_fields": [('user_status_py_code', 'vb_status_py_code', 'optional'),
+                       ('user_rf_code', 'vb_rf_code', 'optional'),
+                       ('user_parent_cc_code', 'vb_parent_cc_code', 'optional')]
     },
     "community_names":{
         "required_fields" : ['user_cc_code', 'name',
                            'name_type', 'name_status'],
-        "table_defs": [table_defs_config.comm_name, table_defs_config.comm_usage]
+        "table_defs": [table_defs_config.comm_name, table_defs_config.comm_usage],
+        "xor_fields": [
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
+        ]
 
     },
     "community_correlations":{
         "required_fields": ['convergence_type', 'correlation_start'],
         "table_defs": [table_defs_config.comm_correlation],
+        "xor_fields": [
+            ('vb_correlated_cc_code', 'user_correlated_cc_code'),
+        ]
     }
 
 }
