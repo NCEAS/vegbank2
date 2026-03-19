@@ -774,8 +774,9 @@ class PlotObservation(Operator):
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False,
-                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
-                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
+                'user_codes': [('user_ob_code', 'user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                               ('user_authority_rf_code', 'user_rf_code', 'rf')],
             },
             'sr': {
                 'file_name': 'strata',
@@ -798,7 +799,9 @@ class PlotObservation(Operator):
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
                                ('user_rf_code','user_rf_code', 'rf'),
-                               ('user_py_code', 'user_py_code', 'py')]
+                               ('user_py_code', 'user_py_code', 'py'),
+                               ('user_collector_py_code', 'user_py_code', 'py'),
+                               ('user_museum_py_code', 'user_py_code', 'py')],
             },
             'cr': {
                 'file_name': 'contributors',

@@ -240,10 +240,14 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### Service
 
-| Name           | Description                                    | Value       |
-| -------------- | ---------------------------------------------- | ----------- |
-| `service.type` | The type of service to create.                 | `ClusterIP` |
-| `service.port` | The port on which the service will be exposed. | `80`        |
+| Name                | Description                                                             | Value          |
+| ------------------- | ----------------------------------------------------------------------- | -------------- |
+| `service.type`      | The type of service to create.                                          | `ClusterIP`    |
+| `service.port`      | The port on which the service will be exposed.                          | `8000`         |
+| `gunicorn.workers`  | Number of worker processes for handling requests.                       | `5`            |
+| `gunicorn.timeout`  | Workers silent for more than this many seconds are killed and restarted | `2400`         |
+| `gunicorn.bind`     | The socket to bind. Should be in the form of: "HOST:PORT"               | `0.0.0.0:8000` |
+| `gunicorn.logLevel` | Granularity of gunicorn logs (debug|info|warning|error|critical)        | `info`         |
 
 ### Ingress
 

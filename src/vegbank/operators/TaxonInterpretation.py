@@ -222,6 +222,8 @@ class TaxonInterpretation(Operator):
                 'user_codes': [
                     ('user_py_code', 'user_py_code', 'py'),
                     ('user_rf_code', 'user_rf_code', 'rf'),
+                    ('user_collector_py_code', 'user_py_code', 'py'),
+                    ('user_museum_py_code', 'user_py_code', 'py'),
                 ]
             }
         }
