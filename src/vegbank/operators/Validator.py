@@ -29,14 +29,16 @@ config = {
         "required_fields": ['user_cl_code', 'user_ob_code', 'vb_cc_code'],
         "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp],
         "xor_fields": [
-            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional')
+            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
+            ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
         ]
     },
     "community_reclassifications": {
         "required_fields": ['user_cl_code', 'vb_ob_code', 'vb_cc_code'],
         "table_defs": [table_defs_config.comm_reclass, table_defs_config.comm_interp],
         "xor_fields": [
-            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional')
+            ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
+            ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
         ]
     },
     "strata": {
