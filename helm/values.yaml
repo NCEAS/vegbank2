@@ -94,7 +94,7 @@ flyway:
     pullPolicy: IfNotPresent
     ## @param flyway.image.tag The tag of the flyway image to use in the initContainer
     ##
-    tag: "12.1.1"
+    tag: "12.1"
   ## @param flyway.dbpath The path to the directory containing the flyway migration files
   ##
   dbpath: /opt/local/flyway/db
