@@ -52,6 +52,25 @@ class EZIDClient:
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
+    def mint_reserved(self, title: str) -> str:
+        """Mint a DOI with 'reserved' status."""
+        metadata = {
+            "_status": "reserved",
+        }
+        return self.mint(metadata)
+
+    def update_identifier(self, identifier: str, metadata: dict[str, str]) -> str:
+        """Update an existing identifier with new metadata."""
+        resp = requests.post(
+            f"{self.base_url}/id/{identifier}",
+            data=metadata,
+            auth=self._auth,
+            headers={"Content-Type": "text/plain; charset=UTF-8"},
+            timeout=self._timeout,
+        )
+        self._check(resp)
+        return resp.text.split("|")[0].replace("success:", "").strip()
+
     @staticmethod
     def _check(resp: requests.Response) -> None:
         if resp.status_code != 200 or resp.text.startswith("error:"):
