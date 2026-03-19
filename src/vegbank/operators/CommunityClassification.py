@@ -428,37 +428,40 @@ class CommunityClassification(Operator):
 
         if validation['has_error']:
             return jsonify_error_message(validation['error']), 400
-        
+
         # Run the upload pipeline!
         try:
             to_return = None
             with connect(**self.params, row_factory=dict_row) as conn:
+                # Insert any new parties
                 if data['py'] is not None:
-                    pys = Party(self.params).upload_parties(data['py'], conn)
+                    py_actions = Party(self.params).upload_parties(data['py'], conn)
                     dataset['party'] = [item['vb_py_code']
-                                        for item in pys['resources']['py']]
-                    to_return = combine_json_return(to_return, pys)
+                                        for item in py_actions['resources']['py']]
+                    to_return = combine_json_return(to_return, py_actions)
+                else:
+                    py_actions = None
+
+                # Insert any new references
                 if data['rf'] is not None:
-                    rfs = Reference(self.params).upload_references(
-                        data['rf'], conn)
+                    rf_actions = Reference(self.params).upload_references(data['rf'], conn)
                     dataset['reference'] = [item['vb_rf_code']
-                                            for item in rfs['resources']['rf']]
-                    to_return = combine_json_return(to_return, rfs)
-                
-                if data['rf'] is not None:
-                        # ... merge in newly created comm class vb_rf_codes
-                        if 'user_comm_class_rf_code' in data['cl'].columns:
-                            data['cl'] = merge_vb_codes(
-                                rfs['resources']['rf'], data['cl'],
-                                {'user_rf_code': 'user_comm_class_rf_code',
-                                'vb_rf_code': 'vb_comm_class_rf_code'})
-                        # ... merge in newly created interp authority vb_rf_codes
-                        if 'user_authority_rf_code' in data['cl'].columns:
-                            data['cl'] = merge_vb_codes(
-                                rfs['resources']['rf'], data['cl'],
-                                {'user_rf_code': 'user_authority_rf_code',
-                                'vb_rf_code': 'vb_authority_rf_code'})
-                            
+                                            for item in rf_actions['resources']['rf']]
+                    to_return = combine_json_return(to_return, rf_actions)
+                else:
+                    rf_actions = None
+
+                if rf_actions is not None:
+                    # ... merge in newly created concept vb_rf_codes
+                    data['cl'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['cl'],
+                        {"user_rf_code": "user_comm_class_rf_code",
+                         "vb_rf_code": "vb_comm_class_rf_code"})
+                    data['cl'] = merge_vb_codes(
+                        rf_actions['resources']['rf'], data['cl'],
+                        {"user_rf_code": "user_authority_rf_code",
+                         "vb_rf_code": "vb_authority_rf_code"})
+
                 # Prep & insert any new community classifications
                 cl_actions = self.upload_community_classifications(data['cl'], conn, reclassify=True)
                 dataset['commclass'] = [item['vb_cl_code']
@@ -466,11 +469,11 @@ class CommunityClassification(Operator):
                 dataset['comminterpretation'] = [item['vb_ci_code']
                                                     for item in cl_actions['resources']['ci']]
                 to_return = combine_json_return(to_return, cl_actions)
-                
+
                 if data['cr'] is not None:
                     if data['py'] is not None:
                         data['cr'] = merge_vb_codes(
-                            pys['resources']['py'], data['cr'],
+                            py_actions['resources']['py'], data['cr'],
                             {
                                 'user_py_code': 'user_py_code',
                                 'vb_py_code': 'vb_py_code'
@@ -484,15 +487,15 @@ class CommunityClassification(Operator):
                                 'vb_cl_code': 'vb_record_identifier'
                             }
                         )
-                    crs = Party(self.params).upload_contributors(
+                    cr_actions = Party(self.params).upload_contributors(
                         data['cr'], conn)
-                    to_return = combine_json_return(to_return, crs)  
-                
+                    to_return = combine_json_return(to_return, cr_actions)
+
                 if 'py' in to_return['resources'].keys():
                     party_ids = [self.extract_id_from_vb_code(code['vb_py_code'], 'py')
                                  for code in to_return['resources']['py']]
                     update_search_vector(conn, 'party', party_ids)
-                
+
                 dataset_name = 'upload_comm_class_' + datetime.now().strftime("%Y%m%d%H%M%S")
                 dataset_description = 'Dataset created from comm class upload on ' + \
                     datetime.now().strftime("%Y-%m-%d %H:%M:%S")
