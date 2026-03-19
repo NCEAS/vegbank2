@@ -580,7 +580,7 @@ class CommunityConcept(Operator):
                 commdescription <- description
                 RETURNING commconcept_id -> vb_cc_code
                 ...correlate vb_cc_code with user_cc_code
-        Step 3: INSERT INTO commconcept:
+        Step 3: INSERT INTO commstatus:
                 commconcept_id <- from vb_cc_code (Step 2)
                 reference_id <- from vb_status_rf_code (user or upstream)
                 party_id <- from vb_status_py_code (user or upstream)
@@ -624,7 +624,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
+        required_fields = ['user_cc_code', 'name', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation
