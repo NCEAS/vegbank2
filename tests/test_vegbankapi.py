@@ -4,7 +4,7 @@ import io
 from unittest.mock import MagicMock, patch
 import pytest
 from vegbank import vegbankapi
-from vegbank.vegbankapi import app
+from vegbank.gunicorn_main import app
 
 
 @pytest.fixture(name="test_client")
@@ -335,7 +335,7 @@ def test_taxon_interpretations_post_rejected_when_allow_uploads_false(
     with patch.object(
         vegbankapi.TaxonInterpretation, "upload_all", autospec=True
     ) as mock_upload_all:
-        response = test_client.post("/taxon-interpetations")
+        response = test_client.post("/taxon-interpretations")
 
     assert response.status_code == 403
     mock_upload_all.assert_not_called()
