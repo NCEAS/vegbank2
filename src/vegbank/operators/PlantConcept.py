@@ -1,10 +1,14 @@
 import os
 import pandas as pd
 import numpy as np
+import time
+import traceback
+from datetime import datetime
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config, Validator
 from .Party import Party
 from .Reference import Reference
+from .UserDataset import UserDataset
 from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
@@ -400,6 +404,7 @@ class PlantConcept(Operator):
             "has_error": False,
             "error": ""
         }
+        dataset = {}
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
@@ -422,6 +427,8 @@ class PlantConcept(Operator):
                 # Insert any new parties
                 if data['py'] is not None:
                     py_actions = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code']
+                                        for item in py_actions['resources']['py']]
                     to_return = combine_json_return(to_return, py_actions)
                 else:
                     py_actions = None
@@ -429,6 +436,8 @@ class PlantConcept(Operator):
                 # Insert any new references
                 if data['rf'] is not None:
                     rf_actions = Reference(self.params).upload_references(data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code']
+                                            for item in rf_actions['resources']['rf']]
                     to_return = combine_json_return(to_return, rf_actions)
                 else:
                     rf_actions = None
@@ -458,6 +467,8 @@ class PlantConcept(Operator):
 
                 pc_actions = self.upload_plant_concepts(
                     data['pc'], conn, what_to_deactivate = what_to_deactivate)
+                dataset['plantconcept'] = [item['vb_pc_code']
+                                            for item in pc_actions['resources']['pc']]
                 to_return = combine_json_return(to_return, pc_actions)
 
                 # Prep & insert any new plant names
@@ -484,6 +495,8 @@ class PlantConcept(Operator):
                             {"user_py_code": "user_usage_py_code",
                              "vb_py_code": "vb_usage_py_code"})
                     pn_actions = self.upload_plant_names(data['pn'], conn)
+                    dataset['plantname'] = [item['vb_pn_code']
+                                            for item in pn_actions['resources']['pun']]
                     to_return = combine_json_return(to_return, pn_actions)
                 else:
                     pn_actions = None
@@ -501,6 +514,8 @@ class PlantConcept(Operator):
                             {"user_pc_code": "user_correlated_pc_code",
                              "vb_pc_code": "vb_correlated_pc_code"})
                     px_actions = self.upload_plant_correlations(data['px'], conn)
+                    dataset['plantcorrelation'] = [item['vb_px_code']
+                                            for item in px_actions['resources']['px']]
                     to_return = combine_json_return(to_return, px_actions)
                 else:
                     px_actions = None
@@ -515,6 +530,27 @@ class PlantConcept(Operator):
                                    for code in to_return['resources']['pc']]
                 update_search_vector(conn, 'plantconcept', plantconcept_ids)
 
+                dataset_name = 'upload_plant_concepts_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from plant concept upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
+
+
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
                 if request.args.get('dry_run', 'false').lower() == 'true':
@@ -526,6 +562,7 @@ class PlantConcept(Operator):
                     })
             conn.close()
         except Exception as e:
+            traceback.print_exc()
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
