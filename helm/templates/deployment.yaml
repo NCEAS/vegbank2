@@ -28,9 +28,9 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
-      - name: {{ .Release.Name }}-gunicorn-config-volume
+      - name: {{ .Release.Name }}-vegbank-config-volume
         configMap:
-          name: {{ .Release.Name }}-gunicorn-config-file
+          name: {{ .Release.Name }}-vegbank-config
           defaultMode: 0644
       {{- if .Values.databaseRestore.enabled }}
       - name: vegbankdb-init-pgdata
@@ -139,9 +139,8 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
-            - name: {{ .Release.Name }}-gunicorn-config-volume
-              mountPath: "/app/gunicorn.config.py"
-              subPath: gunicorn.config.py
+            - name: {{ .Release.Name }}-vegbank-config-volume
+              mountPath: "/app/"
               readOnly: true
           ports:
             - name: http
