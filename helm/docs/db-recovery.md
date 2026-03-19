@@ -4,6 +4,7 @@ The preferred method to recreate the `vegbank` `cnpg` cluster is by recovering f
 
 ## Contents
 - [Recovering from a ScheduledBackup](#recovering-from-a-scheduledbackup)
+- [How to Recover from a `volumeSnapshot`](#how-to-recover-from-a-volumesnapshot)
 - [How to Recover a Deleted `ScheduledBackup` from `velero` Backups](#how-to-recover-a-deleted-scheduledbackup-from-velero-backups)
 - [Recovery using data folders in a file system (Last Resort)](#recovery-using-data-folders-in-a-file-system-last-resort)
 
@@ -115,6 +116,56 @@ Create a new cluster, with a different name from your existing cluster, in the s
 > ```
 > Typically, we also have Velero taking regular backups of everything (see below for how to recover), but double-check first!
 
+## How to Recover from a `volumeSnapshot`
+
+If you delete a cluster, all its scheduled backups (`backups.postgresql.cnpg.io` objects) are also deleted. However, each of these is merely a pointer to a `volumeSnapshot` that does not get deleted. It is therefore possible to create a "dummy" backup object that points to a volumeSnapshot, in order to recover from it.
+
+1. Create the dummy backup object
+
+   Save the following yaml to a file named `dummy-backup.yaml`. Use a cluster name that does not currently exist in the namespace (e.g. `dummy-nonexistent-cluster`), so the CNPG Operator doesn't immediately try to take a real snapshot:
+
+   ```yaml
+   apiVersion: postgresql.cnpg.io/v1
+   kind: Backup
+   metadata:
+     name: forged-snapshot-backup
+   spec:
+     method: volumeSnapshot
+     cluster:
+       name: dummy-nonexistent-cluster
+   ```
+
+   Use it to create the object:
+
+   ```shell
+   kubectl apply -f dummy-backup.yaml
+   ```
+
+2. Inject the state via a Status Patch
+
+   This forces the Kubernetes API to accept the status block, linking your existing snapshot to this backup. (Including this in the original yaml doesn't work). Don't forget to substitute `YOUR_EXISTING_SNAPSHOT_NAME`:
+
+   ```shell
+   kubectl patch backup forged-snapshot-backup \
+     --type='merge' \
+     --subresource='status' \
+     -p '{
+       "status": {
+         "phase": "completed",
+         "method": "volumeSnapshot",
+         "snapshotBackupStatus": {
+           "elements": [
+             {
+               "name": "YOUR_EXISTING_SNAPSHOT_NAME",
+               "type": "PG_DATA"
+             }
+           ]
+         }
+       }
+     }'
+   ```
+
+   You will now see a backup object named `forged-snapshot-backup` that is ready to use. Add this name in the `init.recoverFromBackup:` field and follow [the steps above to recover from a backup](#recovering-from-a-scheduledbackup).
 
 ## How to Recover a Deleted `ScheduledBackup` from `velero` Backups
 

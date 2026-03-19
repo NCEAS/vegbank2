@@ -40,6 +40,7 @@ class TaxonObservation(Operator):
         self.name = "taxon_observation"
         self.table_code = "to"
         self.queries_package = f"{self.queries_package}.{self.name}"
+        self.detail_options = ("minimal", "full")
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):
@@ -51,33 +52,51 @@ class TaxonObservation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'to_code': "'to.' || txo.taxonobservation_id",
             'ob_code': "'ob.' || txo.observation_id",
+            'author_obs_code': "ob.authorobscode",
+            'to_code': "'to.' || txo.taxonobservation_id",
             'author_plant_name': "txo.authorplantname",
-            'int_curr_plant_code': "txo.int_currplantcode",
-            'int_curr_plant_common': "txo.int_currplantcommon",
             'int_curr_pc_code': "'pc.' || txo.int_currplantconcept_id",
+            'int_curr_plant_code': "txo.int_currplantcode",
             'int_curr_plant_sci_full': "txo.int_currplantscifull",
             'int_curr_plant_sci_name_no_auth': "txo.int_currplantscinamenoauth",
-            'int_orig_plant_code': "txo.int_origplantcode",
-            'int_orig_plant_common': "txo.int_origplantcommon",
+            'int_curr_plant_common': "txo.int_currplantcommon",
             'int_orig_pc_code': "'pc.' || txo.int_origplantconcept_id",
+            'int_orig_plant_code': "txo.int_origplantcode",
             'int_orig_plant_sci_full': "txo.int_origplantscifull",
             'int_orig_plant_sci_name_no_auth': "txo.int_origplantscinamenoauth",
+            'int_orig_plant_common': "txo.int_origplantcommon",
             'taxon_inference_area': "txo.taxoninferencearea",
-            'rf_code': "rf.reference_id",
+            'rf_code': "txo.reference_id",
             'rf_label': "rf.reference_id_transl",
         }
+        # identify minimal shallow columns
+        main_columns['minimal'] = {
+            name: col for name, col in main_columns['full'].items()
+            if name not in ['author_obs_code', 'author_plant_name',
+                            'int_curr_plant_code', 'int_curr_plant_sci_full',
+                            'int_curr_plant_sci_name_no_auth',
+                            'int_curr_plant_common', 'int_orig_plant_code',
+                            'int_orig_plant_sci_full',
+                            'int_orig_plant_sci_name_no_auth',
+                            'int_orig_plant_common', 'rf_label']}
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
             'taxon_importance': "importances",
         }
+        # identify minimal columns with nesting
+        main_columns['minimal_nested'] = main_columns['minimal'] | {
+            'taxon_importance': "importances",
+        }
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM txo
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            JOIN observation ob ON txo.observation_id = ob.observation_id
             LEFT JOIN view_reference_transl rf USING (reference_id)
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'tm_code', 'tm.' || taxonimportance_id,
@@ -112,6 +131,8 @@ class TaxonObservation(Operator):
                 )
             ) AS tm ON true
             """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + from_sql_nested
+        from_sql['minimal_nested'] = from_sql['minimal'].rstrip() + from_sql_nested
         order_by_sql = """\
             ORDER BY txo.taxonobservation_id
             """
@@ -296,7 +317,7 @@ class TaxonObservation(Operator):
         }
         return to_return
     
-    def upload_taxon_interpretations(self, df, conn):
+    def upload_taxon_interpretations(self, df, conn, reinterpret=False):
         """
         takes a parquet file of taxon interpretations and uploads it to the taxon interpretation table.
         Parameters:
@@ -305,17 +326,31 @@ class TaxonObservation(Operator):
             flask.Response: A JSON response indicating success or failure of the upload operation,
                 along with the number of new records and the newly created keys. 
         """
+        
+        if reinterpret: 
+            taxon_interpretation_defs = table_defs_config.reinterpretation.copy()
+        else:
+            taxon_interpretation_defs = table_defs_config.taxon_interpretation.copy()
+            taxon_interpretation_defs.append('vb_to_code')
+        table_defs = [taxon_interpretation_defs]
 
-        table_defs = [table_defs_config.taxon_interpretation]
-        required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ro_code', 'original_interpretation', 'current_interpretation']
+        if reinterpret:
+            required_fields = ['user_ti_code', 'vb_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation']
+        else:
+            required_fields = ['user_ti_code', 'user_to_code', 'vb_pc_code', 'vb_py_code', 'vb_ar_code', 'original_interpretation', 'current_interpretation']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, "taxon interpretations")
         if validation['has_error']:
             raise ValueError(validation['error'])
 
+        # If this is a reinterpret, we need to add the user_to_code at the right 
+        # index for the insert to the temp table ordering. 
+        if reinterpret: 
+            taxon_interpretation_defs.insert(len(taxon_interpretation_defs) - 1, 'user_to_code') 
+        print(taxon_interpretation_defs)
         df['interpretation_date'] = pd.Timestamp.now()
 
         df['user_ti_code'] = df['user_ti_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
-        new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', table_defs_config.taxon_interpretation, 'taxoninterpretation_id', df, True, conn)
+        new_taxon_interpretations =  super().upload_to_table("taxon_interpretation", 'ti', taxon_interpretation_defs, 'taxoninterpretation_id', df, True, conn)
 
         # update observation counts for related plant concepts
         pc_ids = list(set(self.extract_id_from_vb_code(code, 'pc')
