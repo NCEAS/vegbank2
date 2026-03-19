@@ -378,6 +378,7 @@ class CommunityConcept(Operator):
                     ('user_rf_code', 'user_rf_code', 'rf'),
                     ('user_status_rf_code', 'user_rf_code', 'rf'),
                     ('user_status_py_code', 'user_py_code', 'py'),
+                    ('user_parent_cc_code', 'user_cc_code', 'cc'),
                 ]
             },
             'cn': {
@@ -416,7 +417,8 @@ class CommunityConcept(Operator):
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
-
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
             to_return = None
