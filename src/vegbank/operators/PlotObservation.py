@@ -799,7 +799,9 @@ class PlotObservation(Operator):
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
                                ('user_rf_code','user_rf_code', 'rf'),
-                               ('user_py_code', 'user_py_code', 'py')]
+                               ('user_py_code', 'user_py_code', 'py'),
+                               ('user_collector_py_code', 'user_py_code', 'py'),
+                               ('user_museum_py_code', 'user_py_code', 'py')],
             },
             'cr': {
                 'file_name': 'contributors',
