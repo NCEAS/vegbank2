@@ -1,0 +1,304 @@
+import os
+import pandas as pd
+from vegbank.operators.operator_parent_class import Operator
+from vegbank.operators import table_defs_config
+from vegbank.utilities import (
+    QueryParameterError,
+    validate_required_and_missing_fields,
+    update_obs_counts
+)
+
+
+class Party(Operator):
+    """
+    Defines operations related to the exchange of party (people) data with
+    VegBank.
+
+    Party: A person or organization associated with the collection or
+        management of vegetation data.
+
+    Inherits from the Operator parent class to utilize common default values and
+    methods.
+    """
+
+    def __init__(self, params):
+        super().__init__(params)
+        self.name = "party"
+        self.table_code = "py"
+        self.queries_package = f"{self.queries_package}.{self.name}"
+        self.sort_options = ["default", "surname", "organization_name", "obs_count"]
+
+    def configure_query(self, *args, **kwargs):
+        base_columns = {'*': "*"}
+        base_columns_search = {
+            'search_rank': "TS_RANK(py.search_vector, " +
+                           "WEBSEARCH_TO_TSQUERY('simple', %s))"
+        }
+        main_columns = {}
+        main_columns['full'] = {
+            'py_code': "'py.' || py.party_id",
+            'party_label': "pyt.party_id_transl",
+            'salutation': "py.salutation",
+            'given_name': "py.givenname",
+            'middle_name': "py.middlename",
+            'surname': "py.surname",
+            'organization_name': "py.organizationname",
+            'contact_instructions': "py.contactinstructions",
+            'obs_count': "d_obscount",
+        }
+        from_sql = """\
+            FROM py
+            LEFT JOIN view_party_transl pyt USING (party_id)
+            """
+        order_by_sql = {}
+        order_by_sql['default'] = f"""\
+            ORDER BY party_id {self.direction}
+            """
+        order_by_sql['surname'] = f"""\
+            ORDER BY surname {self.direction},
+                     party_id {self.direction}
+            """
+        order_by_sql['organization_name'] = f"""\
+            ORDER BY organizationname {self.direction},
+                     party_id {self.direction}
+            """
+        order_by_sql['obs_count'] = f"""\
+            ORDER BY d_obscount {self.direction},
+                     party_id {self.direction}
+            """
+
+        self.query = {}
+        self.query['base'] = {
+            'alias': "py",
+            'select': {
+                "always": {
+                    'columns': base_columns,
+                    'params': []
+                },
+                'search': {
+                    'columns': base_columns_search,
+                    'params': ['search']
+                },
+            },
+            'from': {
+                'sql': "FROM party AS py",
+                'params': []
+            },
+            'conditions': {
+                'always': {
+                    'sql': "partypublic IS NOT false",
+                    'params': []
+                },
+                'search': {
+                    'sql': """\
+                         (py.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
+                          OR py.party_id = CASE
+                              WHEN %s ~ '^py\.\d+$'
+                              THEN regexp_replace(%s, '^py\.', '')::integer
+                              ELSE NULL
+                            END)
+                    """,
+                    'params': ['search', 'search', 'search']
+                },
+                "py": {
+                    'sql': "py.party_id = %s",
+                    'params': ['vb_id']
+                },
+                'cl': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT clc.party_id
+                              FROM classcontributor clc
+                              WHERE py.party_id = clc.party_id
+                                AND clc.commclass_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'ob': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT obp.party_id
+                              FROM observationcontributor obp
+                              WHERE py.party_id = obp.party_id
+                                AND obp.observation_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'pj': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT pjc.party_id
+                              FROM projectcontributor pjc
+                              WHERE py.party_id = pjc.party_id
+                                AND pjc.project_id = %s)
+                        """,
+                    'params': ['vb_id']
+                },
+                'bundle': {
+                    'sql': """\
+                        EXISTS (
+                            SELECT bb.observation_id
+                             FROM bundle bb
+                             JOIN observationcontributor obp USING (observation_id)
+                             WHERE py.party_id = obp.party_id)
+                        """,
+                    'params': []
+                },
+            },
+            'order_by': {
+                'sql': order_by_sql[self.order_by],
+                'params': []
+            },
+        }
+        self.query['select'] = {
+            "always": {
+                'columns': main_columns[self.detail],
+                'params': []
+            },
+            'search': {
+                'columns': {'search_rank': 'py.search_rank'},
+                'params': []
+            },
+        }
+        self.query['from'] = {
+            'sql': from_sql,
+            'params': []
+        }
+
+    def validate_query_params(self, request_args):
+        """
+        Validate query parameters and apply defaults to missing parameters.
+
+        This only applies validations specific to parties, while dispatching
+        to the parent validation method for common validations.
+
+        Parameters:
+            request_args (ImmutableMultiDict): Query parameters provided
+                as part of the request.
+
+        Returns:
+            dict: A dictionary of validated parameters with defaults applied.
+
+        Raises:
+            QueryParameterError: If any supplied parameters are invalid.
+        """
+        # dispatch to the base validation method
+        params = super().validate_query_params(request_args)
+
+        # capture search parameter, if it exists
+        params['search'] = request_args.get('search')
+
+        return params
+    
+    def upload_parties(self, df, conn):
+        """
+        takes a parquet file of parties and uploads it to the party table.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing parties.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys. 
+        """
+        table_defs = [table_defs_config.party]
+        required_fields = ['user_py_code']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, "parties")
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        new_parties =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
+        return new_parties
+
+    def upload_contributors(self, df, conn, type=None):
+        """
+        takes a parquet file of contributors and uploads it to the observationcontributor, 
+            projectcontributor, and classcontributor tables.
+        Parameters:
+            file (FileStorage): The uploaded parquet file containing contributors.
+        Returns:
+            flask.Response: A JSON response indicating success or failure of the upload operation,
+                along with the number of new records and the newly created keys.
+        """
+        required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
+        contributor_defs = table_defs_config.contributor.copy()
+        contributor_defs.append('vb_record_identifier')
+
+        CONTRIBUTOR_TYPES = ('observation', 'project', 'classification')
+        if type is not None:
+            if type not in CONTRIBUTOR_TYPES:
+                raise ValueError(f"Server error (unexpected contributor type '{type}').")
+            if 'contributor_type' in df.columns:
+                raise ValueError("The contributor_type column is not supported "
+                                 "for contributors in classification uploads.")
+            df['contributor_type'] = type
+
+        table_defs = [contributor_defs]
+
+        df.columns = map(str.lower, df.columns)
+
+        validation = validate_required_and_missing_fields(
+            df, required_fields, table_defs, "contributors")
+
+        df['user_cr_code'] = df['user_cr_code'].astype(str)
+
+        if 'contributor_type' in df.columns:
+            df['contributor_type'] = df['contributor_type'].astype(str)
+            df['contributor_type'] = df['contributor_type'].str.lower()
+            if df[~df['contributor_type'].isin(CONTRIBUTOR_TYPES)].empty is False:
+                validation['has_error'] = True
+                validation['error'] += (
+                    "Invalid contributor_type found. "
+                    "Must be one of 'observation', 'project', or 'classification'. "
+                )
+
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+
+        ob_contributor_df = df[df['contributor_type'] == 'observation']
+        pj_contributor_df = df[df['contributor_type'] == 'project']
+        cl_contributor_df = df[df['contributor_type'] == 'classification']
+        new_ob_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+        new_pj_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+        new_cl_contributors = {'counts':{'cr':{'inserted':0}}, 'resources':{'cr':[]}}
+
+        if ob_contributor_df.empty is False:
+            new_ob_contributors = super().upload_to_table(
+                "observation_contributor", 'cr', contributor_defs,
+                'observationcontributor_id', ob_contributor_df, False, conn,
+                validate=True)
+        if pj_contributor_df.empty is False:
+            new_pj_contributors = super().upload_to_table(
+                "project_contributor", 'cr', contributor_defs,
+                'projectcontributor_id', pj_contributor_df, False, conn,
+                validate=True)
+        if cl_contributor_df.empty is False:
+            new_cl_contributors = super().upload_to_table(
+                "class_contributor", 'cr', contributor_defs,
+                'classcontributor_id', cl_contributor_df, False, conn,
+                validate=True)
+
+        new_records = new_ob_contributors['resources']['cr'] + \
+                      new_pj_contributors['resources']['cr'] + \
+                      new_cl_contributors['resources']['cr']
+        new_records_count = {
+            'inserted': int(new_cl_contributors['counts']['cr']['inserted']) + \
+                        int(new_ob_contributors['counts']['cr']['inserted']) + \
+                        int(new_pj_contributors['counts']['cr']['inserted'])
+        }
+
+        # update observation counts for related parties
+        py_ids = list(set(self.extract_id_from_vb_code(code, 'py')
+                  for code in df['vb_py_code']))
+        update_obs_counts(conn, 'party', py_ids)
+
+        to_return = {
+            'resources':{
+                'cr': new_records,
+            },
+            'counts':{
+                'cr': new_records_count,
+            }
+        }
+
+
+
+        return to_return

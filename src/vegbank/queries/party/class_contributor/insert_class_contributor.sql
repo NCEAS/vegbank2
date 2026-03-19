@@ -1,0 +1,20 @@
+MERGE INTO classcontributor dst
+USING class_contributor_temp src
+ON FALSE
+WHEN MATCHED THEN DO NOTHING
+WHEN NOT MATCHED THEN
+  INSERT (
+    commclass_id,
+    party_id,
+    role_id,
+    emb_classcontributor
+  ) VALUES (
+    CAST(SUBSTRING(vb_record_identifier, 4)AS INT),
+    CAST(SUBSTRING(vb_py_code, 4) AS INT),
+    CAST(SUBSTRING(vb_ar_code, 4) AS INT),
+    0
+  )
+RETURNING merge_action(),
+          src.user_cr_code,
+          dst.classcontributor_id,
+          'cr.' || dst.classcontributor_id AS vb_cr_code;

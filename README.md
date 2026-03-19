@@ -1,13 +1,17 @@
-![VegBank](http://vegbank.org/vegbank/images/vegbank_logo69x100trans.gif)
-![VegBank](http://vegbank.org/vegbank/images/vegbank_caps170x40outline.jpg)
+![VegBank](https://raw.githubusercontent.com/NCEAS/vegbank2/refs/heads/main/assets/vegbank-favicon.svg)
 
 
-## VegBank
+# VegBank
 
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/NCEAS/vegbank2)
 - [**Submit Bugs and feature requests**](https://github.com/NCEAS/vegbank2/issues)
 - Contact us: help@vegbank.org
+
+## Citation and Overview
+
+> *Jim Regetz, Robert Shelton, Darian Gill, Matthew B. Jones, Dou Mok, Matthew Brooke, Rushiraj Nenuji, Jeanette Clark, Maggie Klope, Michael T. Lee, Robert K. Peet*. 2026. **VegBank: the open-access vegetation plot database and API of the Ecological Society of America’s Panel on Vegetation Classification**. Version 2.0.0. VegBank. [doi:10.82902/J14W2X](https://doi.org/10.82902/J14W2X).
+
 
 The [VegBank](http://vegbank.org) data system provides a community managed data portal for
 vegetation plot data, with special emphasis on supporting the U.S. National Vegetation
@@ -29,8 +33,8 @@ discussions](https://github.com/NCEAS/vegbank2/discussions) to discuss these con
 ## Redesign
 
 VegBank was originally [designed and implemented](https://github.com/NCEAS/vegbank) in the early
-2000's using server technology of the time, particularly as a Java servlet providing access to data
-that is stored in a backend postgresql database, and using Apache Struts to build a web-based
+2000s using server technology of the time, particularly as a Java servlet providing access to data
+that is stored in a backend PostgreSQL database, and using Apache Struts to build a web-based
 interface for querying and viewing the data. While the system has served well, most of these
 technology components have become obsolete, and need to be replaced.
 
@@ -43,10 +47,6 @@ refactored into multiple standalone components:
 
 ## VegBank REST API
 
-> [!WARNING]
-> The API service is currently in beta. Services are likely to go up and down, features are subject
-> to change, and the returned data do not necessarily reflect the current production VegBank system.
-
 The VegBank REST API is the primary interface for interacting with the data system. While this
 repository contains the service's source code, most users will interact with the production instance
 hosted and maintained by NCEAS. The API provides a programmatic way to search and retrieve
@@ -54,38 +54,110 @@ vegetation plot records, plant concepts, community types, and other supporting i
 as submit and upload new data to the archive.
 
 - **Comprehensive API documentation** (WIP): https://nceas.github.io/vegbank2/api/
+- **API Authorization Guide**: [api-authorization.md](./helm/docs/api-authorization.md) – Detailed authentication, token usage, and scope system
+- **Production API**: https://api.vegbank.org
 - **Development API**: https://api-dev.vegbank.org
 
 ## Development build
 
-This is a python package, and built using the [Python Poetry](https://python-poetry.org) build tool.
+This is a python package managed with [`uv`](https://docs.astral.sh/uv/), a fast Python package and
+environment manager.
 
-To install locally, create a virtual environment for python 3.12+, install poetry, and then install
-or build the package with `poetry install` or `poetry build`, respectively.
-
-To run tests, navigate to the root directory and run `poetry run pytest`. If the test suite contains
-tests that take a longer time to run (e.g., relating to the storage of large files) - mark them as
-`slow` and to execute all tests, run `pytest --run-slow`.
+To run tests, navigate to the root directory and run `uv run pytest`.
 
 The GitHub repository has also been configured to run a [continuous integration
-build](https://github.com/NCEAS/vegbank2/actions) which executes the `poetry run pytest` command in
-the standard poetry-maintained virtual environment. To test the action run locally, you can install
+build](https://github.com/NCEAS/vegbank2/actions) which executes `uv run pytest` in the
+uv-managed virtual environment. To test the action run locally, you can install
 the `act` commandline client (e.g., `brew install act`) and then execute the actions from the local
 commandline. This depends on a local docker instance being configured, and the first run will take
 longer as the initial docker images are pulled. Thereafter, checking the action build before pushing
-commits can be run, for example, for the mac with:
+commits can be run, for example, for the Mac with:
 
 - `act --container-architecture linux/amd64`
 
+### Installing `vegbank` locally
+
+We are using `uv` as our python environment and dependency manager. To get started locally, follow these instructions below:
+
+```sh
+# Step 1: Set your `VIRTUAL_ENV` path (if not already set)
+$ export VIRTUAL_ENV=/data/venv
+
+# Step 2: Install `uv` (if not already installed)
+$ python -m pip install uv --root-user-action ignore
+
+# Step 3: Navigate to your project root
+$ cd /path/to/vegbank2
+
+# Step 4: Create/reuse the venv and activate it
+$ uv venv --allow-existing ${VIRTUAL_ENV}
+$ source ${VIRTUAL_ENV}/bin/activate
+
+# Step 5: Install all dependencies into the venv
+$ uv sync --active
+
+```
+
+### Adding project dependencies
+
+To add a dependency to this project, you will need to update `pyproject.toml` with the library that you are trying to add, as well as the minimum version required.
+- Note: An easy way to add dependencies to pyproject.toml is to add them with `uv` or other package management tools using a command like `uv add some_package`.
+
+- If the library is required at runtime, add it under `dependencies`
+- If the library is used only for development or testing, add it under `dependency-groups.dev`
+
+```py
+# pyproject.toml
+
+...
+
+dependencies = [
+    "psycopg>=3.3.2",
+    "flask>=3.1.2",
+    "pandas>=3.0.0",
+    "pyarrow>=23.0.0",
+    "numpy>=2.4.2",
+    "DEPENDENCYNAME>=#.#.#", # Add runtime dependencies here
+]
+
+[dependency-groups]
+dev = [
+    # Add development dependencies here
+    "pytest>=8.3.3",
+    "pylint>=3.2.7",
+    "black>=24.8.0",
+]
+```
+
+### Building and Publishing the Docker Image
+
+The `vegbank` service is published as a Docker image, for deployment via Helm on Kubernetes (see below). See the [Docker README](./docker/README.md) for instructions on building and publishing the image.
+
+### Installing `vegbank` on a Kubernetes Cluster, Using Helm
+
+The vegbank Helm chart can be used to deploy the `vegbank` service on a Kubernetes cluster. See the [Helm README](./helm/README.md) for instructions. The deployment can use either:
+
+- the [local chart included](./helm) in the `vegbank` source code (useful for development and testing), or
+- a versioned, published chart from the [GitHub Container Registry](https://github.com/NCEAS/vegbank2/pkgs/container/charts%2Fvegbank). Details for packaging and publishing new charts can be found [in the Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart).
+
+## Release Process
+
+See the [Contributing Guide](./CONTRIBUTING.md) for details on the release process
+
 ## Current Contributors
 
-- Matthew B. Jones (jones@nceas.ucsb.edu): [ORCID: 0000-0003-0077-4738](https://orcid.org/0000-0003-0077-4738)
 - Jim Regetz (regetz@nceas.ucsb.edu): [ORCID: 0009-0008-2666-6229](https://orcid.org/0009-0008-2666-6229)
-- Robert Shelton (rshelton@nceas.ucsb.edu)
-- Darian Gill (dgill@nceas.ucsb.edu)
+- Robert Shelton (rshelton@nceas.ucsb.edu): [ORCID: 0009-0008-7478-8992](https://orcid.org/0009-0008-7478-8992)
+- Darian Gill (dgill@nceas.ucsb.edu): [ORCID: 0009-0005-7848-2163](https://orcid.org/0009-0005-7848-2163)
+- Matthew B. Jones (jones@nceas.ucsb.edu): [ORCID: 0000-0003-0077-4738](https://orcid.org/0000-0003-0077-4738)
 - Dou Mok (mok@nceas.ucsb.edu): [ORCID: 0000-0002-6076-8092](https://orcid.org/0000-0002-6076-8092)
-- Michael T. Lee
-- Robert K. Peet
+- Matthew Brooke (brooke@nceas.ucsb.edu): [ORCID: 0000-0002-1472-913X](https://orcid.org/0000-0002-1472-913X)
+- Rushiraj Nenuji (nenuji@nceas.ucsb.edu): [ORCID: 0000-0003-4678-5213](https://orcid.org/0000-0003-4678-5213)
+- Jeanette Clark (jclark@nceas.ucsb.edu): [ORCID: 0000-0003-4703-1974](https://orcid.org/0000-0003-4703-1974)
+- Maggie Klope (mmklope@nceas.ucsb.edu): [ORCID: 0000-0003-3926-7039](https://orcid.org/0000-0003-3926-7039)
+- Michael T. Lee (michael.lee@unc.edu): [ORCID: 0009-0003-3874-8604](https://orcid.org/0009-0003-3874-8604)
+- Robert K. Peet (peet@unc.edu): [ORCID: 0000-0003-2823-6587](https://orcid.org/0000-0003-2823-6587)
+
 
 ## Previous Contributors
 
@@ -105,7 +177,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -114,7 +186,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## Acknowledgements
+## Acknowledegments
+
 Work on this package was supported by:
 
 - California Department of Fish and Wildlife
@@ -123,4 +196,3 @@ Work on this package was supported by:
 - National Science Foundation
 
 [![nceas_footer](https://www.nceas.ucsb.edu/sites/default/files/2020-03/NCEAS-full%20logo-4C.png)](https://www.nceas.ucsb.edu)
-

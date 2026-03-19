@@ -1,578 +1,401 @@
 # Introduction
 
-This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see four pods. The vegbank python pod - which houses the flask app that powers the API (ex. `https://api-dev.vegbank.org/taxon-observations/VB.TO.64992.VACCINIUMBOREAL`) and the postgres pods which contains the database that the API accesses and queries. The postgres pods consist of a primary read-write pod and two replica read-only pods.
+This document describes how to deploy the helm charts for VegBank API and the VegBank Postgres Cluster. After installing the helm charts, you should see one or more instances of the VegBank python pod, which hosts the flask app that powers the API (ex. `https://api-dev.vegbank.org/plant-concepts/pc.92413`) and three CloudNative PostgreSQL (CNPG) pods which contain the postgres database used by the API. The CNPG pods consist of a primary read-write pod and two replica read-only pods.
 
-- Note #1: The original VegBank database and web interface (ex. `http://vegbank.org/vegbank/index.jsp`) is currently maintained by NCEAS - however, there have been no new contributions in several years. This means that the data-only dump file used in this process described below (that's currently stored in a ceph directory) is relevant and applicable for testing. The production deployment may start from a new dump file/starting point which includes schema migrations and updates, so do not use the dump file for production purposes without consulting the appropriate stakeholders.
-- Note #2: Should you need to restore the original database that's currently maintained, you can find instructions in this repo's `INSTALL.md` document and additional information at `src/database/flyway/README.md`. 
+### See also:
+
+- **API Authorization Guide**: [api-authorization.md](./docs/api-authorization.md) – Detailed authentication, token usage, and scope system
+- **Production Deployment to Kubernetes**: [prod-deployment.md](./docs/prod-deployment.md) - Details on production deployment
+- **Database Recovery from Backups**: [db-recovery.md](./docs/db-recovery.md) - Details on database backup and recovery
+- **VegBank Database Bootstrap**: [README](./admin/bootstrap/README.md) - Automated method of restoring from a data-only dump file taken from the original VegBank database.
+
+## Quick Reference: NCEAS Dev Deployments
+
+From the `vegbank2` repo root directory, either:
+
+- ```shell
+  # Deploy the local helm chart to the `dev-vegbank` context:
+  helm upgrade vegbankapi -n vegbank ./helm -f ./helm/examples/values-overrides-dev-vb.yaml \
+          --set image.tag="docker-img-tag-#"    # set to the Docker image version you wish to deploy
+  ```
+...or:
+
+- ```shell
+  # Deploy the local helm chart to the `dev-vegbank-dev` context:
+  helm upgrade vegbankapi -n vegbank-dev ./helm -f ./helm/examples/values-overrides-dev-vb-dev.yaml \
+          --set image.tag="docker-img-tag-#"    # set to the Docker image version you wish to deploy
+  ```
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Quick Reference: NCEAS Dev Deployments](#quick-reference-nceas-dev-deployments)
+- [Requirements](#requirements)
+- [Prerequisites](#prerequisites)
+- [API Application Deployment](#api-application-deployment)
+  - [Step 1: Values Configuration](#step-1-values-configuration)
+  - [Step 2: Deploying the Helm Chart](#step-2-deploying-the-helm-chart)
+  - [Step 3: Watch the `initContainers`](#step-3-watch-the-initcontainers)
+  - [Step 4: Applying New Flyway Migration Files](#step-4-applying-new-flyway-migration-files)
+- [Parameters](#parameters)
+- [Packaging and Publishing the Helm Chart](#packaging-and-publishing-the-helm-chart)
+  - [Package the Chart](#package-the-chart)
+  - [Publish the Chart to the GitHub Container Registry](#publish-the-chart-to-the-github-container-registry)
+- [Appendix 1: Prerequisite: Install a PostgreSQL Database ](#appendix-1-prerequisite-install-a-postgresql-database)
+- [Appendix 2: Prerequisite: Create K8s Secrets](#appendix-2-prerequisite-create-k8s-secrets)
+- [Appendix 3: Initial Database Population with a Dump File](#appendix-3-initial-database-population-with-a-dump-file)
 
 ## Requirements
+- Helm 4.x
+- Kubernetes 1.26+
+- A target Kubernetes cluster with:
+  - a suitable namespace (ex. `vegbank`, `vegbank-dev`)
+  - CloudNative PG Operator 1.27.0+ installed (or you can provide your own PostgreSQL database, but this approach is not tested or supported)
 
-You need to have the following things set up/installed: 
+## Prerequisites
 
-- A Kubernetes cluster and a namespace you wish to deploy the chart on (ex. vegbank, dev-vegbank)
-- kubectl installed locally
-- Helm installed locally
+Before the initial deployment of the VegBank API helm chart, these prerequisites must be met:
 
-# Deploying to Kubernetes - Development Server
+1. A PostgreSQL database must be deployed and running in the cluster. At NCEAS, we use the [`dataone-cnpg` helm chart](https://github.com/DataONEorg/dataone-cnpg) to deploy a CloudNative PostgreSQL cluster. See [Appendix 1](#appendix-1-prerequisite-install-a-postgresql-database) for details.
+2. The necessary Kubernetes secrets must be created. See [Appendix 2](#appendix-2-prerequisite-create-k8s-secrets).
+3. If you wish to pre-populate the database with data from an existing dump file, that file must be made accessible to the helm chart via a PVC, and the appropriate parameters in `values.yaml` must be overridden to enable the restore process. See [Appendix 3](#appendix-3-initial-database-population-with-a-dump-file) for details.
 
-This section will walk you through deploying VegBank to an empty kubernetes namespace. You can deploy vegbank with data, or without data - and the required dump file to perform a postgres restore has been made available via mounting of a static PV/PVC to both `dev-vegbank` and `vegbank` namespaces.
+## API Application Deployment
 
-Any additional requests for further mounts must be requested via the development team. 
+### Step 1: Values Configuration
 
-## Step 1: Getting your dump file
+> [!TIP]
+> Values overrides for deployments on the NCEAS k8s dev cluster are kept in the [`helm/examples` directory](./examples). These files show the necessary overrides for different dev deployment contexts (e.g. [`dev-vegbank`](./examples/values-overrides-dev-vb.yaml) vs [`dev-vegbank-dev`](./examples/values-overrides-dev-vb-dev.yaml)), and can be used for reference when creating your own overrides files.
 
-As progress is made, postgres dump files will be created, updated and made available to the team. These dump files currently live in the shared development CephFS folder that's mounted in the `knbvm (knbvm.nceas.ucsb.edu)` under `/mnt/ceph/repos/vegbank`.
+- **Values Overrides**
 
-A dump file is already available for development purposes. In production, this process may differ.
+  It will be necessary to override a few of the default parameters in the [values.yaml file](./values.yaml), to match your deployment environment. The recommended approach is to create (and keep a versioned copy of) a YAML file that specifies only those values that need to be overridden. The [Parameters](#parameters) section, below, lists the parameters that can be configured during installation.
 
-## Step 2: Helm Install (and Uninstall...)
+  - For example, to deploy the VegBank instance in our `dev-vegbank` K8s context, we use the overrides defined in [`helm/examples/values-overrides-dev-vb.yaml`](./examples/values-overrides-dev-vb.yaml):
 
-If we're starting from nothing (ex. the namespace/context we're working in is completely empty), we need to determine if we should update the helm `values.yaml` section for `databaseRestore`.
+    ```shell
+    $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
+          -f ./helm/examples/values-overrides-dev-vb.yaml
+    ```
 
-`databaseRestore.enabled` should be set to `true` if you want to restore the database using a dump file. If you want a fresh database installation with no data, leave this as `false`.
+    where `values-overrides-dev-vb.yaml` contains only the values we wish to override. Similarly, we would use the [`helm/examples/values-overrides-dev-vb-dev.yaml`](./examples/values-overrides-dev-vb-dev.yaml) file when deploying in the `dev-vegbank-dev` context.
 
-```sh
-# values.yaml
+  - Parameters may also be overridden on the command line; e.g.
 
-databaseRestore:
-  enabled: true # This needs to be changed from `false` to `true` if you want to restore data
-  pvc: "vegbankdb-init-pgdata" # Name of the PVC
-  mountpath: "/tmp/databaseRestore" # Path where you can find the PVC contents
-  filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump" # Name of the file to be used in the restoration process
-```
+    ```shell
+    $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
+          -f ./helm/examples/values-overrides-dev-vb.yaml --set image.tag="2.0.0-beta01"
+    ```
 
-Before we deploy this Vegbank API helm chart, we must ensure that postgres is available. So we first deploy the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready before proceeding to deploy the Vegbank API helm chart.
-- Note: Double check that the postgres image in the `databaseRestore.postgres_image` section in `values.yaml` has the same major version as the `cnpg`. Postgres major versions must match otherwise the restore process will not be able to proceed with connecting and restoring.
-- Note #2: The `cnpg` deployment has default values which can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). When you install the vegbank `values-cnpg.yaml` configuration file, these default values get overridden by what is defined in `values-cnpg.yaml`.
+- **Values Overrides for Database Population**
 
-```sh
-# IMPORTANT: The chart name we will use to be consistent is `vegbankdb`.
-# We are using a dataone cnpg image so the postgres cluster will deploy with the prefix 'vegbankdb'. Thus, the host of the primary postgres pod will be 'vegbankdb-cnpg-rw'
-#
-# If you experience issues with deployment, double check that you have the latest chart version.
-$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f values-cnpg.yaml
+  If you wish to populate the database from a `pg_dump` file on startup, see [Appendix 3](#appendix-3-initial-database-population-with-a-dump-file) for the necessary values overrides.
 
-# If you would like to install a specific version, this is how you can do so
-# where the latest [version#] can be found at https://github.com/DataONEorg/dataone-cnpg/pkgs/container/charts%2Fcnpg
-$ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg --version [version#] -f values-cnpg.yaml
+### Step 2: Deploying the Helm Chart
 
-$ kubectl -n dev-vegbank get pods
-NAME                         READY   STATUS    RESTARTS   AGE
-vegbankdb-cnpg-1             1/1     Running   0          5m
-vegbankdb-cnpg-2             1/1     Running   0          6m
-vegbankdb-cnpg-3             1/1     Running   0          7m
-```
+This example uses the `dev-vegbank` context and the `values-overrides-dev-vb.yaml` overrides file:
 
-Now we can deploy the helm chart. This can be done simply by opening a terminal in the root folder of this repo, then running the following command: 
+- Deploy the latest published helm chart
 
-```sh
-$ pwd
-/Users/doumok/Code/vegbank2/helm
-$ helm install vegbankapi .
-```
+  ```shell
+  $ helm upgrade --install vegbankapi -n vegbank oci://ghcr.io/nceas/charts/vegbank \
+        -f ./helm/examples/values-overrides-dev-vb.yaml
+  ```
 
-### Development Values File: 'values-overrides-dev.yaml' 
+  - Deploy a specific version by adding: `--version <version-#>` ([List of published chart versions](https://github.com/NCEAS/metacat/pkgs/container/charts%2Fvegbank))
+  - See more info by adding: `--debug`
+  - `--dry-run` can be used to test the installation without actually deploying
 
-If you are on a namespace without ingress (ex. `dev-vegbank-dev`), deploying the `vegbankapi` chart will result in errors. To help reduce confusion and for development purposes, we have a `values-overrides-dev.yaml` file which contains components that you'll likely want to take control over. By default, this overrides file' override values turns the database restoration process off and disables ingress.
+- Deploy from the local helm chart in this repo (e.g. for testing changes to the chart)
 
-```sh
-$ helm install vegbankapi . -f values-overrides-dev.yaml
+  ```shell
+  $ helm upgrade --install vegbankapi ./helm \
+        -f ./helm/examples/values-overrides-dev-vb.yaml --debug
+  ```
 
-# If you do not wish to use the overrides file, you may manually turn ingress off like such
-$ helm install vegbankapi . --set ingress.enabled=false
+- To uninstall:
 
-# Note: Please see the section 'Connecting to API via kubectl port forwarding' if you wish to access the API without ingress
-```
+  ```sh
+  $ helm uninstall vegbankapi -n vegbank
+  ```
 
-This will install the python API pod (based on the `docker/Dockerfile` in this repo) on the namespace you have selected as your current context (ex. `dev-vegbank`), and give the pod the starting prefix of `vegbankapi` in its name. You can change the name `vegbankapi` to whatever you like.
 
-- Tip: If you are clearing out an existing namespace (ex. `dev-vegbank-dev`), or need to restart this process - you can start fresh by uninstalling the chart. If you run into conflicts, be sure to double check that the associated PVCs, references and charts to old dependencies are removed (ex. The .tgz file under `charts/` may need to be deleted)
+> [!TIP]
+> If you wish to access the API without ingress (i.e. if `ingress.enabled` is `false`), you can do so by port-forwarding to the API service.
+>
+> ```sh
+> # 1. Find the name of the API service
+> #
+> $  kubectl get svc | grep api    # or grep for your vegbank api release name
+>
+>    vegbankapi           ClusterIP   10.104.197.36    <none>     80/TCP     26d
+>
+> # 2. Set up port forwarding using kubectl port-forward service/<svc-name> <local-port>:80
+> #
+> $ kubectl port-forward service/vegbankapi 8080:80
+>
+> # 3. Access the API on localhost via the port you specified:
+> #
+> $ curl -s http://localhost:8080/plant-concepts/pc.92413
+> ```
 
-  ### CAUTION: Uninstalling Charts -  Be Careful!
-
-  The `cnpg` chart we are deploying is extended from the [`dataone-cnpg` chart](https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md) with our `values-cnpg` overrides file. If you uninstall the chart, you will be deleting the associated PVC and the automatically generated secret if you did not supply one - and will likely lose all your data. Please proceed with caution and backup data and secrets.
-
-## Step 3: Watch the `initContainers`
-
-At this point, your namespace is empty and you have a fresh installation of `postgres`. There is nothing left for you to do but sit and wait for the `initContainers` to finish executing.
+### Step 3: Watch the   `initContainers`
 
 There are two `initContainers`:
-1) vegbankdb-reconcile-postgres
+1) `vegbank-reconcile-postgres`
    - This waits until the `postgres` pod is accepting connections before proceeding with the next `initContainer`
-   - If `databaseRestore.enabled` is set to `true` in `values.yaml`:
-       - This then takes the dump file associated in `values.yaml` and restores it to the empty cluster
-2) vegbankdb-apply-flyway
+   - If `databaseRestore.enabled` is set to `true` in `values.yaml`, the dump file defined in `databaseRestore` is restored to the empty cluster
+2) `vegbank-apply-flyway`
    - This executes `flyway migrate`, which applies the migration files found in `/db/migrations`
 
-
-Tip: To get a pulse of what's happening, you can run the following commands:
-
-```sh
-$ kubectl -n dev-vegbank get pods
-NAME                          READY   STATUS     RESTARTS   AGE
-vegbankapi-bb94bf498-6fpw4    0/1     Init:0/2   0          12s
-vegbankdb-cnpg-1              1/1     Running    0          5m4s
-vegbankdb-cnpg-2              1/1     Running    0          3m36s
-vegbankdb-cnpg-3              1/1     Running    0          2m19s
-
-# This will show you information about the pod, and if you scroll all the way down, where it's at in the initialization process 
-$ kubectl -n dev-vegbank describe pod vegbankapi-bb94bf498-6fpw4
-...
-
-# You can get the logs of the initContainer like below, replace the argument after the '-c' flag with the initContainer you want to check
-$ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres --timestamps                                                                          
-2025-09-25T10:10:11.129037693-07:00 vegbankdb-cnpg-rw:5432 - accepting connections
-2025-09-25T10:10:11.129130874-07:00 CNPG is acception connections.
-2025-09-25T10:10:11.129146915-07:00 Database Restore Requested, restoring from specific dump file
-
-$ kubectl -n dev-vegbank logs vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway --timestamps
-2025-09-25T10:35:06.910428714-07:00 ## Flyway Env
-2025-09-25T10:35:06.914609424-07:00 FLYWAY_PASSWORD=NO_PASSWORDS_SHOULD_BE_SHARED
-2025-09-25T10:35:06.914645452-07:00 FLYWAY_USER=vegbank
-2025-09-25T10:35:06.914652983-07:00 FLYWAY_URL=jdbc:postgresql://vegbankdb-postgresql:5432/vegbank
-2025-09-25T10:35:06.914658864-07:00 FLYWAY_LOCATIONS=filesystem:/opt/local/flyway/db/migrations
-2025-09-25T10:35:06.914887785-07:00 ## Listing Migrations
-2025-09-25T10:35:06.917932660-07:00 V1.0__vegbank.sql
-2025-09-25T10:35:06.917977643-07:00 V1.1__create_aggregrates.sql
-2025-09-25T10:35:06.917983649-07:00 V1.2__create_extras.sql
-2025-09-25T10:35:06.917988364-07:00 V1.3__create_indices.sql
-2025-09-25T10:35:06.918010462-07:00 V1.4__create_vegbank_views.sql
-2025-09-25T10:35:06.918015460-07:00 V1.5__add_constraints.sql
-2025-09-25T10:35:06.918021412-07:00 V1.6__backfill_party_null_values.sql
-2025-09-25T10:35:06.918026325-07:00 V1.7__create_identifiers_table.sql
-2025-09-25T10:35:06.918031538-07:00 V1.8__populate_acc_identifiers_procedure.sql
-2025-09-25T10:35:06.918036127-07:00 V1.9__populate_vb_identifiers_procedure.sql
-2025-09-25T10:35:06.918273573-07:00 Applying all migrations in db/migrations
-2025-09-25T10:35:08.781050529-07:00 A more recent version of Flyway is available. Find out more about Flyway 11.13.1 at https://rd.gt/3rXiSlV
-2025-09-25T10:35:08.781118232-07:00 
-2025-09-25T10:35:08.781141330-07:00 Flyway OSS Edition 10.17.0 by Redgate
-2025-09-25T10:35:08.781150048-07:00 
-2025-09-25T10:35:08.781156363-07:00 See release notes here: https://rd.gt/416ObMi
-2025-09-25T10:35:08.971432146-07:00 Database: jdbc:postgresql://vegbankdb-postgresql:5432/vegbank (PostgreSQL 16.4)
-2025-09-25T10:35:09.700179135-07:00 Successfully validated 10 migrations (execution time 00:00.308s)
-2025-09-25T10:35:09.767308757-07:00 Current version of schema "public": 1.9
-2025-09-25T10:35:09.774330631-07:00 Schema "public" is up to date. No migration necessary.
-
-$ kubectl -n dev-vegbank get pods
-NAME                         READY   STATUS    RESTARTS   AGE
-vegbankapi-bb94bf498-6fpw4   1/1     Running   0          3h28m
-vegbankdb-cnpg-1             1/1     Running   0          4h10m
-vegbankdb-cnpg-2             1/1     Running   0          4h8m
-vegbankdb-cnpg-3             1/1     Running   0          4h7m
-```
+> [!TIP]
+> To monitor what's happening, you can use the following commands:
+>
+> ```sh
+> # Monitor pod readiness:
+> $ kubectl get pods --watch
+> NAME                          READY   STATUS     RESTARTS   AGE
+> vegbankapi-bb94bf498-6fpw4    0/1     Init:0/2   0          12s
+> vegbankdb-cnpg-1              1/1     Running    0          5m4s
+> vegbankdb-cnpg-2              1/1     Running    0          3m36s
+> vegbankdb-cnpg-3              1/1     Running    0          2m19s
+>
+> # Watch the container logs:
+> $ kubectl logs -f vegbankapi-bb94bf498-6fpw4 -c vegbankapi-reconcile-postgres
+> # or:
+> $ kubectl logs -f vegbankapi-bb94bf498-6fpw4 -c vegbankapi-apply-flyway
+> ```
 
 After the `initContainers` complete, you will now have an up-to-date copy of the current `vegbank` postgres database - which has applied all migrations found in `helm/db/mgrations`.
 
-## Step 4: Applying new migration files 
+### Step 4: Applying New Flyway Migration Files
 
-If you are testing new schema updates, add them to `helm/db/migrations` with the correct naming convention and run a `helm` upgrade command. Example:
+If you are testing new schema updates, add them to `helm/db/migrations` with the correct naming convention and run a `helm` upgrade command, as described above.
 
-```sh
-$ helm upgrade vegbankapi .
-
-# If you don't have an ingress
-# Option 1: Use the `values-overrides-dev.yaml` file, which deactivates ingress and the database restoration
-$ helm upgrade vegbankapi . -f values-overrides-dev.yaml
-# Option 2: Manually turn off ingress
-$ helm upgrade vegbankapi . --set ingress.enabled=false
-```
-
-- Note: Do not forget to change the `databaseRestore.enabled` value back to `false` if you've set it to `true`.
-
-  ```sh
-  # values.yaml
-
-  databaseRestore:
-    enabled: false # Set this back to false! 
-    pvc: "vegbankdb-init-pgdata"
-    mountpath: "/tmp/databaseRestore"
-    filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
-  ```
-
-# Recovery & Backup
-
-The vegbank DB will be backed up using the `cnpg` `ScheduledBackUp` custom resource. To learn more about this, view our `cnpg` operator documentation [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
-
-The default values or settings for the backups generated can be found [here](https://github.com/DataONEorg/dataone-cnpg/blob/main/values.yaml). For example, if you do not define 'schedule' in `values-cnpg.yaml` - it will default to "0 0 21 * * *" which is 9PM UTC Daily (1PM PST). Note - this may change overtime as improvements are made to the `cnpg` deployment.
-
-Recovering using a `ScheduledBackup` is our preferred method to re-deploy the `vegbank` `cnpg` cluster. This is the quickest and simplest path to get the database back up and running in any disaster scenario or if the database becomes corrupted/unusable. In the event where `kubernetes`/`cnpg` is not available, it is still possible to initialize a database using solely the `postgres` data folder. This is documented below, but not recommended unless you have no other choice.
-
-## Recovering from a ScheduledBackup
-
-If you wish to deploy a `cnpg` cluster via a `ScheduledBackup`, you can do so by:
-- Changing the `init.enabled` section in `values.yaml` to `true`
-- Changing the `init.method` section to `recovery`
-- Providing a specific volume snapshot/backup to recover from for `init.recoverFromBackup`.
-- Important Note: Please double check that `backup.enabled` in `values.yaml` is set to `true` before executing `helm install ...` so that we can ensure that backup volumesnapshots are generating once again via `ScheduledBackup`s.
-
-  ```
-  ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
-  init:
-    enabled: true
-    method: recovery
-    recoverFromBackup: vegbankdb-scheduled-backup-20251205210000
-
-  backup:
-    enabled: true
-  ```
-
-  Tip: You can check if there is an existing `ScheduledBackup` by executing the following:
-
-  ```sh
-  # Note, you must have admin privileges to check for `ScheduledBackup`s
-  $ kubectl get scheduledbackup -n vegbank-dev --context=dev-k8s 
-
-  NAME                         AGE   CLUSTER          LAST BACKUP
-  vegbankdb-scheduled-backup   57s   vegbankdb-cnpg   57s
-  ```
-
-  Tip #2: You can check for specific backups/volumesnapshots by executing the following:
-
-  ```sh
-  $ kubectl get backups -n vegbank-dev
-  ```
-
-Once you've updated your configuration, please install your `cnpg` `helm` chart as you would normally. Example:
-
-```sh
-$ helm install vegbankvelero oci://ghcr.io/dataoneorg/charts/cnpg -f '/Users/doumok/Code/vegbank2/helm/values-cnpg.yaml' --debug
-```
-- Note: You may launch multiple `cnpg` clusters using different release names. In the example you see below, you'll notice that there is an existing `vegbankdb-cnpg` cluster - along with a new `vegbankvelero-cnpg` cluster that's initializing. There should not be any conflicts with the existing services because those configurations were installed with release name specific settings. For example, the existing `vegbank` API is set up to communicate with `vegbankdb-cnpg-rw`. If you install a cluster called `vegbankvelero-cnpg` - the respective host would be `vegbankvelero-cnpg-rw`.
-
-Check to see that the process has begun by executing the following, and looking for the `snapshot` pod:
-```sh
-$ kubectl get pods -n dev-vegbank
-NAME                                           READY   STATUS    RESTARTS      AGE
-vegbankapi-54b85649c6-2pwcm                    1/1     Running   0             4d19h
-vegbankdb-cnpg-1                               1/1     Running   2             52d
-vegbankdb-cnpg-2                               1/1     Running   1 (16d ago)   52d
-vegbankdb-cnpg-3                               1/1     Running   1 (16d ago)   52d
-vegbankvelero-cnpg-1-snapshot-recovery-pqsl9   0/1     Pending   0             2s
-```
-
-It takes approximately 10 minutes for the pods to be assigned, after which the recovery process will begin. For example:
-```sh
-$ kubectl describe pod vegbankvelero-cnpg-1-snapshot-recovery-pqsl9 -n dev-vegbank
-...
-Events:
-  Type     Reason            Age                    From               Message
-  ----     ------            ----                   ----               -------
-  Warning  FailedScheduling  12m                    default-scheduler  0/6 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling..
-  Warning  FailedScheduling  2m46s (x2 over 7m46s)  default-scheduler  0/6 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling..
-  Normal   Scheduled         67s                    default-scheduler  Successfully assigned vegbank-dev/vegbankvelero-cnpg-1-snapshot-recovery-pqsl9 to k8s-dev-node-4
-  Normal   Pulled            64s                    kubelet            Container image "ghcr.io/cloudnative-pg/cloudnative-pg:1.27.0" already present on machine
-  Normal   Created           63s                    kubelet            Created container bootstrap-controller
-  Normal   Started           63s                    kubelet            Started container bootstrap-controller
-  Normal   Pulled            59s                    kubelet            Container image "ghcr.io/cloudnative-pg/postgresql:17.5" already present on machine
-  Normal   Created           58s                    kubelet            Created container snapshot-recovery
-  Normal   Started           57s                    kubelet            Started container snapshot-recovery
-```
-
-To watch the process execute, you can run `watch kubectl get pods`
-
-```sh
-$ watch kubectl get pods -n dev-vegbank
-NAME                                           READY   STATUS      RESTARTS      AGE
-vegbankapi-54b85649c6-2pwcm                    1/1     Running     0             4d19h
-vegbankdb-cnpg-1                               1/1     Running     2             52d
-vegbankdb-cnpg-2                               1/1     Running     1 (16d ago)   52d
-vegbankdb-cnpg-3                               1/1     Running     1 (16d ago)   52d
-vegbankvelero-cnpg-1                           1/1     Running     0             6m25s
-vegbankvelero-cnpg-1-snapshot-recovery-pqsl9   0/1     Completed   0             18m
-vegbankvelero-cnpg-2                           1/1     Running     0             105s
-vegbankvelero-cnpg-2-join-dhq22                0/1     Completed   0             5m58s
-vegbankvelero-cnpg-3-join-swdfb                1/1     Running     0             81s
-
-$ kubectl get pods - n dev-vegbank
-NAME                          READY   STATUS    RESTARTS      AGE
-vegbankapi-54b85649c6-2pwcm   1/1     Running   0             4d19h
-vegbankdb-cnpg-1              1/1     Running   2             52d
-vegbankdb-cnpg-2              1/1     Running   1 (16d ago)   52d
-vegbankdb-cnpg-3              1/1     Running   1 (16d ago)   52d
-vegbankvelero-cnpg-1          1/1     Running   0             9m37s
-vegbankvelero-cnpg-2          1/1     Running   0             4m57s
-vegbankvelero-cnpg-3          1/1     Running   0             78s
-```
-
-And then finally, to confirm that `ScheduledBackups` are being run once again:
-
-```sh
-$ kubectl get backup -n dev-vegbank
-...
-vegbankdb-scheduled-backup-20251207210000       22h     vegbankdb-cnpg       volumeSnapshot   completed   
-vegbankvelero-scheduled-backup-20251208192351   2m20s   vegbankvelero-cnpg   volumeSnapshot   completed  
-```
-
-If you have multiple clusters live, you will need to redeploy the existing `vegbankapi` helm chart with an updated `database` section. Specifically `database.host` needs to be revised. Please see below for an example:
-
-```sh
-database:
-  name: vegbank # The database name should be the same after recovery
-  # Previously, this value would have been 'vegbankdb-cnpg-rw'
-  host: vegbankvelero-cnpg-rw # Update this host
-  port: 5432 # The port should also remain the same
-```
-
-After you have confirmed that the API and related tools are working as you expect, you may uninstall the old, presumably now redundant, cluster.
-
-```sh
-$ helm uninstall vegbankdb
-```
-
-### How to recover a deleted `ScheduledBackup` via `velero`
-
-If you have accidentally deleted and need to recover a specific backup, you can use `velero` to do so. `velero` is what we use to back up `kubernetes` resources, which includes `cnpg` resources like `ScheduledBackup`s.
-
-To begin and see the available `velero` backups that we can recover from, run the following command:
-
-```sh
-$ velero backup get
-# You will see a list of available backups that you can select from
-...
-full-backup-20251203030015           PartiallyFailed   1        2          2025-12-02 19:00:15 -0800 PST   87d       default            <none>
-...
-```
-
-After you've found the `velero` backup you wish to restore from, you can recover the `cnpg` backup/snapshot like this:
-
-```sh
-# velero restore create [give_your_restore_a_name]
-$ velero restore create restore-cnpg-bkup-dou-test \                                                                                               
-  --from-backup full-backup-20251203030015 \
-  --include-resources=backups.postgresql.cnpg.io \
-  --include-namespaces=dev-vegbank-dev
-Restore request "restore-cnpg-bkup-dou-test" submitted successfully.
-Run `velero restore describe restore-cnpg-bkup-dou-test` or `velero restore logs restore-cnpg-bkup-dou-test` for more details.
-```
-
-Check whether the backup worked, by running the following command:
-
-```sh
-$ velero restore get                                                                                                                               
-NAME                         BACKUP                       STATUS       STARTED                         COMPLETED   ERRORS   WARNINGS   CREATED                         SELECTOR
-restore-cnpg-bkup-dou-test   full-backup-20251203030015   InProgress   2025-12-05 13:19:23 -0800 PST   <nil>       0        0          2025-12-05 13:19:23 -0800 PST   <none>
-
-$ velero restore get 
-NAME                         BACKUP                       STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
-restore-cnpg-bkup-dou-test   full-backup-20251203030015   Completed   2025-12-05 13:19:23 -0800 PST   2025-12-05 13:25:30 -0800 PST   0        0          2025-12-05 13:19:23 -0800 PST   <none>
-```
-
-Now that we've restored the missing or accidentally deleted backup, you can proceed with the normal recovery process defined above with ScheduledBackups.
-
-## Recovery using data folders in a file system (Cumbersome, but it works)
-
-If for whatever reason we do not have `ScheduledBackups` available to us after a disaster occurs, and we have literally nothing but a physical directory of the `postgres` data that can be found from a backup of physical files on disk - we can still get a working version of the `postgres` database with Docker.
-
-**Step 1: Copy the data folder to your local directory and navigate to it**
-
-To get the `vegbank` db back up and running, we will first copy that postgres data folder to our local directory and navigate to it.
-```sh
-doumok@Dou-NCEAS-MBP14.local:~ $ cd /Code/testing/pgrecoverytesting/pgdata
-```
-
-Now, we modify the following settings because the setup for `cnpg` does not match what we are trying to achieve with a Docker instance. 
-- Adjust the log directory and create a `log` directory in your `pgdata` folder - or set this folder to another location of your choice. You can choose a new `log_filename` if you desire it
-  ```sh
-  # custom.conf
-  ...
-  log_directory = './log'
-  log_filename
-  ...
-  ```or a local docker instance
-  ```sh
-  # custom.conf
-  ...
-  # ssl = 'on'
-  # ssl_ca_file = '/controller/certificates/client-ca.crt'
-  # ssl_cert_file = '/controller/certificates/server.crt'
-  # ssl_key_file = '/controller/certificates/server.key'
-  # ssl_max_protocol_version = 'TLSv1.3'
-  # ssl_min_protocol_version = 'TLSv1.3'
-  # unix_socket_directories = '/controller/run'
-  ...
-  ```
-
-**Step 2: Get a running `postgres` instance via `docker`**
-```sh
-# Note: You must be in the data folder where you see `/base`, `global`, etc. when running this docker command.
-## This will mount the current directory to the path you specified (ex. `/var/lib/postgresql/data`)
-doumok@Dou-NCEAS-MBP14.local:~/Code/testing/pgrecoverytesting/pgdata $ docker run -it --rm -e POSTGRES_PASSWORD=postgres -v $(pwd):/var/lib/postgresql/data -p 5432:5432 postgres:17
-```
-
-**Step 3: Test that it's working**
-```sh
-# Note: The password is the secret originally used in the kubernetes cluster (i.e. `vegbankdbcreds`).
-## You can get the password from this secret by getting the yaml output and then base64 decoding it
-### `kubectl get secrets vegbankdbcreds -o yaml`
-### `echo 'the_hashed_password_' | base64 --decode
-$ psql -h localhost -U vegbank
-
-Password for user vegbank:
-WARNING:  database "vegbank" has a collation version mismatch
-DETAIL:  The database was created using collation version 153.14, but the operating system provides version 153.120.
-HINT:  Rebuild all objects in this database that use the default collation and run ALTER DATABASE vegbank REFRESH COLLATION VERSION, or build PostgreSQL with the right library version.
-psql (14.11 (Homebrew), server 17.5 (Debian 17.5-1.pgdg120+1))
-WARNING: psql major version 14, server major version 17.
-         Some psql features might not work.
-Type "help" for help.
-
-\dt
-# This lists all the tables which shows a successful recovery
-```
-
-**Step 4: Restore the `cnpg` cluster**
-
-From here, we can get a dump file, mount it to a path, and use the existing steps to launch a `cnpg` cluster.
-
-```sh
-$ pg_dump -h localhost -U vegbank -d vegbank -Fc -f vegbank_20251105.dump
-```
-
-# Connecting to API via kubectl port forwarding
-
-Once you're in the k8s dev-vegbank context, you can find the name of the API pod via the following command: 
-
-```sh
-$ kubectl -n dev-vegbank get pods
-```
-
-The API pod is the one with the werid alphanumeric name. After that, all you need is this command: 
-
-```sh
-$ kubectl -n dev-vegbank port-forward <API pod name> <desired port on your machine>:80
-```
-
-Then you can access the API on localhost via the port you specified. Full example below:
-```sh
-$ kubectl -n dev-vegbank port-forward vegbank-745779dccd-994r6 2580:80
-# And then access it like such: http://localhost:2580/taxon-observations/VB.TO.64992.VACCINIUMBOREAL
-```
-
+> [!IMPORTANT]
+> Before upgrading or redeploying, don't forget to change the `databaseRestore.enabled` value back to `false` if you enabled it earlier.
 
 ## Parameters
 
-### Image 
+### API Access - Authentication and Authorization
 
-| Name               | Description                                                           | Value                   |
-| ------------------ | --------------------------------------------------------------------- | ----------------------- |
-| `image.repository` | - github remote image repository address for the VegBank Docker Image | `ghcr.io/nceas/vegbank` |
-| `image.pullPolicy` | - How often should the image be pulled from the repository?           | `IfNotPresent`          |
-| `image.tag`        | - The tag of the image to use.                                        | `""`                    |
-| `imagePullSecrets` |                                                                       | `[]`                    |
-| `nameOverride`     |                                                                       | `""`                    |
-| `fullnameOverride` |                                                                       | `""`                    |
+| Name                  | Description                                                         | Value                 |
+| --------------------- | ------------------------------------------------------------------- | --------------------- |
+| `auth.accessMode`     | Controls authentication & upload behavior (RW or RO) for API access | `read_only`           |
+| `auth.oidcSecretName` | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config` |
 
-### serviceAccount
+### Database
 
-| Name                         | Description                                             | Value  |
-| ---------------------------- | ------------------------------------------------------- | ------ |
-| `serviceAccount.create`      | Specifies whether a service account should be created   | `true` |
-| `serviceAccount.automount`   | Automatically mount a ServiceAccount's API credentials? | `true` |
-| `serviceAccount.annotations` | Annotations to add to the service account               | `{}`   |
-| `serviceAccount.name`        | The name of the service account to use.                 | `""`   |
-| `podAnnotations`             | currently unused                                        | `{}`   |
-| `podLabels`                  |                                                         | `{}`   |
-| `podSecurityContext`         |                                                         | `{}`   |
-| `securityContext`            |                                                         | `{}`   |
+| Name                            | Description                                                                | Value                                     |
+| ------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
+| `database.name`                 | The name of the postgres database to be used by VegBank                    | `vegbank`                                 |
+| `database.host`                 | hostname of database to be used by VegBank (RW svc name of CNPG or pooler) | `vegbankdb-cnpg-rw`                       |
+| `database.port`                 | port to connect to the database (Must match CNPG or pooler port number)    | `5432`                                    |
+| `database.existingSecret`       | Secret containing the database username and password.                      | `vegbankdbcreds`                          |
+| `databaseRestore.enabled`       | Restores a full (schema+data) database dump file defined below             | `false`                                   |
+| `databaseRestore.pvc`           | PVC containing the (schema+data) database dump file to restore             | `vegbankdb-init-pgdata`                   |
+| `databaseRestore.mountpath`     | Mount path inside the container for the pvc/dump file volume               | `/tmp/databaseRestore`                    |
+| `databaseRestore.filepath`      | dump file path, relative to databaseRestore.mountpath                      | `vegbank_full_fc_v1.9_pg16_20250924.dump` |
+| `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
+| `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
+| `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1.1`                                  |
+| `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
+| `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
+| `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
+
+### VegBank API Docker Image
+
+| Name               | Description                                                                 | Value                   |
+| ------------------ | --------------------------------------------------------------------------- | ----------------------- |
+| `image.repository` | GitHub remote image repository address for the VegBank Docker Image         | `ghcr.io/nceas/vegbank` |
+| `image.pullPolicy` | How often should the image be pulled from the repository?                   | `IfNotPresent`          |
+| `image.tag`        | version/tag of the VB Docker Image to use. Leave blank to use Chart default | `""`                    |
+| `resources`        |                                                                             | `{}`                    |
+
+### Probes
+
+| Name                              | Description                                                | Value  |
+| --------------------------------- | ---------------------------------------------------------- | ------ |
+| `startupProbe.enabled`            | Enable startupProbe                                        | `true` |
+| `startupProbe.httpGet.path`       | The url path to probe during startup                       | `/`    |
+| `startupProbe.httpGet.port`       | The named containerPort to probe                           | `http` |
+| `startupProbe.successThreshold`   | Min consecutive successes for probe to be successful       | `1`    |
+| `startupProbe.failureThreshold`   | No. of consecutive failures before the container restarted | `36`   |
+| `startupProbe.periodSeconds`      | Interval (in seconds) between startup checks               | `5`    |
+| `startupProbe.timeoutSeconds`     | Timeout (in seconds) for each startup check                | `3`    |
+| `livenessProbe.enabled`           | Enable livenessProbe                                       | `true` |
+| `livenessProbe.httpGet.path`      | The url path to probe                                      | `/`    |
+| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `80`   |
+| `livenessProbe.periodSeconds`     | Period seconds for livenessProbe                           | `20`   |
+| `livenessProbe.timeoutSeconds`    | Timeout seconds for livenessProbe                          | `10`   |
+| `livenessProbe.successThreshold`  | Min consecutive successes for probe to be successful       | `1`    |
+| `livenessProbe.failureThreshold`  | No. consecutive failures before container restarted        | `15`   |
+| `readinessProbe.enabled`          | Enable readinessProbe                                      | `true` |
+| `readinessProbe.httpGet.path`     | The url path to probe                                      | `/`    |
+| `readinessProbe.httpGet.port`     | The named containerPort to probe                           | `http` |
+| `readinessProbe.periodSeconds`    | Period seconds for readinessProbe                          | `10`   |
+| `readinessProbe.timeoutSeconds`   | Timeout seconds for readinessProbe                         | `5`    |
+| `readinessProbe.successThreshold` | Min consecutive successes for probe to be successful       | `1`    |
+| `readinessProbe.failureThreshold` | No. consecutive failures before container marked unhealthy | `3`    |
 
 ### Service
 
-| Name           | Description                                      | Value       |
-| -------------- | ------------------------------------------------ | ----------- |
-| `service.type` | - The type of service to create.                 | `ClusterIP` |
-| `service.port` | - The port on which the service will be exposed. | `80`        |
+| Name           | Description                                    | Value       |
+| -------------- | ---------------------------------------------- | ----------- |
+| `service.type` | The type of service to create.                 | `ClusterIP` |
+| `service.port` | The port on which the service will be exposed. | `80`        |
 
-### ingress
+### Ingress
 
-| Name                | Description                                   | Value   |
-| ------------------- | --------------------------------------------- | ------- |
-| `ingress.enabled`   | - Should the ingress be enabled?              | `true`  |
-| `ingress.className` | - The class of the ingress controller to use. | `nginx` |
+| Name                                                 | Description                                                               | Value                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
+| `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false'  | `false`                  |
+| `ingress.className`                                  | The class of the ingress controller to use.                               | `nginx`                  |
+| `ingress.hostname`                                   | Simple hostname mode: ingress auto-generated if `ingress.hosts` empty     | `localhost`              |
+| `ingress.hosts`                                      | Full ingress host/path subtree (advanced mode).                           | `[]`                     |
+| `ingress.tlsEnabled`                                 | Set to 'false', to disable rendering Ingress TLS (HTTP-only).             | `true`                   |
+| `ingress.tlsSecretName`                              | Secret name used by inferred TLS when `ingress.tls` is empty.             | `ingress-nginx-tls-cert` |
+| `ingress.tls`                                        | Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true. | `[]`                     |
+| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                           | `letsencrypt-prod`       |
 
-### ingress.annotations - Annotations to add to the ingress resource.
-
-| Name                                                 | Description | Value              |
-| ---------------------------------------------------- | ----------- | ------------------ |
-| `ingress.annotations.cert-manager.io/cluster-issuer` |             | `letsencrypt-prod` |
-
-### ingress.hosts Host name information for the ingress. 
-
-| Name                    | Description                       | Value                 |
-| ----------------------- | --------------------------------- | --------------------- |
-| `ingress.hosts[0].host` | - The host names for the ingress. | `api-dev.vegbank.org` |
-
-### ingress.hosts[0].paths - The paths for the ingress.
-
-| Name                                 | Description                         | Value    |
-| ------------------------------------ | ----------------------------------- | -------- |
-| `ingress.hosts[0].paths[0].path`     | - The path for the ingress.         | `/`      |
-| `ingress.hosts[0].paths[0].pathType` | - The type of path matching to use. | `Prefix` |
-
-### tls 
-
-| Name                        | Description                                              | Value                     |
-| --------------------------- | -------------------------------------------------------- | ------------------------- |
-| `ingress.tls[0].hosts`      | - The host names for the TLS certification.              | `["api-dev.vegbank.org"]` |
-| `ingress.tls[0].secretName` | - The name of the secret containing the TLS certificate. | `ingress-nginx-tls-cert`  |
-| `resources`                 |                                                          | `{}`                      |
-
-### livenessProbe
-
-
-### livenessProbe.httpGet
-
-| Name                         | Description                               | Value |
-| ---------------------------- | ----------------------------------------- | ----- |
-| `livenessProbe.httpGet.path` | - The path to use for the liveness probe. | `/`   |
-| `livenessProbe.httpGet.port` | - The port to use for the liveness probe. | `80`  |
-
-### readinessProbe
-
-
-### readinessProbe.httpGet
-
-| Name                          | Description                                | Value |
-| ----------------------------- | ------------------------------------------ | ----- |
-| `readinessProbe.httpGet.path` | - The path to use for the readiness probe. | `/`   |
-| `readinessProbe.httpGet.port` | - The port to use for the readiness probe. | `80`  |
-
-### autoscaling
+### Miscellaneous
 
 | Name                                         | Description                                                  | Value   |
 | -------------------------------------------- | ------------------------------------------------------------ | ------- |
+| `serviceAccount.create`                      | Specifies whether a service account should be created        | `true`  |
+| `serviceAccount.automount`                   | Automatically mount a ServiceAccount's API credentials?      | `true`  |
+| `serviceAccount.annotations`                 | Annotations to add to the service account                    | `{}`    |
+| `serviceAccount.name`                        | The name of the service account to use.                      | `""`    |
 | `autoscaling.enabled`                        |                                                              | `false` |
 | `autoscaling.minReplicas`                    |                                                              | `1`     |
 | `autoscaling.maxReplicas`                    |                                                              | `100`   |
 | `autoscaling.targetCPUUtilizationPercentage` |                                                              | `80`    |
-| `volumes`                                    | Additional volumes on the output Deployment definition.      | `[]`    |
 | `volumeMounts`                               | Additional volumeMounts on the output Deployment definition. | `[]`    |
 | `nodeSelector`                               |                                                              | `{}`    |
 | `tolerations`                                |                                                              | `[]`    |
 | `affinity`                                   |                                                              | `{}`    |
+| `imagePullSecrets`                           |                                                              | `[]`    |
+| `nameOverride`                               |                                                              | `""`    |
+| `fullnameOverride`                           |                                                              | `""`    |
+| `podAnnotations`                             | currently unused                                             | `{}`    |
+| `podLabels`                                  |                                                              | `{}`    |
+| `podSecurityContext`                         |                                                              | `{}`    |
+| `securityContext`                            |                                                              | `{}`    |
 
-### PostgreSQL
+## Packaging and Publishing the Helm Chart
 
-| Name                 | Description                                  | Value  |
-| -------------------- | -------------------------------------------- | ------ |
-| `postgresql.enabled` | - Should the PostgreSQL database be enabled? | `true` |
+### Package the Chart
 
-### postgresql.primary
+1. Edit `Chart.yaml` as follows:
+   1. Update the `version` field to the new version number (e.g. `0.1.0`). This version number uses [semantic versioning](https://semver.org/), and should be updated according to the type of changes made to the chart since the last version.
+   2. Ensure the `appVersion` field is set to match the version of the VegBank API that you wish to deploy with this chart. This should be a valid docker image tag for the VegBank API image in the [GitHub Container Registry](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank).
+2. Use the `helm package` command:
 
-| Name                                    | Description                                                                       | Value                                                                                                                                                                                                                                                            |
-| --------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgresql.primary.resourcesPreset`    | A preset of resources to use for the PostgreSQL pod defined in the bitnami chart. | `small`                                                                                                                                                                                                                                                          |
-| `postgresql.primary.resources`          | Space for manually defining resources. If used, remove resourcesPreset.           | `{}`                                                                                                                                                                                                                                                             |
-| `postgresql.primary.pgHbaConfiguration` | How can users access the postgresql database?                                     | `host        vegbank       vegbank       0.0.0.0/0       password
-host        vegbank       vegbank       ::0/0           password
-local       all           all                           trust
-host        all           all           127.0.0.1/32    trust
-` |
+    ```shell
+    helm package -u ./helm
+    ```
 
-### Persistence
+    ...which will create a file named `vegbank-<x.x.x>.tgz` in the current directory, where `<x.x.x>` is the version number you set in `Chart.yaml`.
 
-| Name                                          | Description                                                            | Value               |
-| --------------------------------------------- | ---------------------------------------------------------------------- | ------------------- |
-| `postgresql.primary.persistence.enabled`      | - Should persistence be enabled for the PostgreSQL database?           | `true`              |
-| `postgresql.primary.persistence.storageClass` | - The storage class to use for the PostgreSQL database.                | `csi-cephfs-sc`     |
-| `postgresql.primary.persistence.size`         | - The size of the storage space available for the PostgreSQL database. | `100Gi`             |
-| `postgresql.primary.persistence.accessModes`  | - The access modes for the PostgreSQL database storage.                | `["ReadWriteMany"]` |
+### Publish the Chart to the GitHub Container Registry
+
+1. Prerequisite: you will need a GitHub Personal Access Token (PAT) with the appropriate permissions to publish to the GitHub Container Registry. See the [Docker README](../docker/README.md) for details on how to create a PAT and use it to log in.
+
+2. Once you have authenticated with the GitHub Container Registry, you can use the `helm push` command to publish the packaged chart:
+
+    ```shell
+    helm push vegbank-<x.x.x>.tgz oci://ghcr.io/nceas/charts
+    ```
+
+## Appendix 1: Prerequisite: Install a PostgreSQL Database
+
+Before deploying the VegBank API helm chart, first deploy a PostgreSQL database, using the `cnpg` helm chart. This will initialize 3 postgres pods - wait for all three pods to be ready - and check their logs are free of errors - before proceeding.
+
+> [!CAUTION]
+> This is only a one-time deployment. DO NOT helm uninstall or helm delete this chart, unless you really need to! Doing so will result in the dynamically provisioned PVCs being deleted (You won't lose the PVs or the data, but re-binding new PVCs to the existing data is non-trivial.) If you chose to have CNPG auto-generate a DB credentials secret, that will also be deleted.
+
+1. **Database Credentials**
+
+   You may manually create a K8s Secret containing the PostgreSQL username and password, or you can allow the `cnpg` chart to automatically generate a secret for you. If you choose to create a secret manually, ensure the `values-cnpg.yaml` file contains the name of your secret. See the [dataone-cnpg chart documentation](https://github.com/DataONEorg/dataone-cnpg?tab=readme-ov-file#secrets--credentials) for details.
+
+> [!IMPORTANT]
+> Either way, be sure to save the credentials; if lost, you will need to uninstall and reinstall the chart which could result in data loss if you have not taken a backup. NCEAS production and shared-dev credentials should be kept GPG-encrypted in our security repo.
+
+2. **Install the cnpg chart with the appropriate overrides file**
+
+    ```sh
+    # Deploy the latest version of the chart by leaving out the --version parameter.
+    # Using the deployment name 'vegbankdb':
+    #
+    $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./helm/admin/values-cnpg.yaml
+
+    $ kubectl -n dev-vegbank get pods
+    NAME                         READY   STATUS    RESTARTS   AGE
+    vegbankdb-cnpg-1             1/1     Running   0          5m
+    vegbankdb-cnpg-2             1/1     Running   0          6m
+    vegbankdb-cnpg-3             1/1     Running   0          7m
+    ```
+
+3. **Database Backup & Recovery**
+
+   Scheduled backups can be enabled as described in the `dataone-cnpg` [helm chart documentation](https://github.com/DataONEorg/dataone-cnpg?tab=readme-ov-file#scheduled-backup). This is disabled by default, but can be overridden in [`./admin/values-cnpg.yaml`](./admin/values-cnpg.yaml)
+
+   See the [database recovery documentation at `./docs/db-recovery.md`](./docs/db-recovery.md) for details of how to recover the database from backups.
+
+## Appendix 2: Prerequisite: Create K8s Secrets
+
+1. **Flask Session-Signing Secret for the API Application**
+
+   This secret MUST be stable across pod restarts so that user sessions remain valid after a deployment or pod reschedule. Without it, a new random key is generated every restart, invalidating all active sessions. The secret is consumed by the deployment as the `FLASK_SECRET_KEY` environment variable. Steps:
+
+   ```shell
+   # 1. Generate a strong random key locally:
+   RND_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+
+   # 2. Create the secret:
+   kubectl create secret generic vegbank-flask-secret \
+       --from-literal=secret_key=$RND_KEY
+   ```
+
+2. **OIDC Client Secret for the API Application**
+
+   This secret will be mounted into the pod at `/etc/vegbank/oidc/client_secrets.json` and read by the app via the `OIDC_CLIENT_SECRETS_FILE` environment variable. Steps:
+
+   1. Either obtain the keycloak-client-secrets-prod.json file from our private NCEAS GH Enterprise security repo, or use the template `helm/admin/client-secrets.json` as a starting point to fill in your own details (`client_id`, `client_secret`, `server_metadata_url`, `redirect_uris`)
+
+   2. Create the secret from this file:
+
+      ```shell
+      kubectl create secret generic vegbank-oidc-config \
+          --from-file=client_secrets.json=path/to/my-client-secrets.json
+      ```
+
+## Appendix 3: Initial Database Population with a Dump File
+
+> [!NOTE]
+> A data-only (DML) `pg_dump` from the original VegBank database was used to bootstrap the production deployment. This process is documented in the [./docs/prod-deployment.md](./docs/prod-deployment.md) file
+
+- If you only need a "clean" installation with an empty database, this step can be skipped.
+
+- If you wish to pre-populate with data from an existing database, you will need a `pg_dump` file that contains both the data (DML) and the schema definition (DDL). Such files are available for development purposes on the `knbvm (knbvm.nceas.ucsb.edu)` VM, under `/mnt/ceph/repos/vegbank/`, and can be accessed via PV+PVC mounts in both `vegbank-dev` and `vegbank` namespaces; e.g:
+
+    ```sh
+    $ kc get pvc -n vegbank-dev
+    NAME                    STATUS   VOLUME                        CAPACITY   ACCESS MODES   AGE
+    vegbankdb-init-pgdata   Bound    cephfs-vegbankdb-init-pgdata  100Gi      RWO            182d
+
+    # Admin access is needed for additional PV creation
+    ```
+
+- Override the following values in `values.yaml` to enable the restore process and specify the dump file to use:
+
+  ```yaml
+  databaseRestore:
+    enabled: true                   # (default is 'false')
+    pvc: "vegbankdb-init-pgdata"    # must match name of PVC containing dump file (see above)
+    filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"   # path to dump file from PVC mount-point
+    postgresImage: postgres:17      # must match cnpg major version - see below
+  ```
+
+> [!IMPORTANT]
+> The restore process will fail unless the major version of the postgres image defined in `databaseRestore.postgresImage` matches the `cnpg` major version.

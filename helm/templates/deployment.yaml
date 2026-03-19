@@ -28,9 +28,20 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
+      {{- if .Values.databaseRestore.enabled }}
       - name: vegbankdb-init-pgdata
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
+      {{- end }}
+      {{- if not (has .Values.auth.accessMode (list "read_only" "open" "authenticated")) }}
+          {{- fail "auth.accessMode must be either 'read_only', 'open' or 'authenticated'" }}
+      {{- end }}
+      {{- if eq .Values.auth.accessMode "authenticated" }}
+      - name: oidc-config
+        secret:
+          secretName: {{ .Values.auth.oidcSecretName | default "vegbank-oidc-config" }}
+          defaultMode: 0440
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -41,20 +52,22 @@ spec:
       initContainers:
         - name: {{ .Chart.Name }}-reconcile-postgres # Confirm postgres is ready
           image: {{ .Values.databaseRestore.postgresImage }}
+          {{- if .Values.databaseRestore.enabled }}
           volumeMounts:
             # Mount the PVC, this path will contain the directory that's been mounted on knbvm
-            - name: {{ .Values.databaseRestore.pvc }}
-              mountPath: "/tmp/databaseRestore"
+            - name: vegbankdb-init-pgdata
+              mountPath: {{ .Values.databaseRestore.mountpath }}
+          {{- end }}
           env:
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_HOST
               value: {{ .Values.database.host | quote }}
@@ -91,16 +104,17 @@ spec:
               mountPath: {{ .Values.flyway.dbpath }}/migrations
           env:
             - name: FLYWAY_URL
-              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+              value: "jdbc:postgresql://{{ .Values.flyway.dbHost }}:{{ .Values.flyway.dbPort }}/{{
+              .Values.database.name }}"
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: FLYWAY_LOCATIONS
               value: "filesystem:{{ .Values.flyway.dbpath }}/migrations"
@@ -109,7 +123,7 @@ spec:
             - -c
             - >
               echo "## Flyway Env";
-              env | grep '^FLYWAY_' || true;
+              env | grep '^FLYWAY_' | sed 's/^FLYWAY_PASSWORD=.*/FLYWAY_PASSWORD=(SEE {{ .Values.database.existingSecret }} SECRET)/' || true;
               echo "## Listing Migrations";
               ls {{ .Values.flyway.dbpath }}/migrations || true;
               echo "Applying all migrations in db/migrations";
@@ -124,26 +138,41 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- omit .Values.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+          {{- if eq .Values.auth.accessMode "authenticated" }}
+            - name: oidc-config
+              mountPath: /etc/vegbank/oidc
+              readOnly: true
+          {{- end }}
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
+            - name: VB_ACCESS_MODE
+              value: {{ .Values.auth.accessMode | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: password
             - name: VB_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: vegbankdbcreds
+                  name: {{ .Values.database.existingSecret }}
                   key: username
             - name: VB_DB_NAME
               value: {{ .Values.database.name | quote }}
@@ -151,8 +180,17 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
-            - name: VB_ALLOW_UPLOADS
-              value: {{ .Values.allowUploads | quote }}
+            {{- if eq .Values.auth.accessMode "authenticated" }}
+            # Path to the mounted OIDC client secrets JSON file
+            - name: OIDC_CLIENT_SECRETS_FILE
+              value: /etc/vegbank/oidc/client_secrets.json
+            # Secret key for signing Flask sessions (must be stable across restarts)
+            - name: FLASK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vegbank-flask-secret
+                  key: secret_key
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

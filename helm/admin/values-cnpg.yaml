@@ -1,0 +1,82 @@
+## Values overrides for deploying a new CNPG cluster for Vegbank.
+## See CNPG Cluster Deployment section in the helm README for instructions.
+##
+dbName: vegbank
+existingSecret: vegbankdbcreds
+dbUser: vegbank
+
+## @param imageOverrideSpec change or upgrade the deployed postgres image version.
+## Leaving this blank (highly recommended) will default to allowing the CNPG Operator to manage
+## Postgres minor-version upgrades automatically.
+## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
+## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+## Example: ghcr.io/cloudnative-pg/postgresql:18
+##
+imageOverrideSpec: ""
+
+## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
+
+## @section Initialization and Backup Recovery
+init:
+  ## @param init.enabled Set this to 'true' to enable init options. Default is 'false'
+  ## to prevent conflicts when upgrading an existing deployment
+  ##
+  enabled: false
+
+  ## @param init.method Method used to initialize cluster when 'init.enabled' is set to 'true'.
+  ## By default, this method is set to 'initdb' to initialize an empty `cnpg` cluster
+  ## Note - the dbUser must match the username in the secret.
+  ## Set this value to 'recovery' to recover from a volumeSnapshot via `ScheduledBackups`, 
+  ## To learn more, see:
+  ## https://github.com/NCEAS/vegbank2/blob/develop/helm/docs/db-recovery.md
+  ## and: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
+  ##
+  method: initdb
+
+  ## @param init.recoverFromBackup Set this to volumeSnapshot name that will be used for recovery
+  ## ex. 'vegbankdb-scheduled-backup-20251107221536'
+  ## Will be ignored unless 'init.method' is set to 'recovery'.
+  ##
+  recoverFromBackup: vegbankdb-scheduled-backup-placeholder
+
+## @section backup - Enabled `ScheduledBackup` functionality to create volume snapshots
+backup:
+  ## @param backup.enabled - Set to 'true' to begin creating volumesnapshots upon installation
+  ## of the 'cnpg' postgres cluster. For more information,
+  ## see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md#scheduled-backup
+  ##
+  enabled: true
+
+resources:
+  ## CNPG recommends "Guaranteed" QoS for DB workloads
+  ## see https://cloudnative-pg.io/documentation/1.20/resource_management/
+  ## To do so, set limits and requests for both CPU and memory TO THE SAME VALUES!
+  requests:
+    cpu: 4
+    memory: 16Gi
+  limits:
+    cpu: 4
+    memory: 16Gi
+
+persistence:
+  size: 100Gi
+  storageClass: csi-cephfs-ssd-sc-ephemeral
+
+postgresql:
+  parameters:
+    ## See https://oneuptime.com/blog/post/2026-01-25-postgresql-shared-buffers-work-mem-tuning/view
+    max_connections: 100
+    max_wal_size: 8192MB
+    min_wal_size: 2048MB
+    shared_buffers: 4096MB  # rule of thumb is about 25% of total RAM
+    work_mem: 64MB          # per request
+    temp_buffers: 32MB
+    effective_cache_size: 10GB
+    max_wal_senders: 16
+    # Log any query that takes longer than 1 second
+    log_min_duration_statement: '2s'
+    # Log whenever a temporary file larger than 0kb is created
+    log_temp_files: 0
+    # Log details about why a query was slow (optional but helpful)
+    log_checkpoints: on
+    log_lock_waits: on

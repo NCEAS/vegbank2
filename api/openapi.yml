@@ -4,6 +4,7 @@ info:
   version: '2.0.0-beta'
   license:
     name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   x-logo:
     url: './assets/vegbank-logo.png'
     altText: VegBank logo
@@ -54,6 +55,12 @@ tags:
   description: Operations related to plant concepts
 - name: Taxon observations
   description: Operations related to taxon observations
+- name: Strata
+  description: Operations related to defined strata
+- name: Stem counts
+  description: Operations related to stem counts
+- name: Taxon importances
+  description: Operations related to taxon importances
 - name: Taxon interpretations
   description: Operations related to taxon interpretations
 - name: Cover methods
@@ -66,6 +73,17 @@ tags:
   description: Operations related to projects
 - name: References
   description: Operations related to references
+- name: Named Places
+  description: Operations related to named places
+- name: User Datasets
+  description: |
+    Operations related to VegBank datasets. A dataset is an arbitrary
+    user-defined collection of plot observations, typically defined for
+    some specific analysis or similar activity, and registered in
+    VegBank with a stable identifier that can be used for citing and
+    sharing this defined collection.
+- name: Overview
+  description: VegBank summary stats
 
 paths:
   /plot-observations/{ob_code}:
@@ -86,6 +104,7 @@ paths:
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
       responses:
         '200':
           $ref: "#/components/responses/PlotObservations"
@@ -116,6 +135,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -148,6 +168,40 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /named-places/{np_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-np
+      summary: Get plot observations by named place
+      description: >
+        Retrieve a paginated and sorted collection of plot observations
+        representing all plot observations associated with the specified named
+        place (using its `np_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: np_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "np.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -181,6 +235,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -214,6 +269,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -246,6 +302,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -278,6 +335,40 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
+        - $ref: '#/components/parameters/num_taxa_ob'
+        - $ref: '#/components/parameters/num_comms_ob'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlotObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /user-datasets/{ds_code}/plot-observations:
+    get:
+      tags:
+        - Plot observations
+      operationId: get-ob-by-ds
+      summary: Get all plot observations included in a user dataset
+      description: >
+        Retrieve a paginated and sorted collection of all plot
+        observations associated with the specified user dataset (using
+        its `ds_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: ds_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ds.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/detail_ob'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_ob'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -303,6 +394,7 @@ paths:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
+        - $ref: '#/components/parameters/bundle'
         - $ref: '#/components/parameters/num_taxa_ob'
         - $ref: '#/components/parameters/num_comms_ob'
       responses:
@@ -314,6 +406,9 @@ paths:
       tags:
         - Plot observations
       operationId: upload-ob
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload plot observations
       x-status: "beta"
       requestBody:
@@ -353,6 +448,7 @@ paths:
           schema:
             type: string
           example: "cc.1"
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -379,6 +475,7 @@ paths:
             type: string
           example: "cl.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -408,6 +505,66 @@ paths:
             type: string
           example: "ob.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /parties/{py_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-py
+      summary: Get community concepts by py
+      description: >
+        Retrieve a paginated and sorted collection of the community concepts
+        with a party perspective (i.e. status record) provided by the specified
+        party (using its `py_code`), or a subset thereof based on a specified
+        `search` query.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/CommunityConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /references/{rf_code}/community-concepts:
+    get:
+      tags:
+        - Community concepts
+      operationId: get-cc-by-rf
+      summary: Get community concepts by rf
+      description: >
+        Retrieve a paginated and sorted collection of the community concepts
+        associated with a given reference (using its `rf_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: rf_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "rf.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -430,6 +587,7 @@ paths:
         based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_cc'
         - $ref: '#/components/parameters/limit'
@@ -444,6 +602,9 @@ paths:
       tags:
         - Community concepts
       operationId: upload-cc
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload community concepts
       x-status: "planned"
       requestBody:
@@ -706,7 +867,67 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /parties/{py_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-py
+      summary: Get plant concepts by py
+      description: >
+        Retrieve a paginated and sorted collection of the plant concepts with a
+        party perspective (i.e. status record) provided by the specified party
+        (using its `py_code`), or a subset thereof based on a specified `search`
+        query.
+      parameters:
+        - name: py_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "py.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/PlantConcepts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /references/{rf_code}/plant-concepts:
+    get:
+      tags:
+        - Plant concepts
+      operationId: get-pc-by-rf
+      summary: Get plant concepts by rf
+      description: >
+        Retrieve a paginated and sorted collection of the plant concepts
+        associated with a given reference (using its `rf_code`), or a subset
+        thereof based on a specified `search` query.
+      parameters:
+        - name: rf_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "rf.1"
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/sort_pc'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
       responses:
         '200':
@@ -732,6 +953,7 @@ paths:
             type: string
           example: "to.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -761,6 +983,7 @@ paths:
             type: string
           example: "ob.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -783,6 +1006,7 @@ paths:
         based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_concept'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_pc'
         - $ref: '#/components/parameters/limit'
@@ -797,6 +1021,9 @@ paths:
       tags:
         - Plant concepts
       operationId: upload-pc
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload plant concepts
       x-status: "planned"
       requestBody:
@@ -836,6 +1063,7 @@ paths:
           schema:
             type: string
           example: "to.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -860,6 +1088,7 @@ paths:
           schema:
             type: string
           example: "ob.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -886,6 +1115,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -905,6 +1135,7 @@ paths:
         Retrieve a paginated collection of all taxon observations
         recorded in VegBank.
       parameters:
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -912,6 +1143,364 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/TaxonObservations"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /taxon-importances/{tm_code}:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-id
+      summary: Get taxon importance
+      description: >
+        Retrieve a single taxon importance using its `tm_code`.
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-ob
+      summary: Get taxon importances by ob
+      description: >
+        Retrieve a paginated collection of taxon importances
+        associated with the specified plot observation (using its
+        `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plant-concepts/{pc_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-pc
+      summary: Get taxon importances by pc
+      description: >
+        Retrieve a paginated collection of taxon importances
+        interpreted to the specified plant concept (using its
+        `pc_code`).
+      parameters:
+        - name: pc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pc.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm-by-to
+      summary: Get taxon importances by to
+      description: >
+        Retrieve a paginated collection of taxon importances
+        associated with the specified taxon observation (using its
+        `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances:
+    get:
+      tags:
+        - Taxon importances
+      operationId: get-tm
+      summary: Get all taxon importances
+      description: >
+        Retrieve a paginated collection of all taxon importances
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/with_nested'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/TaxonImportances"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /stem-counts/{sc_code}:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc-by-id
+      summary: Get stem count
+      description: >
+        Retrieve a single stem count using its `sc_code`.
+      parameters:
+        - name: sc_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sc.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/stem-counts:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc-by-ob
+      summary: Get stem counts by ob
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified plot observation (using its `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/stem-counts:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc-by-to
+      summary: Get stem counts by to
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified taxon observation (using its `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances/{tm_code}/stem-counts:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc-by-tm
+      summary: Get stem counts by tm
+      description: >
+        Retrieve a paginated collection of stem counts associated with the
+        specified taxon importance (using its `tm_code`).
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /stem-counts:
+    get:
+      tags:
+        - Stem counts
+      operationId: get-sc
+      summary: Get all stem counts
+      description: >
+        Retrieve a paginated collection of all stem counts
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/StemCounts"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /strata/{sr_code}:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-id
+      summary: Get stratum
+      description: >
+        Retrieve a single stratum using its `sr_code`.
+      parameters:
+        - name: sr_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "sr.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /plot-observations/{ob_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-ob
+      summary: Get strata by ob
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified plot observation (using its `ob_code`).
+      parameters:
+        - name: ob_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ob.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-observations/{to_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-to
+      summary: Get strata by to
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified taxon observation (using its `to_code`).
+      parameters:
+        - name: to_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "to.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /taxon-importances/{tm_code}/strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr-by-tm
+      summary: Get strata by tm
+      description: >
+        Retrieve a paginated collection of strata associated with the
+        specified taxon importance (using its `tm_code`).
+      parameters:
+        - name: tm_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tm.1"
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /strata:
+    get:
+      tags:
+        - Strata
+      operationId: get-sr
+      summary: Get all strata
+      description: >
+        Retrieve a paginated collection of all strata recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/detail'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Strata"
         '400':
           $ref: "#/components/responses/InvalidParameters"
 
@@ -953,9 +1542,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
-        - $ref: '#/components/parameters/search'
-        - $ref: '#/components/parameters/with_nested'
-        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1080,6 +1667,9 @@ paths:
       tags:
         - Cover methods
       operationId: upload-cm
+      security:
+        - oauth2:
+            - vegbank:admin
       summary: Upload cover methods
       x-status: "beta"
       requestBody:
@@ -1149,6 +1739,9 @@ paths:
       tags:
         - Stratum methods
       operationId: upload-sm
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload stratum methods
       x-status: "beta"
       requestBody:
@@ -1300,8 +1893,82 @@ paths:
       tags:
         - Parties
       operationId: upload-py
+      security:
+        - oauth2:
+            - vegbank:admin
       summary: Upload parties
       x-status: "beta"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "planned"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /roles/{ar_code}:
+    get:
+      tags:
+        - Parties
+      operationId: get-ar-by-id
+      summary: Get role
+      description: >
+        Retrieve a single role using its `ar_code`.
+      parameters:
+        - name: ar_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ar.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Roles"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /roles:
+    get:
+      tags:
+        - Parties
+      operationId: get-ar
+      summary: Get all roles
+      description: >
+        Retrieve a paginated collection of all roles
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/Roles"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - Parties
+      operationId: upload-ar
+      security:
+        - oauth2:
+            - vegbank:admin
+      summary: Upload roles
+      x-status: "planned"
       requestBody:
         content:
           multipart/form-data:
@@ -1370,6 +2037,9 @@ paths:
       tags:
         - Projects
       operationId: upload-pj
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload projects
       x-status: "planned"
       requestBody:
@@ -1439,6 +2109,9 @@ paths:
       tags:
         - References
       operationId: upload-rf
+      security:
+        - oauth2:
+            - vegbank:contributor
       summary: Upload references
       x-status: "planned"
       requestBody:
@@ -1462,6 +2135,274 @@ paths:
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
           $ref: "#/components/responses/InvalidDataUpload"
+
+  /named-places/{np_code}:
+    get:
+      tags:
+        - Named Places
+      operationId: get-np-by-id
+      summary: Get named place
+      description: >
+        Retrieve a single named place using its `np_code`.
+      parameters:
+        - name: np_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "np.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/NamedPlaces"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /named-places:
+    get:
+      tags:
+        - Named Places
+      operationId: get-np
+      summary: Get all named places
+      description: >
+        Retrieve a paginated collection of all named places
+        recorded in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/NamedPlaces"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+
+  /user-datasets/{ds_code}:
+    get:
+      tags:
+        - User Datasets
+      operationId: get-ds-by-id
+      summary: Get a user-defined dataset entry
+      description: >
+        Retrieve the catalog entry for a single public user-defined dataset
+        using its `ds_code`.
+      parameters:
+        - name: ds_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ds.1"
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserDatasets"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+  /user-datasets:
+    get:
+      tags:
+        - User Datasets
+      operationId: get-ds
+      summary: Get all user-defined datasets entries
+      description: >
+        Retrieve a paginated catalog of all public user-defined datasets
+        registered in VegBank.
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/create_parquet'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserDatasets"
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
+    post: #TODO
+      tags:
+        - User Datasets
+      operationId: upload-ds
+      security:
+        - oauth2:
+            - vegbank:user
+      summary: Upload a new user-defined dataset, which defines a bundle
+        of one or more plot observations
+      x-status: "planned"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/tbd"
+      responses:
+        '200':
+          description: "completed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: counts and vb_codes of newly created records
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
+
+  /overview:
+    get:
+      tags:
+        - Overview
+      operationId: get-overview
+      summary: Get basic VegBank database stats
+      description: >
+        Retrieve an assortment of count statistics indicating what's in
+        VegBank.
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 5
+          description: Maximum number of records to return in Top N counts
+      responses:
+        '200':
+          description: Overview statistics successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  core_counts:
+                    type: array
+                    description: Database-wide count metrics
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the metric being counted"
+                          example: "observations"
+                        count:
+                          type: integer
+                          description: "Total count for this metric"
+                          example: 115246
+                  latest_n_projects:
+                    type: array
+                    description: Most recent N projects by plot upload date
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the project"
+                          example: "California Vegetation Survey"
+                        pj_code:
+                          type: string
+                          description: "VegBank project identifier"
+                          example: "pj.1"
+                        last_date_added:
+                          type: string
+                          format: date
+                          description: "Most recent plot observation upload date"
+                          example: "2026-03-30"
+                        count:
+                          type: integer
+                          description: "Count of observations in this project"
+                          example: 3400
+                  top_n_community_concepts:
+                    type: array
+                    description: Top N community concepts by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the community concept"
+                          example: "California Annual Grassland"
+                        cc_code:
+                          type: string
+                          description: "VegBank community concept identifier"
+                          example: "cc.1"
+                        count:
+                          type: integer
+                          description: "Count of observations of this community"
+                          example: 670
+                  top_n_plant_concepts:
+                    type: array
+                    description: Top N plant concepts by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Plant concept name"
+                          example: "Quercus agrifolia"
+                        pc_code:
+                          type: string
+                          description: "VegBank plant concept identifier"
+                          example: "pc.1"
+                        count:
+                          type: integer
+                          description: "Count of observations containing this plant"
+                          example: 890
+                  top_n_projects:
+                    type: array
+                    description: Top N projects by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the project"
+                          example: "California Vegetation Survey"
+                        pj_code:
+                          type: string
+                          description: "VegBank project identifier"
+                          example: "pj.1"
+                        count:
+                          type: integer
+                          description: "Count of observations in this project"
+                          example: 3400
+                  top_n_contributors:
+                    type: array
+                    description: Top N contributors by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the contributing party"
+                          example: "John Smith"
+                        py_code:
+                          type: string
+                          description: "VegBank party identifier"
+                          example: "py.1"
+                        count:
+                          type: integer
+                          description: "Count of observations by this contributor"
+                          example: 1250
+                  top_n_named_places:
+                    type: array
+                    description: Top N named places by observation count
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the geographic place"
+                          example: "California"
+                        np_code:
+                          type: string
+                          description: "VegBank named place identifier"
+                          example: "np.1"
+                        count:
+                          type: integer
+                          description: "Count of observations in this place"
+                          example: 5432
+        '400':
+          $ref: "#/components/responses/InvalidParameters"
 
 components:
   parameters:
@@ -1531,13 +2472,24 @@ components:
         type: boolean
         default: false
       description: If true, return data payload in binary Parquet format
+    bundle:
+      name: bundle
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        If 'csv', return a zip archive of CSVs. When set, the `limit` parameter
+        will default to 20000 (and higher values will be ignored), the `detail`
+        parameter will be set to 'full', and the `with_nested` parameter will be
+        set to `false`.
     sort_ob:
       name: sort
       in: query
       required: false
       description: |
-        Sort order for results. Prefix with `-` for descending order or `+` for ascending order.
-        Ascending order is the default if no prefix is provided.
+        Sort order for results. Prefix with `-` for descending order or `+` for
+        ascending order. Ascending order is the default if no prefix is provided.
 
         Available sort fields:
         - `default` - Default sort order
@@ -1706,6 +2658,32 @@ components:
         minimum: 0
         default: 5
       description: Number of communities to return per plot observation, ordered by commclass_id
+    status_concept:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [any, current, accepted, current_accepted]
+        default: any
+      description: |
+        Status criterion for returned plant concepts and their children:
+        - `any`: Returns matching concepts regardless of status
+        - `current`: Only returns concepts that don't have (past) status stop dates
+        - `accepted`: Only returns concepts that have an accepted status
+        - `current_accepted`: Only returns concepts that are both current and accepted
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.vegbank.org/login
+          tokenUrl: https://api.vegbank.org/login
+          scopes:
+            vegbank:admin: Administrator access with full permissions
+            vegbank:contributor: Contributor access to create and update plot observations
+            vegbank:user: User access for uploading user-defined datasets
 
   responses:
 
@@ -1738,6 +2716,7 @@ components:
         - `detail=minimal&with_nested=true`: Basic fields + nested array fields
         - `detail=full&with_nested=false`: Extended fields, no nested array fields
         - `detail=full&with_nested=true`: Extended fields + nested array fields
+        - `bundle=csv`: ZIP archive containing related CSV files
       content:
         application/json:
           schema:
@@ -1752,6 +2731,30 @@ components:
             type: string
             format: binary
             description: Parquet file with same data as the JSON response.
+        application/zip:
+          schema:
+            type: string
+            format: binary
+            description: |
+              ZIP archive containing multiple related CSV files plus README.txt.
+              Returned when `bundle=csv` parameter is specified.
+
+              CSV files conform to the schemas of their respective API endpoints with
+              `detail=full&with_nested=false` applied. The archive typically includes:
+              - plot_observations.csv: Plot observations matching the request
+              - taxon_observations.csv: Plants observed on the plots
+              - strata.csv: Strata defined for the plot observations
+              - taxon_importances.csv: Importance data for observed plants, by strata
+              - stem_counts.csv: Stem counts of observed plants, by size group and strata
+              - taxon_intepretations.csv: Taxonomic interpretations of observed plants
+              - plant_concepts.csv: Plant concepts associated with the observations
+              - community_classifications.csv: Community classifications of the observed plots
+              - community_concepts.csv: Community types associated with the observed plots
+              - projects.csv: Projects associated with the plot observations
+              - parties.csv: Contributing parties (people and organizations)
+              - README.txt: Metadata, file descriptions, and citation
+
+              Files are linked via `ob_code` and other identifier code columns.
 
     CommunityConcepts:
       description: |
@@ -1840,8 +2843,65 @@ components:
         application/json:
           schema:
             oneOf:
+              - $ref: '#/components/schemas/taxon_obs_minimal'
+              - $ref: '#/components/schemas/taxon_obs_minimal_nested'
               - $ref: '#/components/schemas/taxon_obs_full'
               - $ref: '#/components/schemas/taxon_obs_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    TaxonImportances:
+      description: |
+        Matching taxon importances(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
+        - `detail=full&with_nested=false`: Extended fields, no nested array fields
+        - `detail=full&with_nested=true`: Extended fields + nested array fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/taxon_imp_minimal'
+              - $ref: '#/components/schemas/taxon_imp_minimal_nested'
+              - $ref: '#/components/schemas/taxon_imp_full'
+              - $ref: '#/components/schemas/taxon_imp_full_nested'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    StemCounts:
+      description: |
+        Matching stem count(s), with fields based on parameters:
+        - `detail=minimal`: Basic fields only
+        - `detail=full`: Extended fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/stem_count_minimal'
+              - $ref: '#/components/schemas/stem_count_full'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    Strata:
+      description: |
+        Matching stratum or strata, with fields based on parameters:
+        - `detail=minimal`: Basic fields only
+        - `detail=full`: Extended fields
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/stem_count_minimal'
+              - $ref: '#/components/schemas/stem_count_full'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -1912,6 +2972,19 @@ components:
             format: binary
             description: Parquet file with same data as the JSON response.
 
+    Roles:
+      description: Matching role or roles
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/role'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
     Projects:
       description: Matching project(s)
       content:
@@ -1932,6 +3005,32 @@ components:
           schema:
             allOf:
               - $ref: '#/components/schemas/reference'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    NamedPlaces:
+      description: Matching named place(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/named_place'
+        application/vnd.apache.parquet:
+          schema:
+            type: string
+            format: binary
+            description: Parquet file with same data as the JSON response.
+
+    UserDatasets:
+      description: Matching user-defined dataset(s)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/user_dataset'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -2291,7 +3390,7 @@ components:
         stem_size_limit:
           type: number
           format: float
-          description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count (stemCount)."
+          description: "Lower diameter limit in centimeters for inclusion of a tree in the stem count"
           example: 10
         stem_observation_area:
           type: number
@@ -2645,10 +3744,140 @@ components:
           type: boolean
           description: "Does this observation have an observation synonym record?"
           example: true
+        replaced_by_ob_code:
+          type: string
+          description: "VegBank identifier of the current plot observation superseding this plot observation, if this observation has been replaced by a newer record"
+          example: "ob.2"
 
     PlotObservationFullNested:
       type: object
       properties:
+        disturbances:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: "Type of disturbance being reported"
+                example: "Wind event"
+              comment:
+                type: string
+                description: "Description of details of the disturbance and its impact on the vegetation"
+                example: "Hurricane blowdown"
+              intensity:
+                type: string
+                description: "Intensity or degree of the disturbance"
+                example: "Low"
+              age:
+                type: number
+                format: float
+                description: "Estimated time in years since the disturbance event"
+                example: 10
+              extent:
+                type: number
+                format: float
+                description: "Percent of the plot that experienced the event"
+                example: 5
+          description: "Observer estimation of the disturbance history of the plot"
+        soils:
+          type: array
+          items:
+            type: object
+            properties:
+              horizon:
+                type: string
+                description: "The horizon to which this soil observation applies"
+                example: "B"
+              depth_top:
+                type: number
+                format: float
+                description: "The depth at which the horizon observation starts"
+                example: 84
+              depth_bottom:
+                type: number
+                format: float
+                description: "The depth at which the horizon observation ends"
+                example: 86
+              color:
+                type: string
+                description: "Soil color (USDA guidelines recommended)"
+                example: "10yr 6/6 brown yellow"
+              organic:
+                type: number
+                format: float
+                description: "Percent organic content of the soil; for methods, see the plot observation methods_narrative"
+                example: 13.37
+              texture:
+                type: string
+                description: "Soil texture class. The texture classes sands, loamy sands, and sandy loams (plural terms) correspond to sand, loamy sand, and sandy loam (singular terms) in the textural triangle."
+                example: "Clay Loam"
+              sand:
+                type: number
+                format: float
+                description: "Percent sand in the soil horizon"
+                example: 15.85
+              silt:
+                type: number
+                format: float
+                description: "Percent silt in the soil horizon"
+                example: 3.47
+              clay:
+                type: number
+                format: float
+                description: "Percent clay in the soil horizon"
+                example: 0.68
+              coarse:
+                type: number
+                format: float
+                description: "Percent coarse fragments in the soil, prior to removal for textural analysis"
+                example: 0.13
+              ph:
+                type: number
+                format: float
+                description: "pH of the soil; for methods, see the plot observation methods_narrative"
+                example: 4.3
+              exchange_capacity:
+                type: number
+                format: float
+                description: "Cation exchange capacity; for methods, see the plot observation methods_narrative"
+                example: 3.68
+              base_saturation:
+                type: number
+                format: float
+                description: "Percent base saturation; for methods, see the plot observation          methods_narrative"
+                example: 32.2
+              description:
+                type: string
+                description: "Text description of the soil"
+                example: "Beige sticky clay with gray clay below"
+          description: "Observations on soil horizons made during the plot observation event"
+        named_places:
+          type: array
+          items:
+            type: object
+            properties:
+              np_code:
+                type: string
+                description: "VegBank named place identifier"
+                example: "np.1"
+              system:
+                type: string
+                description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"
+                example: "county"
+              name:
+                type: string
+                description: "The name of a place in or at which a plot is located."
+                example: "Marin"
+              description:
+                type: string
+                description: "Description of a named place. For US county names, this field identifies the containing state."
+                example: "California"
+              code:
+                type: string
+                description: "Optional code for location identification"
+                example: "6041"
+          description: "Named places that a plot may have been located in"
         taxon_count:
           type: integer
           description: "Count of taxon observations associated with this plot observation"
@@ -2688,7 +3917,7 @@ components:
                 example: "sr.1"
               stratum_name:
                 type: string
-                description: "Stratum name, or '-all-' if sr_code is null"
+                description: "Stratum name, or '<All>' if sr_code is null"
                 example: "herb"
               cover:
                 type: number
@@ -3524,7 +4753,7 @@ components:
                   - $ref: '#/components/schemas/PlantConceptFull'
                   - $ref: '#/components/schemas/PlantConceptFullNested'
 
-    TaxonObsFull:
+    TaxonObsMinimal:
       type: object
       properties:
         to_code:
@@ -3535,6 +4764,31 @@ components:
           type: string
           description: "VegBank plot observation identifier"
           example: "ob.1"
+        int_curr_pc_code:
+          type: string
+          description: "VegBank identifier for the current interpreted plant concept"
+          example: "pc.1"
+        int_orig_pc_code:
+          type: string
+          description: "VegBank identifier for the original interpreted plant concept"
+          example: "pc.1"
+        taxon_inference_area:
+          type: number
+          format: float
+          description: "Area in m2 used to infer the presence of a given taxon. Generally this should be equal to the plot-observation taxon_inference_area, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
+          example: 405
+        rf_code:
+          type: string
+          description: "VegBank identifier for the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
+          example: "rf.1"
+
+    TaxonObsFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
         author_plant_name:
           type: string
           description: "Name provided by the plot author to refer to a taxon observed within the plot"
@@ -3547,10 +4801,6 @@ components:
           type: string
           description: "Common name for the current interpreted plant concept"
           example: "Sonoran scrub oak"
-        int_curr_pc_code:
-          type: string
-          description: "VegBank identifier for the current interpreted plant concept"
-          example: "pc.1"
         int_curr_plant_sci_full:
           type: string
           description: "Scientific name (with authors) for the current interpreted plant concept"
@@ -3567,10 +4817,6 @@ components:
           type: string
           description: "Common name for the original interpreted plant concept"
           example: "Sonoran scrub oak"
-        int_orig_pc_code:
-          type: string
-          description: "VegBank identifier for the original interpreted plant concept"
-          example: "pc.1"
         int_orig_plant_sci_full:
           type: string
           description: "Scientific name (with authors) for the original interpreted plant concept"
@@ -3579,21 +4825,12 @@ components:
           type: string
           description: "Scientific name (without authors) for the original interpreted plant concept"
           example: "Quercus turbinella"
-        taxon_inference_area:
-          type: number
-          format: float
-          description: "Area in m2 used to infer the presence of a given taxon. Generally this should be equal to the plot-observation taxon_inference_area, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
-          example: 405
-        rf_code:
-          type: string
-          description: "VegBank identifier for the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
-          example: "rf.1"
         rf_label:
           type: string
           description: "Name/label of the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
           example: "USDA Plants 2002"
 
-    TaxonObsFullNested:
+    TaxonObsNested:
       type: object
       properties:
         taxon_importance:
@@ -3649,6 +4886,17 @@ components:
                 example: 50
           description: "Extended details about taxon importance"
 
+    taxon_obs_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
     taxon_obs_full:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -3659,7 +4907,20 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
                   - $ref: '#/components/schemas/TaxonObsFull'
+    taxon_obs_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
+                  - $ref: '#/components/schemas/TaxonObsNested'
     taxon_obs_full_nested:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -3670,8 +4931,349 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
                   - $ref: '#/components/schemas/TaxonObsFull'
-                  - $ref: '#/components/schemas/TaxonObsFullNested'
+                  - $ref: '#/components/schemas/TaxonObsNested'
+
+    TaxonImpMinimal:
+      type: object
+      properties:
+        tm_code:
+          type: string
+          description: "VegBank taxon importance identifier"
+          example: "tm.1"
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        cover:
+          type: number
+          format: float
+          description: "Cover, in percent, of the taxon (limited to one stratum if sr_code has a value)"
+          example: 17.5
+        cover_code:
+          type: string
+          description: "Original cover code used by the author in the Cover Method for the plot"
+          example: "6"
+        basal_area:
+          type: number
+          format: float
+          description: "Total basal area of the species in m2/ha (limited to one stratum if sr_code has a value)"
+          example: 13.141
+        biomass:
+          type: number
+          format: float
+          description: "Biomass of the species in g/m2 (limited to one stratum if sr_code has a value)"
+          example: 813
+        inference_area:
+          type: number
+          format: float
+          description: "Area used to infer the importance values of the taxon, if not the 
+            same as plot-observation taxon_inference_area"
+          example: 1000
+        stratum_base:
+          type: number
+          format: float
+          description: "Base of the stratum, in meters"
+          example: 3
+        stratum_height:
+          type: number
+          format: float
+          description: "Tallest part of the stratum, in meters"
+          example: 25
+
+    TaxonImpFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        stratum_name:
+          type: string
+          description: "Name associated with stratum by the stratum method"
+          example: "trees"
+
+    TaxonImpNested:
+      type: object
+      properties:
+        stems:
+          type: array
+          items:
+            type: object
+            properties:
+              sc_code:
+                type: string
+                description: "VegBank stem count record identifier"
+                example: "sc.1"
+              diameter:
+                type: number
+                format: float
+                description: "Diameter of the stem in centimeters. When diameter classes are used, the diameter is the midpoint between the low end and high end for the diameter class; the offset between this and the endpoints is stored in stem_diameter_accuracy."
+                example: 3.75
+              diameter_accuracy:
+                type: number
+                format: float
+                description: "Accuracy of the stem diameter measurements in centimeters, representing the distance between the diameter class midpoint and endpoint"
+                example: 1.25
+              height:
+                type: number
+                format: float
+                description: "Measured height of the stem in meters. When height classes are used, the height is the midpoint between the low end and high end for the height class; the offset between this and the endpoint is stored in stem_height_accuracy."
+                example: 1.185
+              height_accuracy:
+                type: number
+                format: float
+                description: "Accuracy of the measured height of a stem, representing the offset between the midpoint of the class and the endpoint, in meters."
+                example: 0.185
+              count:
+                type: integer
+                description: "Number of stems of a single species that have these specific stem diameter and height data in common"
+                example: 1
+              taxon_area:
+                type: number
+                format: float
+                description: "Area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxon observation, taxon importance, and/or plot observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
+                example: 600
+          description: "Stem count records"
+
+    taxon_imp_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
+    taxon_imp_full:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
+                  - $ref: '#/components/schemas/TaxonImpFull'
+    taxon_imp_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
+                  - $ref: '#/components/schemas/TaxonImpNested'
+    taxon_imp_full_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
+                  - $ref: '#/components/schemas/TaxonImpFull'
+                  - $ref: '#/components/schemas/TaxonImpNested'
+
+    StemCountMinimal:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        to_code:
+          type: string
+          description: "VegBank taxon observation identifier"
+          example: "to.1"
+        tm_code:
+          type: string
+          description: "VegBank taxon importance identifier"
+          example: "tm.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        sc_code:
+          type: string
+          description: "VegBank stem count record identifier"
+          example: "sc.1"
+        diameter:
+          type: number
+          format: float
+          description: "Diameter of the stem in centimeters. When diameter classes are used, the diameter is the midpoint between the low end and high end for the diameter class; the offset between this and the endpoints is stored in stem_diameter_accuracy."
+          example: 3.75
+        diameter_accuracy:
+          type: number
+          format: float
+          description: "Accuracy of the stem diameter measurements in centimeters, representing the distance between the diameter class midpoint and endpoint"
+          example: 1.25
+        height:
+          type: number
+          format: float
+          description: "Measured height of the stem in meters. When height classes are used, the height is the midpoint between the low end and high end for the height class; the offset between this and the endpoint is stored in stem_height_accuracy."
+          example: 1.185
+        height_accuracy:
+          type: number
+          format: float
+          description: "Accuracy of the measured height of a stem, representing the offset between the midpoint of the class and the endpoint, in meters."
+          example: 0.185
+        count:
+          type: integer
+          description: "Number of stems of a single species that have these specific stem diameter and height data in common"
+          example: 1
+        taxon_area:
+          type: number
+          format: float
+          description: "Area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxon observation, taxon importance, and/or plot observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
+          example: 600
+
+    StemCountFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        stratum_name:
+          type: string
+          description: "Stratum name, or '<All>' if sr_code is null"
+          example: "Canopy"
+
+    stem_count_minimal:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StemCountMinimal'
+    stem_count_full:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StemCountMinimal'
+                - $ref: '#/components/schemas/StemCountFull'
+
+    StratumMinimal:
+      type: object
+      properties:
+        ob_code:
+          type: string
+          description: "VegBank plot observation identifier"
+          example: "ob.1"
+        sr_code:
+          type: string
+          description: "VegBank stratum identifier"
+          example: "sr.1"
+        name:
+          type: string
+          description: "Stratum name"
+          example: "Dwarf shrub"
+        height:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 5
+        base:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 2
+        cover:
+          type: number
+          format: float
+          description: "#TODO"
+          example: 45
+        description:
+          type: string
+          description: "Stratum description"
+          example: "Dwarf shrub"
+        sm_code:
+          type: string
+          description: "VegBank stratum method identifier"
+          example: "sm.1"
+        sy_code:
+          type: string
+          description: "VegBank stratum type identifier"
+          example: "sy.1"
+
+    StratumFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        stratum_method_name:
+          type: string
+          description: "Name of the stratum method (e.g., Braun-Blanquet, TNC-ABI, NC Vegetation Survey #1, NC Vegetation Survey #2, etc.)"
+          example: "TurboVeg"
+        stratum_type_name:
+          type: string
+          description: "Name associated with this stratum by the stratum method"
+          example: "Dwarf shrub"
+
+    stratum_minimal:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StratumMinimal'
+    stratum_full:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StratumMinimal'
+                - $ref: '#/components/schemas/StratumFull'
+
 
     TaxonInterpMinimal:
       type: object
@@ -4020,6 +5622,25 @@ components:
     party:
       $ref: '#/components/schemas/Party'
 
+    Role:
+      type: object
+      properties:
+        ar_code:
+          type: string
+          description: "VegBank role identifier"
+          example: "ar.56"
+        name:
+          type: string
+          description: "Role name/label"
+          example: "Data aggregator"
+        description:
+          type: string
+          description: "Role description"
+          example: "Person who aggregates and directs data from one place or platform to another"
+
+    role:
+      $ref: '#/components/schemas/Role'
+
     Project:
       type: object
       properties:
@@ -4126,38 +5747,97 @@ components:
     reference:
       $ref: '#/components/schemas/Reference'
 
+    NamedPlace:
+      type: object
+      properties:
+        np_code:
+          type: string
+          description: "VegBank named place identifier"
+          example: "np.1"
+        system:
+          type: string
+          description: "Name of the system of names. The system 'Geographic Name' is an open list, whereas the other systems are generally closed lists defined by a known system with an external authority (e.g., USGSQuad, Continent, Country, State, County, HUC, and Ecoregion)"
+          example: "county"
+        name:
+          type: string
+          description: "The name of a place in or at which a plot is located."
+          example: "Zion NP"
+        description:
+          type: string
+          description: "Description of a named place. For US county names, this field identifies the containing state."
+          example: "Zion National Park"
+        code:
+          type: string
+          description: "Optional code for location identification"
+          example: "ZION"
+        owner:
+          type: string
+          description: "Designated location owner"
+          example: "US NPS"
+        rf_label:
+          type: string
+          description: "Label for the observation reference"
+          example: "US NPS place names"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this named place"
+          example: 8
+
+    named_place:
+      $ref: '#/components/schemas/NamedPlace'
+
+    UserDataset:
+      type: object
+      properties:
+        ds_code:
+          type: string
+          description: "VegBank dataset identifier"
+          example: "ds.1"
+        accession_code:
+          type: string
+          description: "Accession code identifying older VegBank datasets"
+          example: "VB.ds.196904.27074B058D5FD45"
+        start:
+          type: string
+          format: date
+          description: "Dataset creation date"
+          example: "2006-05-30"
+        stop:
+          type: string
+          format: date
+          description: "User-defined dataset expiration date"
+          example: "2006-05-30"
+        name:
+          type: string
+          description: "Dataset name"
+          example: "Example dataset 1"
+        description:
+          type: string
+          description: "Dataset description"
+          example: "Some plots in North Carolina"
+        type:
+          type: string
+          description: "Dataset type"
+          example: "normal"
+        owner_label:
+          type: string
+          description: "Name of the dataset creator/owner"
+          example: "Mary Smith"
+        owner_email:
+          type: string
+          description: "Email address of dataset creator/owner"
+          example: "msmith@university.edu"
+        obs_count:
+          type: integer
+          description: "Number of plot observations associated with this dataset"
+          example: 17
+
+    user_dataset:
+      $ref: '#/components/schemas/UserDataset'
+
     #Placeholder for upload schemas
     tbd:
       type: object
-
-    #TODO
-    named_place:
-      type: object
-      properties:
-        place_system:
-          type: string
-        place_name:
-          type: string
-        place_code:
-          type: string
-        reference:
-          type: string
-        vb_code:
-          type: string
-
-    stratum:
-      type: object
-      properties:
-        stratum_base:
-          type: number
-          format: float
-          description: "Average height of the bottom of the stratum in meters"
-          example: 0.1
-        stratum_height:
-          type: number
-          format: float
-          description: "Tallest part of the Stratum in meters."
-          example: 1.0
 
     disturbance_obs:
       type: object
