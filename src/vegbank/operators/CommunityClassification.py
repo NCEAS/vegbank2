@@ -289,17 +289,14 @@ class CommunityClassification(Operator):
         table_defs = [config_comm_class,
                       config_comm_interp]
         # TODO: finalize this here, unless/until we move this to configuration
-        if reclassify:
-            required_fields = ['user_cl_code', 'vb_ob_code', 'vb_cc_code']
-        else:
-            required_fields = ['user_cl_code', 'user_ob_code', 'vb_cc_code']
+        required_fields = ['user_cl_code', 'vb_ob_code', 'vb_cc_code']
 
         # Run basic input data validation
         validation = validate_required_and_missing_fields(df, required_fields,
             table_defs, "community classifications")
         if validation['has_error']:
             raise ValueError(validation['error'])
-        
+
         if reclassify:
             # We have to insert this to make the sql queries work 
             # even though it's just blank. 
