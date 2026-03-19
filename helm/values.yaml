@@ -215,7 +215,22 @@ service:
   ## @param service.type The type of service to create.
   type: ClusterIP
   ## @param service.port The port on which the service will be exposed.
-  port: 80
+  port: 8000
+
+gunicorn:
+  ## @param gunicorn.workers Number of worker processes for handling requests.
+  ## More workers can handle more requests simultaneously, but use more memory.
+  ##
+  workers: 5
+  ## @param gunicorn.timeout Workers silent for more than this many seconds are killed and restarted
+  ##
+  timeout: 2400
+  ## @param gunicorn.bind The socket to bind. Should be in the form of: "HOST:PORT"
+  ##
+  bind: "0.0.0.0:8000"
+  ## @param gunicorn.logLevel Granularity of gunicorn logs (debug|info|warning|error|critical)
+  ##
+  logLevel: "info"
 
 ## @section Ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
