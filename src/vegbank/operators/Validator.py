@@ -80,10 +80,34 @@ config = {
         "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code'],
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code', 'author_obs_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
-        "xor_fields": [
-            ('user_pj_code', 'vb_pj_code'), 
-            ('user_pl_code', 'vb_pl_code')
-            ]
+        "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    },
+    "plant_concepts":{
+        "required_fields": ['user_pc_code', 'name', 'start_date',
+                           'plant_concept_status'],
+        "table_defs":[table_defs_config.plant_concept, table_defs_config.plant_status],
+        "xor_fields":[
+            ('user_rf_code', 'vb_rf_code'),
+            ('user_status_py_code', 'vb_status_py_code'),
+            ('user_status_rf_code', 'vb_status_rf_code', 'optional'),
+            ('user_parent_pc_code', 'vb_parent_pc_code', 'optional'),
+        ]
+    },
+    "plant_correlations":{
+        "required_fields":['convergence_type', 'correlation_start'],
+        "table_defs":[table_defs_config.plant_correlation],
+        "xor_fields":[
+            ('user_correlated_pc_code', 'vb_correlated_pc_code')
+        ]
+    },
+    "plant_names":{
+        "required_fields": ['user_pc_code', 'name',
+                           'name_type', 'name_status'],
+        "table_defs":[table_defs_config.plant_name, 
+                      table_defs_config.plant_usage],
+        "xor_fields":[
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
+        ]
     }
 
 }
