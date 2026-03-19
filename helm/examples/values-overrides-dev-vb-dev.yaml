@@ -21,39 +21,6 @@ image:
 #   enabled: true
 #   filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
 
-## @section Probes
-livenessProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 3
-  httpGet:
-    ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
-    path: /
-    ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
-    port: 8000
-readinessProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 3
-  httpGet:
-    ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
-    path: /
-    ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
-    port: 8000
-
-## @section Service
-## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
-## as the ingress automatically pulls the default named service for the pod via release name. 
-##
-service:
-  ## @param service.type The type of service to create.
-  type: ClusterIP
-  ## @param service.port The port on which the service will be exposed.
-  port: 8000
-  targetPort: 8000
-
 ingress:
   enabled: true
   hostname: api-dev2.vegbank.org
