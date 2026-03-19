@@ -338,11 +338,11 @@ def validate_contributor_record_identifier_codes(df, data):
         'error': ""
     }
     set_list = []
-    if data.get('cl') is not None:
+    if data.get('cl') is not None and 'user_cl_code' in data['cl'].columns:
         set_list.append(set(data['cl']['user_cl_code'].astype(str)))
-    if data.get('pj') is not None:
+    if data.get('pj') is not None and 'user_pj_code' in data['pj'].columns:
         set_list.append(set(data['pj']['user_pj_code'].astype(str)))
-    if data.get('pl') is not None:
+    if data.get('pl') is not None and 'user_ob_code' in data['pl'].columns:
         set_list.append(set(data['pl']['user_ob_code'].astype(str)))
     print(set_list)
     missing_codes = set(df['record_identifier'].astype(str))
