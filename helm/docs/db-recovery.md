@@ -12,8 +12,7 @@ The preferred method to recreate the `vegbank` `cnpg` cluster is by recovering f
 
 To deploy a `cnpg` cluster by recovering from a `Backup` object that was created by a `cnpg ScheduledBackup`:
 
-> [!CAUTION]
-> The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`)
+
 
 ### Step 1: Edit your values overrides file (e.g. `values-cnpg.yaml`)
 
@@ -22,9 +21,12 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 - `backup.enabled:` set to `true` to ensure continuity of `ScheduledBackups` after recovery
 - `init.recoverFromBackup:` set to the name of the `backups.postgresql.cnpg.io` object to recover from
 - `persistence.size` and `persistence.storageClass` must match the values used by the original PVC that was backed up
-  
+
+> [!CAUTION]
+> The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`)
+
 > [!TIP]
-> ...and to see specific backup volumeSnapshots:
+> To see a list of backup volumeSnapshots:
 >
 > ```sh
 > $ kubectl get backups
@@ -40,7 +42,7 @@ Create a new cluster, with a different name from your existing cluster, in the s
 (In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`)
 
 - ```sh
-  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./values-cnpg.yaml --debug
+  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./values-cnpg.yaml
   ```
 
 - Monitor progress:
@@ -57,7 +59,7 @@ Create a new cluster, with a different name from your existing cluster, in the s
   ```
 
 > [!IMPORTANT]
-> It takes approximately 10 minutes for the first CNPG pod to be ready, then some additional time for the data to be replicated and the other pods started.
+> It can take up to 10 minutes for the first CNPG pod to be ready, then some additional time for the data to be replicated and the other pods started.
 >
 > Until then, it is common to see `FailedScheduling` events when you `kubectl describe` the recovery pod, because the cluster is trying to schedule the pods before the recovery process is complete.
 
