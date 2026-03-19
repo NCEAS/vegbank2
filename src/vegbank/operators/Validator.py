@@ -132,7 +132,7 @@ config = {
         "required_fields": ['user_cc_code', 'name', 'start_date',
                            'comm_concept_status'],
         "table_defs": [table_defs_config.comm_concept, table_defs_config.comm_name, table_defs_config.comm_status],
-        "xor_fields": [('user_status_py_code', 'vb_status_py_code', 'optional'),
+        "xor_fields": [('user_status_py_code', 'vb_status_py_code'),
                        ('user_rf_code', 'vb_rf_code', 'optional'),
                        ('user_parent_cc_code', 'vb_parent_cc_code', 'optional')]
     },
