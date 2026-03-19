@@ -312,37 +312,45 @@ def test_taxon_interpretations_post_calls_upload_pipeline_when_uploads_allowed(
 
     with (
         patch("vegbank.vegbankapi.connect", return_value=mock_db_connection_context),
-        patch(
-            "vegbank.vegbankapi.read_parquet_file",
-            return_value=mock_df,
-        ) as mock_read_parquet_file,
         patch.object(
-            vegbankapi.TaxonObservation,
-            "upload_taxon_interpretations",
+            vegbankapi.TaxonInterpretation,
+            "upload_all",
             autospec=True,
             return_value={
                 "counts": {"ti": 1}
             },  # Note: The return value above is purely placeholder data
         ) as mock_upload_taxon_interpretations,
-        patch(
-            "vegbank.vegbankapi.dry_run_check",
-            return_value=fake_response,
-        ) as mock_dry_run_check,
     ):
         response = test_client.post("/taxon-interpretations")
 
     assert response.status_code == 200
-    assert mock_read_parquet_file.call_count == 1
     assert mock_upload_taxon_interpretations.call_count == 1
-    assert mock_dry_run_check.call_count == 1
 
+def test_taxon_interpretations_post_rejected_when_allow_uploads_false(
+    monkeypatch, test_client
+):
+    """Test that a post request to the taxon-interpretations endpoint is rejected when
+    access mode is read_only."""
+    monkeypatch.setenv("VB_ACCESS_MODE", "read_only")
+    with patch.object(
+        vegbankapi.TaxonInterpretation, "upload_all", autospec=True
+    ) as mock_upload_all:
+        response = test_client.post("/taxon-interpetations")
+
+    assert response.status_code == 403
+    mock_upload_all.assert_not_called()
 
 def test_taxon_interpretations_post_returns_500_on_upload_error(test_client):
     """Test that a post request to the taxon-interpretations endpoint returns 500
     when an upload error occurs."""
-    with patch(
-        "vegbank.vegbankapi.read_parquet_file",
-        side_effect=Exception("Forced exception"),
+    with (
+        patch("vegbank.vegbankapi.connect"),
+        patch.object(
+            vegbankapi.TaxonInterpretation,
+            "upload_all",
+            autospec=True,
+            side_effect=Exception("Forced exception"),
+        ) as mock_upload_taxon_interpretations,
     ):
         response = test_client.post("/taxon-interpretations")
 
@@ -871,12 +879,33 @@ def test_user_datasets_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_user_datasets_post_returns_405_when_uploads_allowed(test_client):
-    """Test that a post request to the user-datasets endpoint returns 405 when
-    access mode allows uploads."""
-    response = test_client.post("/user-datasets")
+def test_user_datasets_post_returns_200_when_uploads_allowed(test_client):
+    """Test that a post request to the user-datasets endpoint returns 200 when
+    allow_uploads is true."""
+    payload = {
+        "user_ds_code": "test_ds_001",
+        "name": "Test Dataset 001",
+        "description": "A test dataset containing 1 observation.",
+        "type": "upload",
+        "data": {
+            "observation":[
+                "ob.1"
+            ]
+        }
+    }
+    with patch.object(
+        vegbankapi.UserDataset,
+            "upload_user_dataset_from_endpoint",
+            autospec=True,
+            return_value=(
+                {"uploaded": True},
+                201,
+            ),  # Note: The return value above is purely placeholder data
+        ) as mock_upload_user_dataset:
+            response = test_client.post("/user-datasets?dry_run=true", json=payload)
 
-    assert response.status_code == 405
+    assert response.status_code == 200
+    assert mock_upload_user_dataset.call_count == 1
 
 
 def test_overview_get_dispatches_to_repository(test_client):

@@ -9,7 +9,7 @@ import time
 import traceback
 import os
 import logging
-from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file
+from vegbank.utilities import jsonify_error_message, dry_run_check, read_parquet_file, validate_dataset_json
 from vegbank.auth import (
     auth_bp, 
     init_oauth, 
@@ -518,16 +518,11 @@ def taxon_interpretations(vb_code, claims=None):
         to_return = None
         
         try:
-            ti_df = read_parquet_file(request, 'file', required=True)
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
+            return taxon_interpretation_operator.upload_all(request)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
     elif request.method == 'GET':
         return taxon_interpretation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -1320,6 +1315,23 @@ def user_datasets(ds_code, claims=None):
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
 
+    POST Query Parameters:
+        dry_run (str, optional): If 'true', validates the dataset and returns any
+            errors or created codes without committing to the database. Defaults to 'false'.
+
+    POST Body:
+        JSON object with the following structure:
+        {
+          "name": str, # Dataset name
+          "description": str, # Human-readable description
+          "data": {
+            "observation": [str]  # List of ob_codes, e.g. ["ob.1", "ob.2"]
+          }
+        }
+
+        NOTE: This endpoint does not accept user datasets containing anything
+              other than observations. Anything else will result in an error.
+
     Returns:
         flask.Response: A Flask response object containing:
             - 200: Successfully retrieved user dataset(s) as JSON or
@@ -1327,12 +1339,18 @@ def user_datasets(ds_code, claims=None):
             - 400: Invalid parameters
             - 405: Unsupported HTTP method
     """
-    user_dataset_operator = UserDataset(params)
+
     if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for user-datasets."), 405
+        try:
+            to_return = UserDataset(params).upload_user_dataset_from_endpoint(request)
+        except Exception as e:
+            print(traceback.format_exc())
+            return jsonify_error_message(
+                f"An error occurred during upload: {str(e)}"), 500
+        return jsonify(to_return)
+            
     elif request.method == 'GET':
-        return user_dataset_operator.get_vegbank_resources(request, ds_code)
+        return UserDataset(params).get_vegbank_resources(request, ds_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 

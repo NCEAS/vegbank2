@@ -47,7 +47,8 @@ WHEN NOT MATCHED THEN
     submitter_givenname,
     submitter_email,
     notespublic,
-    notesmgt
+    notesmgt,
+    emb_plot
   ) VALUES (
     authorplotcode,
     CAST(SUBSTRING(vb_parent_pl_code, 4) AS INT),
@@ -92,7 +93,8 @@ WHEN NOT MATCHED THEN
     submitter_givenname,
     submitter_email,
     pl_notes_public,
-    pl_notes_mgt
+    pl_notes_mgt,
+    0
   )
 RETURNING merge_action(),
           src.user_pl_code,

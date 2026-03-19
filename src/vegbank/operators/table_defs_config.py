@@ -411,14 +411,11 @@ stem_count = [
 
 taxon_interpretation = [
     'user_ti_code',
-    'user_to_code',
-    'vb_to_code',
     'vb_pc_code',
     'interpretation_date',
     'user_py_code',
     'vb_py_code',
-    'user_ro_code',
-    'vb_ro_code',
+    'vb_ar_code',
     'interpretation_type',
     'user_rf_code',
     'vb_rf_code',
@@ -426,18 +423,47 @@ taxon_interpretation = [
     'current_interpretation',
     'taxon_fit',
     'taxon_confidence',
-    'user_collector_rf_code',
-    'vb_collector_rf_code', #Currently always null
+    'user_collector_py_code',
+    'vb_collector_py_code',
     'collection_number',
     'collection_date',
-    'user_museum_rf_code',
-    'vb_museum_rf_code', #Currently always null
+    'user_museum_py_code',
+    'vb_museum_py_code',
     'museum_accession_number',
     'group_type',
     'notes',
     'notes_public',
-    'notes_mgt'   
+    'notes_mgt',
+    'user_to_code',
 ]
+reinterpretation = [
+    'user_ti_code',
+    'vb_pc_code',
+    'interpretation_date',
+    'user_py_code',
+    'vb_py_code',
+    'vb_ar_code',
+    'interpretation_type',
+    'user_rf_code',
+    'vb_rf_code',
+    'original_interpretation',
+    'current_interpretation',
+    'taxon_fit',
+    'taxon_confidence',
+    'user_collector_py_code',
+    'vb_collector_py_code',
+    'collection_number',
+    'collection_date',
+    'user_museum_py_code',
+    'vb_museum_py_code',
+    'museum_accession_number',
+    'group_type',
+    'notes',
+    'notes_public',
+    'notes_mgt',
+    'vb_to_code'
+]
+
 
 party = [
     'user_py_code',
@@ -465,4 +491,13 @@ contributor = [
     'contributor_type',
     'record_identifier',
     'vb_py_code'
+]
+
+user_dataset_item = [
+    'user_di_code',
+    'identifier',
+    'userdataset_id',
+    'item_database',
+    'item_table',
+    'item_record'
 ]

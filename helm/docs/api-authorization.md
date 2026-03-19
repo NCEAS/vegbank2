@@ -6,10 +6,13 @@
   - [Authorization Scopes](#authorization-scopes)
   - [Obtaining a Token](#obtaining-a-token)
   - [Using Your Token](#using-your-token)
+  - [Refreshing Your Token](#refreshing-your-token)
   - [Example Requests](#example-requests)
 - [For Developers](#for-developers)
   - [Environment Configuration](#environment-configuration)
   - [Protecting Endpoints](#protecting-endpoints)
+  - [Error Response Format](#error-response-format)
+  - [Error Code Reference](#error-code-reference)
 
 ---
 
@@ -31,6 +34,21 @@ When you authenticate, you may request one or more scopes to be included in your
 
 VegBank API uses OAuth 2.0 with OpenID Connect (OIDC) for secure authentication and authorization. When you log in, you receive a token that grants you access to specific API operations based on your requested scopes. For more information on these standards, see the [OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749) and [OpenID Connect Core documentation](https://openid.net/specs/openid-connect-core-1_0.html).
 
+#### Error Response Format
+
+All authentication and authorization error responses use a consistent JSON format:
+
+```json
+{
+  "error": {
+    "message": "Description of the error",
+    "details": "Additional context (optional)"
+  }
+}
+```
+
+The `details` field is included when there is additional context about the error (e.g., exception details) and omitted otherwise.
+
 
 ### Obtaining a Token
 
@@ -38,14 +56,31 @@ VegBank uses Keycloak for token management. To obtain a token:
 
 #### Log In via ORCID
 
-Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to the ORCID authentication page. Login with your ORCID credentials. Once login is successful you'll receive a JSON response containing your OAuth access token
+Visit the VegBank [login endpoint](https://api.vegbank.org/login), and it will redirect you to the ORCID authentication page. Login with your ORCID credentials.
 
-   Response example:
-   ```json
-   {
-     "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
-   }
-   ```
+#### Response
+
+On success (`200 OK`):
+
+```json
+{
+  "message": "Authorization successful",
+  "token": {
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+}
+```
+
+Store both tokens. The `access_token` is used for API requests and has a short expiry. The `refresh_token` is long-lived and can be used to obtain a new access token without logging in again (see [Refreshing Your Token](#refreshing-your-token)).
+
+**Error responses:**
+
+| Status | Cause |
+|--------|-------|
+| `401` | Authentication failed |
+| `403` | Authentication is not available in the current deployment mode |
+| `500` | Unexpected server error |
 
 ### Using Your Token
 
@@ -54,6 +89,54 @@ Include your token in the `Authorization` header of your requests to api.vegbank
 ```http
 Authorization: Bearer <YOUR_TOKEN_HERE>
 ```
+
+### Refreshing Your Token
+
+Access tokens are short-lived. When your access token expires, use the `POST /refresh` endpoint to obtain a new access token and refresh token without requiring the user to log in again.
+
+#### Request
+
+```bash
+curl -s -L -X POST 'https://api.vegbank.org/refresh' \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"refresh_token\": \"${REFRESH}\",
+    \"scope\": \"openid web-origins acr offline_access profile basic email vegbank:contributor vegbank:user\"
+  }"
+```
+
+**Request body (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `refresh_token` | string | Yes | The refresh token returned from `/login` or a previous `/refresh` call |
+| `scope` | string | No | Space-separated list of scopes for the new access token. If no scopes are provided, the new access token will have the same scopes as the original token. The requested scopes must match or be a subset of the original scopes granted. |
+
+> **Note:** In most cases, you can safely omit the `scope` parameter. The OIDC provider will reissue the token with the same scopes that were originally granted, which is typically the desired behavior. 
+
+#### Response
+
+On success (`200 OK`):
+
+```json
+{
+  "message": "Authorization successful",
+  "token": {
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+}
+```
+
+Replace your stored tokens with the new values returned. Because each refresh token can only be used once, each refresh call issues a new refresh token, and so the old one must be discarded.
+
+**Error responses:**
+
+| Status | Cause |
+|--------|-------|
+| `400` | `refresh_token` field missing from the request body |
+| `401` | Refresh token is invalid, expired, or revoked; or client authentication failed |
+| `500` | Unexpected server error |
 
 ### Example Requests
 
@@ -81,7 +164,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI..." \
 
 ### Environment Configuration
 
-To enable auth support we require the following environment variables. See [helm/admin/secret-oidc.yaml](helm/admin/secret-oidc.yaml) and [helm/admin/secret-flask.yaml](helm/admin/secret-flask.yaml) for more details.
+To enable auth support we require the following environment variables. See [the helm README](../README.md#appendix-2-prerequisite-create-k8s-secrets) for more details.
 
 ```bash
 # Flask secret key
@@ -154,6 +237,45 @@ def taxon_observations(claims, vb_code):
     """
 ```
 The require scope only applies to the list of HTTP methods passed to the decorator. If no methods are passed the scope requirement is applied to all methods. 
+
+### Error Response Format
+
+All authentication and authorization errors return a consistent JSON structure via `_auth_error_response()`:
+
+```json
+{
+  "error": {
+    "message": "Description of the error",
+    "details": "Additional context (present when available)"
+  }
+}
+```
+
+### Error Code Reference
+
+The `_token_error_response()` helper maps exceptions to HTTP status codes:
+
+| Exception | Message | Status |
+|-----------|---------|--------|
+| `DecodeError` | Token decoding failed | `401` |
+| `InvalidClientError` | OIDC client authentication failed | `401` |
+| `InvalidTokenError` | Token validation failed | `401` |
+| `InvalidGrantError` | Invalid or expired refresh token | `401` |
+| `BadSignatureError` | Token signature verification failed | `401` |
+| `OAuthError` | Authorization failed | `401` |
+| `OAuth2Error` | An OAuth2 error occurred | `401` |
+| `KeyError` / `TypeError` | Invalid token structure | `401` |
+| `MissingParameterError` | Missing required parameter | `400` |
+| `ValueError` | OIDC provider configuration error | `500` |
+| `RequestException` | Failed to fetch OIDC provider keys | `502` |
+
+Protected endpoints (`@require_token` / `@require_scope`) return:
+
+| Status | Cause |
+|--------|-------|
+| `401` | Missing or invalid `Authorization` header, or any token validation failure from the table above |
+| `403` | Token is valid but missing the required scope |
+| `403` | Upload attempted in `read_only` deployment mode |
 
 ## Support
 
