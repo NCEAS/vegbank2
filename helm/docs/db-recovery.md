@@ -21,6 +21,7 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 - `init.method:` set to `recovery`
 - `backup.enabled:` set to `true` to ensure continuity of `ScheduledBackups` after recovery
 - `init.recoverFromBackup:` set to the name of the `backups.postgresql.cnpg.io` object to recover from
+- `persistence.size` and `persistence.storageClass` must match the values used by the original PVC that was backed up
   
 > [!TIP]
 > ...and to see specific backup volumeSnapshots:
@@ -39,7 +40,7 @@ Create a new cluster, with a different name from your existing cluster, in the s
 (In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`)
 
 - ```sh
-  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f './values-cnpg.yaml' --debug
+  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./values-cnpg.yaml --debug
   ```
 
 - Monitor progress:
