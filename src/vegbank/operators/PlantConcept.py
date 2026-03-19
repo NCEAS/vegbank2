@@ -443,8 +443,7 @@ class PlantConcept(Operator):
                     rf_actions = None
 
                 # Prep & insert all new plant concepts
-                if (py_actions is not None and
-                        'user_status_py_code' in data['pc'].columns):
+                if py_actions is not None:
                     # ... merge in newly created vb_py_codes
                     data['pc'] = merge_vb_codes(
                         py_actions['resources']['py'], data['pc'],
