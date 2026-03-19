@@ -138,10 +138,6 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          volumeMounts:
-            - name: {{ .Release.Name }}-vegbank-config-volume
-              mountPath: "/app/"
-              readOnly: true
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -153,6 +149,9 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            - name: {{ .Release.Name }}-vegbank-config-volume
+              mountPath: "/app/"
+              readOnly: true
           {{- if eq .Values.auth.accessMode "authenticated" }}
             - name: oidc-config
               mountPath: /etc/vegbank/oidc
