@@ -190,7 +190,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `database.name`                 | The name of the postgres database to be used by VegBank                    | `vegbank`                                 |
 | `database.host`                 | hostname of database to be used by VegBank (RW svc name of CNPG or pooler) | `vegbankdb-cnpg-rw`                       |
 | `database.port`                 | port to connect to the database (Must match CNPG or pooler port number)    | `5432`                                    |
-| `database.existingSecret`       | Secret containing the database username and password)                      | `vegbankdbcreds`                          |
+| `database.existingSecret`       | Secret containing the database username and password.                      | `vegbankdbcreds`                          |
 | `databaseRestore.enabled`       | Restores a full (schema+data) database dump file defined below             | `false`                                   |
 | `databaseRestore.pvc`           | PVC containing the (schema+data) database dump file to restore             | `vegbankdb-init-pgdata`                   |
 | `databaseRestore.mountpath`     | Mount path inside the container for the pvc/dump file volume               | `/tmp/databaseRestore`                    |
@@ -198,7 +198,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
 | `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
 | `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
-| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.0.3`                                  |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1.1`                                  |
 | `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
 | `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
 | `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
@@ -214,12 +214,29 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### Probes
 
-| Name                          | Description                              | Value |
-| ----------------------------- | ---------------------------------------- | ----- |
-| `livenessProbe.httpGet.path`  | The path to use for the liveness probe.  | `/`   |
-| `livenessProbe.httpGet.port`  | The port to use for the liveness probe.  | `80`  |
-| `readinessProbe.httpGet.path` | The path to use for the readiness probe. | `/`   |
-| `readinessProbe.httpGet.port` | The port to use for the readiness probe. | `80`  |
+| Name                              | Description                                                | Value  |
+| --------------------------------- | ---------------------------------------------------------- | ------ |
+| `startupProbe.enabled`            | Enable startupProbe                                        | `true` |
+| `startupProbe.httpGet.path`       | The url path to probe during startup                       | `/`    |
+| `startupProbe.httpGet.port`       | The named containerPort to probe                           | `http` |
+| `startupProbe.successThreshold`   | Min consecutive successes for probe to be successful       | `1`    |
+| `startupProbe.failureThreshold`   | No. of consecutive failures before the container restarted | `36`   |
+| `startupProbe.periodSeconds`      | Interval (in seconds) between startup checks               | `5`    |
+| `startupProbe.timeoutSeconds`     | Timeout (in seconds) for each startup check                | `3`    |
+| `livenessProbe.enabled`           | Enable livenessProbe                                       | `true` |
+| `livenessProbe.httpGet.path`      | The url path to probe                                      | `/`    |
+| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `80`   |
+| `livenessProbe.periodSeconds`     | Period seconds for livenessProbe                           | `20`   |
+| `livenessProbe.timeoutSeconds`    | Timeout seconds for livenessProbe                          | `10`   |
+| `livenessProbe.successThreshold`  | Min consecutive successes for probe to be successful       | `1`    |
+| `livenessProbe.failureThreshold`  | No. consecutive failures before container restarted        | `15`   |
+| `readinessProbe.enabled`          | Enable readinessProbe                                      | `true` |
+| `readinessProbe.httpGet.path`     | The url path to probe                                      | `/`    |
+| `readinessProbe.httpGet.port`     | The named containerPort to probe                           | `http` |
+| `readinessProbe.periodSeconds`    | Period seconds for readinessProbe                          | `10`   |
+| `readinessProbe.timeoutSeconds`   | Timeout seconds for readinessProbe                         | `5`    |
+| `readinessProbe.successThreshold` | Min consecutive successes for probe to be successful       | `1`    |
+| `readinessProbe.failureThreshold` | No. consecutive failures before container marked unhealthy | `3`    |
 
 ### Service
 
