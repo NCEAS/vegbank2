@@ -30,4 +30,4 @@ RUN . "${VIRTUAL_ENV}/bin/activate" && uv sync --active
 COPY src/vegbank /app/vegbank
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 ENV PYTHONPATH=/app
-CMD ["gunicorn", "-c", "/app/gunicorn.conf.py", "vegbank.gunicorn_main:app"]
+CMD ["gunicorn", "-c", "/conf/gunicorn.conf.py", "vegbank.gunicorn_main:app"]

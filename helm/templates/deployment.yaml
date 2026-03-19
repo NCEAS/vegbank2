@@ -150,7 +150,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: {{ .Release.Name }}-vegbank-config-volume
-              mountPath: "/app/"
+              mountPath: "/conf/"
               readOnly: true
           {{- if eq .Values.auth.accessMode "authenticated" }}
             - name: oidc-config
