@@ -774,8 +774,9 @@ class PlotObservation(Operator):
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False,
-                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
-                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
+                'user_codes': [('user_ob_code', 'user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                               ('user_authority_rf_code', 'user_rf_code', 'rf')],
             },
             'sr': {
                 'file_name': 'strata',

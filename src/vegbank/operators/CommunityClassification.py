@@ -391,7 +391,8 @@ class CommunityClassification(Operator):
                 'file_name': 'community_classifications',
                 'required': True,
                 'user_codes':[
-                    ('user_comm_class_rf_code', 'user_rf_code', 'rf')
+                    ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                    ('user_authority_rf_code', 'user_rf_code', 'rf'),
                 ]
             },
             'cr':{
