@@ -87,10 +87,10 @@ config = {
                            'plant_concept_status'],
         "table_defs":[table_defs_config.plant_concept, table_defs_config.plant_status],
         "xor_fields":[
-            ('user_rf_code', 'vb_rf_code'), 
-            ('user_status_rf_code', 'vb_status_rf_code'),
+            ('user_rf_code', 'vb_rf_code'),
             ('user_status_py_code', 'vb_status_py_code'),
-            ('user_parent_pc_code', 'vb_parent_pc_code')
+            ('user_status_rf_code', 'vb_status_rf_code', 'optional'),
+            ('user_parent_pc_code', 'vb_parent_pc_code', 'optional'),
         ]
     },
     "plant_correlations":{
@@ -106,7 +106,7 @@ config = {
         "table_defs":[table_defs_config.plant_name, 
                       table_defs_config.plant_usage],
         "xor_fields":[
-            ('user_usage_py_code', 'vb_usage_py_code')
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
         ]
     }
 
