@@ -61,9 +61,7 @@ as submit and upload new data to the archive.
 This is a python package managed with [`uv`](https://docs.astral.sh/uv/), a fast Python package and
 environment manager.
 
-To run tests, navigate to the root directory and run `uv run pytest`. If the test suite contains
-tests that take a longer time to run (e.g., relating to the storage of large files) - mark them as
-`slow` and to execute all tests, run `uv run pytest --run-slow`.
+To run tests, navigate to the root directory and run `uv run pytest`.
 
 The GitHub repository has also been configured to run a [continuous integration
 build](https://github.com/NCEAS/vegbank2/actions) which executes `uv run pytest` in the
