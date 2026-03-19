@@ -285,7 +285,7 @@ ingress:
     ##
     nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
 
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client_max_body_size See docs:
+    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client-max-body-size See docs:
     ## https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
     ## Sets the maximum allowed size of the client request body. Setting to 0 disables checking of
     ## client request body size
