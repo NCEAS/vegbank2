@@ -88,6 +88,13 @@ config = {
             ('vb_py_code', 'user_py_code')
             ]
     },
+    "community_contributors": {
+        "required_fields": ['vb_ar_code', 'record_identifier'],
+        "table_defs": [table_defs_config.comm_contributor],
+        "xor_fields": [
+            ('vb_py_code', 'user_py_code')
+            ]
+    },
     "plot_observations": {  # This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
         "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code'],
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code', 'author_obs_code'],
@@ -137,6 +144,10 @@ def validate(df, file_name, endpoint_name=None):
         required_fields = config['community_reclassifications']['required_fields']
         table_defs = config['community_reclassifications']['table_defs']
         xor_fields = config['community_reclassifications'].get('xor_fields')
+    if endpoint_name and endpoint_name == "community-classifications" and file_name == "contributors":
+        required_fields = config['community_contributors']['required_fields']
+        table_defs = config['community_contributors']['table_defs']
+        xor_fields = config['community_contributors'].get('xor_fields')
     xor_validation = {
         'error': "",
         'has_error': False

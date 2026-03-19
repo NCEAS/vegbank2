@@ -208,7 +208,7 @@ class Party(Operator):
         new_parties =  super().upload_to_table("party", 'py', table_defs_config.party, 'party_id', df, True, conn, validate=False)
         return new_parties
 
-    def upload_contributors(self, df, conn):
+    def upload_contributors(self, df, conn, type=None):
         """
         takes a parquet file of contributors and uploads it to the observationcontributor, 
             projectcontributor, and classcontributor tables.
@@ -221,6 +221,16 @@ class Party(Operator):
         required_fields = ['vb_py_code', 'vb_ar_code', 'contributor_type', 'record_identifier']
         contributor_defs = table_defs_config.contributor.copy()
         contributor_defs.append('vb_record_identifier')
+
+        CONTRIBUTOR_TYPES = ('observation', 'project', 'classification')
+        if type is not None:
+            if type not in CONTRIBUTOR_TYPES:
+                raise ValueError(f"Server error (unexpected contributor type '{type}').")
+            if 'contributor_type' in df.columns:
+                raise ValueError("The contributor_type column is not supported "
+                                 "for contributors in classification uploads.")
+            df['contributor_type'] = type
+
         table_defs = [contributor_defs]
 
         df.columns = map(str.lower, df.columns)
@@ -232,7 +242,7 @@ class Party(Operator):
         if 'contributor_type' in df.columns:
             df['contributor_type'] = df['contributor_type'].astype(str)
             df['contributor_type'] = df['contributor_type'].str.lower()
-            if df[~df['contributor_type'].isin(['observation', 'project', 'classification'])].empty is False:
+            if df[~df['contributor_type'].isin(CONTRIBUTOR_TYPES)].empty is False:
                 validation['has_error'] = True
                 validation['error'] += "Invalid contributor_type found. Must be one of 'observation', 'project', or 'classification'. "
 

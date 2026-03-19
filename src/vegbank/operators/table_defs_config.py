@@ -507,6 +507,8 @@ contributor = [
     'vb_py_code'
 ]
 
+comm_contributor = [col for col in contributor if col != 'contributor_type']
+
 user_dataset_item = [
     'user_di_code',
     'identifier',

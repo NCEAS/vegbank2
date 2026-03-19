@@ -486,7 +486,7 @@ class CommunityClassification(Operator):
                             }
                         )
                     cr_actions = Party(self.params).upload_contributors(
-                        data['cr'], conn)
+                        data['cr'], conn, type="classification")
                     to_return = combine_json_return(to_return, cr_actions)
 
                 if 'py' in to_return['resources'].keys():
