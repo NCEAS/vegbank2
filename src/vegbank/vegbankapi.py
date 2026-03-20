@@ -195,11 +195,10 @@ def plot_observations(vb_code, claims=None):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/taxon-observations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-observations", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/taxon-observations/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-observations", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-observations", methods=['GET'])
-@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def taxon_observations(vb_code, claims=None):
     """
     Retrieve an individual taxon observation or a collection, or upload a new
@@ -248,26 +247,13 @@ def taxon_observations(vb_code, claims=None):
             - 405: Unsupported HTTP method
     """
     taxon_observation_operator = TaxonObservation(params)
-    if request.method == 'POST':
-        to_return = None
-        file = request.files['file']
-        try:
-            with connect(**params, row_factory=dict_row) as conn:
-                    df = pd.read_parquet(file)
-                    to_return = taxon_observation_operator.upload_strata_definitions(df, conn)
-                    to_return = dry_run_check(conn, to_return, request)
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-        return to_return
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return taxon_observation_operator.get_vegbank_resources(request, vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
-@app.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/taxon-importances", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/taxon-importances/<vb_code>", methods=['GET'])
 @app.route("/plant-concepts/<vb_code>/taxon-importances", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/taxon-importances", methods=['GET'])
@@ -314,16 +300,13 @@ def taxon_importances(vb_code):
             - 405: Unsupported HTTP method
     """
     taxon_importance_operator = TaxonImportance(params)
-    if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for taxon-importances."), 405
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return taxon_importance_operator.get_vegbank_resources(request, vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
-@app.route("/stem-counts", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/stem-counts", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/stem-counts/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/stem-counts", methods=['GET'])
 @app.route("/taxon-observations/<vb_code>/stem-counts", methods=['GET'])
@@ -370,85 +353,11 @@ def stem_counts(vb_code):
             - 405: Unsupported HTTP method
     """
     stem_count_operator = StemCount(params)
-    if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for stem-counts."), 405
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return stem_count_operator.get_vegbank_resources(request, vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
-
-@app.route("/strata-cover-data", methods=['POST'])
-def strata_cover_data():
-    """
-    Upload strata cover data from a Parquet file.
-
-    This function handles HTTP POST requests to upload strata cover data.
-    It expects a Parquet file containing strata cover data in the request.
-    Uploads data to the taxon observation and taxon importance tables.
-    If the upload is successful, it returns a JSON response indicating
-    success. If there are any errors during the upload process, it returns
-    an appropriate error message.
-
-    POST Parameters: 
-        file (FileStorage): The uploaded Parquet file containing strata
-            cover data.
-
-    Returns:
-        flask.Response: A JSON response indicating success or failure of
-            the upload operation.
-    """
-    taxon_observation_operator = TaxonObservation(params)
-    to_return = None
-    try:
-        scd_df = read_parquet_file(request, 'file', required=True)
-        with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_strata_cover_data(scd_df, conn)
-            to_return = dry_run_check(conn, to_return, request)
-        conn.close()
-    except Exception as e:
-        print(traceback.format_exc())
-        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
-    return to_return
-
-@app.route("/stem-data", methods=['POST'])
-def stem_data():
-    """
-    Upload stem location data from a Parquet file.
-
-    This function handles HTTP POST requests to upload stem data.
-    It expects a Parquet file containing stem data in the request.
-    Uploads data to the stem location and stem count tables..
-    If the upload is successful, it returns a JSON response indicating
-    success. If there are any errors during the upload process, it returns
-    an appropriate error message.
-
-    Query Parameters:
-        dry_run (str, optional): If set to 'true', the upload will be
-            simulated without committing changes to the database.
-            Defaults to 'false'.
-
-    POST Parameters: 
-        file (FileStorage): The uploaded Parquet file containing stem data.
-
-    Returns:
-        flask.Response: A JSON response indicating success or failure of
-            the upload operation.
-    """
-    taxon_observation_operator = TaxonObservation(params)
-    to_return = None
-    
-    try:
-        sd_df = read_parquet_file(request, 'file', required=True)
-        with connect(**params, row_factory=dict_row) as conn:
-            to_return = taxon_observation_operator.upload_stem_data(sd_df, conn)
-            to_return = dry_run_check(conn, to_return, request)
-        conn.close()
-    except Exception as e:
-        print(traceback.format_exc())
-        return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
-    return to_return
 
 @app.route("/taxon-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/taxon-interpretations/<vb_code>", methods=['GET'])
@@ -588,7 +497,7 @@ def community_classifications(vb_code, claims=None):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/community-interpretations", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/community-interpretations/<vb_code>", methods=['GET'])
 @app.route("/community-classifications/<vb_code>/community-interpretations", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/community-interpretations", methods=['GET'])
@@ -637,14 +546,11 @@ def community_interpretations(vb_code):
             - 405: Unsupported HTTP method
     """
     community_interpretation_operator = CommunityInterpretation(params)
-    if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for community-interpretations."), 405
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return community_interpretation_operator.get_vegbank_resources(request,
                                                                        vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
 @app.route("/community-concepts", defaults={'vb_code': None}, methods=['GET', 'POST'])
@@ -834,12 +740,11 @@ def plant_concepts(vb_code, claims=None):
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/parties", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/parties", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/parties/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/parties", methods=['GET'])
 @app.route("/community-classifications/<vb_code>/parties", methods=['GET'])
 @app.route("/projects/<vb_code>/parties", methods=['GET'])
-@require_scope(SCOPE_ADMIN, methods=['POST'])
 def parties(vb_code, claims=None):
     """
     Retrieve either an individual party or a collection.
@@ -886,28 +791,14 @@ def parties(vb_code, claims=None):
             - 405: Unsupported HTTP method
     """
     party_operator = Party(params)
-    if request.method == 'POST':
-        file = request.files['file']
-        to_return = None
-        try:
-            with connect(**params, row_factory=dict_row) as conn:
-                py_df = pd.read_parquet(file)
-                to_return = party_operator.upload_parties(py_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500    
-        return jsonify(to_return)
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return party_operator.get_vegbank_resources(request, vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
-@app.route("/projects", defaults={'pj_code': None}, methods=['GET', 'POST'])
+@app.route("/projects", defaults={'pj_code': None}, methods=['GET'])
 @app.route("/projects/<pj_code>", methods=['GET'])
-@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def projects(pj_code, claims=None):
     """
     Retrieve either an individual project or a collection, or upload a new set
@@ -953,21 +844,10 @@ def projects(pj_code, claims=None):
             - 405: Unsupported HTTP method
     """
     project_operator = Project(params)
-    if request.method == 'POST':
-        try:
-            pj_df = read_parquet_file(request, 'file', required=True)
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = project_operator.upload_project(pj_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return project_operator.get_vegbank_resources(request, pj_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
 @app.route("/cover-methods", defaults={'cm_code': None}, methods=['GET', 'POST'])
@@ -1064,13 +944,13 @@ def stratum_methods(sm_code, claims=None):
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
         return stratum_method_operator.upload_stratum_method(request, params)
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
     else:
         return jsonify_error_message("Method not allowed. Use GET or POST."), 405
 
 
-@app.route("/strata", defaults={'vb_code': None}, methods=['GET', 'POST'])
+@app.route("/strata", defaults={'vb_code': None}, methods=['GET'])
 @app.route("/strata/<vb_code>", methods=['GET'])
 @app.route("/plot-observations/<vb_code>/strata", methods=['GET'])
 @app.route("/taxon-observations/<vb_code>/strata", methods=['GET'])
@@ -1117,18 +997,14 @@ def strata(vb_code):
             - 405: Unsupported HTTP method
     """
     stratum_operator = Stratum(params)
-    if request.method == 'POST':
-        return jsonify_error_message(
-            "POST method is not supported for strata."), 405
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return stratum_operator.get_vegbank_resources(request, vb_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
-@app.route("/references", defaults={'rf_code': None}, methods=['GET', 'POST'])
+@app.route("/references", defaults={'rf_code': None}, methods=['GET'])
 @app.route("/references/<rf_code>")
-@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
 def references(rf_code, claims=None):
     """
     Retrieve either an individual reference or a collection.
@@ -1166,24 +1042,10 @@ def references(rf_code, claims=None):
             - 405: Unsupported HTTP method
     """
     reference_operator = Reference(params)
-    if request.method == 'POST':
-        file = request.files['file']
-        to_return = None
-        try:
-            with connect(**params, row_factory=dict_row) as conn:
-                rf_df = pd.read_parquet(file)
-                to_return = reference_operator.upload_references(rf_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
-        except Exception as e:
-            print(traceback.format_exc())
-            return jsonify_error_message(
-                f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
-    elif request.method == 'GET':
+    if request.method == 'GET':
         return reference_operator.get_vegbank_resources(request, rf_code)
     else:
-        return jsonify_error_message("Method not allowed. Use GET or POST."), 405
+        return jsonify_error_message("Method not allowed. Use GET."), 405
 
 
 @app.route("/roles", defaults={'ar_code': None}, methods=['GET', 'POST'])
@@ -1234,6 +1096,7 @@ def roles(ar_code, claims=None):
 
 @app.route("/named-places", defaults={'vb_code': None}, methods=['GET', 'POST'])
 @app.route("/named-places/<vb_code>")
+@require_scope(SCOPE_ADMIN, methods=['POST'])
 def named_places(vb_code):
     """
     Retrieve either an individual named place record or a collection.
