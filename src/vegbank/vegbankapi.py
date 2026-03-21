@@ -518,16 +518,11 @@ def taxon_interpretations(vb_code, claims=None):
         to_return = None
         
         try:
-            ti_df = read_parquet_file(request, 'file', required=True)
-            with connect(**params, row_factory=dict_row) as conn:
-                to_return = taxon_observation_operator.upload_taxon_interpretations(ti_df, conn)
-                to_return = dry_run_check(conn, to_return, request)
-            conn.close()
+            return taxon_interpretation_operator.upload_all(request)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
-        return jsonify(to_return)
     elif request.method == 'GET':
         return taxon_interpretation_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -1319,22 +1314,23 @@ def user_datasets(ds_code, claims=None):
         create_parquet (str, optional): Whether to return data as Parquet
             rather than JSON. Accepts 'true' or 'false' (case-insensitive).
             Defaults to False.
-    
+
     POST Query Parameters:
         dry_run (str, optional): If 'true', validates the dataset and returns any
             errors or created codes without committing to the database. Defaults to 'false'.
-    
+
     POST Body:
         JSON object with the following structure:
         {
-            "name": str,
-            "description": str,
-            "type": str,
-            "data": dictionary where key is "observation" and values are list of vb_codes in those tables, 
-                e.g.: "observation": ["ob.1", "ob.2", ...]
+          "name": str, # Dataset name
+          "description": str, # Human-readable description
+          "data": {
+            "observation": [str]  # List of ob_codes, e.g. ["ob.1", "ob.2"]
+          }
         }
-        NOTE: We do not accept user datasets via this endpoint containing anything other than observations. 
-            Anything else will result in an error. 
+
+        NOTE: This endpoint does not accept user datasets containing anything
+              other than observations. Anything else will result in an error.
 
     Returns:
         flask.Response: A Flask response object containing:

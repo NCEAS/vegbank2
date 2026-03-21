@@ -31,14 +31,14 @@ class CommunityInterpretation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'ci_code': "'ci.' || ci.comminterpretation_id",
-            'cl_code': "'cl.' || ci.commclass_id",
-            'cc_code': "'cc.' || ci.commconcept_id",
             'ob_code': "'ob.' || cl.observation_id",
             'author_obs_code': "ob.authorobscode",
-            'comm_code': "code.commname",
-            'comm_name': "cc.commname",
+            'cl_code': "'cl.' || ci.commclass_id",
+            'ci_code': "'ci.' || ci.comminterpretation_id",
+            'cc_code': "'cc.' || ci.commconcept_id",
             'comm_label': "cc.commconcept_id_transl",
+            'comm_name': "cc.commname",
+            'comm_code': "code.commname",
             'comm_authority_rf_code': "'rf.' || ci.commauthority_id",
             'comm_authority_rf_label': "rf.reference_id_transl",
             'class_start_date': "cl.classStartDate",

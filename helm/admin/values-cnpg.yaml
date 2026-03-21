@@ -1,13 +1,13 @@
-## @section CNPG PostgresQL
+## Values overrides for deploying a new CNPG cluster for Vegbank.
+## See CNPG Cluster Deployment section in the helm README for instructions.
+##
 dbName: vegbank
 existingSecret: vegbankdbcreds
 dbUser: vegbank
 
-## @section CNPG image - Override the default postgres version
-
-## @param imageOverrideSpec
-## This parameter is used to change or upgrade the postgres image version deployed.
-## Leaving this blank will default to the `dataone-cnpg` minor-version-auto-update functionality
+## @param imageOverrideSpec change or upgrade the deployed postgres image version.
+## Leaving this blank (highly recommended) will default to allowing the CNPG Operator to manage
+## Postgres minor-version upgrades automatically.
 ## To learn more about upgrades, see: https://cloudnative-pg.io/docs/devel/postgres_upgrades/
 ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
 ## Example: ghcr.io/cloudnative-pg/postgresql:18
@@ -16,28 +16,30 @@ imageOverrideSpec: ""
 
 ## @section CNPG Init - Bootstrap the CNPG cluster via different init options.
 
+## @section Initialization and Backup Recovery
 init:
-  ## @param init.enabled Set this to 'true' to enable init options, for example: 'recovery', 'initdb' and 'pgbasebackup'
-  ## This is set to 'false' by default to prevent conflicts when upgrading an existing deployment
+  ## @param init.enabled Set this to 'true' to enable init options. Default is 'false'
+  ## to prevent conflicts when upgrading an existing deployment
   ##
   enabled: false
-  ## @param init.method
+
+  ## @param init.method Method used to initialize cluster when 'init.enabled' is set to 'true'.
   ## By default, this method is set to 'initdb' to initialize an empty `cnpg` cluster
-  ## Note - the dbUser must match the username of the secret.
+  ## Note - the dbUser must match the username in the secret.
   ## Set this value to 'recovery' to recover from a volumeSnapshot via `ScheduledBackups`, 
-  ## To learn more, see: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
+  ## To learn more, see:
+  ## https://github.com/NCEAS/vegbank2/blob/develop/helm/docs/db-recovery.md
+  ## and: https://github.com/DataONEorg/dataone-cnpg/blob/main/README.md
   ##
   method: initdb
-  ## @param init.recoverFromBackup Set this to your desired volumeSnapshot name, ex. 'vegbankdb-scheduled-backup-20251107221536'
-  ## This param will not be utilized unless 'method' is set to 'recovery'.
-  ## After installing the cluster with the `recovery` option, and if you do not see a new pod
-  ## launch like 'vegbankenabledtest-cnpg-1-snapshot-recovery-lrzz7', you can execute
-  ## the command 'kubectl describe cluster vegbankenabledtest' to begin debugging.
+
+  ## @param init.recoverFromBackup Set this to volumeSnapshot name that will be used for recovery
+  ## ex. 'vegbankdb-scheduled-backup-20251107221536'
+  ## Will be ignored unless 'init.method' is set to 'recovery'.
   ##
   recoverFromBackup: vegbankdb-scheduled-backup-placeholder
 
 ## @section backup - Enabled `ScheduledBackup` functionality to create volume snapshots
-
 backup:
   ## @param backup.enabled - Set to 'true' to begin creating volumesnapshots upon installation
   ## of the 'cnpg' postgres cluster. For more information,
@@ -58,6 +60,7 @@ resources:
 
 persistence:
   size: 100Gi
+  storageClass: csi-cephfs-ssd-sc-ephemeral
 
 postgresql:
   parameters:

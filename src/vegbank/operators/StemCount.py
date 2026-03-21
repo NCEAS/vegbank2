@@ -1,4 +1,5 @@
 import os
+import textwrap
 from vegbank.operators import Operator
 
 
@@ -19,17 +20,23 @@ class StemCount(Operator):
         self.name = "stem_count"
         self.table_code = "sc"
         self.queries_package = f"{self.queries_package}.{self.name}"
+        self.detail_options = ("minimal", "full")
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
         base_columns = {'*': "*"}
         main_columns = {}
+        # identify full columns
         main_columns['full'] = {
             'ob_code': "'ob.' || txo.observation_id",
+            'author_obs_code': "ob.authorobscode",
             'to_code': "'to.' || tm.taxonobservation_id",
-            'tm_code': "'tm.' || sc.taxonimportance_id",
+            'author_plant_name': "txo.authorplantname",
             'sr_code': "'sr.' || tm.stratum_id",
-            'stratum_name': "COALESCE(sr.stratumname, '<All>')",
+            'stratum_name': f"({textwrap.dedent("""\
+                CASE WHEN tm.stratum_id IS NULL THEN '<All>'
+                     ELSE COALESCE(sr.stratumname, sy.stratumname) END""")})",
+            'tm_code': "'tm.' || sc.taxonimportance_id",
             'sc_code': "'sc.' || sc.stemcount_id",
             'diameter': "sc.stemdiameter",
             'diameter_accuracy': "sc.stemdiameteraccuracy",
@@ -38,12 +45,22 @@ class StemCount(Operator):
             'count': "sc.stemcount",
             'taxon_area': "sc.stemtaxonarea"
         }
+        # identify minimal columns
+        main_columns['minimal'] = {
+            name: col for name, col in main_columns['full'].items()
+            if name not in ['author_obs_code', 'author_plant_name',
+                            'stratum_name']}
+
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM sc
             JOIN taxonimportance tm USING (taxonimportance_id)
             JOIN taxonobservation txo USING (taxonobservation_id)
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            JOIN observation ob ON txo.observation_id = ob.observation_id
             LEFT JOIN stratum sr USING (stratum_id)
+            LEFT JOIN stratumtype sy USING (stratumtype_id)
             """
         order_by_sql = """\
             ORDER BY sc.stemcount_id

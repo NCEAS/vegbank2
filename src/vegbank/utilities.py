@@ -231,6 +231,7 @@ def merge_vb_codes(inserted_codes, df, mapping):
     if user_col not in df.columns:
         print(f"No '{user_col}' column found in df -- skipping merge.")
         return df
+    df[user_col] = df[user_col].astype(str)
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
     if f'{vb_col}_x' in df:
         df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
@@ -455,6 +456,146 @@ def update_obs_counts(conn, table, list_of_ids, batch_size=50000):
             cur.execute(sql_returning_counts, (chunk,))
             count += cur.fetchone().get('count', 0)
     print(f'Updating d_obscount for {count} {table} record(s)')
+
+def update_last_obs_date(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update the d_lastplotaddeddate column for a set of records identified by ID.
+
+    Executes SQL to update date of last associated observation upload for each
+    given project ID, processing records in batches if needed to avoid
+    overloading the database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update d_lastplotaddeddate for a batch of records, by table
+    SQL = {
+        'project': """
+            UPDATE project pj
+            SET d_lastplotaddeddate = NOW()
+            WHERE project_id = ANY(%s)
+            """,
+    }
+
+    if (sql := SQL.get(table)) is None:
+        raise ValueError(f"Invalid table: '{table}'. Must be one of: {', '.join(SQL)}")
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk,))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating d_lastplotaddeddate for {count} {table} record(s)')
+
+def update_interpreted_observations(conn, table, list_of_ids, batch_size=50000):
+    """
+    Update denorm interp columns for a set of records identified by ID.
+
+    Executes SQL to update denormalized original and current interpretation
+    fields in the taxon observation table for each given taxon interpretation
+    ID, processing records in batches if needed to avoid overloading the
+    database with large IN-clauses.
+
+    Args:
+        conn: A database connection object with cursor support.
+        table (str): Name of the table with d_obscount to be updated.
+        list_of_ids (list): IDs of the table records to update.
+        batch_size (int): Number of records to update per query. Defaults to 50000.
+
+    Returns:
+        None
+    """
+    if not list_of_ids:
+        return
+
+    # SQL statements to update counts for a batch of records, by table
+    sql = """
+        WITH interp_data AS (
+            SELECT
+                ti.taxonobservation_id,
+                ti.plantconcept_id,
+                ti.originalinterpretation,
+                ti.currentinterpretation,
+                scif.plantname AS scif,
+                scin.plantname AS scin,
+                comm.plantname AS comm,
+                code.plantname AS code
+            FROM taxoninterpretation ti
+            JOIN plantconcept pc USING (plantconcept_id)
+            LEFT JOIN plantusage u_scif ON pc.plantconcept_id = u_scif.plantconcept_id
+                                        AND LOWER(u_scif.classsystem) = 'scientific'
+            LEFT JOIN plantname scif ON u_scif.plantname_id = scif.plantname_id
+            LEFT JOIN plantusage u_scin ON pc.plantconcept_id = u_scin.plantconcept_id
+                                        AND LOWER(u_scin.classsystem) = 'scientific without authors'
+            LEFT JOIN plantname scin ON u_scin.plantname_id = scin.plantname_id
+            LEFT JOIN plantusage u_comm ON pc.plantconcept_id = u_comm.plantconcept_id
+                                        AND LOWER(u_comm.classsystem) = 'english common'
+            LEFT JOIN plantname comm ON u_comm.plantname_id = comm.plantname_id
+            LEFT JOIN plantusage u_code ON pc.plantconcept_id = u_code.plantconcept_id
+                                        AND LOWER(u_code.classsystem) = 'code'
+            LEFT JOIN plantname code ON u_code.plantname_id = code.plantname_id
+            WHERE ti.taxoninterpretation_id = ANY(%s)
+              AND (ti.originalinterpretation = true OR ti.currentinterpretation = true)
+        ),
+        orig AS (
+            SELECT DISTINCT ON (taxonobservation_id)
+                taxonobservation_id, plantconcept_id, scif, scin, comm, code
+            FROM interp_data
+            WHERE originalinterpretation = true
+            ORDER BY taxonobservation_id, plantconcept_id ASC
+        ),
+        curr AS (
+            SELECT DISTINCT ON (taxonobservation_id)
+                taxonobservation_id, plantconcept_id, scif, scin, comm, code
+            FROM interp_data
+            WHERE currentinterpretation = true
+            ORDER BY taxonobservation_id, plantconcept_id DESC
+        )
+        UPDATE taxonobservation tobs
+        SET int_origplantconcept_id = orig.plantconcept_id,
+            int_origplantscifull = orig.scif,
+            int_origplantscinamenoauth = orig.scin,
+            int_origplantcommon = orig.comm,
+            int_origplantcode = orig.code,
+            int_currplantconcept_id = curr.plantconcept_id,
+            int_currplantscifull = curr.scif,
+            int_currplantscinamenoauth = curr.scin,
+            int_currplantcommon = curr.comm,
+            int_currplantcode = curr.code
+        FROM orig
+        FULL JOIN curr ON orig.taxonobservation_id = curr.taxonobservation_id
+        WHERE tobs.taxonobservation_id = COALESCE(orig.taxonobservation_id, curr.taxonobservation_id)
+        """
+
+    sql_returning_counts = f"""
+                WITH updated AS (
+                {sql}
+                RETURNING 1
+            )
+            SELECT COUNT(*) AS count FROM updated
+        """
+    count = 0
+    with conn.cursor() as cur:
+        for chunk in batch_of_ids(list_of_ids, batch_size):
+            cur.execute(sql_returning_counts, (chunk, ))
+            count += cur.fetchone().get('count', 0)
+    print(f'Updating orig and curr interpretations for {count} {table} record(s)')
 
 def update_search_vector(conn, table, list_of_ids, batch_size=50000):
     """

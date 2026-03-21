@@ -94,27 +94,36 @@ class UserDataset(Operator):
 
     def upload_user_dataset(self, dataset, conn, validate=False):
         '''
-        Uploads a user dataset to VegBank. If a user is submitting it via the endpoint, we use validate=True 
-        because users are only allowed to submit datasets containing only observation codes. Otherwise, 
-        the request is coming from one of the bulk endpoints, and all those foreign keys are new so they 
-        must be valid and don't need to be checked. 
+        Uploads a user dataset to VegBank. If a user is submitting it via the
+        endpoint, we use validate=True because users are only allowed to submit
+        datasets containing only observation codes. Otherwise, the request is
+        coming from one of the bulk endpoints, and all those foreign keys are
+        new so they must be valid and don't need to be checked.
+
+        If dataset sharing is not specified in the dataset payload, it is set to
+        'private'.
 
         dataset should be a dict with the following keys:
         - name: str
         - description: str (optional)
         - type: str (e.g. 'dataset', 'normal')
-        - data: dict where keys are item tables (e.g. 'observation') and 
-            values are lists of vb_codes (e.g. ['ob.123', 'ob.456'])
+        - data: dict where keys are item tables (e.g. 'observation') and
+            values are lists of vb_codes (e.g. ['ob.123', 'ob.456']
         '''
         user_dataset_insert_sql = """
-            INSERT INTO userdataset (datasetname, datasetdescription, 
-                datasettype, datasetstart)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO userdataset (
+                datasettype,
+                datasetsharing,
+                datasetname,
+                datasetdescription,
+                datasetstart)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING userdataset_id"""
         dataset_insert_data = (
+            dataset['type'],
+            dataset.get('sharing', 'private'),
             dataset['name'],
             dataset.get('description', ''),
-            dataset['type'],
             datetime.now()
             # TODO This will eventually need to be the user id of the person
             # uploading the dataset. Once we have the auth token we can
@@ -191,6 +200,8 @@ class UserDataset(Operator):
             return jsonify_error_message("Request body must be JSON."), 400
         
         dataset = request.get_json()
+        dataset['type'] = 'normal'
+        dataset['sharing'] = 'public'
         validate_dataset_json(dataset)
         to_return = None
         with connect(**self.params, row_factory=dict_row) as conn:

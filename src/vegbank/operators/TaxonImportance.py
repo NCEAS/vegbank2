@@ -1,4 +1,5 @@
 import os
+import textwrap
 from vegbank.operators.operator_parent_class import Operator
 
 
@@ -21,6 +22,7 @@ class TaxonImportance(Operator):
         self.name = "taxon_importance"
         self.table_code = "tm"
         self.queries_package = f"{self.queries_package}.{self.name}"
+        self.detail_options = ("minimal", "full")
         self.nested_options = ("true", "false")
 
     def configure_query(self, *args, **kwargs):
@@ -32,11 +34,15 @@ class TaxonImportance(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'tm_code': "'tm.' || tm.taxonimportance_id",
-            'to_code': "'to.' || tm.taxonobservation_id",
             'ob_code': "'ob.' || txo.observation_id",
+            'author_obs_code': "ob.authorobscode",
+            'to_code': "'to.' || tm.taxonobservation_id",
+            'author_plant_name': "txo.authorplantname",
             'sr_code': "'sr.' || tm.stratum_id",
-            'stratum_name': "COALESCE(sr.stratumname, '<All>')",
+            'stratum_name': f"({textwrap.dedent("""\
+                CASE WHEN tm.stratum_id IS NULL THEN '<All>'
+                     ELSE COALESCE(sr.stratumname, sy.stratumname) END""")})",
+            'tm_code': "'tm.' || tm.taxonimportance_id",
             'cover': "tm.cover",
             'cover_code': "tm.covercode",
             'basal_area': "tm.basalarea",
@@ -49,13 +55,27 @@ class TaxonImportance(Operator):
         main_columns['full_nested'] = main_columns['full'] | {
             'stems': "stems",
         }
+        # identify minimal columns
+        main_columns['minimal'] = {
+            name: col for name, col in main_columns['full'].items()
+            if name not in ['author_obs_code', 'author_plant_name',
+                            'stratum_name']}
+        # identify minimal columns with nesting
+        main_columns['minimal_nested'] = main_columns['minimal'] | {
+            'stems': "stems",
+        }
+
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM tm
             JOIN taxonobservation txo USING (taxonobservation_id)
-            LEFT JOIN stratum sr USING (stratum_id)
             """
-        from_sql['full_nested'] = from_sql['full'].rstrip() + """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
+            LEFT JOIN stratum sr USING (stratum_id)
+            LEFT JOIN stratumtype sy USING (stratumtype_id)
+            JOIN observation ob ON txo.observation_id = ob.observation_id
+            """
+        from_sql_nested = """
             LEFT JOIN LATERAL (
               SELECT JSON_AGG(JSON_BUILD_OBJECT(
                          'sc_code', 'sc.' || stemcount_id,
@@ -80,6 +100,8 @@ class TaxonImportance(Operator):
                 )
             ) AS stems ON true
             """
+        from_sql['full_nested'] = from_sql['full'].rstrip() + from_sql_nested
+        from_sql['minimal_nested'] = from_sql['minimal'].rstrip() + from_sql_nested
         order_by_sql = """\
             ORDER BY tm.taxonimportance_id
             """

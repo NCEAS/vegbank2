@@ -9,14 +9,16 @@ WHEN NOT MATCHED THEN
       disturbanceintensity,
       disturbanceage,
       disturbanceextent,
-      disturbancecomment
+      disturbancecomment,
+      emb_disturbanceobs
   ) VALUES (
     CAST(SUBSTRING(src.vb_ob_code, 4) AS INT),
     src.disturbancetype,
     src.disturbanceintensity,
     src.disturbanceage,
     src.disturbanceextent,
-    src.disturbancecomment
+    src.disturbancecomment,
+    0
   )
 RETURNING merge_action(),
           src.user_do_code,

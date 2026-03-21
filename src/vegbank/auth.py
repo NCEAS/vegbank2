@@ -40,12 +40,17 @@ from authlib.integrations.base_client.errors import OAuthError
 from authlib.integrations.flask_client import OAuth
 from authlib.jose import JsonWebKey, jwt
 from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenError
+from authlib.oauth2 import OAuth2Error
+from authlib.oauth2.rfc6749.errors import InvalidGrantError, InvalidClientError
 
 from flask import Blueprint, g, jsonify, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
 MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent DoS attacks
+
+class MissingParameterError(Exception):
+    """Raised when a required request parameter is missing."""
 
 # VegBank-specific scopes
 SCOPE_ADMIN = "vegbank:admin"
@@ -95,6 +100,12 @@ def init_oauth(app) -> bool:
     Returns:
         True on success, False if the secrets file is missing (auth unavailable).
     """
+    # In read_only or open mode, skip OAuth initialization
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        logger.warning("Access mode '%s': skipping OAuth initialisation.", mode)
+        return True
+
     try:
         secrets = load_client_secrets()
     except (FileNotFoundError, json.JSONDecodeError) as exc:
@@ -167,7 +178,7 @@ def _extract_bearer_token():
 def _decode_and_validate_token(token_str: str):
     """Decode *and* full-validate a JWT against the OIDC provider's JWKS.
 
-    Validates signature, issuer (``iss``), and authorized-party (``azp``) claims.
+    Validates signature, issuer (``iss``), audience (``aud``), and authorized-party (``azp``) claims.
 
     Args:
         token_str: Raw JWT string
@@ -187,38 +198,61 @@ def _decode_and_validate_token(token_str: str):
     metadata = oauth.vegbank_oidc.load_server_metadata()
     issuer = metadata.get("issuer")
 
-    # load_client_secrets is cheap (file read) but we only need client_id.
-    secrets = load_client_secrets()
+    client_id = load_client_secrets().get("client_id")
 
     claims = jwt.decode(
         token_str,
         jwks,
         claims_options={
             "iss": {"essential": True, "value": issuer},
-            "azp": {"essential": True, "value": secrets.get("client_id")},
+            "aud": {"essential": True, "value": client_id},
+            "azp": {"essential": True, "value": client_id},
         },
     )
     claims.validate()
     return claims
 
 
+def _auth_error_response(message, status, details=None):
+    """Generate a uniform JSON error response for authentication/authorization errors.
+
+    All auth-related error responses should use this helper to guarantee a consistent ``{"error": {"message": ..., "details": ...}}`` object.
+
+    Args:
+        message: Error description.
+        status: HTTP status code.
+        details: Optional additional context (``str(exc)``).  Omitted from the response when *None*.
+
+    Returns:
+        Tuple of (JSON response, status code).
+    """
+    error = {"message": message}
+    if details is not None:
+        error["details"] = details
+    return jsonify({"error": error}), status
+
+
 def _token_error_response(exc):
     """Produce a uniform JSON error response for token validation/exchange failures."""
     error_map = {
         DecodeError: ("Token decoding failed", 401),
+        InvalidClientError: ("OIDC client authentication failed", 401),
         InvalidTokenError: ("Token validation failed", 401),
+        InvalidGrantError: ("Invalid or expired refresh token", 401),
         BadSignatureError: ("Token signature verification failed", 401),
         OAuthError: ("Authorization failed", 401),
+        OAuth2Error: ("An OAuth2 error occurred", 401),
         KeyError: ("Invalid token structure", 401),
         TypeError: ("Invalid token structure", 401),
+        MissingParameterError: ("Missing required parameter", 400),
         ValueError: ("OIDC provider configuration error", 500),
         _requests.RequestException: ("Failed to fetch OIDC provider keys", 502),
     }
     for exc_types, (message, status) in error_map.items():
         if isinstance(exc, exc_types):
-            return jsonify({"error": message, "details": str(exc)}), status
+            return _auth_error_response(message, status, details=str(exc))
     # Unexpected exception — treat as server error
-    return jsonify({"error": "Internal authentication error", "details": str(exc)}), 500
+    return _auth_error_response("Internal authentication error", 500, details=str(exc))
 
 
 def _token_response(token: dict, message: str = "Token exchange successful"):
@@ -267,8 +301,7 @@ def _validate_and_extract_claims(required_scope=None):
     """
     token_str = _extract_bearer_token()
     if not token_str:
-        error_resp = (jsonify({"error": "Missing or invalid Authorization header"}), 401)
-        return None, error_resp
+        return None, _auth_error_response("Missing or invalid Authorization header", 401)
 
     try:
         claims = _decode_and_validate_token(token_str)
@@ -279,16 +312,11 @@ def _validate_and_extract_claims(required_scope=None):
     if required_scope:
         token_scopes = claims.get("scope", "").split()
         if required_scope not in token_scopes:
-            error_resp = (
-                jsonify(
-                    {
-                        "error": f"Insufficient scope. Required: {required_scope}",
-                        "available_scopes": token_scopes,
-                    }
-                ),
+            return None, _auth_error_response(
+                f"Insufficient scope. Required: {required_scope}",
                 403,
+                details=f"Available scopes: {' '.join(token_scopes)}",
             )
-            return None, error_resp
     
     return claims, None
 
@@ -320,7 +348,7 @@ def require_token(methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.warning(f"Access mode '{mode}': skipping token validation")
+                logger.warning("Access mode '%s': skipping token validation", mode)
                 return f(None, *args, **kwargs)
             
             # If methods are specified, only enforce auth for those methods
@@ -385,7 +413,7 @@ def require_scope(required_scope: str, methods=None):
             
             # In read_only or open mode, skip auth entirely
             if mode != ACCESS_MODE_AUTHENTICATED:
-                logger.warning(f"Access mode '{mode}': skipping scope validation")
+                logger.warning("Access mode '%s': skipping scope validation", mode)
                 # Store None in g for consistency
                 g.token_claims = None
                 return f(*args, **kwargs)
@@ -423,19 +451,18 @@ def login():
 
     Returns:
         302 redirect to the provider's authorization endpoint.
-        200 JSON response if already authenticated.
         401/500 JSON error response if login fails.
+        403 JSON response if authentication is disabled for the current access mode.
 
     """
-    # Check if user is already authenticated
-    if "token" in session and session.get("token"):
-        token = session.get("token")
-        return _token_response(token, message="Already authenticated")
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
 
     try:
         return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
     except (OAuthError, RequestException) as exc:
-        logger.error("OIDC authorize_redirect error: %s", exc)
+        logger.warning("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)
 
 
@@ -450,15 +477,86 @@ def authorize():
     Returns:
         200 JSON with ``token`` on success.
         401 JSON with error details on failure.
+        403 JSON response if authentication is disabled for the current access mode.
     """
+    mode = get_access_mode()
+    if mode != ACCESS_MODE_AUTHENTICATED:
+        return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
+
     try:
         token = oauth.vegbank_oidc.authorize_access_token()
     except (OAuthError, RequestException) as exc:
-        logger.warning("OIDC token exchange error: %s", exc)
+        logger.debug("OIDC token exchange error: %s", exc)
         return _token_error_response(exc)
 
-    session["token"] = token
     return _token_response(token, message="Authorization successful")
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+def refresh_token():
+    """Re-validate the user session and return a new access token using the refresh token.
+
+    When an access token expires, the client can call this endpoint with the refresh token 
+    to obtain a new access token without requiring the user to log in again. The client 
+    can also pass the desired scopes for the new access token, which must be a subset 
+    of the original scopes granted to the refresh token.
+
+    Parameters (in JSON body):
+    - ``refresh_token`` (string, required): The refresh token issued by the OIDC provider.
+    - ``scope`` (string, optional): Space-separated list of scopes to request for the new access token. If omitted, the new access token will have the same scopes as the original token.
+
+    Returns:
+    200 JSON with new ``access_token`` and ``refresh_token`` on success.
+    400 JSON if the request is missing required parameters.
+    401 JSON if the refresh token is invalid, expired, or if client authentication fails.
+    500 JSON for unexpected server errors.
+    """
+    # Get the refresh token and desired scopes from the JSON body
+    data = request.get_json(silent=True)
+    if not data:
+        return _token_error_response(MissingParameterError("refresh_token"))
+
+    user_refresh_token = data.get("refresh_token")
+    if not user_refresh_token:
+        return _token_error_response(MissingParameterError("refresh_token"))
+
+    # The client should pass the scopes that it would like to request for the
+    # new access token. If no scopes are provided, we will attempt to get a
+    # new access token with the same scopes as the original token. The
+    # requested scopes must match or be a subset of the original scopes granted
+    # to the token, otherwise the OIDC provider will reject the request.
+    requested_scope = data.get("scope")
+
+    # Use Authlib to exchange the refresh token for a new access token
+    try:
+        if not requested_scope:
+            # If no scope is provided, omit the scope parameter to get the same scopes as the original token
+            new_tokens = oauth.vegbank_oidc.fetch_access_token(
+                grant_type="refresh_token",
+                refresh_token=user_refresh_token,
+            )
+        else:
+            new_tokens = oauth.vegbank_oidc.fetch_access_token(
+                grant_type="refresh_token",
+                refresh_token=user_refresh_token,
+                scope=requested_scope,
+            )
+        return _token_response(new_tokens, message="Authorization successful")
+    except InvalidGrantError as exc:
+        # The refresh token was invalid, expired, or revoked by the provider
+        logger.debug("The refresh token is invalid or expired: %s", exc)
+        return _token_error_response(exc)
+    except InvalidClientError as exc:
+        # The client_id or client_secret is wrong
+        logger.warning("OIDC client authentication failed: %s", exc)
+        return _token_error_response(exc)
+    except OAuth2Error as exc:
+        logger.debug("An OAuth2 error occurred: %s", exc)
+        return _token_error_response(exc)
+    except Exception as exc:
+        # A safety net for non-OAuth errors (e.g., network issues)
+        logger.error("Unexpected Exception during refresh: %s", exc, exc_info=True)
+        return _token_error_response(exc)
 
 
 def get_access_mode() -> str:

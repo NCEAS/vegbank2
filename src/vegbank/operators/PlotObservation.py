@@ -25,6 +25,7 @@ from vegbank.utilities import (
     dry_run_check,
     update_search_vector,
     update_obs_counts,
+    update_last_obs_date,
 )
 from flask import jsonify
 from psycopg import connect
@@ -70,10 +71,16 @@ class PlotObservation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'author_plot_code': "pl.authorplotcode",
+            'ob_code': "'ob.' || ob.observation_id",
+            'author_obs_code': "ob.authorobscode",
             'pl_code': "'pl.' || pl.plot_id",
+            'author_plot_code': "pl.authorplotcode",
+            'pj_code': "'pj.' || ob.project_id",
+            'project_name': "pj.projectname",
             'rf_code': "'rf.' || pl.reference_id",
             'rf_label': "rf.reference_id_transl",
+            'has_observation_synonym': "ob.hasobservationsynonym",
+            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
@@ -127,11 +134,9 @@ class PlotObservation(Operator):
             'pl_notes_public': "pl.notespublic",
             'pl_notes_mgt': "pl.notesmgt",
             'pl_revisions': "pl.revisions",
-            'ob_code': "'ob.' || ob.observation_id",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
             'project_name': "pj.projectname",
-            'author_obs_code': "ob.authorobscode",
             'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
             'obs_end_date': "ob.obsenddate",
@@ -227,9 +232,7 @@ class PlotObservation(Operator):
             'top_taxon2_name': "ob.toptaxon2name",
             'top_taxon3_name': "ob.toptaxon3name",
             'top_taxon4_name': "ob.toptaxon4name",
-            'top_taxon5_name': "ob.toptaxon5name",
-            'has_observation_synonym': "ob.hasobservationsynonym",
-            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id"
+            'top_taxon5_name': "ob.toptaxon5name"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
@@ -315,13 +318,16 @@ class PlotObservation(Operator):
                        int_currplantconcept_id,
                        int_currplantscinamenoauth,
                        authorplantname,
-                       maxcover
-                  FROM view_taxonobs_withmaxcover txmc
-                  WHERE txmc.observation_id = ob.observation_id
+                       (SELECT max(txi.cover) AS max
+                          FROM taxonimportance txi
+                          WHERE txi.taxonobservation_id = txo.taxonobservation_id) AS maxcover
+                  FROM taxonobservation txo
+                  WHERE txo.observation_id = ob.observation_id
+                    AND (emb_taxonobservation < 6 OR emb_taxonobservation IS NULL)
               ), returned_taxa AS (
                 SELECT *
                   FROM all_taxa
-                  ORDER BY maxcover DESC,
+                  ORDER BY maxcover DESC NULLS LAST,
                            authorplantname
                   LIMIT %s
               )
@@ -332,9 +338,9 @@ class PlotObservation(Operator):
                                           authorplantname),
                          'max_cover', maxcover
                        )) AS top_taxon_observations,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM all_taxa) AS taxon_count,
-                     (SELECT COUNT(int_currplantconcept_id)
+                     (SELECT COUNT(taxonobservation_id)
                         FROM returned_taxa) AS taxon_count_returned
                 FROM returned_taxa
             ) AS txo ON true
@@ -349,11 +355,14 @@ class PlotObservation(Operator):
                        txo.int_currplantscinamenoauth,
                        txo.authorplantname,
                        sr.stratum_id,
-                       sr.stratumname,
+                       CASE WHEN sr.stratum_id IS NULL THEN '<All>'
+                            ELSE COALESCE(sr.stratumname, sy.stratumname)
+                        END AS stratumname,
                        tm.cover
                   FROM taxonobservation txo
                   LEFT JOIN taxonimportance tm USING (taxonobservation_id)
                   LEFT JOIN stratum sr USING (stratum_id)
+                  LEFT JOIN stratumtype sy USING (stratumtype_id)
                   WHERE txo.observation_id = ob.observation_id
               ), returned_taxon_observations AS (
                 SELECT *
@@ -370,11 +379,11 @@ class PlotObservation(Operator):
                          'plant_name', COALESCE(int_currplantscinamenoauth,
                                                 authorplantname),
                          'sr_code', 'sr.' || stratum_id,
-                         'stratum_name', COALESCE(stratumname, '-all-'),
+                         'stratum_name', stratumname,
                          'cover', cover
                          )) AS top_taxon_observations
                         FROM returned_taxon_observations) AS top_taxon_observations,
-                     (SELECT COUNT(DISTINCT int_currplantconcept_id)
+                     (SELECT COUNT(DISTINCT taxonobservation_id)
                         FROM all_taxon_observations) AS taxon_count,
                      (SELECT COUNT(1)
                         FROM all_taxon_observations) AS taxon_importance_count,
@@ -636,8 +645,8 @@ class PlotObservation(Operator):
                           df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
-        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
+        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
+        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
             print("found some new plots")
             new_validation = validate_required_and_missing_fields(
@@ -688,10 +697,11 @@ class PlotObservation(Operator):
         observation_codes = super().upload_to_table("observation", 'ob', 
             table_defs_config.observation, 'observation_id', df, True, conn)
 
-        # update observation counts for related projects
+        # update observation counts and last obs dates for related projects
         pj_ids = list(set(self.extract_id_from_vb_code(code, 'pj')
                   for code in df['vb_pj_code']))
         update_obs_counts(conn, 'project', pj_ids)
+        update_last_obs_date(conn, 'project', pj_ids)
         to_return = combine_json_return(to_return, observation_codes)
 
         return to_return
@@ -764,8 +774,9 @@ class PlotObservation(Operator):
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False,
-                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
-                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
+                'user_codes': [('user_ob_code', 'user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                               ('user_authority_rf_code', 'user_rf_code', 'rf')],
             },
             'sr': {
                 'file_name': 'strata',
@@ -788,7 +799,9 @@ class PlotObservation(Operator):
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
                                ('user_rf_code','user_rf_code', 'rf'),
-                               ('user_py_code', 'user_py_code', 'py')]
+                               ('user_py_code', 'user_py_code', 'py'),
+                               ('user_collector_py_code', 'user_py_code', 'py'),
+                               ('user_museum_py_code', 'user_py_code', 'py')],
             },
             'cr': {
                 'file_name': 'contributors',
@@ -953,11 +966,16 @@ class PlotObservation(Operator):
                     if data['py'] is not None:
                         data['ti'] = merge_vb_codes(
                             pys['resources']['py'], data['ti'],
-                            {
-                                'user_py_code': 'user_py_code',
-                                'vb_py_code': 'vb_py_code'
-                            }
-                        )
+                            {'user_py_code': 'user_py_code',
+                             'vb_py_code': 'vb_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_collector_py_code',
+                             'vb_py_code': 'vb_collector_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_museum_py_code',
+                             'vb_py_code': 'vb_museum_py_code'})
                     if data['sc'] is not None:
                         data['ti'] = merge_vb_codes(
                             scs['resources']['to'], data['ti'],

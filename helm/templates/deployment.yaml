@@ -33,13 +33,15 @@ spec:
         persistentVolumeClaim:
           claimName: {{ .Values.databaseRestore.pvc }}
       {{- end }}
+      {{- if not (has .Values.auth.accessMode (list "read_only" "open" "authenticated")) }}
+          {{- fail "auth.accessMode must be either 'read_only', 'open' or 'authenticated'" }}
+      {{- end }}
+      {{- if eq .Values.auth.accessMode "authenticated" }}
       - name: oidc-config
         secret:
-          secretName: {{ .Values.oidcConfig.secretName | default "vegbank-oidc-config" }}
-          {{- if not (has .Values.accessMode (list "read_only" "open" "authenticated")) }}
-              {{- fail "accessMode must be either 'read_only', 'open' or 'authenticated'" }}
-          {{- end }}
+          secretName: {{ .Values.auth.oidcSecretName | default "vegbank-oidc-config" }}
           defaultMode: 0440
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -136,22 +138,32 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- omit .Values.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+          {{- if eq .Values.auth.accessMode "authenticated" }}
             - name: oidc-config
               mountPath: /etc/vegbank/oidc
               readOnly: true
+          {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
             - name: VB_ACCESS_MODE
-              value: {{ .Values.accessMode | quote }}
+              value: {{ .Values.auth.accessMode | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -168,6 +180,7 @@ spec:
               value: {{ .Values.database.host | quote }}
             - name: VB_DB_PORT
               value: {{ .Values.database.port | quote }}
+            {{- if eq .Values.auth.accessMode "authenticated" }}
             # Path to the mounted OIDC client secrets JSON file
             - name: OIDC_CLIENT_SECRETS_FILE
               value: /etc/vegbank/oidc/client_secrets.json
@@ -177,6 +190,7 @@ spec:
                 secretKeyRef:
                   name: vegbank-flask-secret
                   key: secret_key
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

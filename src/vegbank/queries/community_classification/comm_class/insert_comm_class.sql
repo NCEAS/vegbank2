@@ -12,7 +12,8 @@ WHEN NOT MATCHED THEN
     multivariateanalysis,
     expertsystem,
     classpublication_id,
-    classnotes
+    classnotes,
+    emb_commclass
   ) VALUES (
     CAST(SUBSTRING(src.vb_ob_code, 4) AS INT),
     src.classstartdate,
@@ -22,7 +23,8 @@ WHEN NOT MATCHED THEN
     src.multivariateanalysis,
     src.expertsystem,
     CAST(SUBSTRING(src.vb_rf_code, 4) AS INT),
-    src.classnotes
+    src.classnotes,
+    0
   )
 RETURNING merge_action(),
           src.user_cl_code,
