@@ -153,8 +153,12 @@ config = {
         ]
     },
     "cover_methods": {
-        "required_fields": ['user_cm_code', 'covertype'],
-        "table_defs": [table_defs_config.cover_method, table_defs_config.cover_index]
+        "required_fields": [
+            'user_cm_code',
+            'cover_type',
+        ],
+        "table_defs": [table_defs_config.cover_method,
+                       table_defs_config.cover_index],
     }
 }
 

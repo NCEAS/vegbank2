@@ -173,7 +173,7 @@ cover_method = [
     'user_cm_code',
     'user_rf_code',
     'vb_rf_code',
-    'covertype',
+    'cover_type',
     'cover_estimation_method'
 ]
 
