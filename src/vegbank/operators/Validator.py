@@ -156,6 +156,8 @@ config = {
         "required_fields": [
             'user_cm_code',
             'cover_type',
+            'cover_code',
+            'cover_percent',
         ],
         "table_defs": [table_defs_config.cover_method,
                        table_defs_config.cover_index],

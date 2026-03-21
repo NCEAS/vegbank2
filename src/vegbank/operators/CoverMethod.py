@@ -140,6 +140,8 @@ class CoverMethod(Operator):
         config_cover_index = table_defs_config.cover_index[:]
         table_defs = [config_cover_method, config_cover_index]
         required_fields = ['user_cm_code', 'cover_type']
+        required_fields = ['user_cm_code', 'cover_type', 'cover_code',
+                           'cover_percent']
         validation = validate_required_and_missing_fields(df, required_fields, table_defs, 'cover_methods')
         if validation['has_error']:
             raise ValueError(validation['error'])
