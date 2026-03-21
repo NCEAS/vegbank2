@@ -161,6 +161,9 @@ config = {
         ],
         "table_defs": [table_defs_config.cover_method,
                        table_defs_config.cover_index],
+        "xor_fields": [
+            ('user_rf_code', 'vb_rf_code', 'optional'),
+        ]
     }
 }
 
