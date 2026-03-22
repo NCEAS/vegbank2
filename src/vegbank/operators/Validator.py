@@ -317,12 +317,7 @@ def validate(df, file_name, endpoint_name=None):
         required_fields = config['community_contributors']['required_fields']
         table_defs = config['community_contributors']['table_defs']
         xor_fields = config['community_contributors'].get('xor_fields')
-    xor_validation = {
-        'error': "",
-        'has_error': False
-    }
-    if xor_fields is not None:
-        xor_validation = validate_xor_pairs(df, xor_fields, file_name)
+    xor_validation = validate_xor_pairs(df, xor_fields, file_name)
     field_validation = validate_required_and_missing_fields(
         df,
         required_fields,
@@ -401,6 +396,8 @@ def validate_xor_pairs(df, xor_pairs, file_name):
         'has_error': False,
         'error': ""
     }
+    if xor_pairs is None:
+        return to_return
 
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair[0], xor_pair[1]
