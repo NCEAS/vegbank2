@@ -300,23 +300,26 @@ def validate(df, file_name, endpoint_name=None):
 
     if file_name == "plot_observations":
         return validate_plot_observations(df)
-    required_fields = config[file_name]['required_fields']
-    table_defs = config[file_name]['table_defs']
-    xor_fields = config[file_name].get('xor_fields')
-    print('file name is ' + file_name)
-    if endpoint_name and endpoint_name == 'taxon-interpretations' and file_name == 'taxon_interpretations':
-        print("using taxon reinterpretation config for validation of taxon interpretations because endpoint is taxon-interpretations")
-        required_fields = config['taxon_reinterpretations']['required_fields']
-        table_defs = config['taxon_reinterpretations']['table_defs']
-        xor_fields = config['taxon_reinterpretations'].get('xor_fields')
-    if endpoint_name and endpoint_name == "community-classifications" and file_name == "community_classifications":
-        required_fields = config['community_reclassifications']['required_fields']
-        table_defs = config['community_reclassifications']['table_defs']
-        xor_fields = config['community_reclassifications'].get('xor_fields')
-    if endpoint_name and endpoint_name == "community-classifications" and file_name == "contributors":
-        required_fields = config['community_contributors']['required_fields']
-        table_defs = config['community_contributors']['table_defs']
-        xor_fields = config['community_contributors'].get('xor_fields')
+
+    # Specify the loader config table key, which is usually just the file name,
+    # except in cases where we use modified configuration for a few specific
+    # tables uploaded via specific endpoints
+    if (file_name == 'taxon_interpretations'
+            and endpoint_name == 'taxon-interpretations'):
+        table_key = 'taxon_reinterpretations'
+    elif (file_name == 'community_classifications'
+            and endpoint_name == 'community-classifications'):
+        table_key = 'community_reclassifications'
+    elif (file_name == 'contributors'
+            and endpoint_name == 'community-classifications'):
+        table_key = 'community_contributors'
+    else:
+        table_key = file_name
+    print('table key is ' + table_key)
+
+    required_fields = config[table_key]['required_fields']
+    table_defs = config[table_key]['table_defs']
+    xor_fields = config[table_key].get('xor_fields')
     xor_validation = validate_xor_pairs(df, xor_fields, file_name)
     field_validation = validate_required_and_missing_fields(
         df,
