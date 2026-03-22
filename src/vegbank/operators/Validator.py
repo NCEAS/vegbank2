@@ -1,4 +1,6 @@
+from collections import defaultdict
 import numpy as np
+import pandas as pd
 from vegbank.operators import table_defs_config
 from vegbank.utilities import validate_required_and_missing_fields
 
@@ -273,8 +275,8 @@ def validate(df, file_name, endpoint_name=None):
     the corresponding configuration in the config dictionary. If the file name
     is not found in the config, it returns a successful validation result. For
     "plot_observations", it runs a specialized validation function. For other
-    files, it checks for required fields and validates the presence of XOR field
-    pairs as defined in the config.
+    files, it checks for required fields, checks designated field types, and
+    validates the presence of XOR field pairs as defined in the config.
 
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
@@ -323,6 +325,8 @@ def validate(df, file_name, endpoint_name=None):
         df, cfg.get('required_fields'), cfg.get('table_defs'), file_name)
     validation['xor'] = validate_xor_pairs(
         df, cfg.get('xor_fields'), file_name)
+    validation['type'] = validate_field_types(
+        df, cfg.get('field_type_map'), file_name)
     return {
         'has_error': any(val.get('has_error') for val in validation.values()),
         'error': ' '.join(val['error'] for val in validation.values()
@@ -354,6 +358,8 @@ def validate_plot_observations(df):
 
     validation['xor'] = validate_xor_pairs(
         df, cfg.get('xor_fields'), "plot_observations")
+    validation['type'] = validate_field_types(
+        df, cfg.get('field_type_map'), 'plot_observations')
 
     return {
         'has_error': any(val.get('has_error') for val in validation.values()),
@@ -538,3 +544,101 @@ def validate_contributor_record_identifier_codes(df, data):
             "or community classification tables: " + \
             ", ".join(missing_codes) + ". "
     return to_return
+
+
+def validate_field_types(df, field_type_map, file_name):
+    """Validates that provided fields are the correct type
+
+    Parameters:
+        df (pd.DataFrame): The dataframe to be validated.
+        field_type_map (dict): A mapping of column names to types, or None
+        file_name (str): The name of the file being validated (used in error
+             messages).
+    Returns:
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
+    """
+    no_error = {
+        'has_error': False,
+        'error': ""
+    }
+    if field_type_map is None:
+        return no_error
+
+    TYPE_VALIDATORS = {
+        "boolean": is_valid_boolean,
+        "numeric": is_valid_numeric,
+        "integer": is_valid_integer,
+        "timestamp": is_valid_timestamptz,
+    }
+
+    invalid_fields = defaultdict(list)
+
+    for field, db_type in field_type_map.items():
+        if field.lower() not in df.columns:
+            continue
+        validator = TYPE_VALIDATORS.get(db_type)
+        if validator and not validator(df[field]):
+            invalid_fields[db_type].append(field)
+
+    if invalid_fields:
+        messages = []
+        for type_label, columns in invalid_fields.items():
+            col_list = ", ".join(columns)
+            messages.append(f"The following column(s) for {file_name} " +
+                            f"must be {type_label}: {col_list}.")
+        return {
+            'has_error': True,
+            'error': " ".join(messages),
+        }
+    else:
+        return no_error
+
+
+def is_valid_boolean(series: pd.Series) -> bool:
+    """Return True if all non-null values are boolean-compatible.
+
+    Accepts bool dtypes, numeric 0/1, and 'true'/'false' (case-insensitive).
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return True
+    if pd.api.types.is_numeric_dtype(series):
+        return series.dropna().isin([0, 1]).all()
+    if (pd.api.types.is_object_dtype(series)
+            or pd.api.types.is_string_dtype(series)):
+        return series.dropna().astype(str).str.lower().isin(["true", "false"]).all()
+    return False
+
+
+def is_valid_numeric(series: pd.Series) -> bool:
+    """Return True if all non-null values are numeric.
+
+    Rejects booleans rather than allowing them as 0.0/1.0.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return False
+    try:
+        pd.to_numeric(series, errors='raise')
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def is_valid_integer(series: pd.Series) -> bool:
+    """Return True if all non-null values are numeric with no fractional part.
+
+    Rejects booleans rather than allowing them as 0/1.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return False
+    try:
+        coerced = pd.to_numeric(series, errors='raise')
+        return (coerced.dropna() == coerced.dropna().astype(int)).all()
+    except (ValueError, TypeError):
+        return False
+
+
+def is_valid_timestamptz(series: pd.Series) -> bool:
+    """Return True if all non-null values can be parsed as tz-aware timestamps."""
+    coerced = pd.to_datetime(series, errors='coerce', utc=True)
+    invalid_mask = coerced.isna() & series.notna()
+    return not invalid_mask.any()
