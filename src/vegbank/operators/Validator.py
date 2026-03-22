@@ -267,19 +267,30 @@ config = {
 
 
 def validate(df, file_name, endpoint_name=None):
-    '''
-    Runs validation checks on the provided dataframe based on the file name and the corresponding configuration in the config dictionary. If the file name is not found in the config, it returns a successful validation result. For "plot_observations", it runs a specialized validation function. For other files, it checks for required fields and XOR field pairs as defined in the config.
+    """Run basic up-front validation on user-supplied data
+
+    Runs validation checks on the provided dataframe based on the file name and
+    the corresponding configuration in the config dictionary. If the file name
+    is not found in the config, it returns a successful validation result. For
+    "plot_observations", it runs a specialized validation function. For other
+    files, it checks for required fields and validates the presence of XOR field
+    pairs as defined in the config.
+
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
-        file_name (str): The name of the file being validated, which determines the validation rules to apply.
-        endpoint_name(str): we have a few files where there are different required
-        fields based on which endpoint the request comes from. Example: Taxon 
-        interpetations require different fields if they are uploaded through the 
-        plot observation endpoint vs the taxon interpretation endpoint. This parameter allows us to specify which one and set the required fields 
-        accordingly.  
+        file_name (str): The name of the file being validated, which determines
+            the validation rules to apply.
+        endpoint_name (str): we have a few files where there are different
+            required fields based on which endpoint the request comes from.
+            Example: Taxon interpetations require different fields if they are
+            uploaded through the plot observation endpoint vs the taxon
+            interpretation endpoint. This parameter allows us to specify which
+            one and set the required fields accordingly.
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     print("validating " + file_name)
     if file_name not in config:
         return {
@@ -370,15 +381,22 @@ def validate_plot_observations(df):
 
 
 def validate_xor_pairs(df, xor_pairs, file_name):
-    '''
-    Takes a list of column name pairs and verifies that each pair has only one of the two columns populated per row.
+    """Validates column pairs for which values are not allowed in both fields
+
+    Takes a list of column name pairs and verifies that each pair has only one
+    of the two columns populated per row.
+
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
-        xor_pairs (list): A list of tuples, where each tuple contains two column names that should be mutually exclusive.
-        file_name (str): The name of the file being validated (used in error messages).
+        xor_pairs (list): A list of tuples, where each tuple contains two column
+            names that should be mutually exclusive.
+        file_name (str): The name of the file being validated (used in error
+            messages).
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     to_return = {
         'has_error': False,
         'error': ""
@@ -423,16 +441,26 @@ def validate_xor_pairs(df, xor_pairs, file_name):
 
 
 def validate_user_codes(df_1_name, data, user_codes, file_name):
-    '''
-    Validates that the user codes in the provided dataframe match to existing codes in the target user provided tables.
+    """Validate referential integrity across tables based on user codes
+
+    Validates that the user codes in the provided dataframe match to existing
+    codes in the target user provided tables.
+
     Parameters:
-        df_1_name (str): The name of the dataframe containing the user codes to be validated.
-        data (dict): A dictionary containing the dataframes for all user provided tables, keyed by table name.
-        user_codes (list): A list of tuples, where each tuple contains the source code column name, target code column name, and target table name to validate against.
-        file_name (str): The name of the file being validated (used in error messages).
+        df_1_name (str): The name of the dataframe containing the user codes to
+            be validated.
+        data (dict): A dictionary containing the dataframes for all user
+            provided tables, keyed by table name.
+        user_codes (list): A list of tuples, where each tuple contains the
+            source code column name, target code column name, and target table
+            name to validate against.
+        file_name (str): The name of the file being validated (used in error
+            messages).
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     to_return = {
         'has_error': False,
         'error': ""
