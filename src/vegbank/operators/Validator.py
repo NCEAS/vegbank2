@@ -317,20 +317,17 @@ def validate(df, file_name, endpoint_name=None):
         table_key = file_name
     print('table key is ' + table_key)
 
-    required_fields = config[table_key]['required_fields']
-    table_defs = config[table_key]['table_defs']
-    xor_fields = config[table_key].get('xor_fields')
-    xor_validation = validate_xor_pairs(df, xor_fields, file_name)
-    field_validation = validate_required_and_missing_fields(
-        df,
-        required_fields,
-        table_defs,
-        file_name)
-    to_return = {
-        'has_error': xor_validation.get('has_error', False) or field_validation.get('has_error', False),
-        'error': xor_validation.get('error', '') + field_validation.get('error', '')
+    cfg = config[table_key]
+    validation = dict()
+    validation['field'] = validate_required_and_missing_fields(
+        df, cfg.get('required_fields'), cfg.get('table_defs'), file_name)
+    validation['xor'] = validate_xor_pairs(
+        df, cfg.get('xor_fields'), file_name)
+    return {
+        'has_error': any(val.get('has_error') for val in validation.values()),
+        'error': ' '.join(val['error'] for val in validation.values()
+                          if val.get('error') is not None)
     }
-    return to_return
 
 
 def validate_plot_observations(df):
@@ -339,43 +336,30 @@ def validate_plot_observations(df):
     if 'vb_pl_code' not in df.columns:
         df['vb_pl_code'] = None
 
-    validation = {
-        'error': "",
-        'has_error': False
-    }
-    pl_obs_config = config['plot_observations']
+    cfg = config['plot_observations']
+
+    validation = dict()
 
     new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()]
-    old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()]
     if not new_plots_df.empty:
-        new_validation = validate_required_and_missing_fields(
-            new_plots_df,
-            pl_obs_config['new_pl_required_fields'],
-            pl_obs_config['table_defs'],
+        validation['new'] = validate_required_and_missing_fields(
+            new_plots_df, cfg['new_pl_required_fields'], cfg['table_defs'],
             "observations on new plots")
-    else:
-        new_validation = {
-            'error': "",
-            'has_error': False
-        }
-    if not old_plots_df.empty:
-        old_validation = validate_required_and_missing_fields(
-            old_plots_df,
-            pl_obs_config['old_pl_required_fields'],
-            pl_obs_config['table_defs'],
-            "observations on existing plots")
-    else:
-        old_validation = {
-            'error': "",
-            'has_error': False
-        }
-    xor_validation = validate_xor_pairs(
-        df, pl_obs_config['xor_fields'], "plot_observations")
 
-    validation['error'] += new_validation['error'] + \
-        old_validation['error'] + xor_validation['error']
-    validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or xor_validation['has_error']
-    return validation
+    old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()]
+    if not old_plots_df.empty:
+        validation['old'] = validate_required_and_missing_fields(
+            old_plots_df, cfg['old_pl_required_fields'], cfg['table_defs'],
+            "observations on existing plots")
+
+    validation['xor'] = validate_xor_pairs(
+        df, cfg.get('xor_fields'), "plot_observations")
+
+    return {
+        'has_error': any(val.get('has_error') for val in validation.values()),
+        'error': ' '.join(val['error'] for val in validation.values()
+                          if val.get('error') is not None)
+    }
 
 
 def validate_xor_pairs(df, xor_pairs, file_name):
