@@ -982,8 +982,8 @@ def cover_methods(cm_code, claims=None):
     retrieves cover method details associated with a specified cover method code
     (e.g., `cm.1`) or a paginated collection of all cover methods if no code is
     provided; see below for query parameters to support pagination and detail.
-    For POST requests, it facilitates uploading of cover methods if permitted
-    via an environment variable. For any other HTTP method, it returns a 405
+    For POST requests, it facilitates uploading of cover methods and associated references if user is permitted. 
+    For any other HTTP method, it returns a 405
     error.
 
     Parameters (for GET requests only):
@@ -1013,7 +1013,7 @@ def cover_methods(cm_code, claims=None):
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
-        return cover_method_operator.upload_cover_method(request, params)
+        return cover_method_operator.upload_all(request)
     elif request.method == 'GET':
         return cover_method_operator.get_vegbank_resources(request, cm_code)
     else:

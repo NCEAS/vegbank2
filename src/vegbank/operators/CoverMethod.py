@@ -1,13 +1,23 @@
-import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import time
 import traceback
-import psycopg
 from vegbank.operators.operator_parent_class import Operator
-from vegbank.operators import table_defs_config
-from vegbank.utilities import jsonify_error_message, allowed_file, QueryParameterError, load_sql
+from .Reference import Reference
+from .UserDataset import UserDataset
+from vegbank.operators import table_defs_config, Validator
+from vegbank.utilities import (
+    jsonify_error_message, 
+    validate_required_and_missing_fields, 
+    merge_vb_codes, 
+    combine_json_return, 
+    read_parquet_file, 
+    UploadDataError, 
+    dry_run_check
+)
 from flask import jsonify
-from psycopg import ClientCursor
+from psycopg import connect
 from psycopg.rows import dict_row
 
 
@@ -116,201 +126,140 @@ class CoverMethod(Operator):
             'params': []
         }
 
-    def upload_cover_method(self, request, params):
-        """
-        Uploads cover method and cover index data from a file, validates it, and inserts it into the database.
+    def upload_cover_methods(self, df, conn):
+        '''
+        Handles the upload of cover method and cover index data to the database.
+        Expects a dataframe with all cover method and cover index data, including user codes.
         Parameters:
-            request (Request): The incoming request containing the file to be uploaded.
-            params (dict): Database connection parameters.
-            Set via env variable in vegbankapi.py. Keys are: 
-                dbname, user, host, port, password
+            - df: A pandas dataframe containing the cover method and cover index data to be uploaded. Must include user codes for both cover method and cover index.
+            - conn: An active database connection to be used for the upload.
         Returns:
-            Response: A JSON response containing the results of the upload operation, including 
-                      inserted and matched records, or an error message if the operation fails.
-        Raises:
-            ValueError: If there are unsupported columns in the uploaded data, if references do not 
-                        exist in the database, or if there are no new cover methods to insert.
-        """
+            - A dictionary containing the results of the upload, including any new codes generated for the cover methods and cover indices.
+        '''
+        config_cover_method = table_defs_config.cover_method[:]
+        config_cover_index = table_defs_config.cover_index[:]
+        table_defs = [config_cover_method, config_cover_index]
+        required_fields = ['user_cm_code', 'cover_type', 'cover_code',
+                           'cover_percent']
+        validation = validate_required_and_missing_fields(df, required_fields, table_defs, 'cover_methods')
+        if validation['has_error']:
+            raise ValueError(validation['error'])
+        to_return = None
+        df['user_cm_code'] = df['user_cm_code'].astype(str)
+        cover_method_codes = super().upload_to_table('cover_method', 'cm', table_defs_config.cover_method, 'covermethod_id', df, True, conn, True)
+
+        cm_codes_df = pd.DataFrame(cover_method_codes['resources']['cm'])
+        cm_codes_df = cm_codes_df[['user_cm_code', 'vb_cm_code']]
+
+        to_return = combine_json_return(to_return, cover_method_codes)
+
+        df = merge_vb_codes(cover_method_codes['resources']['cm'], df, 
+                            {'user_cm_code': 'user_cm_code',
+                            'vb_cm_code':'vb_cm_code' 
+                            })
         
-        if 'file' not in request.files:
-            return jsonify_error_message("No file part in the request."), 400
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify_error_message("No selected file."), 400
-        if not allowed_file(file.filename):
-            return jsonify_error_message("File type not allowed. Only Parquet files are accepted."), 400
+        config_cover_index.append('vb_cm_code')
+        config_cover_index.append('user_ci_code')
 
-        cover_method_fields = table_defs_config.cover_method
-        cover_index_fields = table_defs_config.cover_index
+        df['user_ci_code'] = np.arange(len(df)) + 1
+        df['user_ci_code'] = df['user_ci_code'].astype(str)
+        cover_index_codes = super().upload_to_table('cover_index', 'ci', config_cover_index, 'coverindex_id', df, False, conn, False)
 
-        to_return = {}
+        to_return = combine_json_return(to_return, cover_index_codes)
 
-        try:
-            df = pd.read_parquet(file)
-            print(f"DataFrame loaded with {len(df)} records.")
+        return to_return
 
-            df.columns = map(str.lower, df.columns)
-            #Checking if the user submitted any unsupported columns
-            additional_columns = set(df.columns) - set(cover_method_fields) - set(cover_index_fields)
-            if(len(additional_columns) > 0):
-                return jsonify_error_message(f"Your data must only contain fields included in the plot observation schema. The following fields are not supported: {additional_columns} ")
-
-            df.replace({pd.NaT: None}, inplace=True)
-            df.replace({np.nan: None}, inplace=True)
-
-            cover_method_df = df[cover_method_fields]
-            cover_method_df = cover_method_df.drop_duplicates()
-
-            print(str(cover_method_df))
-            print("---------------")
-            cover_method_inputs = list(cover_method_df.itertuples(index=False, name=None))
+    def upload_all(self, request):
+        '''
+        Handles the upload of cover method data, including associated reference data if provided, and cover index data. Validates the uploaded data, uploads it to the database, and creates a new user dataset with the uploaded data. Expects a multipart/form-data request with parquet files for cover methods and optionally references. The cover method file must include user codes for both cover methods and cover indices. If reference data is provided, it will be uploaded first and the generated vb_rf_codes will be merged into the cover method data before uploading cover methods and cover indices.
+        
+        Parameters:
+            - request: A Flask request object containing the uploaded files and any additional parameters. Expects parquet files for cover methods and optionally references, with specific naming conventions for the files and user code fields.
+        Returns:
+            - A JSON response containing the results of the upload, including any new codes generated for the cover methods and cover indices, and the new user dataset created. If any validation errors occur, returns a JSON response with the error message and a 400 status code. If any other errors occur during the upload process, returns a JSON response with the error message and a 500 status code.
+        '''
+        upload_files = {
+            'rf':{
+                'file_name': 'references',
+                'required': False
+            },
+            'cm':{
+                'file_name': 'cover_methods',
+                'required': True,
+                'user_codes':{
+                    ('user_rf_code', 'user_rf_code', 'rf')
+                }
+            }
+        }
+        data = {}
+        validation = {
+            'has_error': False,
+            'error': ''
+        }
+        dataset = {}
+        to_return = None
+        for name, config in upload_files.items():
+            try:
+                data[name] = read_parquet_file(
+                    request, config['file_name'], required=config['required']
+                )
+                if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             
+            except UploadDataError as e:
+                return jsonify_error_message(e.message), e.status_code
 
-            with psycopg.connect(**params, cursor_factory=ClientCursor, row_factory=dict_row) as conn:
-                
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
+        
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
                 with conn.cursor() as cur:
-                    with conn.transaction():
-                        cm_create_cm_tmp_table_path = (
-                            "cover_method/create_cover_method_temp_table.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, cm_create_cm_tmp_table_path
-                        )
-                        cur.execute(sql)
-
-                        cm_insert_cm_tmp_table_path = (
-                            "/cover_method/insert_cover_methods_to_temp_table.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, cm_insert_cm_tmp_table_path
-                        )
-                        cur.executemany(sql, cover_method_inputs)
-
-                        print("about to run validate cover methods")
-                        cm_validate_cm_tmp_table_path = "/cover_method/validate_cover_methods.sql"
-                        sql = load_sql(self.queries_package, cm_validate_cm_tmp_table_path)
-                        cur.execute(sql)
-                        existing_records = cur.fetchall()
-                        print("existing records: " + str(existing_records))
-
-                        cur.nextset()
-                        new_references = cur.fetchall()
-                        print("new references: " + str(new_references))
-
-                        if(len(new_references) > 0):
-                            raise ValueError(f"The following references do not exist in the database: {new_references}. Please add them to the reference table before uploading new cover methods.")
-
-                        cm_insert_cm_tmp_to_perm_table_path = (
-                            "/cover_method/insert_cover_methods_from_temp_table_to_permanent.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, cm_insert_cm_tmp_to_perm_table_path
-                        )
-                        cur.execute(sql)
-                        inserted_cover_method_records = cur.fetchall()
-                        print("inserted records: " + str(inserted_cover_method_records))
-
-                        if(len(inserted_cover_method_records) == 0 and len(existing_records) == 0):
-                            raise ValueError("No new cover methods to insert. Please check your data for duplicates.")
-
-                        inserted_cover_method_records_df = pd.DataFrame(inserted_cover_method_records)
-                        print("inserted_cover_method_records_df: " + str(inserted_cover_method_records_df))
-
-                        cover_index_df = pd.merge(df, inserted_cover_method_records_df[['covertype', 'covermethod_id']], on='covertype')
-                        cover_index_df = cover_index_df[cover_index_fields]
-                        cover_index_inputs = list(cover_index_df.itertuples(index=False, name=None))
-
-                        ci_create_ci_tmp_table_path = (
-                            "/cover_index/create_cover_index_temp_table.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, ci_create_ci_tmp_table_path
-                        )
-                        cur.execute(sql)
-
-                        ci_insert_ci_tmp_table_path = (
-                            "/cover_index/insert_cover_indices_to_temp_table.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, ci_insert_ci_tmp_table_path
-                        )
-                        cur.executemany(sql, cover_index_inputs)
-
-                        ci_insert_ci_tmp_to_perm_table_path = (
-                            "/cover_index/insert_cover_indices_from_temp_table_to_permanent.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, ci_insert_ci_tmp_to_perm_table_path
-                        )
-                        cur.execute(sql)
-                        inserted_cover_index_records = cur.fetchall()
-                        print("inserted cover index records: " + str(inserted_cover_index_records))
-
-                        covermethod_ids = []
-                        for record in inserted_cover_method_records:
-                            covermethod_ids.append(record['covermethod_id'])
-                        print("covermethod_ids: " + str(covermethod_ids))
-
-                        print("about to run create accession code")
-                        cm_create_cm_acc_codes_path = (
-                            "/cover_method/create_cover_method_accession_codes.sql"
-                        )
-                        sql = load_sql(
-                            self.queries_package, cm_create_cm_acc_codes_path
-                        )
-                        cur.execute(sql, (covermethod_ids, ))
-                        new_cm_codes = cur.fetchall()
-
-                        cm_codes_df = pd.DataFrame(new_cm_codes)
-                        print("cm_codes_df" + str(cm_codes_df))
-                        df['covertype'] = df['covertype'].astype(str)
-                        cm_codes_df['covertype'] = cm_codes_df['covertype'].astype(str)
-
-                        joined_df = pd.merge(df, cm_codes_df, on='covertype')
-                        print("----------------------------------------")
-                        print(str(joined_df))
-
-
-                        to_return_cover_methods = []
-                        to_return_cover_indices = []
-                        for index, record in joined_df.iterrows():
-                            to_return_cover_methods.append({
-                                "user_code": record['user_code'], 
-                                "cm_code": record['accessioncode'],
-                                "covertype": record['covertype'],
-                                "action":"inserted"
-                            })
-                        for record in inserted_cover_index_records:
-                            print("record: " + str(record))
-                            to_return_cover_indices.append({
-                                "cm_code": "cm." + str(record['covermethod_id']), 
-                                "ci_code": "ci." + str(record['coverindex_id']),
-                                "covercode": record['covercode'],
-                                "action":"inserted"
-                            })
-                        for record in existing_records:
-                            to_return_cover_methods.append({
-                                "user_code": record["user_code"],
-                                "cm_code": record['user_code'],
-                                "covertype": record['covertype'],
-                                "action":"matched"
-                            })
-                        to_return["resources"] = {
-                            "cm": to_return_cover_methods,
-                            "ci": to_return_cover_indices
-                        }
-                        to_return["counts"] = {
-                            "cm":{
-                                "inserted": len(joined_df),
-                                "matched": len(existing_records)
-                            },
-                            "ci":{
-                                "inserted": len(inserted_cover_index_records)
-                            }
-                        }
-            conn.close()      
-
+                    if data['rf'] is not None:
+                        print("references are found")
+                        rfs = Reference(self.params).upload_references(
+                            data['rf'], conn)
+                        dataset['reference'] = [item['vb_rf_code']
+                                                for item in rfs['resources']['rf']]
+                        to_return = combine_json_return(to_return, rfs)
+                    if data['cm'] is not None:
+                        if data['rf'] is not None:
+                            data['cm'] = merge_vb_codes(rfs['resources']['rf'], data['cm'], 
+                                                        {'user_rf_code': 'user_rf_code',
+                                                        'vb_rf_code':'vb_rf_code' 
+                                                        })
+                        cms = self.upload_cover_methods(data['cm'], conn)
+                        dataset['cover_method'] = [item['vb_cm_code']
+                                                for item in cms['resources']['cm']]
+                        to_return = combine_json_return(to_return, cms)
+            
+                dataset_name = 'upload_cover_method_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from cover method upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
+                # Checks if user supplied dry run param and rolls back if it is true
+                to_return = dry_run_check(conn, to_return, request)
+            conn.close()
             return jsonify(to_return)
         except Exception as e:
             traceback.print_exc()
-            return jsonify_error_message(f"An error occurred while processing the file: {str(e)}"), 500
+            return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500
