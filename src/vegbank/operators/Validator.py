@@ -1,166 +1,264 @@
 import numpy as np
 from vegbank.operators import table_defs_config
 from vegbank.utilities import validate_required_and_missing_fields
-config = {
-    # Defines the required fields and table defs for each file that vegbank
-    # uploads.
 
+# Defines the required fields and table defs for each file that vegbank uploads
+config = {
     "projects": {
-        "required_fields": ['project_name', 'user_pj_code'],
-        "table_defs": [table_defs_config.project]
+        "table_defs": [table_defs_config.project],
+        "required_fields": [
+            'project_name',
+            'user_pj_code',
+        ],
     },
     "references": {
-        "required_fields": ['user_rf_code'],
-        "table_defs": [table_defs_config.reference]
+        "table_defs": [table_defs_config.reference],
+        "required_fields": [
+            'user_rf_code',
+        ],
     },
     "parties": {
-        "required_fields": ['user_py_code'],
-        "table_defs": [table_defs_config.party]
+        "table_defs": [table_defs_config.party],
+        "required_fields": [
+            'user_py_code',
+        ],
     },
     "soils": {
-        "required_fields": ['user_so_code', 'horizon'],
-        "table_defs": [table_defs_config.soil_obs]
+        "table_defs": [table_defs_config.soil_obs],
+        "required_fields": [
+            'user_so_code',
+            'horizon',
+        ],
     },
     "disturbances": {
-        "required_fields": ['user_do_code', 'type'],
-        "table_defs": [table_defs_config.disturbance_obs]
+        "table_defs": [table_defs_config.disturbance_obs],
+        "required_fields": [
+            'user_do_code',
+            'type',
+        ],
     },
     "community_classifications": {
-        "required_fields": ['user_cl_code', 'user_ob_code', 'vb_cc_code'],
-        "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp],
+        "table_defs": [table_defs_config.comm_class,
+                       table_defs_config.comm_interp],
+        "required_fields": [
+            'user_cl_code',
+            'user_ob_code',
+            'vb_cc_code',
+        ],
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
-        ]
+        ],
     },
     "community_reclassifications": {
-        "required_fields": ['user_cl_code', 'vb_ob_code', 'vb_cc_code'],
-        "table_defs": [table_defs_config.comm_reclass, table_defs_config.comm_interp],
+        "table_defs": [table_defs_config.comm_reclass,
+                       table_defs_config.comm_interp],
+        "required_fields": [
+            'user_cl_code',
+            'vb_ob_code',
+            'vb_cc_code',
+        ],
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
-        ]
+        ],
     },
     "strata": {
-        "required_fields": ['user_ob_code', 'user_sr_code', 'vb_sy_code'],
-        "table_defs": [table_defs_config.stratum]
+        "table_defs": [table_defs_config.stratum],
+        "required_fields": [
+            'user_ob_code',
+            'user_sr_code',
+            'vb_sy_code',
+        ],
     },
     "strata_cover_data": {
-        "required_fields": ['user_to_code', 'user_ob_code', 'author_plant_name', 'user_tm_code'],
-        "table_defs": [table_defs_config.taxon_importance, table_defs_config.taxon_observation]
+        "table_defs": [table_defs_config.taxon_importance,
+                       table_defs_config.taxon_observation],
+        "required_fields": [
+            'user_to_code',
+            'user_ob_code',
+            'author_plant_name',
+            'user_tm_code',
+        ],
     },
     "stem_data": {
-        "required_fields": ['user_sc_code', 'user_tm_code', 'stem_count'],
-        "table_defs": [table_defs_config.stem_count, table_defs_config.stem_location]
+        "table_defs": [table_defs_config.stem_count,
+                       table_defs_config.stem_location],
+        "required_fields": [
+            'user_sc_code',
+            'user_tm_code',
+            'stem_count',
+        ],
     },
     "taxon_interpretations": {
-        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code',
-                            'vb_ar_code', 'original_interpretation',
-                            'current_interpretation'],
         "table_defs": [table_defs_config.taxon_interpretation],
+        "required_fields": [
+            'user_ti_code',
+            'user_to_code',
+            'vb_pc_code',
+            'vb_ar_code',
+            'original_interpretation',
+            'current_interpretation',
+        ],
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
             ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
             ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
-            ]
+        ],
     },
     "taxon_reinterpretations": {
         # This is for taxon interpretations that are uploaded through the taxon 
         # interpretation endpoint, which require some different fields than taxon 
         # interpretations uploaded through the plot observation endpoint, so we have 
         # a separate config for those.
-        "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
-                            'vb_ar_code', 'original_interpretation',
-                            'current_interpretation'],
         "table_defs": [table_defs_config.reinterpretation],
+        "required_fields": [
+            'user_ti_code',
+            'vb_to_code',
+            'vb_pc_code',
+            'vb_ar_code',
+            'original_interpretation',
+            'current_interpretation',
+        ],
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
             ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
             ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
-            ]
+        ],
     },
     "contributors": {
-        "required_fields": ['vb_ar_code', 'contributor_type', 'record_identifier'],
         "table_defs": [table_defs_config.contributor],
+        "required_fields": [
+            'vb_ar_code',
+            'contributor_type',
+            'record_identifier',
+        ],
         "xor_fields": [
-            ('vb_py_code', 'user_py_code')
-            ]
+            ('vb_py_code', 'user_py_code'),
+        ],
     },
     "community_contributors": {
-        "required_fields": ['vb_ar_code', 'record_identifier'],
         "table_defs": [table_defs_config.comm_contributor],
+        "required_fields": [
+            'vb_ar_code',
+            'record_identifier',
+        ],
         "xor_fields": [
-            ('vb_py_code', 'user_py_code')
-            ]
+            ('vb_py_code', 'user_py_code'),
+        ],
     },
-    "plot_observations": {  # This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
-        "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code'],
-        "old_pl_required_fields": ['vb_pl_code', 'user_ob_code', 'author_obs_code'],
-        "table_defs": [table_defs_config.plot, table_defs_config.observation],
-        "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    "plot_observations": {
+        # This one has different config fields because the required fields
+        # depend on whether the observation is on a new plot or an existing
+        # plot.
+        "table_defs": [table_defs_config.plot,
+                       table_defs_config.observation],
+        "new_pl_required_fields": [
+            'user_pl_code',
+            'author_plot_code',
+            'confidentiality_status',
+            'user_ob_code',
+            'author_obs_code',
+        ],
+        "old_pl_required_fields": [
+            'vb_pl_code',
+            'user_ob_code',
+            'author_obs_code',
+        ],
+        "xor_fields": [
+            ('user_pj_code', 'vb_pj_code'),
+            ('user_pl_code', 'vb_pl_code'),
+        ],
     },
     "plant_concepts":{
-        "required_fields": ['user_pc_code', 'name', 'start_date',
-                           'plant_concept_status'],
-        "table_defs":[table_defs_config.plant_concept, table_defs_config.plant_status],
-        "xor_fields":[
+        "table_defs": [table_defs_config.plant_concept,
+                      table_defs_config.plant_status],
+        "required_fields": [
+            'user_pc_code',
+            'name',
+            'start_date',
+            'plant_concept_status',
+        ],
+        "xor_fields": [
             ('user_rf_code', 'vb_rf_code'),
             ('user_status_py_code', 'vb_status_py_code'),
             ('user_status_rf_code', 'vb_status_rf_code', 'optional'),
             ('user_parent_pc_code', 'vb_parent_pc_code', 'optional'),
         ]
     },
-    "plant_correlations":{
-        "required_fields":['convergence_type', 'correlation_start'],
-        "table_defs":[table_defs_config.plant_correlation],
-        "xor_fields":[
-            ('user_correlated_pc_code', 'vb_correlated_pc_code')
-        ]
-    },
-    "plant_names":{
-        "required_fields": ['user_pc_code', 'name',
-                           'name_type', 'name_status'],
-        "table_defs":[table_defs_config.plant_name, 
-                      table_defs_config.plant_usage],
-        "xor_fields":[
-            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
-        ]
-    },
-    "community_concepts":{
-        "required_fields": ['user_cc_code', 'name', 'start_date',
-                           'comm_concept_status'],
-        "table_defs": [table_defs_config.comm_concept, table_defs_config.comm_name, table_defs_config.comm_status],
-        "xor_fields": [('user_status_py_code', 'vb_status_py_code'),
-                       ('user_rf_code', 'vb_rf_code', 'optional'),
-                       ('user_parent_cc_code', 'vb_parent_cc_code', 'optional')]
-    },
-    "community_names":{
-        "required_fields" : ['user_cc_code', 'name',
-                           'name_type', 'name_status'],
-        "table_defs": [table_defs_config.comm_name, table_defs_config.comm_usage],
+    "plant_correlations": {
+        "table_defs": [table_defs_config.plant_correlation],
+        "required_fields":[
+            'convergence_type',
+            'correlation_start'
+        ],
         "xor_fields": [
-            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
-        ]
-
+            ('user_correlated_pc_code', 'vb_correlated_pc_code'),
+        ],
+    },
+    "plant_names": {
+        "table_defs": [table_defs_config.plant_name,
+                      table_defs_config.plant_usage],
+        "required_fields": [
+            'user_pc_code',
+            'name',
+            'name_type',
+            'name_status',
+        ],
+        "xor_fields": [
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
+        ],
+    },
+    "community_concepts": {
+        "table_defs": [table_defs_config.comm_concept,
+                       table_defs_config.comm_name,
+                       table_defs_config.comm_status],
+        "required_fields": [
+            'user_cc_code',
+            'name',
+            'start_date',
+            'comm_concept_status',
+        ],
+        "xor_fields": [
+            ('user_status_py_code', 'vb_status_py_code'),
+            ('user_rf_code', 'vb_rf_code', 'optional'),
+            ('user_parent_cc_code', 'vb_parent_cc_code', 'optional'),
+        ],
+    },
+    "community_names": {
+        "table_defs": [table_defs_config.comm_name,
+                       table_defs_config.comm_usage],
+        "required_fields" : [
+            'user_cc_code',
+            'name',
+            'name_type',
+            'name_status',
+        ],
+        "xor_fields": [
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
+        ],
     },
     "community_correlations":{
-        "required_fields": ['convergence_type', 'correlation_start'],
         "table_defs": [table_defs_config.comm_correlation],
+        "required_fields": [
+            'convergence_type',
+            'correlation_start'
+        ],
         "xor_fields": [
             ('vb_correlated_cc_code', 'user_correlated_cc_code'),
-        ]
+        ],
     },
     "cover_methods": {
+        "table_defs": [table_defs_config.cover_method,
+                       table_defs_config.cover_index],
         "required_fields": [
             'user_cm_code',
             'cover_type',
             'cover_code',
             'cover_percent',
         ],
-        "table_defs": [table_defs_config.cover_method,
-                       table_defs_config.cover_index],
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code', 'optional'),
         ]
