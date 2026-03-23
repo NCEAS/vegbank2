@@ -460,7 +460,7 @@ def login():
         return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
 
     try:
-        return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
+        return oauth.vegbank_oidc.authorize_redirect(url_for("main.auth.authorize", _external=True))
     except (OAuthError, RequestException) as exc:
         logger.warning("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)
