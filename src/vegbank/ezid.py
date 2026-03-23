@@ -1,10 +1,13 @@
 """EZID client for DOI minting."""
 
+import logging
 import os
 from enum import Enum
 
 import requests as _requests
 from lxml import etree
+
+logger = logging.getLogger(__name__)
 
 
 class EZIDStatus(str, Enum):
@@ -26,6 +29,7 @@ class EZIDClient:
         EZID_PASSWORD   - EZID API password
         EZID_DOI_PREFIX - DOI prefix (e.g. doi:10.5072)
         EZID_DOI_SHOULDER - DOI shoulder for minting (e.g. FK2)
+        EZID_DEFAULT_TARGET_URL - Base URL DOIs resolve to (e.g. https://vegbank.org/cite)
     """
 
     def __init__(self):
@@ -33,6 +37,7 @@ class EZIDClient:
         self._auth = (os.environ["EZID_USERNAME"], os.environ["EZID_PASSWORD"])
         self.doi_prefix = os.environ["EZID_DOI_PREFIX"]
         self.doi_shoulder = os.environ["EZID_DOI_SHOULDER"]
+        self.default_target_url = os.environ["EZID_DEFAULT_TARGET_URL"].rstrip("/")
         self._timeout = 30
 
     @property
@@ -40,15 +45,29 @@ class EZIDClient:
         """Full shoulder path for minting (e.g. doi:10.5072/FK2)."""
         return f"{self.doi_prefix}/{self.doi_shoulder}"
 
+    @staticmethod
+    def _encode_anvl(metadata: dict[str, str]) -> str:
+        """Encode a dict as ANVL plain text (key: value lines).
+
+        Per the EZID ANVL spec, percent-signs, newlines, and carriage returns
+        in *values* must be percent-encoded so the server can parse them as a
+        single-line value.
+        """
+        def _escape(v: str) -> str:
+            return v.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+        return "\n".join(f"{k}: {_escape(v)}" for k, v in metadata.items())
+
     def mint(self, metadata: dict[str, str]) -> str:
         """Mint a new identifier using the configured shoulder. Returns the minted identifier."""
         resp = _requests.post(
             f"{self.base_url}/shoulder/{self.shoulder}",
-            data=metadata,
+            data=self._encode_anvl(metadata).encode("utf-8"),
             auth=self._auth,
             headers={"Content-Type": "text/plain; charset=UTF-8"},
             timeout=self._timeout,
         )
+        logger.debug("EZID mint response: %s", resp.text)
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
@@ -60,11 +79,12 @@ class EZIDClient:
         """Update an existing identifier with new metadata."""
         resp = _requests.post(
             f"{self.base_url}/id/{identifier}",
-            data=metadata,
+            data=self._encode_anvl(metadata).encode("utf-8"),
             auth=self._auth,
             headers={"Content-Type": "text/plain; charset=UTF-8"},
             timeout=self._timeout,
         )
+        logger.debug("EZID update response: %s", resp.text)
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
@@ -236,5 +256,5 @@ class EZIDClient:
 
     @staticmethod
     def _check(resp: _requests.Response) -> None:
-        if resp.status_code != 200 or resp.text.startswith("error:"):
+        if resp.status_code not in (200, 201) or resp.text.startswith("error:"):
             raise EZIDError(resp.text.strip())
