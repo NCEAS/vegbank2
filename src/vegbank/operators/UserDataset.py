@@ -126,18 +126,22 @@ class UserDataset(Operator):
                 datasetname,
                 datasetdescription,
                 datasetstart,
-                accessioncode)
-            VALUES (%s, %s, %s, %s, %s, %s)
+                accessioncode,
+                usr_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING userdataset_id"""
 
         with conn.cursor() as cur:
+            usr_id = self._upsert_party_and_get_usr_id(cur, claims)
+
             dataset_insert_data = (
                 dataset['type'],
                 dataset.get('sharing', 'private'),
                 dataset['name'],
                 dataset.get('description', ''),
                 datetime.now(),
-                doi
+                doi,
+                usr_id,
             )
             cur.execute(user_dataset_insert_sql, dataset_insert_data)
             user_dataset_id = cur.fetchone()['userdataset_id']
