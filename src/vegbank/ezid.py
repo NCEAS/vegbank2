@@ -52,12 +52,9 @@ class EZIDClient:
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
-    def mint_reserved(self, title: str) -> str:
+    def mint_reserved(self) -> str:
         """Mint a DOI with 'reserved' status."""
-        metadata = {
-            "_status": "reserved",
-        }
-        return self.mint(metadata)
+        return self.mint({"_status": "reserved"})
 
     def update_identifier(self, identifier: str, metadata: dict[str, str]) -> str:
         """Update an existing identifier with new metadata."""
