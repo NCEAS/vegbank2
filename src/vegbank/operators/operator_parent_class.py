@@ -771,10 +771,11 @@ class Operator:
             to_return["resources"] = {
                 insert_table_code: to_return_entity
             }
+            insert_count = int((id_pairs_df['merge_action'] == 'INSERT').sum())
             to_return["counts"] = {
                 insert_table_code: {
-                    "inserted":len(new_codes_list)
-                } 
+                    "inserted": insert_count
+                }
             }
 
             return to_return
