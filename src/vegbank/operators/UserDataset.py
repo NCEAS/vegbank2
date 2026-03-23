@@ -97,7 +97,7 @@ class UserDataset(Operator):
             'params': []
         }
 
-    def upload_user_dataset(self, dataset, conn, validate=False, claims=None):
+    def upload_user_dataset(self, dataset, conn, validate=False, claims=None, doi=None):
         '''
         Uploads a user dataset to VegBank. If a user is submitting it via the
         endpoint, we use validate=True because users are only allowed to submit
@@ -114,6 +114,7 @@ class UserDataset(Operator):
         - type: str (e.g. 'dataset', 'normal')
         - data: dict where keys are item tables (e.g. 'observation') and
             values are lists of vb_codes (e.g. ['ob.123', 'ob.456']
+        - doi: str (optional) - pre-minted reserved DOI to store as accessioncode
         '''
         user_dataset_insert_sql = """
             INSERT INTO userdataset (
@@ -121,20 +122,20 @@ class UserDataset(Operator):
                 datasetsharing,
                 datasetname,
                 datasetdescription,
-                datasetstart)
-            VALUES (%s, %s, %s, %s, %s)
+                datasetstart,
+                accessioncode)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING userdataset_id"""
-        dataset_insert_data = (
-            dataset['type'],
-            dataset.get('sharing', 'private'),
-            dataset['name'],
-            dataset.get('description', ''),
-            datetime.now()
-            # TODO This will eventually need to be the user id of the person
-            # uploading the dataset. Once we have the auth token we can
-            # fill this in.
-        )
+
         with conn.cursor() as cur:
+            dataset_insert_data = (
+                dataset['type'],
+                dataset.get('sharing', 'private'),
+                dataset['name'],
+                dataset.get('description', ''),
+                datetime.now(),
+                doi
+            )
             cur.execute(user_dataset_insert_sql, dataset_insert_data)
             user_dataset_id = cur.fetchone()['userdataset_id']
 
