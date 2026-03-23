@@ -391,7 +391,9 @@ class UserDataset(Operator):
         try:
             ezid.update_identifier(doi, {
                 "_status": "public",
+                "_profile": "datacite",
                 "datacite": xml_bytes.decode("utf-8"),
+                "_target": f"{ezid.default_target_url}/{doi}",
             })
         except EZIDError as exc:
             logger.error("Failed to publish DOI %s for dataset %s: %s", doi, vb_ds_code, exc)
