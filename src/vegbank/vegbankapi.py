@@ -1068,7 +1068,7 @@ def stratum_methods(sm_code, claims=None):
     """
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
-        return stratum_method_operator.upload_stratum_method(request, params)
+        return stratum_method_operator.upload_all(request)
     elif request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
     else:

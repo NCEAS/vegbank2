@@ -186,15 +186,15 @@ cover_index = [
 ]
 
 stratum_method = [
-    'user_code',
-    'rf_code',
+    'user_sm_code',
+    'user_rf_code',
+    'vb_rf_code',
     'stratum_method_name',
     'stratum_method_description',
     'stratum_assignment'
 ]
 
 stratum_type = [
-    'stratum_method_id',
     'stratum_index',
     'stratum_name',
     'stratum_description'

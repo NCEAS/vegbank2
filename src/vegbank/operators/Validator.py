@@ -56,6 +56,11 @@ config = {
         "old_pl_required_fields": ['vb_pl_code', 'user_ob_code'],
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
         "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    },
+    "stratum_methods":{
+        "required_fields": ['user_sm_code', 'stratum_method_name'],
+        "table_defs": [table_defs_config.stratum_method, table_defs_config.stratum_type],
+        "xor_fields": [('user_rf_code', 'vb_rf_code')]
     }
 
 }

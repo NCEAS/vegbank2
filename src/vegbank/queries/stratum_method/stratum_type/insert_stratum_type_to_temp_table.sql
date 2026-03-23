@@ -1,8 +1,8 @@
-INSERT INTO stratum_type_temp (
-    user_st_code, 
+INSERT INTO stratum_type_temp ( 
     stratumindex, 
     stratumname, 
     stratumdescription,
-    vb_sm_code
+    vb_sm_code,
+    user_st_code
     )
 VALUES (%s, %s, %s, %s, %s);

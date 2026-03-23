@@ -331,7 +331,7 @@ class StratumMethod(Operator):
             raise ValueError(validation['error'])
         to_return = None
         df['user_sm_code'] = df['user_sm_code'].astype(str)
-        stratum_method_codes = super().upload_to_table('stratum_method', 'sm', table_defs_config.stratum_method, 'stratum_method_id', df, True, conn, True)
+        stratum_method_codes = super().upload_to_table('stratum_method', 'sm', table_defs_config.stratum_method, 'stratummethod_id', df, True, conn, True)
 
         sm_codes_df = pd.DataFrame(stratum_method_codes['resources']['sm'])
         sm_codes_df = sm_codes_df[['user_sm_code', 'vb_sm_code']]
