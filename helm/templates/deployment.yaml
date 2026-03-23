@@ -28,6 +28,10 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
+      - name: {{ .Release.Name }}-vegbank-config-volume
+        configMap:
+          name: {{ .Release.Name }}-vegbank-config
+          defaultMode: 0644
       {{- if .Values.databaseRestore.enabled }}
       - name: vegbankdb-init-pgdata
         persistentVolumeClaim:
@@ -153,6 +157,9 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            - name: {{ .Release.Name }}-vegbank-config-volume
+              mountPath: "/conf/"
+              readOnly: true
           {{- if eq .Values.auth.accessMode "authenticated" }}
             - name: oidc-config
               mountPath: /etc/vegbank/oidc
