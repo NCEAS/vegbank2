@@ -27,11 +27,11 @@ WHERE party.party_id IS NULL;
 
 -- Validate role codes
 
-SELECT taxon_interpretation_temp.vb_ro_code
+SELECT taxon_interpretation_temp.vb_ar_code
 FROM 
     taxon_interpretation_temp LEFT JOIN aux_role
 ON
-    taxon_interpretation_temp.vb_ro_code = 'ar.' || aux_role.role_id
+    taxon_interpretation_temp.vb_ar_code = 'ar.' || aux_role.role_id
 WHERE aux_role.role_id IS NULL;
 
 -- Validate reference codes. Additional AND statement is added because this is an optional foreign key. 
@@ -43,4 +43,14 @@ ON
     taxon_interpretation_temp.vb_rf_code = 'rf.' || reference.reference_id
 WHERE reference.reference_id IS NULL AND taxon_interpretation_temp.vb_rf_code IS NOT NULL;
 
--- Leaving out collector_id and museum_id for now as they are not used in the DB. Check with team. 
+-- Validate optional collector party codes
+SELECT temp.vb_collector_py_code
+  FROM taxon_interpretation_temp AS temp
+  LEFT JOIN party ON temp.vb_collector_py_code = 'py.' || party.party_id
+  WHERE party.party_id IS NULL AND temp.vb_collector_py_code IS NOT NULL;
+
+-- Validate optional museum party codes
+SELECT temp.vb_museum_py_code
+  FROM taxon_interpretation_temp AS temp
+  LEFT JOIN party ON temp.vb_museum_py_code = 'py.' || party.party_id
+  WHERE party.party_id IS NULL AND temp.vb_museum_py_code IS NOT NULL;

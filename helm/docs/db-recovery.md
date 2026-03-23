@@ -4,6 +4,7 @@ The preferred method to recreate the `vegbank` `cnpg` cluster is by recovering f
 
 ## Contents
 - [Recovering from a ScheduledBackup](#recovering-from-a-scheduledbackup)
+- [How to Recover from a `volumeSnapshot`](#how-to-recover-from-a-volumesnapshot)
 - [How to Recover a Deleted `ScheduledBackup` from `velero` Backups](#how-to-recover-a-deleted-scheduledbackup-from-velero-backups)
 - [Recovery using data folders in a file system (Last Resort)](#recovery-using-data-folders-in-a-file-system-last-resort)
 
@@ -11,39 +12,38 @@ The preferred method to recreate the `vegbank` `cnpg` cluster is by recovering f
 
 To deploy a `cnpg` cluster by recovering from a `Backup` object that was created by a `cnpg ScheduledBackup`:
 
+
+
 ### Step 1: Edit your values overrides file (e.g. `values-cnpg.yaml`)
 
-- Change `init.enabled` in `values.yaml` to `true`
-- Change `init.method` to `recovery`
-- Ensure `backup.enabled` is set to `true` to ensure continuity of `ScheduledBackups` after recovery
-- Provide the name of a specific volume snapshot/backup to recover from, for `init.recoverFromBackup`
+- `init.enabled:` set to `true`
+- `init.method:` set to `recovery`
+- `backup.enabled:` set to `true` to ensure continuity of `ScheduledBackups` after recovery
+- `init.recoverFromBackup:` set to the name of the `backups.postgresql.cnpg.io` object to recover from
+- `persistence.size` and `persistence.storageClass` must match the values used by the original PVC that was backed up
+
+> [!CAUTION]
+> The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`)
 
 > [!TIP]
-> To see existing `ScheduledBackup` jobs:
+> To see a list of backup volumeSnapshots:
 >
 > ```sh
-> $ kubectl get scheduledbackups
->
-> NAME                         AGE   CLUSTER          LAST BACKUP
-> vegbankdb-scheduled-backup   57s   vegbankdb-cnpg   57s
-> ```
->
-> ...and to see specific backups/volumesnapshots:
->
-> ```sh
-> $ kubectl get scheduledbackups
-> NAME                         AGE   CLUSTER          LAST BACKUP
-> vegbankdb-scheduled-backup   21h   vegbankdb-cnpg   21h
+> $ kubectl get backups
+> NAME                                        AGE   CLUSTER          METHOD           PHASE
+> vegbankdb-scheduled-backup-20260309231714   46h   vegbankdb-cnpg   volumeSnapshot   completed
+> vegbankdb-scheduled-backup-20260310210000   24h   vegbankdb-cnpg   volumeSnapshot   completed
+> vegbankdb-scheduled-backup-20260311210000   25m   vegbankdb-cnpg   volumeSnapshot   completed
 > ```
 
 ### Step 2: Install the `cnpg` `helm` chart:
 
-- ```sh
-  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f './values-cnpg.yaml' --debug
-  ```
+Create a new cluster, with a different name from your existing cluster, in the same namespace.
+(In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`)
 
-> [!TIP]
-> You may launch multiple `cnpg` clusters in the same namespace, using different release names.
+- ```sh
+  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./values-cnpg.yaml
+  ```
 
 - Monitor progress:
 
@@ -51,38 +51,17 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
   $ kubectl get pods --watch
   NAME                                           READY   STATUS    RESTARTS      AGE
   vegbankapi-54b85649c6-2pwcm                    1/1     Running   0             4d19h
-  vegbankolddb-cnpg-1                              1/1     Running   2             52d
-  vegbankolddb-cnpg-2                              1/1     Running   1 (16d ago)   52d
-  vegbankolddb-cnpg-3                              1/1     Running   1 (16d ago)   52d
+  vegbankolddb-cnpg-1                            1/1     Running   2             52d
+  vegbankolddb-cnpg-2                            1/1     Running   1 (16d ago)   52d
+  vegbankolddb-cnpg-3                            1/1     Running   1 (16d ago)   52d
   vegbankdb-cnpg-1-snapshot-recovery-pqsl9       0/1     Pending   0             2s
   ## This ^ is the pod that is responsible for recovering the database from the backup/snapshot.
   ```
 
-> [!NOTE]
-> It takes approximately 10 minutes for the pods to be assigned, after which the recovery process will begin.
+> [!IMPORTANT]
+> It can take up to 10 minutes for the first CNPG pod to be ready, then some additional time for the data to be replicated and the other pods started.
 >
-> Until then, it is common to see `FailedScheduling` messages when you `kubectl describe` the PVCs and pods; e.g.:
->
-> ```sh
-> $ kubectl describe pod vegbankdb-cnpg-1-snapshot-recovery-pqsl9
-> ...
-> Events:
->   Type     Reason            Age                    From               Message
->   ----     ------            ----                   ----               -------
->   Warning  FailedScheduling  12m                    default-scheduler  0/6 nodes are available:
->             pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available:
->               6 Preemption is not helpful for scheduling..
->   Warning  FailedScheduling  2m46s (x2 over 7m46s)  default-scheduler  0/6 nodes are available:
->             pod has unbound immediate PersistentVolumeClaims. preemption: 0/6 nodes are available:
->               6 Preemption is not helpful for scheduling..
->   Normal   Scheduled         67s                    default-scheduler  Successfully assigned
->             vegbank-dev/vegbankvelero-cnpg-1-snapshot-recovery-pqsl9 to k8s-dev-node-4
->   Normal   Pulled            64s                    kubelet            Container image
->             "ghcr.io/cloudnative-pg/cloudnative-pg:1.27.0" already present on machine
->   Normal   Created           63s                    kubelet            Created container
->                                                                           bootstrap-controller
-> [...etc]
-> ```
+> Until then, it is common to see `FailedScheduling` events when you `kubectl describe` the recovery pod, because the cluster is trying to schedule the pods before the recovery process is complete.
 
 - Finally, confirm that `ScheduledBackups` are being run once again:
 
@@ -134,8 +113,62 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
   ```
 
 > [!WARNING]
-> When you uninstall the old cluster, CNPG will also delete all the scheduled `Backup` objects! If this will be a problem for you, make sure you have backups of the `backups`! Typically, we have Velero taking regular backups of everything (see below for how to recover), but double-check first!
+> When you uninstall the old cluster, CNPG will also delete all the scheduled `Backup` objects! However, the data itself is not lost - a k8s administrator can still see the `volumesnapshots` that these backups were based on, using:
+> ```shell
+> $ kubectl get volumesnapshots -n vegbank --context=dev-k8s
+> ```
+> Typically, we also have Velero taking regular backups of everything (see below for how to recover), but double-check first!
 
+## How to Recover from a `volumeSnapshot`
+
+If you delete a cluster, all its scheduled backups (`backups.postgresql.cnpg.io` objects) are also deleted. However, each of these is merely a pointer to a `volumeSnapshot` that does not get deleted. It is therefore possible to create a "dummy" backup object that points to a volumeSnapshot, in order to recover from it.
+
+1. Create the dummy backup object
+
+   Save the following yaml to a file named `dummy-backup.yaml`. Use a cluster name that does not currently exist in the namespace (e.g. `dummy-nonexistent-cluster`), so the CNPG Operator doesn't immediately try to take a real snapshot:
+
+   ```yaml
+   apiVersion: postgresql.cnpg.io/v1
+   kind: Backup
+   metadata:
+     name: forged-snapshot-backup
+   spec:
+     method: volumeSnapshot
+     cluster:
+       name: dummy-nonexistent-cluster
+   ```
+
+   Use it to create the object:
+
+   ```shell
+   kubectl apply -f dummy-backup.yaml
+   ```
+
+2. Inject the state via a Status Patch
+
+   This forces the Kubernetes API to accept the status block, linking your existing snapshot to this backup. (Including this in the original yaml doesn't work). Don't forget to substitute `YOUR_EXISTING_SNAPSHOT_NAME`:
+
+   ```shell
+   kubectl patch backup forged-snapshot-backup \
+     --type='merge' \
+     --subresource='status' \
+     -p '{
+       "status": {
+         "phase": "completed",
+         "method": "volumeSnapshot",
+         "snapshotBackupStatus": {
+           "elements": [
+             {
+               "name": "YOUR_EXISTING_SNAPSHOT_NAME",
+               "type": "PG_DATA"
+             }
+           ]
+         }
+       }
+     }'
+   ```
+
+   You will now see a backup object named `forged-snapshot-backup` that is ready to use. Add this name in the `init.recoverFromBackup:` field and follow [the steps above to recover from a backup](#recovering-from-a-scheduledbackup).
 
 ## How to Recover a Deleted `ScheduledBackup` from `velero` Backups
 
