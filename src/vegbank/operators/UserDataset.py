@@ -219,6 +219,46 @@ class UserDataset(Operator):
         return given, family
 
 
+    @staticmethod
+    def _upsert_party(
+        cur,
+        orcid: str,
+        given_name: str,
+        family_name: str,
+        email: str | None,
+    ) -> int:
+        """Insert or update the party record keyed on ORCID accessioncode.
+
+        Uses SELECT-then-INSERT/UPDATE because party.accessioncode does not have 
+        uniqueness.
+
+        Returns the party_id of the upserted record.
+        """
+        cur.execute(
+            "SELECT party_id FROM party WHERE accessioncode = %s LIMIT 1",
+            (orcid,),
+        )
+        existing = cur.fetchone()
+
+        if existing:
+            party_id = existing["party_id"]
+            cur.execute(
+                """UPDATE party
+                   SET givenname = %s, surname = %s, email = %s
+                   WHERE party_id = %s""",
+                (given_name, family_name, email, party_id),
+            )
+            return party_id
+
+        cur.execute(
+            """INSERT INTO party (givenname, surname, email, accessioncode, partytype)
+               VALUES (%s, %s, %s, %s, 'person')
+               RETURNING party_id""",
+            (given_name, family_name, email, orcid),
+        )
+        return cur.fetchone()["party_id"]
+
+
     def upload_user_dataset_from_endpoint(self, request, claims=None):
         '''
         Handler for uploading a user dataset from the endpoint. To facilitate
