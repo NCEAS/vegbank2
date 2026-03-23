@@ -8,7 +8,7 @@ from vegbank.auth import extract_orcid
 from vegbank.ezid import EZIDClient, EZIDError
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config as table_defs
-from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql, jsonify_error_message, validate_dataset_json, dry_run_check
+from vegbank.utilities import load_sql, jsonify_error_message, validate_dataset_json, dry_run_check
 
 logger = logging.getLogger(__name__)
 
