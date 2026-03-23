@@ -101,11 +101,6 @@ config = {
         "table_defs": [table_defs_config.plot, table_defs_config.observation],
         "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
     },
-    "stratum_methods":{
-        "required_fields": ['user_sm_code', 'stratum_method_name'],
-        "table_defs": [table_defs_config.stratum_method, table_defs_config.stratum_type],
-        "xor_fields": [('user_rf_code', 'vb_rf_code')]
-    },
     "plant_concepts":{
         "required_fields": ['user_pc_code', 'name', 'start_date',
                            'plant_concept_status'],
@@ -168,6 +163,14 @@ config = {
                        table_defs_config.cover_index],
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code', 'optional'),
+        ]
+    },
+    "stratum_methods":{
+        "required_fields": ['user_sm_code', 'stratum_method_name'],
+        "table_defs": [table_defs_config.stratum_method, 
+                       table_defs_config.stratum_type],
+        "xor_fields": [
+            ('user_rf_code', 'vb_rf_code', 'optional')
         ]
     }
 }
