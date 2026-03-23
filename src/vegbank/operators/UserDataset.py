@@ -338,20 +338,74 @@ class UserDataset(Operator):
 
         is_dry_run = request.args.get('dry_run', 'false').lower() == 'true'
 
-        doi = None
-        ezid = None
-        if not is_dry_run:
-            try:
-                ezid = EZIDClient()
-                doi = ezid.mint_reserved()
-            except (EZIDError, KeyError) as exc:
-                logger.warning(
-                    "DOI mint failed; dataset will be created without a DOI: %s", exc
-                )
+        # Mint a reserved DOI and store it with the dataset record
+        ezid, doi = self._mint_doi() if not is_dry_run else (None, None)
 
-        to_return = None
         with connect(**self.params, row_factory=dict_row) as conn:
             to_return = self.upload_user_dataset(dataset, conn, validate=True, claims=claims, doi=doi)
             to_return = dry_run_check(conn, to_return, request)
         conn.close()
+
+        # Publish the DOI with full DataCite metadata after the DB commit.
+        if doi and ezid:
+            vb_ds_code = to_return['resources']['ds'][0]['vb_ds_code']
+            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims)
+
         return to_return
+
+    def _mint_doi(self) -> tuple["EZIDClient | None", "str | None"]:
+        """Attempt to mint a reserved DOI, returning (client, doi) or (None, None) on failure."""
+        try:
+            ezid = EZIDClient()
+            doi = ezid.mint_reserved()
+            return ezid, doi
+        except (EZIDError, KeyError) as exc:
+            logger.warning("DOI mint failed; dataset will be created without a DOI: %s", exc)
+            return None, None
+
+    def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims) -> None:
+        """Publish a reserved DOI with full DataCite metadata.
+
+        Called after the DB transaction commits.
+        """
+        orcid = extract_orcid(claims)
+        xml_bytes = EZIDClient.build_datacite_xml(
+            doi=doi.replace("doi:", ""),
+            title=f'Vegbank plot observations: "{dataset["name"]}"',
+            publisher="VegBank",
+            publication_year=datetime.now().year,
+            creators=self._build_datacite_creators(claims, orcid),
+            alternate_identifiers=[{
+                "value": f"vegbank:{vb_ds_code}",
+                "type": "VegBank Accession Code",
+            }],
+            rights_list=[{
+                "text": "Creative Commons Attribution 4.0 International",
+                "rights_uri": "https://creativecommons.org/licenses/by/4.0/",
+                "rights_identifier": "CC-BY-4.0",
+                "rights_identifier_scheme": "SPDX",
+                "scheme_uri": "https://spdx.org/licenses/",
+            }],
+            dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
+        )
+        try:
+            ezid.update_identifier(doi, {
+                "_status": "public",
+                "datacite": xml_bytes.decode("utf-8"),
+            })
+        except EZIDError as exc:
+            logger.error("Failed to publish DOI %s for dataset %s: %s", doi, vb_ds_code, exc)
+
+    @staticmethod
+    def _build_datacite_creators(claims, orcid: str | None) -> list[dict]:
+        """Build the DataCite creators list from JWT claims and ORCID."""
+        if not orcid:
+            return []
+        return [{
+            "name": (claims or {}).get("name", ""),
+            "given_name": (claims or {}).get("given_name"),
+            "family_name": (claims or {}).get("family_name"),
+            "name_identifier": orcid,
+            "name_identifier_scheme": "ORCID",
+            "name_identifier_scheme_uri": "https://orcid.org/",
+        }]
