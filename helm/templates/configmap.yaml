@@ -18,3 +18,13 @@ data:
   EZID_DOI_PREFIX: {{ .Values.ezid.doiPrefix | quote }}
   EZID_DOI_SHOULDER: {{ .Values.ezid.doiShoulder | quote }}
   EZID_DEFAULT_TARGET_URL: {{ .Values.ezid.defaultTargetUrl | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-vegbank-config
+  labels:
+    {{- include "vegbank.labels" . | nindent 4 }}
+data:
+{{ (tpl (.Files.Glob "config/*").AsConfig . ) | nindent 4 }}
+
