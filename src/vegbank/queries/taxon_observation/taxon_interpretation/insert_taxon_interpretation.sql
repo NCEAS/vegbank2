@@ -15,10 +15,10 @@ WHEN NOT MATCHED THEN
     currentinterpretation,
     taxonfit,
     taxonconfidence,
-    collector_id, -- This has no nonzero values currently
+    collector_id,
     collectionnumber,
     collectiondate,
-    museum_id, -- This has no nonzero values currently
+    museum_id,
     museumaccessionnumber,
     grouptype,
     notes,
@@ -30,17 +30,17 @@ WHEN NOT MATCHED THEN
     CAST(SUBSTRING(vb_pc_code, 4) AS INT),
     interpretationdate,
     CAST(SUBSTRING(vb_py_code, 4) AS INT),
-    CAST(SUBSTRING(vb_ro_code, 4) AS INT),
+    CAST(SUBSTRING(vb_ar_code, 4) AS INT),
     interpretationtype,
     CAST(SUBSTRING(vb_rf_code, 4) AS INT),
     originalinterpretation,
     currentinterpretation,
     taxonfit,
     taxonconfidence,
-    CAST(SUBSTRING(vb_collector_rf_code, 4) AS INT), -- This has no nonzero values currently
+    CAST(SUBSTRING(vb_collector_py_code, 4) AS INT),
     collectionnumber,
     collectiondate,
-    CAST(SUBSTRING(vb_museum_rf_code, 4) AS INT), -- This has no nonzero values currently
+    CAST(SUBSTRING(vb_museum_py_code, 4) AS INT),
     museumaccessionnumber,
     grouptype,
     notes,

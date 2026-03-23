@@ -1063,6 +1063,7 @@ paths:
           schema:
             type: string
           example: "to.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -1087,6 +1088,7 @@ paths:
           schema:
             type: string
           example: "ob.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1113,6 +1115,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1132,6 +1135,7 @@ paths:
         Retrieve a paginated collection of all taxon observations
         recorded in VegBank.
       parameters:
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1157,6 +1161,7 @@ paths:
           schema:
             type: string
           example: "tm.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/create_parquet'
       responses:
@@ -1181,6 +1186,7 @@ paths:
           schema:
             type: string
           example: "ob.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1207,6 +1213,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1233,6 +1240,7 @@ paths:
           schema:
             type: string
           example: "to.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1252,6 +1260,7 @@ paths:
         Retrieve a paginated collection of all taxon importances
         recorded in VegBank.
       parameters:
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
@@ -1277,6 +1286,7 @@ paths:
           schema:
             type: string
           example: "sc.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/create_parquet'
       responses:
         '200':
@@ -1299,6 +1309,7 @@ paths:
           schema:
             type: string
           example: "ob.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1323,6 +1334,7 @@ paths:
           schema:
             type: string
           example: "to.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1347,6 +1359,7 @@ paths:
           schema:
             type: string
           example: "tm.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1365,6 +1378,7 @@ paths:
         Retrieve a paginated collection of all stem counts
         recorded in VegBank.
       parameters:
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1389,6 +1403,7 @@ paths:
           schema:
             type: string
           example: "sr.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/create_parquet'
       responses:
         '200':
@@ -1411,6 +1426,7 @@ paths:
           schema:
             type: string
           example: "ob.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1435,6 +1451,7 @@ paths:
           schema:
             type: string
           example: "to.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1459,6 +1476,7 @@ paths:
           schema:
             type: string
           example: "tm.1"
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1476,6 +1494,7 @@ paths:
       description: >
         Retrieve a paginated collection of all strata recorded in VegBank.
       parameters:
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -1523,9 +1542,7 @@ paths:
           schema:
             type: string
           example: "pc.1"
-        - $ref: '#/components/parameters/search'
-        - $ref: '#/components/parameters/with_nested'
-        - $ref: '#/components/parameters/sort_cc'
+        - $ref: '#/components/parameters/detail'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/create_parquet'
@@ -2818,12 +2835,16 @@ components:
     TaxonObservations:
       description: |
         Matching taxon observation(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
         - `detail=full&with_nested=false`: Extended fields, no nested array fields
         - `detail=full&with_nested=true`: Extended fields + nested array fields
       content:
         application/json:
           schema:
             oneOf:
+              - $ref: '#/components/schemas/taxon_obs_minimal'
+              - $ref: '#/components/schemas/taxon_obs_minimal_nested'
               - $ref: '#/components/schemas/taxon_obs_full'
               - $ref: '#/components/schemas/taxon_obs_full_nested'
         application/vnd.apache.parquet:
@@ -2835,12 +2856,16 @@ components:
     TaxonImportances:
       description: |
         Matching taxon importances(s), with fields based on parameters:
+        - `detail=minimal&with_nested=false`: Basic fields only
+        - `detail=minimal&with_nested=true`: Basic fields + nested array fields
         - `detail=full&with_nested=false`: Extended fields, no nested array fields
         - `detail=full&with_nested=true`: Extended fields + nested array fields
       content:
         application/json:
           schema:
             oneOf:
+              - $ref: '#/components/schemas/taxon_imp_minimal'
+              - $ref: '#/components/schemas/taxon_imp_minimal_nested'
               - $ref: '#/components/schemas/taxon_imp_full'
               - $ref: '#/components/schemas/taxon_imp_full_nested'
         application/vnd.apache.parquet:
@@ -2850,12 +2875,16 @@ components:
             description: Parquet file with same data as the JSON response.
 
     StemCounts:
-      description: Matching stem count(s)
+      description: |
+        Matching stem count(s), with fields based on parameters:
+        - `detail=minimal`: Basic fields only
+        - `detail=full`: Extended fields
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: '#/components/schemas/stem_count'
+            oneOf:
+              - $ref: '#/components/schemas/stem_count_minimal'
+              - $ref: '#/components/schemas/stem_count_full'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -2863,12 +2892,16 @@ components:
             description: Parquet file with same data as the JSON response.
 
     Strata:
-      description: Matching stratum or strata
+      description: |
+        Matching stratum or strata, with fields based on parameters:
+        - `detail=minimal`: Basic fields only
+        - `detail=full`: Extended fields
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: '#/components/schemas/stratum'
+            oneOf:
+              - $ref: '#/components/schemas/stem_count_minimal'
+              - $ref: '#/components/schemas/stem_count_full'
         application/vnd.apache.parquet:
           schema:
             type: string
@@ -4720,7 +4753,7 @@ components:
                   - $ref: '#/components/schemas/PlantConceptFull'
                   - $ref: '#/components/schemas/PlantConceptFullNested'
 
-    TaxonObsFull:
+    TaxonObsMinimal:
       type: object
       properties:
         to_code:
@@ -4731,6 +4764,31 @@ components:
           type: string
           description: "VegBank plot observation identifier"
           example: "ob.1"
+        int_curr_pc_code:
+          type: string
+          description: "VegBank identifier for the current interpreted plant concept"
+          example: "pc.1"
+        int_orig_pc_code:
+          type: string
+          description: "VegBank identifier for the original interpreted plant concept"
+          example: "pc.1"
+        taxon_inference_area:
+          type: number
+          format: float
+          description: "Area in m2 used to infer the presence of a given taxon. Generally this should be equal to the plot-observation taxon_inference_area, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
+          example: 405
+        rf_code:
+          type: string
+          description: "VegBank identifier for the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
+          example: "rf.1"
+
+    TaxonObsFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
         author_plant_name:
           type: string
           description: "Name provided by the plot author to refer to a taxon observed within the plot"
@@ -4743,10 +4801,6 @@ components:
           type: string
           description: "Common name for the current interpreted plant concept"
           example: "Sonoran scrub oak"
-        int_curr_pc_code:
-          type: string
-          description: "VegBank identifier for the current interpreted plant concept"
-          example: "pc.1"
         int_curr_plant_sci_full:
           type: string
           description: "Scientific name (with authors) for the current interpreted plant concept"
@@ -4763,10 +4817,6 @@ components:
           type: string
           description: "Common name for the original interpreted plant concept"
           example: "Sonoran scrub oak"
-        int_orig_pc_code:
-          type: string
-          description: "VegBank identifier for the original interpreted plant concept"
-          example: "pc.1"
         int_orig_plant_sci_full:
           type: string
           description: "Scientific name (with authors) for the original interpreted plant concept"
@@ -4775,21 +4825,12 @@ components:
           type: string
           description: "Scientific name (without authors) for the original interpreted plant concept"
           example: "Quercus turbinella"
-        taxon_inference_area:
-          type: number
-          format: float
-          description: "Area in m2 used to infer the presence of a given taxon. Generally this should be equal to the plot-observation taxon_inference_area, but at times this area may be larger or smaller for a specific taxon. RESERVED VALUE: -1 is used to indicate that no known plot boundaries were used when recording this species on the plot. That is, this species may occur outside the plot area as indicated in the plot and observation tables."
-          example: 405
-        rf_code:
-          type: string
-          description: "VegBank identifier for the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
-          example: "rf.1"
         rf_label:
           type: string
           description: "Name/label of the reference serving as the authority for the taxon used by the plot author; if the authority is unknown, the author of the plot is the authority"
           example: "USDA Plants 2002"
 
-    TaxonObsFullNested:
+    TaxonObsNested:
       type: object
       properties:
         taxon_importance:
@@ -4845,6 +4886,17 @@ components:
                 example: 50
           description: "Extended details about taxon importance"
 
+    taxon_obs_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
     taxon_obs_full:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -4855,7 +4907,20 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
                   - $ref: '#/components/schemas/TaxonObsFull'
+    taxon_obs_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
+                  - $ref: '#/components/schemas/TaxonObsNested'
     taxon_obs_full_nested:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -4866,10 +4931,11 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonObsMinimal'
                   - $ref: '#/components/schemas/TaxonObsFull'
-                  - $ref: '#/components/schemas/TaxonObsFullNested'
+                  - $ref: '#/components/schemas/TaxonObsNested'
 
-    TaxonImpFull:
+    TaxonImpMinimal:
       type: object
       properties:
         tm_code:
@@ -4888,10 +4954,6 @@ components:
           type: string
           description: "VegBank stratum identifier"
           example: "sr.1"
-        stratum_name:
-          type: string
-          description: "Name associated with stratum by the stratum method"
-          example: "trees"
         cover:
           type: number
           format: float
@@ -4928,7 +4990,23 @@ components:
           description: "Tallest part of the stratum, in meters"
           example: 25
 
-    TaxonImpFullNested:
+    TaxonImpFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        stratum_name:
+          type: string
+          description: "Name associated with stratum by the stratum method"
+          example: "trees"
+
+    TaxonImpNested:
       type: object
       properties:
         stems:
@@ -4971,6 +5049,17 @@ components:
                 example: 600
           description: "Stem count records"
 
+    taxon_imp_minimal:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
     taxon_imp_full:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -4981,7 +5070,20 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
                   - $ref: '#/components/schemas/TaxonImpFull'
+    taxon_imp_minimal_nested:
+      allOf:
+        - $ref: '#/components/schemas/record_count'
+        - type: object
+          properties:
+            data:
+              description: Data records
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
+                  - $ref: '#/components/schemas/TaxonImpNested'
     taxon_imp_full_nested:
       allOf:
         - $ref: '#/components/schemas/record_count'
@@ -4992,10 +5094,11 @@ components:
               type: array
               items:
                 allOf:
+                  - $ref: '#/components/schemas/TaxonImpMinimal'
                   - $ref: '#/components/schemas/TaxonImpFull'
-                  - $ref: '#/components/schemas/TaxonImpFullNested'
+                  - $ref: '#/components/schemas/TaxonImpNested'
 
-    StemCount:
+    StemCountMinimal:
       type: object
       properties:
         ob_code:
@@ -5014,10 +5117,6 @@ components:
           type: string
           description: "VegBank stratum identifier"
           example: "sr.1"
-        stratum_name:
-          type: string
-          description: "Stratum name, or '<All>' if sr_code is null"
-          example: "Canopy"
         sc_code:
           type: string
           description: "VegBank stem count record identifier"
@@ -5052,10 +5151,47 @@ components:
           description: "Area in m2 used to infer the presence of the stem(s) referenced in this record. Overrides similar area field in taxon observation, taxon importance, and/or plot observation. RESERVED VALUE: -1 is used to indicate no known boundaries were used while collecting this stem size."
           example: 600
 
-    stem_count:
-      $ref: '#/components/schemas/StemCount'
+    StemCountFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        author_plant_name:
+          type: string
+          description: "Name provided by the plot author to refer to a taxon observed within the plot"
+          example: "Lichen"
+        stratum_name:
+          type: string
+          description: "Stratum name, or '<All>' if sr_code is null"
+          example: "Canopy"
 
-    Stratum:
+    stem_count_minimal:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StemCountMinimal'
+    stem_count_full:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StemCountMinimal'
+                - $ref: '#/components/schemas/StemCountFull'
+
+    StratumMinimal:
       type: object
       properties:
         ob_code:
@@ -5093,21 +5229,51 @@ components:
           type: string
           description: "VegBank stratum method identifier"
           example: "sm.1"
-        stratum_method_name:
-          type: string
-          description: "Name of the stratum method (e.g., Braun-Blanquet, TNC-ABI, NC Vegetation Survey #1, NC Vegetation Survey #2, etc.)"
-          example: "TurboVeg"
         sy_code:
           type: string
           description: "VegBank stratum type identifier"
           example: "sy.1"
+
+    StratumFull:
+      type: object
+      properties:
+        author_obs_code:
+          type: string
+          description: "Code or name provided by the author to identify the classified plot observation"
+          example: "YOSE.001"
+        stratum_method_name:
+          type: string
+          description: "Name of the stratum method (e.g., Braun-Blanquet, TNC-ABI, NC Vegetation Survey #1, NC Vegetation Survey #2, etc.)"
+          example: "TurboVeg"
         stratum_type_name:
           type: string
           description: "Name associated with this stratum by the stratum method"
           example: "Dwarf shrub"
 
-    stratum:
-      $ref: '#/components/schemas/Stratum'
+    stratum_minimal:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StratumMinimal'
+    stratum_full:
+      allOf:
+      - $ref: '#/components/schemas/record_count'
+      - type: object
+        properties:
+          data:
+            description: Data records
+            type: array
+            items:
+              allOf:
+                - $ref: '#/components/schemas/StratumMinimal'
+                - $ref: '#/components/schemas/StratumFull'
+
 
     TaxonInterpMinimal:
       type: object

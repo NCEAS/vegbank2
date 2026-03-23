@@ -1,12 +1,13 @@
 ## Values overrides for deploying Vegbank in the k8s dev-vegbank context.
 ## See the helm README for instructions.
 
-## @param accessMode Access mode controlling API behavior.
+## @param auth.accessMode Access mode controlling API behavior.
 ## - `read_only`: No authentication, no uploads.
 ## - `open`: No authentication, uploads allowed.
 ## - `authenticated`: Full authentication and authorization required.
 ##
-accessMode: "authenticated"
+auth:
+  accessMode: "authenticated"
 
 replicaCount: 2
 
@@ -22,23 +23,14 @@ image:
 
 ingress:
   enabled: true
-  className: nginx
-  hosts:
-    - host: &hostname api-dev.vegbank.org
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - hosts:
-        - *hostname
-      secretName: ingress-nginx-tls-cert
+  hostname: api-dev.vegbank.org
 
 resources:
   requests:
-    cpu: 100m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
   limits:
-    cpu: 1
+    cpu: 2
     memory: 4Gi
 
 flyway:

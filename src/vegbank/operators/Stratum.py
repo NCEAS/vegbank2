@@ -20,29 +20,41 @@ class Stratum(Operator):
         self.name = "stratum"
         self.table_code = "sr"
         self.queries_package = f"{self.queries_package}.{self.name}"
+        self.detail_options = ("minimal", "full")
 
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
         base_columns = {'*': "*"}
         main_columns = {}
+        # identify full columns
         main_columns['full'] = {
             'ob_code': "'ob.' || sr.observation_id",
+            'author_obs_code': "ob.authorobscode",
+            'sm_code': "'sm.' || sr.stratummethod_id",
+            'stratum_method_name': "sm.stratummethodname",
+            'sy_code': "'sy.' || sr.stratumtype_id",
+            'stratum_type_name': "sy.stratumname",
             'sr_code': "'sr.' || sr.stratum_id",
             'name': "sr.stratumname",
             'height': "sr.stratumheight",
             'base': "sr.stratumbase",
             'cover': "sr.stratumcover",
             'description': "sr.stratumdescription",
-            'sm_code': "'sm.' || sr.stratummethod_id",
-            'stratum_method_name': "sm.stratummethodname",
-            'sy_code': "'sy.' || sr.stratumtype_id",
-            'stratum_type_name': "sy.stratumname",
         }
+        # identify minimal columns
+        main_columns['minimal'] = {
+            name: col for name, col in main_columns['full'].items()
+            if name not in ['author_obs_code', 'stratum_method_name',
+                            'stratum_type_name']}
+
         from_sql = {}
-        from_sql['full'] = """\
+        from_sql['minimal'] = """\
             FROM sr
+            """
+        from_sql['full'] = from_sql['minimal'].rstrip() + """
             JOIN stratummethod sm USING (stratummethod_id)
             JOIN stratumtype sy USING (stratumtype_id)
+            JOIN observation ob USING (observation_id)
             """
         order_by_sql = """\
             ORDER BY sr.stratum_id

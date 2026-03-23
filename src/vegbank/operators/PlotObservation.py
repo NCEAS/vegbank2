@@ -71,10 +71,16 @@ class PlotObservation(Operator):
         main_columns = {}
         # identify full shallow columns
         main_columns['full'] = {
-            'author_plot_code': "pl.authorplotcode",
+            'ob_code': "'ob.' || ob.observation_id",
+            'author_obs_code': "ob.authorobscode",
             'pl_code': "'pl.' || pl.plot_id",
+            'author_plot_code': "pl.authorplotcode",
+            'pj_code': "'pj.' || ob.project_id",
+            'project_name': "pj.projectname",
             'rf_code': "'rf.' || pl.reference_id",
             'rf_label': "rf.reference_id_transl",
+            'has_observation_synonym': "ob.hasobservationsynonym",
+            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
             'confidentiality_status': "pl.confidentialitystatus",
@@ -128,11 +134,9 @@ class PlotObservation(Operator):
             'pl_notes_public': "pl.notespublic",
             'pl_notes_mgt': "pl.notesmgt",
             'pl_revisions': "pl.revisions",
-            'ob_code': "'ob.' || ob.observation_id",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
             'project_name': "pj.projectname",
-            'author_obs_code': "ob.authorobscode",
             'year': "EXTRACT(YEAR FROM ob.obsstartdate)",
             'obs_start_date': "ob.obsstartdate",
             'obs_end_date': "ob.obsenddate",
@@ -228,9 +232,7 @@ class PlotObservation(Operator):
             'top_taxon2_name': "ob.toptaxon2name",
             'top_taxon3_name': "ob.toptaxon3name",
             'top_taxon4_name': "ob.toptaxon4name",
-            'top_taxon5_name': "ob.toptaxon5name",
-            'has_observation_synonym': "ob.hasobservationsynonym",
-            'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id"
+            'top_taxon5_name': "ob.toptaxon5name"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
@@ -325,7 +327,7 @@ class PlotObservation(Operator):
               ), returned_taxa AS (
                 SELECT *
                   FROM all_taxa
-                  ORDER BY maxcover DESC,
+                  ORDER BY maxcover DESC NULLS LAST,
                            authorplantname
                   LIMIT %s
               )
@@ -643,8 +645,8 @@ class PlotObservation(Operator):
                           df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
-        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
+        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
+        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
             print("found some new plots")
             new_validation = validate_required_and_missing_fields(
@@ -772,8 +774,9 @@ class PlotObservation(Operator):
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False,
-                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
-                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
+                'user_codes': [('user_ob_code', 'user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                               ('user_authority_rf_code', 'user_rf_code', 'rf')],
             },
             'sr': {
                 'file_name': 'strata',
@@ -796,7 +799,9 @@ class PlotObservation(Operator):
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
                                ('user_rf_code','user_rf_code', 'rf'),
-                               ('user_py_code', 'user_py_code', 'py')]
+                               ('user_py_code', 'user_py_code', 'py'),
+                               ('user_collector_py_code', 'user_py_code', 'py'),
+                               ('user_museum_py_code', 'user_py_code', 'py')],
             },
             'cr': {
                 'file_name': 'contributors',
@@ -961,11 +966,16 @@ class PlotObservation(Operator):
                     if data['py'] is not None:
                         data['ti'] = merge_vb_codes(
                             pys['resources']['py'], data['ti'],
-                            {
-                                'user_py_code': 'user_py_code',
-                                'vb_py_code': 'vb_py_code'
-                            }
-                        )
+                            {'user_py_code': 'user_py_code',
+                             'vb_py_code': 'vb_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_collector_py_code',
+                             'vb_py_code': 'vb_collector_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_museum_py_code',
+                             'vb_py_code': 'vb_museum_py_code'})
                     if data['sc'] is not None:
                         data['ti'] = merge_vb_codes(
                             scs['resources']['to'], data['ti'],

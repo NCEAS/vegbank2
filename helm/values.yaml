@@ -10,7 +10,7 @@
 ##                           -f helm/examples/values-overrides-dev-vb.yaml --debug
 ##
 ## (Published charts and their version numbers can be found at:
-##            https://github.com/NCEAS/metacat/pkgs/container/charts%2Fvegbank )
+##            https://github.com/NCEAS/vegbank/pkgs/container/charts%2Fvegbank )
 ##
 ## 2. to deploy a local copy of the helm chart (for development) to the dev-vegbank-dev context:
 ##
@@ -24,25 +24,24 @@
 ##
 replicaCount: 1
 
-## @section API Access Mode
-## Controls authentication and upload behavior for accessing the API.
-## This is the primary configuration for the API's operational state.
-
-## @param accessMode Access mode controlling API behavior.
-## - `read_only`: No authentication, no uploads (default, for security)
-## - `open`: No authentication, uploads allowed
-## - `authenticated`: Full authentication and authorization required
+## @section API Access - Authentication and Authorization
 ##
-accessMode: "read_only"
-
-## @section OIDC Configuration
-## Configuration for OpenID Connect (OIDC) authentication. Credentials are mounted as a Kubernetes
-## secret into the pod and read by the Flask app. Never commit sensitive credentials to git.
-##
-oidcConfig:
-  ## @param oidcConfig.secretName Name of the Kubernetes secret containing client_secrets.json
+auth:
+  ## @param auth.accessMode Controls authentication & upload behavior (RW or RO) for API access
+  ## - "read_only": No authentication, no uploads (default, for security)
+  ## - "authenticated": Full authentication and authorization required
+  ## - "open": No authentication, uploads allowed
   ##
-  secretName: vegbank-oidc-config
+  ## "read_only" (the default) or "authenticated" should be used for public-facing deployments.
+  ## "open" should be used only for testing in secure environments.
+  ##
+  accessMode: "read_only"
+
+  ## @param auth.oidcSecretName Name of the Kubernetes secret containing client_secrets.json
+  ## Credentials for OpenID Connect (OIDC) authentication are mounted as a Kubernetes secret into
+  ## the pod and read by the Flask app. Never commit sensitive credentials to git.
+  ##
+  oidcSecretName: vegbank-oidc-config
 
 ## @section Database
 ## Configuration for the PostgreSQL database used by VegBank. The username and password are
@@ -59,7 +58,7 @@ database:
   ## @param database.port port to connect to the database (Must match CNPG or pooler port number)
   ##
   port: 5432
-  ## @param database.existingSecret Secret containing the database username and password)
+  ## @param database.existingSecret Secret containing the database username and password.
   ## The secret should be manually created before deploying the database or this chart.
   ## It must be of type kubernetes.io/basic-auth; must contain the exact key names: 'username'
   ## and 'password', and the username must match the value of dbUser in your cnpg cluster config.
@@ -95,7 +94,7 @@ flyway:
     pullPolicy: IfNotPresent
     ## @param flyway.image.tag The tag of the flyway image to use in the initContainer
     ##
-    tag: "12.0.3"
+    tag: "12.1"
   ## @param flyway.dbpath The path to the directory containing the flyway migration files
   ##
   dbpath: /opt/local/flyway/db
@@ -149,18 +148,78 @@ resources: {}
   #   memory: 4Mi
 
 ## @section Probes
+
+## Startup Probe
+## Liveness and readiness probes are disabled until the startupProbe passes.
+## If the startupProbe fails more than 'failureThreshold' times, the container is restarted.
+## @param startupProbe.enabled Enable startupProbe
+## @param startupProbe.httpGet.path The url path to probe during startup
+## @param startupProbe.httpGet.port The named containerPort to probe
+##
+
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  ## Optional values:
+  ## @param startupProbe.successThreshold Min consecutive successes for probe to be successful
+  ## @param startupProbe.failureThreshold No. of consecutive failures before the container restarted
+  ## @param startupProbe.periodSeconds Interval (in seconds) between startup checks
+  ## @param startupProbe.timeoutSeconds Timeout (in seconds) for each startup check
+  successThreshold: 1
+  failureThreshold: 36
+  periodSeconds: 5
+  timeoutSeconds: 3
+
+## Liveness Probe
+## Periodic probe of container service liveness. If the probe fails, container will be restarted.
+## In production, where we usually have more than one container, livenessProbe does not need to be
+## too aggressive, because readinessProbe failures will remove unresponsive pods from service
+##
+## @param livenessProbe.enabled Enable livenessProbe
+## @param livenessProbe.httpGet.path The url path to probe
+## @param livenessProbe.httpGet.port The named containerPort to probe
+## Optional values:
+## @param livenessProbe.periodSeconds Period seconds for livenessProbe
+## @param livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+## @param livenessProbe.successThreshold Min consecutive successes for probe to be successful
+## @param livenessProbe.failureThreshold No. consecutive failures before container restarted
+##
 livenessProbe:
+  enabled: true
   httpGet:
-    ## @param livenessProbe.httpGet.path The path to use for the liveness probe.
     path: /
-    ## @param livenessProbe.httpGet.port The port to use for the liveness probe.
     port: 80
+  periodSeconds: 20
+  timeoutSeconds: 10
+  successThreshold: 1
+  failureThreshold: 15
+
+## Readiness Probe
+## Periodic probe of container service readiness. If the probe fails, container will be removed
+## from service endpoints (but will not be restarted unless livenessProbe fails). In production,
+## where we usually have more than one container, this allows Kubernetes to stop sending traffic
+## to a container that is not ready to handle it, without causing downtime
+##
+## @param readinessProbe.enabled Enable readinessProbe
+## @param readinessProbe.httpGet.path The url path to probe
+## @param readinessProbe.httpGet.port The named containerPort to probe
+## Optional values:
+## @param readinessProbe.periodSeconds Period seconds for readinessProbe
+## @param readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+## @param readinessProbe.successThreshold Min consecutive successes for probe to be successful
+## @param readinessProbe.failureThreshold No. consecutive failures before container marked unhealthy
+##
 readinessProbe:
+  enabled: true
   httpGet:
-    ## @param readinessProbe.httpGet.path The path to use for the readiness probe.
     path: /
-    ## @param readinessProbe.httpGet.port The port to use for the readiness probe.
-    port: 80
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 ## @section Service
 ## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
@@ -182,27 +241,43 @@ ingress:
   ## @param ingress.className The class of the ingress controller to use.
   ##
   className: nginx
-  ## NOTE: if overriding the default host name, you must override 'paths' too (by repeating the same
-  ## values shown here). Example:
+  ## @param ingress.hostname Simple hostname mode: ingress auto-generated if `ingress.hosts` empty
+  ## The chart uses this hostname and infers a default path (Prefix "/") and TLS block if
+  ## `ingress.hosts` and `ingress.tls` are empty. If `ingress.hosts` or `ingress.tls` are not
+  ## empty, those take precedence over this hostname and the inferred TLS settings.
   ##
-  ## hosts:
-  ##   - host: mycustomdomain.org
-  ##     paths:
-  ##       - path: /
-  ##         pathType: Prefix
+  hostname: localhost
+  ## @param ingress.hosts Full ingress host/path subtree (advanced mode).
+  ## If provided (non-empty), this takes precedence over `ingress.hostname`.
+  ## Example:
+  ##  hosts:
+  ##    - host: "api-dev.vegbank.org"
+  ##      http:
+  ##        paths:
+  ##          - path: /
+  ##            pathType: Prefix
+  ##            backend:
+  ##              service:
+  ##                name: vegbankapi
+  ##                port:
+  ##                  number: 80
   ##
-  hosts:
-    ## @param ingress.hosts[0].host The host names for the ingress.
-    - host: &hostname api-dev2.vegbank.org
-      paths:
-        ## @param ingress.hosts[0].paths[0].path The path for the ingress.
-        - path: /
-        ## @param ingress.hosts[0].paths[0].pathType The type of path matching to use.
-          pathType: Prefix
-  ## TLS configuration. Ignored unless ingress.enabled is true.
+  hosts: []
+  ## @param ingress.tlsEnabled Set to 'false', to disable rendering Ingress TLS (HTTP-only).
+  ## If true, and ingress.tls is empty, the ingress TLS entry will be inferred from ingress.hostname
+  ## and the TLS secret name will be pulled from ingress.tlsSecretName.
+  ## If true, and ingress.tls is NOT empty, that takes precedence over the inferred TLS settings.
+  ##
+  tlsEnabled: true
+  ## @param ingress.tlsSecretName Secret name used by inferred TLS when `ingress.tls` is empty.
+  ##
+  tlsSecretName: ingress-nginx-tls-cert
+
+  ## @param ingress.tls Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true.
+  ## If provided (non-empty), this takes precedence over inferred TLS from `ingress.hostname`.
   ## If set, cert-manager will attempt to provision TLS certificates for the specified hosts
-  ## @param ingress.tls[0].hosts The hostname for TLS config
-  ## @param ingress.tls[0].secretName Name of the secret holding the TLS cert(s)
+  ## ingress.tls.hosts: The hostname for TLS config
+  ## ingress.tls.secretName: Name of the secret holding the TLS cert(s)
   ##
   ## Example:
   ##  tls:
@@ -211,12 +286,9 @@ ingress:
   ##      secretName: ingress-nginx-tls-cert
   ##
   ## To disable TLS altogether (i.e. use http only), set:
-  ##    tls: []
+  ##    tlsEnabled: false
   ##
-  tls:
-    - hosts:
-        - *hostname
-      secretName: ingress-nginx-tls-cert
+  tls: []
 
   annotations:
     ## @param ingress.annotations.cert-manager.io/cluster-issuer
@@ -227,12 +299,12 @@ ingress:
     ##
     nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
 
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client_max_body_size See docs:
+    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client-max-body-size See docs:
     ## https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
     ## Sets the maximum allowed size of the client request body. Setting to 0 disables checking of
     ## client request body size
     ##
-    nginx.ingress.kubernetes.io/client_max_body_size: "0"
+    nginx.ingress.kubernetes.io/client-max-body-size: "0"
 
     ## @skip ingress.annotations.nginx.ingress.kubernetes.io/send-timeout See docs:
     ## https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout

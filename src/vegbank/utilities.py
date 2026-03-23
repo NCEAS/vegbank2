@@ -231,6 +231,7 @@ def merge_vb_codes(inserted_codes, df, mapping):
     if user_col not in df.columns:
         print(f"No '{user_col}' column found in df -- skipping merge.")
         return df
+    df[user_col] = df[user_col].astype(str)
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
     if f'{vb_col}_x' in df:
         df[vb_col] = df[f'{vb_col}_x'].combine_first(df[f'{vb_col}_y'])
