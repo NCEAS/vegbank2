@@ -24,11 +24,13 @@ class UserDataset(Operator):
     methods.
     """
 
+
     def __init__(self, params):
         super().__init__(params)
         self.name = "user_dataset"
         self.table_code = "ds"
         self.queries_package = f"{self.queries_package}.{self.name}"
+
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -96,6 +98,7 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
+
 
     def upload_user_dataset(self, dataset, conn, validate=False, claims=None, doi=None):
         '''
@@ -198,6 +201,23 @@ class UserDataset(Operator):
                 }
             }
         return to_return
+
+
+    @staticmethod
+    def _parse_name_from_claims(claims) -> tuple[str, str]:
+        """Return (given_name, family_name) from JWT claims.
+
+        Prefers the dedicated given_name/family_name claims; falls back to
+        splitting the full 'name' claim when those are absent.
+        """
+        given = claims.get("given_name") or ""
+        family = claims.get("family_name") or ""
+        if not given and not family:
+            parts = claims.get("name", "").split(maxsplit=1)
+            given = parts[0] if parts else ""
+            family = parts[1] if len(parts) > 1 else ""
+        return given, family
+
 
     def upload_user_dataset_from_endpoint(self, request, claims=None):
         '''
