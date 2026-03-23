@@ -191,10 +191,11 @@ spec:
                   name: vegbank-flask-secret
                   key: secret_key
             {{- end }}
+          envFrom:
             - configMapRef:
-              name: {{ .Release.Name }}-ezid-config
+                name: {{ .Release.Name }}-ezid-config
             - secretRef:
-              name: {{ .Release.Name }}-vegbank-secrets
+                name: {{ .Release.Name }}-vegbank-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
