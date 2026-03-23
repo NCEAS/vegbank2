@@ -203,6 +203,24 @@ class UserDataset(Operator):
         return to_return
 
 
+    def _upsert_party_and_get_usr_id(self, cur, claims) -> int | None:
+        """Handle party upsert and usr_id lookup from JWT claims.
+
+        Returns None if no ORCID is present in the claims or if no usr record
+        is linked to the party yet.
+        """
+        orcid = extract_orcid(claims)
+        if not orcid:
+            return None
+
+        given_name, family_name = self._parse_name_from_claims(claims)
+        email = claims.get("email")
+
+        party_id = self._upsert_party(cur, orcid, given_name, family_name, email)
+        self._store_orcid_identifier(cur, party_id, orcid)
+        return self._get_usr_id_for_party(cur, party_id, orcid)
+
+
     @staticmethod
     def _parse_name_from_claims(claims) -> tuple[str, str]:
         """Return (given_name, family_name) from JWT claims.
