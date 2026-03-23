@@ -21,12 +21,14 @@ existing_plants AS (
     GROUP BY pn.plantname
 )
 -- Combine results
-SELECT user_pn_code,
+SELECT 'INSERT' AS merge_action,
+       user_pn_code,
        plantname_id,
        'pn.' || plantname_id AS vb_pn_code
   FROM new_plants
 UNION ALL
-SELECT user_pn_code,
+SELECT 'MATCH' AS merge_action,
+       user_pn_code,
        plantname_id,
        'pn.' || plantname_id AS vb_pn_code
   FROM existing_plants;

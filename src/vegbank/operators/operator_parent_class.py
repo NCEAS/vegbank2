@@ -764,17 +764,18 @@ class Operator:
             to_return_entity = []
             for index, record in joined_df.iterrows():
                 to_return_entity.append({
-                    join_field_name: record[join_field_name], 
+                    join_field_name: record[join_field_name],
                     vb_field_name: record[vb_field_name],
-                    "action":"inserted"
+                    "action": record["merge_action"],
                 })
             to_return["resources"] = {
                 insert_table_code: to_return_entity
             }
+            insert_count = int((id_pairs_df['merge_action'] == 'INSERT').sum())
             to_return["counts"] = {
                 insert_table_code: {
-                    "inserted":len(new_codes_list)
-                } 
+                    "inserted": insert_count
+                }
             }
 
             return to_return
