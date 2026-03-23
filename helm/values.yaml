@@ -176,7 +176,7 @@ livenessProbe:
   enabled: true
   httpGet:
     path: /
-    port: 80
+    port: http
   periodSeconds: 20
   timeoutSeconds: 10
   successThreshold: 1
@@ -208,19 +208,43 @@ readinessProbe:
   failureThreshold: 3
 
 ## @section Service
-## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress 
-## as the ingress automatically pulls the default named service for the pod via release name. 
+## Port and type for the service that will connect the ingress to the Flask API. There is no service section in the ingress
+## as the ingress automatically pulls the default named service for the pod via release name.
 ##
 service:
   ## @param service.type The type of service to create.
   type: ClusterIP
   ## @param service.port The port on which the service will be exposed.
-  port: 80
+  port: 8000
+
+## @section Gunicorn Server
+## Configuration for the Gunicorn server that runs the Flask API. The Gunicorn bind port is set to
+## match the
+## the value of service.port, above
+##
+gunicorn:
+  ## @param gunicorn.workers Number of worker processes for handling requests.
+  ## More workers can handle more requests simultaneously, but note that they also require more cpu
+  ## and memory - so be sure to adjust the 'resources:' section accordingly.
+  ## A common recommendation for workers is (2 x num_cores) + 1. A default setting of 5 workers is
+  ## reasonable, which would require at least 2 cpu cores (2 x 2 + 1). Scaling would ideally be done
+  ## by increasing the number of replicas (pods) rather than increasing the number of workers, but
+  ## this can be adjusted based on the needs and resources of your environment.
+  ##
+  workers: 5
+  ## @param gunicorn.timeout Workers silent for more than this many seconds are killed and restarted
+  ## We override the default 30 seconds, since it's too short for some of VegBank's longer-running
+  ## API calls
+  ##
+  timeout: 2400
+  ## @param gunicorn.logLevel Granularity of gunicorn logs (debug|info|warning|error|critical)
+  ##
+  logLevel: "info"
 
 ## @section Ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
-## automatically pulls the default named service for the pod via release name. The section establishing that service is above. 
-ingress: 
+## automatically pulls the default named service for the pod via release name. The section establishing that service is above.
+ingress:
   ## @param ingress.enabled Enable ingress to allow web traffic. Ingress settings ignored if 'false'
   ##
   enabled: false
