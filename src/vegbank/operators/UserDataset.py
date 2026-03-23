@@ -1,11 +1,16 @@
+import logging
 import os
 from datetime import datetime
 import pandas as pd
 from psycopg import connect
 from psycopg.rows import dict_row
+from vegbank.auth import extract_orcid
+from vegbank.ezid import EZIDClient, EZIDError
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config as table_defs
 from vegbank.utilities import validate_required_and_missing_fields, merge_vb_codes, load_sql, jsonify_error_message, validate_dataset_json, dry_run_check
+
+logger = logging.getLogger(__name__)
 
 
 class UserDataset(Operator):
@@ -176,7 +181,8 @@ class UserDataset(Operator):
                         {
                             'action': 'inserted',
                             'user_ds_code': dataset['name'],
-                            'vb_ds_code': 'ds.' + str(user_dataset_id)
+                            'vb_ds_code': 'ds.' + str(user_dataset_id),
+                            'doi': doi,
                         }
                     ],
                     'di': new_dataset_items['resources']['di']
@@ -203,9 +209,23 @@ class UserDataset(Operator):
         dataset['type'] = 'normal'
         dataset['sharing'] = 'public'
         validate_dataset_json(dataset)
+
+        is_dry_run = request.args.get('dry_run', 'false').lower() == 'true'
+
+        doi = None
+        ezid = None
+        if not is_dry_run:
+            try:
+                ezid = EZIDClient()
+                doi = ezid.mint_reserved()
+            except (EZIDError, KeyError) as exc:
+                logger.warning(
+                    "DOI mint failed; dataset will be created without a DOI: %s", exc
+                )
+
         to_return = None
         with connect(**self.params, row_factory=dict_row) as conn:
-            to_return = self.upload_user_dataset(dataset, conn, validate=True, claims=claims)
+            to_return = self.upload_user_dataset(dataset, conn, validate=True, claims=claims, doi=doi)
             to_return = dry_run_check(conn, to_return, request)
         conn.close()
         return to_return
