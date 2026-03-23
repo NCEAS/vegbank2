@@ -645,8 +645,8 @@ class PlotObservation(Operator):
                           df['vb_pl_code'].notnull()]
 
         table_defs = [table_defs_config.plot, table_defs_config.observation]
-        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'vb_pj_code']
-        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'vb_pj_code']
+        new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
+        old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
             print("found some new plots")
             new_validation = validate_required_and_missing_fields(
@@ -774,8 +774,9 @@ class PlotObservation(Operator):
             'cl': {
                 'file_name': 'community_classifications',
                 'required': False,
-                'user_codes': [('user_ob_code','user_ob_code', 'pl'),
-                               ('user_comm_class_rf_code','user_rf_code', 'rf')]
+                'user_codes': [('user_ob_code', 'user_ob_code', 'pl'),
+                               ('user_comm_class_rf_code', 'user_rf_code', 'rf'),
+                               ('user_authority_rf_code', 'user_rf_code', 'rf')],
             },
             'sr': {
                 'file_name': 'strata',
@@ -798,7 +799,9 @@ class PlotObservation(Operator):
                 'required': False,
                 'user_codes': [('user_to_code','user_to_code', 'sc'),
                                ('user_rf_code','user_rf_code', 'rf'),
-                               ('user_py_code', 'user_py_code', 'py')]
+                               ('user_py_code', 'user_py_code', 'py'),
+                               ('user_collector_py_code', 'user_py_code', 'py'),
+                               ('user_museum_py_code', 'user_py_code', 'py')],
             },
             'cr': {
                 'file_name': 'contributors',
@@ -963,11 +966,16 @@ class PlotObservation(Operator):
                     if data['py'] is not None:
                         data['ti'] = merge_vb_codes(
                             pys['resources']['py'], data['ti'],
-                            {
-                                'user_py_code': 'user_py_code',
-                                'vb_py_code': 'vb_py_code'
-                            }
-                        )
+                            {'user_py_code': 'user_py_code',
+                             'vb_py_code': 'vb_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_collector_py_code',
+                             'vb_py_code': 'vb_collector_py_code'})
+                        data['ti'] = merge_vb_codes(
+                            pys['resources']['py'], data['ti'],
+                            {'user_py_code': 'user_museum_py_code',
+                             'vb_py_code': 'vb_museum_py_code'})
                     if data['sc'] is not None:
                         data['ti'] = merge_vb_codes(
                             scs['resources']['to'], data['ti'],

@@ -1,8 +1,13 @@
 import os
+import time
+from datetime import datetime
+import pandas as pd
+import numpy as np
 from vegbank.operators.operator_parent_class import Operator
-from vegbank.operators import table_defs_config
+from vegbank.operators import table_defs_config, Validator
 from .Party import Party
 from .Reference import Reference
+from .UserDataset import UserDataset
 from vegbank.utilities import (
     read_parquet_file,
     UploadDataError,
@@ -368,26 +373,52 @@ class CommunityConcept(Operator):
             },
             'cc': {
                 'file_name': 'community_concepts',
-                'required': True
+                'required': True,
+                'user_codes':[
+                    ('user_rf_code', 'user_rf_code', 'rf'),
+                    ('user_status_rf_code', 'user_rf_code', 'rf'),
+                    ('user_status_py_code', 'user_py_code', 'py'),
+                    ('user_parent_cc_code', 'user_cc_code', 'cc'),
+                ]
             },
             'cn': {
                 'file_name': 'community_names',
-                'required': False
+                'required': False,
+                'user_codes':[
+                    ('user_cc_code', 'user_cc_code', 'cc'),
+                    ('user_usage_py_code', 'user_py_code', 'py'),
+                ]
             },
             'cx': {
                 'file_name': 'community_correlations',
-                'required': False
+                'required': False,
+                'user_codes':[
+                    ('user_cc_code', 'user_cc_code', 'cc'),
+                    ('user_correlated_cc_code', 'user_cc_code', 'cc')
+                ]
             },
         }
         # Read each Parquet file from the request into a Pandas DataFrame
         data = {}
+        validation = {
+            'has_error': False,
+            'error': ""
+        }
+        dataset = {}
         for name, config in upload_files.items():
             try:
                 data[name] = read_parquet_file(
                     request, config['file_name'], required=config['required'])
+                if data[name] is not None:
+                    data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
+                    file_validation = Validator.validate(data[name], config['file_name'])
+                    user_code_validation = Validator.validate_user_codes(name, data, config.get('user_codes'), config['file_name'])
+                    validation['error'] += file_validation['error'] + user_code_validation['error']
+                    validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
                 return jsonify_error_message(e.message), e.status_code
-
+        if validation['has_error']:
+            return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
             to_return = None
@@ -395,6 +426,8 @@ class CommunityConcept(Operator):
                 # Insert any new parties
                 if data['py'] is not None:
                     py_actions = Party(self.params).upload_parties(data['py'], conn)
+                    dataset['party'] = [item['vb_py_code']
+                                        for item in py_actions['resources']['py']]
                     to_return = combine_json_return(to_return, py_actions)
                 else:
                     py_actions = None
@@ -402,6 +435,8 @@ class CommunityConcept(Operator):
                 # Insert any new references
                 if data['rf'] is not None:
                     rf_actions = Reference(self.params).upload_references(data['rf'], conn)
+                    dataset['reference'] = [item['vb_rf_code']
+                                            for item in rf_actions['resources']['rf']]
                     to_return = combine_json_return(to_return, rf_actions)
                 else:
                     rf_actions = None
@@ -430,6 +465,8 @@ class CommunityConcept(Operator):
 
                 cc_actions = self.upload_community_concepts(
                     data['cc'], conn, what_to_deactivate = what_to_deactivate)
+                dataset['commconcept'] = [item['vb_cc_code']
+                                       for item in cc_actions['resources']['cc']]
                 to_return = combine_json_return(to_return, cc_actions)
 
                 # Prep & insert any new community names
@@ -471,6 +508,8 @@ class CommunityConcept(Operator):
                         {"user_cc_code": "user_correlated_cc_code",
                          "vb_cc_code": "vb_correlated_cc_code"})
                     cx_actions = self.upload_community_correlations(data['cx'], conn)
+                    dataset['commcorrelation'] = [item['vb_cx_code']
+                                       for item in cx_actions['resources']['cx']]
                     to_return = combine_json_return(to_return, cx_actions)
                 else:
                     cx_actions = None
@@ -484,6 +523,26 @@ class CommunityConcept(Operator):
                 commconcept_ids = [self.extract_id_from_vb_code(code['vb_cc_code'], 'cc')
                                    for code in to_return['resources']['cc']]
                 update_search_vector(conn, 'commconcept', commconcept_ids)
+
+                dataset_name = 'upload_comm_concepts_' + datetime.now().strftime("%Y%m%d%H%M%S")
+                dataset_description = 'Dataset created from comm concept upload on ' + \
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dataset_type = 'upload'
+                dataset_input = {
+                    'data': dataset,
+                    'name': dataset_name,
+                    'description': dataset_description,
+                    'type': dataset_type
+                }
+                start = time.time()
+                ds = UserDataset(self.params).upload_user_dataset(
+                    dataset_input, conn)
+                print(ds)
+                end = time.time()
+                print(f"Time to upload dataset: {end - start} seconds")
+                to_return['counts']['ds'] = {}
+                to_return['counts']['ds'] = ds['counts']['ds']
+                to_return['resources']['ds'] = ds['resources']['ds']
 
                 # If this is a dry-run upload, roll back transaction and embed
                 # the informational JSON response in a dry-run wrapper message
@@ -521,7 +580,7 @@ class CommunityConcept(Operator):
                 commdescription <- description
                 RETURNING commconcept_id -> vb_cc_code
                 ...correlate vb_cc_code with user_cc_code
-        Step 3: INSERT INTO commconcept:
+        Step 3: INSERT INTO commstatus:
                 commconcept_id <- from vb_cc_code (Step 2)
                 reference_id <- from vb_status_rf_code (user or upstream)
                 party_id <- from vb_status_py_code (user or upstream)
@@ -565,7 +624,7 @@ class CommunityConcept(Operator):
                       config_comm_concept,
                       config_comm_status]
         # TODO: finalize this here, unless/until we move this to configuration
-        required_fields = ['user_cc_code', 'name', 'vb_rf_code', 'start_date',
+        required_fields = ['user_cc_code', 'name', 'start_date',
                            'comm_concept_status', 'vb_status_py_code']
 
         # Run basic input data validation

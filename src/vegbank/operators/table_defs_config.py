@@ -170,19 +170,19 @@ soiltaxon = [
 ]
 
 cover_method = [
-    'user_code',
-    'rf_code',
-    'covertype',
-    'coverestimationmethod'
+    'user_cm_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'cover_type',
+    'cover_estimation_method'
 ]
 
 cover_index = [
-    'covermethod_id',
-    'covercode',
-    'upperlimit',
-    'lowerlimit',
-    'coverpercent',
-    'indexdescription'
+    'cover_code',
+    'upper_limit',
+    'lower_limit',
+    'cover_percent',
+    'index_description'
 ]
 
 stratum_method = [
@@ -235,6 +235,20 @@ comm_class = [
     'vb_comm_class_rf_code',
     'user_comm_class_rf_code',
     'class_notes'
+]
+
+comm_reclass = [
+    'user_cl_code',
+    'class_start_date',
+    'class_stop_date',
+    'inspection',
+    'table_analysis',
+    'multivariate_analysis',
+    'expert_system',
+    'vb_comm_class_rf_code',
+    'user_comm_class_rf_code',
+    'class_notes',
+    'vb_ob_code'
 ]
 
 # system added:
@@ -411,14 +425,11 @@ stem_count = [
 
 taxon_interpretation = [
     'user_ti_code',
-    'user_to_code',
-    'vb_to_code',
     'vb_pc_code',
     'interpretation_date',
     'user_py_code',
     'vb_py_code',
-    'user_ro_code',
-    'vb_ro_code',
+    'vb_ar_code',
     'interpretation_type',
     'user_rf_code',
     'vb_rf_code',
@@ -426,18 +437,47 @@ taxon_interpretation = [
     'current_interpretation',
     'taxon_fit',
     'taxon_confidence',
-    'user_collector_rf_code',
-    'vb_collector_rf_code', #Currently always null
+    'user_collector_py_code',
+    'vb_collector_py_code',
     'collection_number',
     'collection_date',
-    'user_museum_rf_code',
-    'vb_museum_rf_code', #Currently always null
+    'user_museum_py_code',
+    'vb_museum_py_code',
     'museum_accession_number',
     'group_type',
     'notes',
     'notes_public',
-    'notes_mgt'   
+    'notes_mgt',
+    'user_to_code',
 ]
+reinterpretation = [
+    'user_ti_code',
+    'vb_pc_code',
+    'interpretation_date',
+    'user_py_code',
+    'vb_py_code',
+    'vb_ar_code',
+    'interpretation_type',
+    'user_rf_code',
+    'vb_rf_code',
+    'original_interpretation',
+    'current_interpretation',
+    'taxon_fit',
+    'taxon_confidence',
+    'user_collector_py_code',
+    'vb_collector_py_code',
+    'collection_number',
+    'collection_date',
+    'user_museum_py_code',
+    'vb_museum_py_code',
+    'museum_accession_number',
+    'group_type',
+    'notes',
+    'notes_public',
+    'notes_mgt',
+    'vb_to_code'
+]
+
 
 party = [
     'user_py_code',
@@ -466,6 +506,8 @@ contributor = [
     'record_identifier',
     'vb_py_code'
 ]
+
+comm_contributor = [col for col in contributor if col != 'contributor_type']
 
 user_dataset_item = [
     'user_di_code',
