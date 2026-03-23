@@ -259,6 +259,41 @@ class UserDataset(Operator):
         return cur.fetchone()["party_id"]
 
 
+    @staticmethod
+    def _store_orcid_identifier(cur, party_id: int, orcid: str) -> None:
+        """Record the ORCID in the identifiers table for this party (idempotent)."""
+        cur.execute(
+            """INSERT INTO identifiers
+                   (vb_table_code, vb_record_id, identifier_type, identifier_value)
+               VALUES ('py', %s, 'ORCID', %s)
+               ON CONFLICT (identifier_type, identifier_value) DO NOTHING""",
+            (party_id, orcid),
+        )
+
+
+    @staticmethod
+    def _get_usr_id_for_party(cur, party_id: int, orcid: str) -> int | None:
+        """Return the usr_id linked to party_id, or None if no record exists yet.
+
+        A missing usr record is expected when the OIDC login flow has not yet
+        created the usr row for this user; the dataset is created without a usr
+        link and can be backfilled once the usr record exists.
+        """
+        cur.execute(
+            "SELECT usr_id FROM usr WHERE party_id = %s LIMIT 1",
+            (party_id,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            logger.warning(
+                "No usr record found for party_id=%s (ORCID: %s); "
+                "dataset will be created without a usr link.",
+                party_id, orcid,
+            )
+            return None
+        return row["usr_id"]
+
+
     def upload_user_dataset_from_endpoint(self, request, claims=None):
         '''
         Handler for uploading a user dataset from the endpoint. To facilitate
