@@ -764,9 +764,9 @@ class Operator:
             to_return_entity = []
             for index, record in joined_df.iterrows():
                 to_return_entity.append({
-                    join_field_name: record[join_field_name], 
+                    join_field_name: record[join_field_name],
                     vb_field_name: record[vb_field_name],
-                    "action":"inserted"
+                    "action": record["merge_action"],
                 })
             to_return["resources"] = {
                 insert_table_code: to_return_entity
