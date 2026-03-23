@@ -149,6 +149,14 @@ class UserDataset(Operator):
             sql = load_sql(self.queries_root, 'create_codes.sql')
             cur.executemany(sql, code_inputs, returning=True)
 
+            # Store the DOI in the identifiers table
+            if doi:
+                cur.execute("""
+                    INSERT INTO identifiers
+                        (vb_table_code, vb_record_id, identifier_type, identifier_value)
+                    VALUES ('ds', %s, 'DOI', %s)
+                """, (user_dataset_id, doi))
+
             data_tuples = []
             for item_table, codes in dataset['data'].items():
                 for code in codes:
