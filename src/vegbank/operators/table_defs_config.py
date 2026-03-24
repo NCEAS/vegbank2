@@ -263,7 +263,7 @@ comm_interp = [
     'user_authority_rf_code',
     'interp_notes',
     'type',
-    'nomenclaturaltype'
+    'nomenclatural_type'
 ]
 
 # system added:

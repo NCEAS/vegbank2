@@ -21,12 +21,14 @@ existing_comms AS (
     GROUP BY cn.commname
 )
 -- Combine results
-SELECT user_cn_code,
+SELECT 'INSERT' AS merge_action,
+       user_cn_code,
        commname_id,
        'cn.' || commname_id AS vb_cn_code
   FROM new_comms
 UNION ALL
-SELECT user_cn_code,
+SELECT 'MATCH' AS merge_action,
+       user_cn_code,
        commname_id,
        'cn.' || commname_id AS vb_cn_code
   FROM existing_comms;
