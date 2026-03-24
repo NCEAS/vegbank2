@@ -52,6 +52,12 @@ class EZIDClient:
         Per the EZID ANVL spec, percent-signs, newlines, and carriage returns
         in *values* must be percent-encoded so the server can parse them as a
         single-line value.
+
+        Args:
+            metadata: Key/value pairs to encode.
+
+        Returns:
+            Newline-separated ``key: value`` string ready to POST to EZID.
         """
         def _escape(v: str) -> str:
             return v.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -59,7 +65,17 @@ class EZIDClient:
         return "\n".join(f"{k}: {_escape(v)}" for k, v in metadata.items())
 
     def mint(self, metadata: dict[str, str]) -> str:
-        """Mint a new identifier using the configured shoulder. Returns the minted identifier."""
+        """Mint a new identifier using the configured shoulder.
+
+        Args:
+            metadata: ANVL metadata to attach to the new identifier.
+
+        Returns:
+            The minted identifier string (e.g. ``"doi:10.5072/FK2XXXXX"``).
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
         resp = _requests.post(
             f"{self.base_url}/shoulder/{self.shoulder}",
             data=self._encode_anvl(metadata).encode("utf-8"),
@@ -72,11 +88,29 @@ class EZIDClient:
         return resp.text.split("|")[0].replace("success:", "").strip()
 
     def mint_reserved(self) -> str:
-        """Mint a DOI with 'reserved' status."""
+        """Mint a DOI with ``reserved`` status.
+
+        Returns:
+            The minted DOI string (e.g. ``"doi:10.5072/FK2XXXXX"``).
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
         return self.mint({"_status": "reserved"})
 
     def update_identifier(self, identifier: str, metadata: dict[str, str]) -> str:
-        """Update an existing identifier with new metadata."""
+        """Update an existing identifier with new metadata.
+
+        Args:
+            identifier: The full DOI string to update (e.g. ``"doi:10.5072/FK2XXXXX"``).
+            metadata: ANVL metadata fields to apply to the identifier.
+
+        Returns:
+            The identifier string echoed back by EZID on success.
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
         resp = _requests.post(
             f"{self.base_url}/id/{identifier}",
             data=self._encode_anvl(metadata).encode("utf-8"),
@@ -256,5 +290,13 @@ class EZIDClient:
 
     @staticmethod
     def _check(resp: _requests.Response) -> None:
+        """Raise EZIDError if the response indicates a failure.
+
+        Args:
+            resp: The HTTP response from the EZID API.
+
+        Raises:
+            EZIDError: If the HTTP status is not 200/201 or the body starts with ``"error:"``.
+        """
         if resp.status_code not in (200, 201) or resp.text.startswith("error:"):
             raise EZIDError(resp.text.strip())
