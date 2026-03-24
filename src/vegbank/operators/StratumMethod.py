@@ -326,12 +326,16 @@ class StratumMethod(Operator):
         config_stratum_type = table_defs_config.stratum_type[:]
         table_defs = [config_stratum_method, config_stratum_type]
         required_fields = ['user_sm_code', 'stratum_method_name']
-        validation = validate_required_and_missing_fields(df, required_fields, table_defs, 'stratum_methods')
+        validation = validate_required_and_missing_fields(df, required_fields, 
+                                                          table_defs, 'stratum_methods')
         if validation['has_error']:
             raise ValueError(validation['error'])
         to_return = None
         df['user_sm_code'] = df['user_sm_code'].astype(str)
-        stratum_method_codes = super().upload_to_table('stratum_method', 'sm', table_defs_config.stratum_method, 'stratummethod_id', df, True, conn, True)
+        stratum_method_codes = super().upload_to_table('stratum_method', 'sm', 
+                                                       table_defs_config.stratum_method, 
+                                                       'stratummethod_id', 
+                                                       df, True, conn, True)
 
         sm_codes_df = pd.DataFrame(stratum_method_codes['resources']['sm'])
         sm_codes_df = sm_codes_df[['user_sm_code', 'vb_sm_code']]
@@ -347,7 +351,10 @@ class StratumMethod(Operator):
 
         df['user_st_code'] = np.arange(len(df)) + 1
         df['user_st_code'] = df['user_st_code'].astype(str)
-        stratum_type_codes = super().upload_to_table('stratum_type', 'st', config_stratum_type, 'stratumtype_id', df, True, conn, False)
+        stratum_type_codes = super().upload_to_table('stratum_type', 
+                                                     'st', config_stratum_type, 
+                                                     'stratumtype_id', 
+                                                     df, True, conn, False)
 
         to_return = combine_json_return(to_return, stratum_type_codes)
 
@@ -355,12 +362,29 @@ class StratumMethod(Operator):
     
     def upload_all(self, request):
         '''
-        Handles the upload of stratum method data, including associated reference data if provided, and stratum type data. Validates the uploaded data, uploads it to the database, and creates a new user dataset with the uploaded data. Expects a multipart/form-data request with parquet files for stratum methods and optionally references. The stratum method file must include user codes for stratum methods, and user codes will be created for stratum types based on row number. If reference data is provided, it will be uploaded first and the generated vb_rf_codes will be merged into the stratum method data before uploading stratum methods and stratum types.
+        Handles the upload of stratum method data, including associated 
+        reference data if provided, and stratum type data. Validates the 
+        uploaded data, uploads it to the database, and creates a new user 
+        dataset with the uploaded data. Expects a multipart/form-data request 
+        with parquet files for stratum methods and optionally references. 
+        The stratum method file must include user codes for stratum methods, 
+        and user codes will be created for stratum types based on row number. 
+        If reference data is provided, it will be uploaded first and the 
+        generated vb_rf_codes will be merged into the stratum method data 
+        before uploading stratum methods and stratum types.
         
         Parameters:
-            - request: A Flask request object containing the uploaded files and any additional parameters. Expects parquet files for stratum methods and optionally references, with specific naming conventions for the files and user code fields.
+            - request: A Flask request object containing the uploaded files and 
+            any additional parameters. Expects parquet files for stratum methods
+              and optionally references, with specific naming conventions for 
+              the files and user code fields.
         Returns:
-            - A JSON response containing the results of the upload, including any new codes generated for the stratum methods and stratum types, and the new user dataset created. If any validation errors occur, returns a JSON response with the error message and a 400 status code. If any other errors occur during the upload process, returns a JSON response with the error message and a 500 status code.
+            - A JSON response containing the results of the upload, including 
+            any new codes generated for the stratum methods and stratum types, 
+            and the new user dataset created. If any validation errors occur, 
+            returns a JSON response with the error message and a 400 
+            status code. If any other errors occur during the upload process, 
+            returns a JSON response with the error message and a 500 status code.
         '''
         upload_files = {
             'rf':{
