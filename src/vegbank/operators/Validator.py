@@ -12,6 +12,10 @@ config = {
             'project_name',
             'user_pj_code',
         ],
+        "field_type_map": {
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
     },
     "references": {
         "table_defs": [table_defs_config.reference],
@@ -31,6 +35,18 @@ config = {
             'user_so_code',
             'horizon',
         ],
+        "field_type_map": {
+            'depth_top': 'numeric',
+            'depth_bottom': 'numeric',
+            'organic': 'numeric',
+            'sand': 'numeric',
+            'silt': 'numeric',
+            'clay': 'numeric',
+            'coarse': 'numeric',
+            'ph': 'numeric',
+            'exchange_capacity': 'numeric',
+            'base_saturation': 'numeric',
+        },
     },
     "disturbances": {
         "table_defs": [table_defs_config.disturbance_obs],
@@ -38,6 +54,10 @@ config = {
             'user_do_code',
             'type',
         ],
+        "field_type_map": {
+            'age': 'numeric',
+            'extent': 'numeric',
+        },
     },
     "community_classifications": {
         "table_defs": [table_defs_config.comm_class,
@@ -47,6 +67,17 @@ config = {
             'user_ob_code',
             'vb_cc_code',
         ],
+        "field_type_map": {
+            # comm_class
+            'class_start_date': 'timestamp',
+            'class_stop_date': 'timestamp',
+            'inspection': 'boolean',
+            'multivariateanalysis': 'boolean',
+            'tableanalysis': 'boolean',
+            # comm_interp
+            'nomenclatural_type': 'boolean',
+            'type': 'boolean',
+        },
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
@@ -60,6 +91,17 @@ config = {
             'vb_ob_code',
             'vb_cc_code',
         ],
+        "field_type_map": {
+            # comm_class
+            'class_start_date': 'timestamp',
+            'class_stop_date': 'timestamp',
+            'inspection': 'boolean',
+            'multivariate_analysis': 'boolean',
+            'table_analysis': 'boolean',
+            # comm_interp
+            'nomenclatural_type': 'boolean',
+            'type': 'boolean',
+        },
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
@@ -72,6 +114,11 @@ config = {
             'user_sr_code',
             'vb_sy_code',
         ],
+        "field_type_map": {
+            'stratum_base': 'numeric',
+            'stratum_cover': 'numeric',
+            'stratum_height': 'numeric',
+        },
     },
     "strata_cover_data": {
         "table_defs": [table_defs_config.taxon_importance,
@@ -82,6 +129,17 @@ config = {
             'author_plant_name',
             'user_tm_code',
         ],
+        "field_type_map": {
+            # taxon observation
+            'taxon_inference_area': 'numeric',
+            # taxon importance
+            'basal_area': 'numeric',
+            'biomass': 'numeric',
+            'cover': 'numeric',
+            'inference_area': 'numeric',
+            'stratum_base': 'numeric',
+            'stratum_height': 'numeric',
+        },
     },
     "stem_data": {
         "table_defs": [table_defs_config.stem_count,
@@ -102,6 +160,14 @@ config = {
             'original_interpretation',
             'current_interpretation',
         ],
+        "field_type_map": {
+            'collection_date': 'timestamp',
+            'current_interpretation': 'boolean',
+            'interpretation_date': 'timestamp',
+            'notes_mgt': 'boolean',
+            'notes_public': 'boolean',
+            'original_interpretation': 'boolean',
+        },
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
@@ -123,6 +189,14 @@ config = {
             'original_interpretation',
             'current_interpretation',
         ],
+        "field_type_map": {
+            'collection_date': 'timestamp',
+            'current_interpretation': 'boolean',
+            'interpretation_date': 'timestamp',
+            'notes_mgt': 'boolean',
+            'notes_public': 'boolean',
+            'original_interpretation': 'boolean',
+        },
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
@@ -237,13 +311,19 @@ config = {
     },
     "plant_concepts":{
         "table_defs": [table_defs_config.plant_concept,
-                      table_defs_config.plant_status],
+                       table_defs_config.plant_name,
+                       table_defs_config.plant_status],
         "required_fields": [
             'user_pc_code',
             'name',
             'start_date',
             'plant_concept_status',
         ],
+        "field_type_map": {
+            # plant status
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code'),
             ('user_status_py_code', 'vb_status_py_code'),
@@ -255,8 +335,12 @@ config = {
         "table_defs": [table_defs_config.plant_correlation],
         "required_fields":[
             'convergence_type',
-            'correlation_start'
+            'correlation_start',
         ],
+        "field_type_map": {
+            'correlation_start': 'timestamp',
+            'correlation_stop': 'timestamp',
+        },
         "xor_fields": [
             ('user_correlated_pc_code', 'vb_correlated_pc_code'),
         ],
@@ -270,6 +354,11 @@ config = {
             'name_type',
             'name_status',
         ],
+        "field_type_map": {
+            # plant usage
+            'usage_start': 'timestamp',
+            'usage_stop': 'timestamp',
+        },
         "xor_fields": [
             ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
         ],
@@ -284,6 +373,11 @@ config = {
             'start_date',
             'comm_concept_status',
         ],
+        "field_type_map": {
+            # comm status
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
         "xor_fields": [
             ('user_status_py_code', 'vb_status_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
@@ -299,6 +393,11 @@ config = {
             'name_type',
             'name_status',
         ],
+        "field_type_map": {
+            # comm usage
+            'usage_start': 'timestamp',
+            'usage_stop': 'timestamp',
+        },
         "xor_fields": [
             ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
         ],
@@ -307,8 +406,12 @@ config = {
         "table_defs": [table_defs_config.comm_correlation],
         "required_fields": [
             'convergence_type',
-            'correlation_start'
+            'correlation_start',
         ],
+        "field_type_map": {
+            'correlation_start': 'timestamp',
+            'correlation_stop': 'timestamp',
+        },
         "xor_fields": [
             ('vb_correlated_cc_code', 'user_correlated_cc_code'),
         ],
@@ -322,6 +425,11 @@ config = {
             'cover_code',
             'cover_percent',
         ],
+        "field_type_map": {
+            'cover_percent': 'numeric',
+            'lower_limit': 'numeric',
+            'upper_limit': 'numeric',
+        },
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code', 'optional'),
         ]
