@@ -101,24 +101,30 @@ class UserDataset(Operator):
 
 
     def upload_user_dataset(self, dataset, conn, validate=False, claims=None, doi=None):
-        '''
-        Uploads a user dataset to VegBank. If a user is submitting it via the
-        endpoint, we use validate=True because users are only allowed to submit
-        datasets containing only observation codes. Otherwise, the request is
-        coming from one of the bulk endpoints, and all those foreign keys are
-        new so they must be valid and don't need to be checked.
+        """Upload a user dataset to VegBank.
 
-        If dataset sharing is not specified in the dataset payload, it is set to
-        'private'.
+        When ``validate=True`` (endpoint submissions), item codes are verified
+        to be existing VegBank observation codes. Bulk-endpoint calls set
+        ``validate=False`` because all foreign keys are guaranteed valid by the
+        caller. Dataset sharing defaults to ``'private'`` when not specified.
 
-        dataset should be a dict with the following keys:
-        - name: str
-        - description: str (optional)
-        - type: str (e.g. 'dataset', 'normal')
-        - data: dict where keys are item tables (e.g. 'observation') and
-            values are lists of vb_codes (e.g. ['ob.123', 'ob.456']
-        - doi: str (optional) - pre-minted reserved DOI to store as accessioncode
-        '''
+        Args:
+            dataset: Dict describing the dataset, with keys:
+                - ``name`` (str): Dataset name.
+                - ``description`` (str, optional): Human-readable description.
+                - ``type`` (str): Dataset type (e.g. ``'dataset'``, ``'normal'``).
+                - ``sharing`` (str, optional): Sharing level; defaults to ``'private'``.
+                - ``data`` (dict): Mapping of item table names to lists of VegBank codes
+                  (e.g. ``{'observation': ['ob.1', 'ob.2']}``).
+            conn: Active psycopg database connection.
+            validate: If ``True``, validate item codes before inserting.
+            claims: Decoded JWT claims dict, or ``None`` for unauthenticated uploads.
+            doi: Pre-minted reserved DOI to store as the dataset accession code.
+
+        Returns:
+            Dict with keys ``counts`` and ``resources`` describing inserted records
+            and their generated VegBank codes.
+        """
         user_dataset_insert_sql = """
             INSERT INTO userdataset (
                 datasettype,
@@ -210,9 +216,17 @@ class UserDataset(Operator):
     def _upsert_party_and_get_usr_id(self, cur, claims) -> int | None:
         """Handle party upsert and usr_id lookup/creation from JWT claims.
 
-        Returns None if no ORCID is present in the claims.
+        Returns ``None`` if no ORCID is present in the claims.
         Always returns a valid usr_id when an ORCID is available, creating a
         usr record on the fly if one does not yet exist.
+
+        Args:
+            cur: Active psycopg cursor.
+            claims: Decoded JWT claims dict, or ``None``.
+
+        Returns:
+            The ``usr_id`` for the authenticated user, or ``None`` if the
+            claims contain no ORCID.
         """
         orcid = extract_orcid(claims)
         if not orcid:
@@ -228,10 +242,17 @@ class UserDataset(Operator):
 
     @staticmethod
     def _parse_name_from_claims(claims) -> tuple[str, str]:
-        """Return (given_name, family_name) from JWT claims.
+        """Return ``(given_name, family_name)`` parsed from JWT claims.
 
-        Prefers the dedicated given_name/family_name claims; falls back to
-        splitting the full 'name' claim when those are absent.
+        Prefers the dedicated ``given_name`` / ``family_name`` claims; falls
+        back to splitting the full ``name`` claim when those are absent.
+
+        Args:
+            claims: Decoded JWT claims dict.
+
+        Returns:
+            Two-tuple of ``(given_name, family_name)``, both empty strings if
+            no name information is available.
         """
         given = claims.get("given_name") or ""
         family = claims.get("family_name") or ""
@@ -252,10 +273,18 @@ class UserDataset(Operator):
     ) -> int:
         """Insert or update the party record keyed on ORCID accessioncode.
 
-        Uses SELECT-then-INSERT/UPDATE because party.accessioncode does not have 
-        uniqueness constraints.
+        Uses SELECT-then-INSERT/UPDATE because ``party.accessioncode`` does not
+        have a uniqueness constraint.
 
-        Returns the party_id of the upserted record.
+        Args:
+            cur: Active psycopg cursor.
+            orcid: Canonical ORCID URI (e.g. ``"https://orcid.org/0000-0002-1825-0097"``).
+            given_name: User's given name.
+            family_name: User's family name.
+            email: User's email address, or ``None``.
+
+        Returns:
+            The ``party_id`` of the upserted party record.
         """
         cur.execute(
             "SELECT party_id FROM party WHERE accessioncode = %s LIMIT 1",
@@ -284,7 +313,13 @@ class UserDataset(Operator):
 
     @staticmethod
     def _store_orcid_identifier(cur, party_id: int, orcid: str) -> None:
-        """Record the ORCID in the identifiers table for this party (idempotent)."""
+        """Record the ORCID in the identifiers table for this party (idempotent).
+
+        Args:
+            cur: Active psycopg cursor.
+            party_id: Primary key of the party record.
+            orcid: Canonical ORCID URI to store.
+        """
         cur.execute(
             """INSERT INTO identifiers
                    (vb_table_code, vb_record_id, identifier_type, identifier_value)
@@ -297,6 +332,15 @@ class UserDataset(Operator):
     @staticmethod
     def _get_or_create_usr(cur, party_id: int, email: str, claims) -> int:
         """Return the usr_id linked to party_id, creating the usr row if absent.
+
+        Args:
+            cur: Active psycopg cursor.
+            party_id: Primary key of the associated party record.
+            email: User's email address.
+            claims: Decoded JWT claims dict used to populate ``preferred_name``.
+
+        Returns:
+            The ``usr_id`` of the existing or newly created usr record.
         """
         cur.execute(
             "SELECT usr_id FROM usr WHERE party_id = %s LIMIT 1",
@@ -319,17 +363,22 @@ class UserDataset(Operator):
 
 
     def upload_user_dataset_from_endpoint(self, request, claims=None):
-        '''
-        Handler for uploading a user dataset from the endpoint. To facilitate
-        testing, the conneciton needs to be opened here instead of from vegbankapi.py
-        Parameters:
-            - dataset: dict with the same structure as the dataset parameter for upload_user_dataset
-            - conn: a connection to the VegBank database
-            - validate: boolean indicating whether to validate the dataset before uploading
-            - claims: decoded JWT claims dict, or None in unauthenticated modes
+        """Handle an HTTP request to upload a user dataset.
+
+        Parses the JSON body, mints a reserved DOI, persists the dataset, and
+        publishes the DOI after the DB transaction commits. The database
+        connection is opened here (rather than in ``vegbankapi.py``) to
+        facilitate isolated testing.
+
+        Args:
+            request: Flask request object. Must have a JSON body matching the
+                structure expected by :meth:`upload_user_dataset`.
+            claims: Decoded JWT claims dict, or ``None`` in unauthenticated modes.
+
         Returns:
-            - dict with counts of inserted records and their codes
-        '''
+            Dict with ``counts`` and ``resources`` describing inserted records,
+            or a ``(JSON error response, status code)`` tuple on failure.
+        """
         if not request.is_json:
             return jsonify_error_message("Request body must be JSON."), 400
 
@@ -356,7 +405,11 @@ class UserDataset(Operator):
         return to_return
 
     def _mint_doi(self) -> tuple["EZIDClient | None", "str | None"]:
-        """Attempt to mint a reserved DOI, returning (client, doi) or (None, None) on failure.
+        """Attempt to mint a reserved DOI.
+
+        Returns:
+            Two-tuple of ``(EZIDClient, doi_string)`` on success, or
+            ``(None, None)`` if the EZID service is unavailable.
         """
         try:
             ezid = EZIDClient()
@@ -369,7 +422,15 @@ class UserDataset(Operator):
     def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims) -> None:
         """Publish a reserved DOI with full DataCite metadata.
 
-        Called after the DB transaction commits.
+        Must be called after the DB transaction commits so the VegBank accession
+        code is available for the alternate identifier field.
+
+        Args:
+            ezid: Authenticated EZID client instance.
+            doi: Reserved DOI string to publish (e.g. ``"doi:10.5072/FK2XXXXX"``).
+            dataset: Dataset dict containing at least a ``name`` key.
+            vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
+            claims: Decoded JWT claims dict used to build the creator metadata.
         """
         orcid = extract_orcid(claims)
         xml_bytes = EZIDClient.build_datacite_xml(
@@ -406,7 +467,15 @@ class UserDataset(Operator):
         """Build the DataCite creators list from JWT claims and ORCID.
 
         Always includes the creator name from the token. The ORCID
-        name_identifier is added only when available.
+        ``nameIdentifier`` element is added only when available.
+
+        Args:
+            claims: Decoded JWT claims dict, or ``None``.
+            orcid: Canonical ORCID URI, or ``None`` if unavailable.
+
+        Returns:
+            List of creator dicts compatible with ``EZIDClient.build_datacite_xml``.
+            Empty list when ``claims`` is ``None``.
         """
         if not claims:
             return []
