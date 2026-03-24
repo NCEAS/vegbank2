@@ -208,21 +208,22 @@ class UserDataset(Operator):
 
 
     def _upsert_party_and_get_usr_id(self, cur, claims) -> int | None:
-        """Handle party upsert and usr_id lookup from JWT claims.
+        """Handle party upsert and usr_id lookup/creation from JWT claims.
 
-        Returns None if no ORCID is present in the claims or if no usr record
-        is linked to the party yet.
+        Returns None if no ORCID is present in the claims.
+        Always returns a valid usr_id when an ORCID is available, creating a
+        usr record on the fly if one does not yet exist.
         """
         orcid = extract_orcid(claims)
         if not orcid:
             return None
 
         given_name, family_name = self._parse_name_from_claims(claims)
-        email = claims.get("email")
+        email = claims.get("email") or ""
 
         party_id = self._upsert_party(cur, orcid, given_name, family_name, email)
         self._store_orcid_identifier(cur, party_id, orcid)
-        return self._get_usr_id_for_party(cur, party_id, orcid)
+        return self._get_or_create_usr(cur, party_id, email, claims)
 
 
     @staticmethod
@@ -252,7 +253,7 @@ class UserDataset(Operator):
         """Insert or update the party record keyed on ORCID accessioncode.
 
         Uses SELECT-then-INSERT/UPDATE because party.accessioncode does not have 
-        uniqueness.
+        uniqueness constraints.
 
         Returns the party_id of the upserted record.
         """
@@ -294,26 +295,27 @@ class UserDataset(Operator):
 
 
     @staticmethod
-    def _get_usr_id_for_party(cur, party_id: int, orcid: str) -> int | None:
-        """Return the usr_id linked to party_id, or None if no record exists yet.
-
-        A missing usr record is expected when the OIDC login flow has not yet
-        created the usr row for this user; the dataset is created without a usr
-        link and can be backfilled once the usr record exists.
+    def _get_or_create_usr(cur, party_id: int, email: str, claims) -> int:
+        """Return the usr_id linked to party_id, creating the usr row if absent.
         """
         cur.execute(
             "SELECT usr_id FROM usr WHERE party_id = %s LIMIT 1",
             (party_id,),
         )
         row = cur.fetchone()
-        if row is None:
-            logger.warning(
-                "No usr record found for party_id=%s (ORCID: %s); "
-                "dataset will be created without a usr link.",
-                party_id, orcid,
-            )
-            return None
-        return row["usr_id"]
+        if row is not None:
+            return row["usr_id"]
+
+        preferred_name = (claims or {}).get("name", "") if claims else ""
+        cur.execute(
+            """INSERT INTO usr (party_id, email_address, preferred_name, permission_type, begin_time)
+               VALUES (%s, %s, %s, 1, NOW())
+               RETURNING usr_id""",
+            (party_id, email, preferred_name),
+        )
+        usr_id = cur.fetchone()["usr_id"]
+        logger.info("Created usr record usr_id=%s for party_id=%s", usr_id, party_id)
+        return usr_id
 
 
     def upload_user_dataset_from_endpoint(self, request, claims=None):
@@ -354,12 +356,13 @@ class UserDataset(Operator):
         return to_return
 
     def _mint_doi(self) -> tuple["EZIDClient | None", "str | None"]:
-        """Attempt to mint a reserved DOI, returning (client, doi) or (None, None) on failure."""
+        """Attempt to mint a reserved DOI, returning (client, doi) or (None, None) on failure.
+        """
         try:
             ezid = EZIDClient()
             doi = ezid.mint_reserved()
             return ezid, doi
-        except (EZIDError, KeyError) as exc:
+        except EZIDError as exc:
             logger.warning("DOI mint failed; dataset will be created without a DOI: %s", exc)
             return None, None
 
@@ -400,14 +403,20 @@ class UserDataset(Operator):
 
     @staticmethod
     def _build_datacite_creators(claims, orcid: str | None) -> list[dict]:
-        """Build the DataCite creators list from JWT claims and ORCID."""
-        if not orcid:
+        """Build the DataCite creators list from JWT claims and ORCID.
+
+        Always includes the creator name from the token. The ORCID
+        name_identifier is added only when available.
+        """
+        if not claims:
             return []
-        return [{
-            "name": (claims or {}).get("name", ""),
-            "given_name": (claims or {}).get("given_name"),
-            "family_name": (claims or {}).get("family_name"),
-            "name_identifier": orcid,
-            "name_identifier_scheme": "ORCID",
-            "name_identifier_scheme_uri": "https://orcid.org/",
-        }]
+        creator: dict = {
+            "name": claims.get("name", ""),
+            "given_name": claims.get("given_name"),
+            "family_name": claims.get("family_name"),
+        }
+        if orcid:
+            creator["name_identifier"] = orcid
+            creator["name_identifier_scheme"] = "ORCID"
+            creator["name_identifier_scheme_uri"] = "https://orcid.org/"
+        return [creator]
