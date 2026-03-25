@@ -137,6 +137,7 @@ class EZIDClient:
         version: str | None = None,
         rights_list: list[dict] | None = None,
         funding_references: list[dict] | None = None,
+        geo_locations: list[dict] | None = None,
     ) -> bytes:
         """Build a DataCite kernel-4 XML document.
 
@@ -162,6 +163,10 @@ class EZIDClient:
             funding_references: List of dicts with optional keys:
                 funder_name, funder_identifier, funder_identifier_type,
                 award_number, award_uri, award_title.
+            geo_locations: List of dicts with optional keys:
+                box (dict with west, east, south, north),
+                point (dict with longitude, latitude),
+                place (str).
 
         Returns:
             UTF-8 encoded XML bytes.
@@ -285,6 +290,26 @@ class EZIDClient:
                     etree.SubElement(ref_el, f"{{{NS}}}awardNumber", **attrib).text = f["award_number"]
                 if f.get("award_title"):
                     etree.SubElement(ref_el, f"{{{NS}}}awardTitle").text = f["award_title"]
+
+        # geoLocations
+        if geo_locations:
+            geo_el = etree.SubElement(root, f"{{{NS}}}geoLocations")
+            for g in geo_locations:
+                loc_el = etree.SubElement(geo_el, f"{{{NS}}}geoLocation")
+                if g.get("place"):
+                    etree.SubElement(loc_el, f"{{{NS}}}geoLocationPlace").text = g["place"]
+                if g.get("point"):
+                    pt = g["point"]
+                    pt_el = etree.SubElement(loc_el, f"{{{NS}}}geoLocationPoint")
+                    etree.SubElement(pt_el, f"{{{NS}}}pointLongitude").text = str(pt["longitude"])
+                    etree.SubElement(pt_el, f"{{{NS}}}pointLatitude").text = str(pt["latitude"])
+                if g.get("box"):
+                    b = g["box"]
+                    box_el = etree.SubElement(loc_el, f"{{{NS}}}geoLocationBox")
+                    etree.SubElement(box_el, f"{{{NS}}}westBoundLongitude").text = str(b["west"])
+                    etree.SubElement(box_el, f"{{{NS}}}eastBoundLongitude").text = str(b["east"])
+                    etree.SubElement(box_el, f"{{{NS}}}southBoundLatitude").text = str(b["south"])
+                    etree.SubElement(box_el, f"{{{NS}}}northBoundLatitude").text = str(b["north"])
 
         return etree.tostring(root, xml_declaration=True, encoding="UTF-8")
 
