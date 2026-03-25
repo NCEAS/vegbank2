@@ -1,9 +1,11 @@
 import logging
 import os
 from datetime import datetime
+
 import pandas as pd
 from psycopg import connect
 from psycopg.rows import dict_row
+
 from vegbank.auth import extract_orcid
 from vegbank.ezid import EZIDClient, EZIDError
 from vegbank.operators.operator_parent_class import Operator
@@ -12,8 +14,6 @@ from vegbank.utilities import load_sql, jsonify_error_message, validate_dataset_
 
 logger = logging.getLogger(__name__)
 
-# Fixed funding references included on every VegBank DOI record.
-# These grants funded the VegBank infrastructure and do not vary per-dataset.
 # Organizations that contributed to VegBank infrastructure and standards.
 # Included on every VegBank DOI record.
 _VEGBANK_CONTRIBUTORS: list[dict] = [
@@ -35,7 +35,7 @@ _VEGBANK_CONTRIBUTORS: list[dict] = [
     },
     {
         "name": "NatureServe",
-        "type": "Sponsor",
+        "type": "RegistrationAuthority",
         "name_type": "Organizational",
         "name_identifier": "https://ror.org/02rnyzs79",
         "name_identifier_scheme": "ROR",
@@ -43,6 +43,8 @@ _VEGBANK_CONTRIBUTORS: list[dict] = [
     },
 ]
 
+# Fixed funding references included on every VegBank DOI record.
+# These grants funded the VegBank infrastructure and do not vary per-dataset.
 _VEGBANK_FUNDING_REFERENCES: list[dict] = [
     {
         "funder_name": "California Department of Fish and Wildlife",
@@ -81,13 +83,11 @@ class UserDataset(Operator):
     methods.
     """
 
-
     def __init__(self, params):
         super().__init__(params)
         self.name = "user_dataset"
         self.table_code = "ds"
         self.queries_package = f"{self.queries_package}.{self.name}"
-
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -155,7 +155,6 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
-
 
     def upload_user_dataset(self, dataset, conn, validate=False, claims=None, doi=None):
         """Upload a user dataset to VegBank.
@@ -249,10 +248,10 @@ class UserDataset(Operator):
             to_return = {
                 'counts': {
                     'di': {
-                        "inserted" : len(new_dataset_items['resources']['di'])
+                        "inserted": len(new_dataset_items['resources']['di'])
                     },
                     'ds': {
-                        "inserted" : 1
+                        "inserted": 1
                     }
                 },
                 'resources': {
@@ -268,7 +267,6 @@ class UserDataset(Operator):
                 }
             }
         return to_return
-
 
     def _upsert_party_and_get_usr_id(self, cur, claims) -> int | None:
         """Handle party upsert and usr_id lookup/creation from JWT claims.
@@ -296,7 +294,6 @@ class UserDataset(Operator):
         self._store_orcid_identifier(cur, party_id, orcid)
         return self._get_or_create_usr(cur, party_id, email, claims)
 
-
     @staticmethod
     def _parse_name_from_claims(claims) -> tuple[str, str]:
         """Return ``(given_name, family_name)`` parsed from JWT claims.
@@ -318,7 +315,6 @@ class UserDataset(Operator):
             given = parts[0] if parts else ""
             family = parts[1] if len(parts) > 1 else ""
         return given, family
-
 
     @staticmethod
     def _upsert_party(
@@ -367,7 +363,6 @@ class UserDataset(Operator):
         )
         return cur.fetchone()["party_id"]
 
-
     @staticmethod
     def _store_orcid_identifier(cur, party_id: int, orcid: str) -> None:
         """Record the ORCID in the identifiers table for this party (idempotent).
@@ -384,7 +379,6 @@ class UserDataset(Operator):
                ON CONFLICT (identifier_type, identifier_value) DO NOTHING""",
             (party_id, orcid),
         )
-
 
     @staticmethod
     def _get_or_create_usr(cur, party_id: int, email: str, claims) -> int:
@@ -417,7 +411,6 @@ class UserDataset(Operator):
         usr_id = cur.fetchone()["usr_id"]
         logger.info("Created usr record usr_id=%s for party_id=%s", usr_id, party_id)
         return usr_id
-
 
     def upload_user_dataset_from_endpoint(self, request, claims=None):
         """Handle an HTTP request to upload a user dataset.
@@ -459,7 +452,8 @@ class UserDataset(Operator):
             vb_ds_code = to_return['resources']['ds'][0]['vb_ds_code']
             userdataset_id = int(vb_ds_code.split('.')[1])
             bounding_box = self._query_bounding_box(userdataset_id)
-            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims, bounding_box)
+            subjects = self._query_top_taxa(userdataset_id)
+            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims, bounding_box, subjects)
 
         return to_return
 
@@ -477,6 +471,98 @@ class UserDataset(Operator):
         except EZIDError as exc:
             logger.warning("DOI mint failed; dataset will be created without a DOI: %s", exc)
             return None, None
+
+    def _publish_doi(
+        self,
+        ezid: "EZIDClient",
+        doi: str,
+        dataset: dict,
+        vb_ds_code: str,
+        claims,
+        bounding_box: dict | None = None,
+        subjects: list[dict] | None = None,
+    ) -> None:
+        """Publish a reserved DOI with full DataCite metadata.
+
+        Must be called after the DB transaction commits so the VegBank accession
+        code is available for the alternate identifier field.
+
+        Args:
+            ezid: Authenticated EZID client instance.
+            doi: Reserved DOI string to publish (e.g. ``"doi:10.5072/FK2XXXXX"``).
+            dataset: Dataset dict containing at least a ``name`` key; ``description``
+                is included in the DataCite metadata as an Abstract when present.
+            vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
+            claims: Decoded JWT claims dict used to build the creator metadata.
+            bounding_box: Optional dict with ``west``, ``east``, ``south``, ``north``
+                keys (floats) representing the geographic extent of the dataset's plots.
+            subjects: Optional list of subject dicts (e.g. top taxa) compatible with
+                ``EZIDClient.build_datacite_xml``.
+        """
+        orcid = extract_orcid(claims)
+        description = dataset.get("description", "")
+        descriptions = [{"text": description, "type": "Abstract"}] if description else None
+        xml_bytes = EZIDClient.build_datacite_xml(
+            doi=doi.replace("doi:", ""),
+            title=f'Vegbank plot observations: "{dataset["name"]}"',
+            publisher="VegBank",
+            publication_year=datetime.now().year,
+            creators=self._build_datacite_creators(claims, orcid),
+            descriptions=descriptions,
+            subjects=subjects or None,
+            contributors=_VEGBANK_CONTRIBUTORS,
+            alternate_identifiers=[{
+                "value": f"vegbank:{vb_ds_code}",
+                "type": "VegBank Accession Code",
+            }],
+            rights_list=[{
+                "text": "Creative Commons Attribution 4.0 International",
+                "rights_uri": "https://creativecommons.org/licenses/by/4.0/",
+                "rights_identifier": "CC-BY-4.0",
+                "rights_identifier_scheme": "SPDX",
+                "scheme_uri": "https://spdx.org/licenses/",
+            }],
+            dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
+            funding_references=_VEGBANK_FUNDING_REFERENCES,
+            geo_locations=[{"box": bounding_box}] if bounding_box else None,
+        )
+        try:
+            ezid.update_identifier(doi, {
+                "_status": "public",
+                "_profile": "datacite",
+                "datacite": xml_bytes.decode("utf-8"),
+                "_target": f"{ezid.default_target_url}/{doi}",
+            })
+        except EZIDError as exc:
+            logger.error("Failed to publish DOI %s for dataset %s: %s", doi, vb_ds_code, exc)
+
+    @staticmethod
+    def _build_datacite_creators(claims, orcid: str | None) -> list[dict]:
+        """Build the DataCite creators list from JWT claims and ORCID.
+
+        Always includes the creator name from the token. The ORCID
+        ``nameIdentifier`` element is added only when available.
+
+        Args:
+            claims: Decoded JWT claims dict, or ``None``.
+            orcid: Canonical ORCID URI, or ``None`` if unavailable.
+
+        Returns:
+            List of creator dicts compatible with ``EZIDClient.build_datacite_xml``.
+            Empty list when ``claims`` is ``None``.
+        """
+        if not claims:
+            return []
+        creator: dict = {
+            "name": claims.get("name", ""),
+            "given_name": claims.get("given_name"),
+            "family_name": claims.get("family_name"),
+        }
+        if orcid:
+            creator["name_identifier"] = orcid
+            creator["name_identifier_scheme"] = "ORCID"
+            creator["name_identifier_scheme_uri"] = "https://orcid.org/"
+        return [creator]
 
     def _query_bounding_box(self, userdataset_id: int) -> dict | None:
         """Query the bounding box of all plots in a dataset.
@@ -518,82 +604,54 @@ class UserDataset(Operator):
             logger.warning("Bounding box query failed for userdataset_id=%s: %s", userdataset_id, exc)
         return None
 
-    def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims, bounding_box: dict | None = None) -> None:
-        """Publish a reserved DOI with full DataCite metadata.
+    def _query_top_taxa(self, userdataset_id: int, limit: int = 20) -> list[dict]:
+        """Query the most frequently occurring taxa across all plot observations in a dataset.
 
-        Must be called after the DB transaction commits so the VegBank accession
-        code is available for the alternate identifier field.
-
-        Args:
-            ezid: Authenticated EZID client instance.
-            doi: Reserved DOI string to publish (e.g. ``"doi:10.5072/FK2XXXXX"``).
-            dataset: Dataset dict containing at least a ``name`` key; ``description``
-                is included in the DataCite metadata as an Abstract when present.
-            vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
-            claims: Decoded JWT claims dict used to build the creator metadata.
-            bounding_box: Optional dict with ``west``, ``east``, ``south``, ``north``
-                keys (floats) representing the geographic extent of the dataset's plots.
-        """
-        orcid = extract_orcid(claims)
-        description = dataset.get("description", "")
-        descriptions = [{"text": description, "type": "Abstract"}] if description else None
-        xml_bytes = EZIDClient.build_datacite_xml(
-            doi=doi.replace("doi:", ""),
-            title=f'Vegbank plot observations: "{dataset["name"]}"',
-            publisher="VegBank",
-            publication_year=datetime.now().year,
-            creators=self._build_datacite_creators(claims, orcid),
-            descriptions=descriptions,
-            alternate_identifiers=[{
-                "value": f"vegbank:{vb_ds_code}",
-                "type": "VegBank Accession Code",
-            }],
-            rights_list=[{
-                "text": "Creative Commons Attribution 4.0 International",
-                "rights_uri": "https://creativecommons.org/licenses/by/4.0/",
-                "rights_identifier": "CC-BY-4.0",
-                "rights_identifier_scheme": "SPDX",
-                "scheme_uri": "https://spdx.org/licenses/",
-            }],
-            dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
-            funding_references=_VEGBANK_FUNDING_REFERENCES,
-            geo_locations=[{"box": bounding_box}] if bounding_box else None,
-            contributors=_VEGBANK_CONTRIBUTORS,
-        )
-        try:
-            ezid.update_identifier(doi, {
-                "_status": "public",
-                "_profile": "datacite",
-                "datacite": xml_bytes.decode("utf-8"),
-                "_target": f"{ezid.default_target_url}/{doi}",
-            })
-        except EZIDError as exc:
-            logger.error("Failed to publish DOI %s for dataset %s: %s", doi, vb_ds_code, exc)
-
-    @staticmethod
-    def _build_datacite_creators(claims, orcid: str | None) -> list[dict]:
-        """Build the DataCite creators list from JWT claims and ORCID.
-
-        Always includes the creator name from the token. The ORCID
-        ``nameIdentifier`` element is added only when available.
+        Uses the current interpreted scientific name without authority
+        (``int_currplantscinamenoauth``), falling back to the full scientific
+        name then the author-entered name.  Results are ordered by descending
+        occurrence count so the most ecologically representative taxa appear
+        first.
 
         Args:
-            claims: Decoded JWT claims dict, or ``None``.
-            orcid: Canonical ORCID URI, or ``None`` if unavailable.
+            userdataset_id: Primary key of the userdataset record.
+            limit: Maximum number of taxa to return (default 20).
 
         Returns:
-            List of creator dicts compatible with ``EZIDClient.build_datacite_xml``.
-            Empty list when ``claims`` is ``None``.
+            List of subject dicts compatible with ``EZIDClient.build_datacite_xml``,
+            e.g. ``[{"value": "Quercus alba"}, ...]``.  Returns an empty list
+            when no taxa are found or the query fails.
         """
-        if not claims:
+        sql = """
+            SELECT
+                COALESCE(
+                    NULLIF(txo.int_currplantscinamenoauth, ''),
+                    NULLIF(txo.int_currplantscifull, ''),
+                    NULLIF(txo.authorplantname, '')
+                ) AS taxon_name,
+                COUNT(*) AS occurrence_count
+            FROM userdatasetitem dsi
+            JOIN observation ob
+                ON dsi.itemtable = 'observation'
+               AND dsi.itemrecord = ob.observation_id
+            JOIN taxonobservation txo
+                ON txo.observation_id = ob.observation_id
+            WHERE dsi.userdataset_id = %s
+              AND COALESCE(
+                    NULLIF(txo.int_currplantscinamenoauth, ''),
+                    NULLIF(txo.int_currplantscifull, ''),
+                    NULLIF(txo.authorplantname, '')
+                  ) IS NOT NULL
+            GROUP BY 1
+            ORDER BY occurrence_count DESC
+            LIMIT %s
+        """
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, (userdataset_id, limit))
+                    rows = cur.fetchall()
+            return [{"value": row["taxon_name"]} for row in rows]
+        except Exception as exc:
+            logger.warning("Top taxa query failed for userdataset_id=%s: %s", userdataset_id, exc)
             return []
-        creator: dict = {
-            "name": claims.get("name", ""),
-            "given_name": claims.get("given_name"),
-            "family_name": claims.get("family_name"),
-        }
-        if orcid:
-            creator["name_identifier"] = orcid
-            creator["name_identifier_scheme"] = "ORCID"
-            creator["name_identifier_scheme_uri"] = "https://orcid.org/"
-        return [creator]
