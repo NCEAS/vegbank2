@@ -1,166 +1,435 @@
+from collections import defaultdict
 import numpy as np
+import pandas as pd
 from vegbank.operators import table_defs_config
 from vegbank.utilities import validate_required_and_missing_fields
-config = {
-    # Defines the required fields and table defs for each file that vegbank
-    # uploads.
 
+# Defines the required fields and table defs for each file that vegbank uploads
+config = {
     "projects": {
-        "required_fields": ['project_name', 'user_pj_code'],
-        "table_defs": [table_defs_config.project]
+        "table_defs": [table_defs_config.project],
+        "required_fields": [
+            'project_name',
+            'user_pj_code',
+        ],
+        "field_type_map": {
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
     },
     "references": {
-        "required_fields": ['user_rf_code'],
-        "table_defs": [table_defs_config.reference]
+        "table_defs": [table_defs_config.reference],
+        "required_fields": [
+            'user_rf_code',
+        ],
     },
     "parties": {
-        "required_fields": ['user_py_code'],
-        "table_defs": [table_defs_config.party]
+        "table_defs": [table_defs_config.party],
+        "required_fields": [
+            'user_py_code',
+        ],
     },
     "soils": {
-        "required_fields": ['user_so_code', 'horizon'],
-        "table_defs": [table_defs_config.soil_obs]
+        "table_defs": [table_defs_config.soil_obs],
+        "required_fields": [
+            'user_so_code',
+            'horizon',
+        ],
+        "field_type_map": {
+            'depth_top': 'numeric',
+            'depth_bottom': 'numeric',
+            'organic': 'numeric',
+            'sand': 'numeric',
+            'silt': 'numeric',
+            'clay': 'numeric',
+            'coarse': 'numeric',
+            'ph': 'numeric',
+            'exchange_capacity': 'numeric',
+            'base_saturation': 'numeric',
+        },
     },
     "disturbances": {
-        "required_fields": ['user_do_code', 'type'],
-        "table_defs": [table_defs_config.disturbance_obs]
+        "table_defs": [table_defs_config.disturbance_obs],
+        "required_fields": [
+            'user_do_code',
+            'type',
+        ],
+        "field_type_map": {
+            'age': 'numeric',
+            'extent': 'numeric',
+        },
     },
     "community_classifications": {
-        "required_fields": ['user_cl_code', 'user_ob_code', 'vb_cc_code'],
-        "table_defs": [table_defs_config.comm_class, table_defs_config.comm_interp],
+        "table_defs": [table_defs_config.comm_class,
+                       table_defs_config.comm_interp],
+        "required_fields": [
+            'user_cl_code',
+            'user_ob_code',
+            'vb_cc_code',
+        ],
+        "field_type_map": {
+            # comm_class
+            'class_start_date': 'timestamp',
+            'class_stop_date': 'timestamp',
+            'inspection': 'boolean',
+            'multivariateanalysis': 'boolean',
+            'tableanalysis': 'boolean',
+            # comm_interp
+            'nomenclatural_type': 'boolean',
+            'type': 'boolean',
+        },
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
-        ]
+        ],
     },
     "community_reclassifications": {
-        "required_fields": ['user_cl_code', 'vb_ob_code', 'vb_cc_code'],
-        "table_defs": [table_defs_config.comm_reclass, table_defs_config.comm_interp],
+        "table_defs": [table_defs_config.comm_reclass,
+                       table_defs_config.comm_interp],
+        "required_fields": [
+            'user_cl_code',
+            'vb_ob_code',
+            'vb_cc_code',
+        ],
+        "field_type_map": {
+            # comm_class
+            'class_start_date': 'timestamp',
+            'class_stop_date': 'timestamp',
+            'inspection': 'boolean',
+            'multivariate_analysis': 'boolean',
+            'table_analysis': 'boolean',
+            # comm_interp
+            'nomenclatural_type': 'boolean',
+            'type': 'boolean',
+        },
         "xor_fields": [
             ('user_comm_class_rf_code', 'vb_comm_class_rf_code', 'optional'),
             ('user_authority_rf_code', 'vb_authority_rf_code', 'optional'),
-        ]
+        ],
     },
     "strata": {
-        "required_fields": ['user_ob_code', 'user_sr_code', 'vb_sy_code'],
-        "table_defs": [table_defs_config.stratum]
+        "table_defs": [table_defs_config.stratum],
+        "required_fields": [
+            'user_ob_code',
+            'user_sr_code',
+            'vb_sy_code',
+        ],
+        "field_type_map": {
+            'stratum_base': 'numeric',
+            'stratum_cover': 'numeric',
+            'stratum_height': 'numeric',
+        },
     },
     "strata_cover_data": {
-        "required_fields": ['user_to_code', 'user_ob_code', 'author_plant_name', 'user_tm_code'],
-        "table_defs": [table_defs_config.taxon_importance, table_defs_config.taxon_observation]
+        "table_defs": [table_defs_config.taxon_importance,
+                       table_defs_config.taxon_observation],
+        "required_fields": [
+            'user_to_code',
+            'user_ob_code',
+            'author_plant_name',
+            'user_tm_code',
+        ],
+        "field_type_map": {
+            # taxon observation
+            'taxon_inference_area': 'numeric',
+            # taxon importance
+            'basal_area': 'numeric',
+            'biomass': 'numeric',
+            'cover': 'numeric',
+            'inference_area': 'numeric',
+            'stratum_base': 'numeric',
+            'stratum_height': 'numeric',
+        },
     },
     "stem_data": {
-        "required_fields": ['user_sc_code', 'user_tm_code', 'stem_count'],
-        "table_defs": [table_defs_config.stem_count, table_defs_config.stem_location]
+        "table_defs": [table_defs_config.stem_count,
+                       table_defs_config.stem_location],
+        "required_fields": [
+            'user_sc_code',
+            'user_tm_code',
+            'stem_count',
+        ],
     },
     "taxon_interpretations": {
-        "required_fields": ['user_ti_code', 'user_to_code', 'vb_pc_code',
-                            'vb_ar_code', 'original_interpretation',
-                            'current_interpretation'],
         "table_defs": [table_defs_config.taxon_interpretation],
+        "required_fields": [
+            'user_ti_code',
+            'user_to_code',
+            'vb_pc_code',
+            'vb_ar_code',
+            'original_interpretation',
+            'current_interpretation',
+        ],
+        "field_type_map": {
+            'collection_date': 'timestamp',
+            'current_interpretation': 'boolean',
+            'interpretation_date': 'timestamp',
+            'notes_mgt': 'boolean',
+            'notes_public': 'boolean',
+            'original_interpretation': 'boolean',
+        },
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
             ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
             ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
-            ]
+        ],
     },
     "taxon_reinterpretations": {
         # This is for taxon interpretations that are uploaded through the taxon 
         # interpretation endpoint, which require some different fields than taxon 
         # interpretations uploaded through the plot observation endpoint, so we have 
         # a separate config for those.
-        "required_fields": ['user_ti_code', 'vb_to_code', 'vb_pc_code',
-                            'vb_ar_code', 'original_interpretation',
-                            'current_interpretation'],
         "table_defs": [table_defs_config.reinterpretation],
+        "required_fields": [
+            'user_ti_code',
+            'vb_to_code',
+            'vb_pc_code',
+            'vb_ar_code',
+            'original_interpretation',
+            'current_interpretation',
+        ],
+        "field_type_map": {
+            'collection_date': 'timestamp',
+            'current_interpretation': 'boolean',
+            'interpretation_date': 'timestamp',
+            'notes_mgt': 'boolean',
+            'notes_public': 'boolean',
+            'original_interpretation': 'boolean',
+        },
         "xor_fields": [
             ('user_py_code', 'vb_py_code'),
             ('user_rf_code', 'vb_rf_code', 'optional'),
             ('user_collector_py_code', 'vb_collector_py_code', 'optional'),
             ('user_museum_py_code', 'vb_museum_py_code', 'optional'),
-            ]
+        ],
     },
     "contributors": {
-        "required_fields": ['vb_ar_code', 'contributor_type', 'record_identifier'],
         "table_defs": [table_defs_config.contributor],
+        "required_fields": [
+            'vb_ar_code',
+            'contributor_type',
+            'record_identifier',
+        ],
         "xor_fields": [
-            ('vb_py_code', 'user_py_code')
-            ]
+            ('vb_py_code', 'user_py_code'),
+        ],
     },
     "community_contributors": {
-        "required_fields": ['vb_ar_code', 'record_identifier'],
         "table_defs": [table_defs_config.comm_contributor],
+        "required_fields": [
+            'vb_ar_code',
+            'record_identifier',
+        ],
         "xor_fields": [
-            ('vb_py_code', 'user_py_code')
-            ]
+            ('vb_py_code', 'user_py_code'),
+        ],
     },
-    "plot_observations": {  # This one has different config fields because the required fields depend on whether the observation is on a new plot or an existing plot.
-        "new_pl_required_fields": ['user_pl_code', 'author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code'],
-        "old_pl_required_fields": ['vb_pl_code', 'user_ob_code', 'author_obs_code'],
-        "table_defs": [table_defs_config.plot, table_defs_config.observation],
-        "xor_fields": [('user_pj_code', 'vb_pj_code'), ('user_pl_code', 'vb_pl_code')]
+    "plot_observations": {
+        # This one has different config fields because the required fields
+        # depend on whether the observation is on a new plot or an existing
+        # plot.
+        "table_defs": [table_defs_config.plot,
+                       table_defs_config.observation],
+        "new_pl_required_fields": [
+            'user_pl_code',
+            'author_plot_code',
+            'confidentiality_status',
+            'user_ob_code',
+            'author_obs_code',
+        ],
+        "old_pl_required_fields": [
+            'vb_pl_code',
+            'user_ob_code',
+            'author_obs_code',
+        ],
+        "field_type_map": {
+            # plot
+            'area': 'numeric',
+            'azimuth': 'numeric',
+            'confidentiality_status': 'integer',
+            'elevation': 'numeric',
+            'elevation_accuracy': 'numeric',
+            'elevation_range': 'numeric',
+            'latitude': 'numeric',
+            'location_accuracy': 'numeric',
+            'longitude': 'numeric',
+            'max_slope_aspect': 'numeric',
+            'max_slope_gradient': 'numeric',
+            'min_slope_aspect': 'numeric',
+            'min_slope_gradient': 'numeric',
+            'pl_notes_mgt': 'boolean',
+            'pl_notes_public': 'boolean',
+            'permanence': 'boolean',
+            'real_latitude': 'numeric',
+            'real_longitude': 'numeric',
+            'slope_aspect': 'numeric',
+            'slope_gradient': 'numeric',
+            # observation
+            'auto_taxon_cover': 'boolean',
+            'basal_area': 'numeric',
+            'date_entered': 'timestamp',
+            'field_cover': 'numeric',
+            'field_ht': 'numeric',
+            'floating_cover': 'numeric',
+            'growthform_1_cover': 'numeric',
+            'growthform_2_cover': 'numeric',
+            'growthform_3_cover': 'numeric',
+            'has_observation_synonym': 'boolean',
+            'nonvascular_cover': 'numeric',
+            'nonvascular_ht': 'numeric',
+            'ob_notes_mgt': 'boolean',
+            'ob_notes_public': 'boolean',
+            'obs_end_date': 'timestamp',
+            'obs_start_date': 'timestamp',
+            'organic_depth': 'numeric',
+            'percent_bare_soil': 'numeric',
+            'percent_bedrock': 'numeric',
+            'percent_litter': 'numeric',
+            'percent_other': 'numeric',
+            'percent_rock_gravel': 'numeric',
+            'percent_water': 'numeric',
+            'percent_wood': 'numeric',
+            'shore_distance': 'numeric',
+            'shrub_cover': 'numeric',
+            'shrub_ht': 'numeric',
+            'soil_depth': 'numeric',
+            'stem_observation_area': 'numeric',
+            'stem_size_limit': 'numeric',
+            'submerged_cover': 'numeric',
+            'submerged_ht': 'numeric',
+            'taxon_observation_area': 'numeric',
+            'total_cover': 'numeric',
+            'tree_cover': 'numeric',
+            'tree_ht': 'numeric',
+            'water_depth': 'numeric',
+        },
+        "xor_fields": [
+            ('user_pj_code', 'vb_pj_code'),
+            ('user_pl_code', 'vb_pl_code'),
+        ],
     },
     "plant_concepts":{
-        "required_fields": ['user_pc_code', 'name', 'start_date',
-                           'plant_concept_status'],
-        "table_defs":[table_defs_config.plant_concept, table_defs_config.plant_status],
-        "xor_fields":[
+        "table_defs": [table_defs_config.plant_concept,
+                       table_defs_config.plant_name,
+                       table_defs_config.plant_status],
+        "required_fields": [
+            'user_pc_code',
+            'name',
+            'start_date',
+            'plant_concept_status',
+        ],
+        "field_type_map": {
+            # plant status
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
+        "xor_fields": [
             ('user_rf_code', 'vb_rf_code'),
             ('user_status_py_code', 'vb_status_py_code'),
             ('user_status_rf_code', 'vb_status_rf_code', 'optional'),
             ('user_parent_pc_code', 'vb_parent_pc_code', 'optional'),
         ]
     },
-    "plant_correlations":{
-        "required_fields":['convergence_type', 'correlation_start'],
-        "table_defs":[table_defs_config.plant_correlation],
-        "xor_fields":[
-            ('user_correlated_pc_code', 'vb_correlated_pc_code')
-        ]
-    },
-    "plant_names":{
-        "required_fields": ['user_pc_code', 'name',
-                           'name_type', 'name_status'],
-        "table_defs":[table_defs_config.plant_name, 
-                      table_defs_config.plant_usage],
-        "xor_fields":[
-            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
-        ]
-    },
-    "community_concepts":{
-        "required_fields": ['user_cc_code', 'name', 'start_date',
-                           'comm_concept_status'],
-        "table_defs": [table_defs_config.comm_concept, table_defs_config.comm_name, table_defs_config.comm_status],
-        "xor_fields": [('user_status_py_code', 'vb_status_py_code'),
-                       ('user_rf_code', 'vb_rf_code', 'optional'),
-                       ('user_parent_cc_code', 'vb_parent_cc_code', 'optional')]
-    },
-    "community_names":{
-        "required_fields" : ['user_cc_code', 'name',
-                           'name_type', 'name_status'],
-        "table_defs": [table_defs_config.comm_name, table_defs_config.comm_usage],
+    "plant_correlations": {
+        "table_defs": [table_defs_config.plant_correlation],
+        "required_fields":[
+            'convergence_type',
+            'correlation_start',
+        ],
+        "field_type_map": {
+            'correlation_start': 'timestamp',
+            'correlation_stop': 'timestamp',
+        },
         "xor_fields": [
-            ('user_usage_py_code', 'vb_usage_py_code', 'optional')
-        ]
-
+            ('user_correlated_pc_code', 'vb_correlated_pc_code'),
+        ],
+    },
+    "plant_names": {
+        "table_defs": [table_defs_config.plant_name,
+                      table_defs_config.plant_usage],
+        "required_fields": [
+            'user_pc_code',
+            'name',
+            'name_type',
+            'name_status',
+        ],
+        "field_type_map": {
+            # plant usage
+            'usage_start': 'timestamp',
+            'usage_stop': 'timestamp',
+        },
+        "xor_fields": [
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
+        ],
+    },
+    "community_concepts": {
+        "table_defs": [table_defs_config.comm_concept,
+                       table_defs_config.comm_name,
+                       table_defs_config.comm_status],
+        "required_fields": [
+            'user_cc_code',
+            'name',
+            'start_date',
+            'comm_concept_status',
+        ],
+        "field_type_map": {
+            # comm status
+            'start_date': 'timestamp',
+            'stop_date': 'timestamp',
+        },
+        "xor_fields": [
+            ('user_status_py_code', 'vb_status_py_code'),
+            ('user_rf_code', 'vb_rf_code', 'optional'),
+            ('user_parent_cc_code', 'vb_parent_cc_code', 'optional'),
+        ],
+    },
+    "community_names": {
+        "table_defs": [table_defs_config.comm_name,
+                       table_defs_config.comm_usage],
+        "required_fields" : [
+            'user_cc_code',
+            'name',
+            'name_type',
+            'name_status',
+        ],
+        "field_type_map": {
+            # comm usage
+            'usage_start': 'timestamp',
+            'usage_stop': 'timestamp',
+        },
+        "xor_fields": [
+            ('user_usage_py_code', 'vb_usage_py_code', 'optional'),
+        ],
     },
     "community_correlations":{
-        "required_fields": ['convergence_type', 'correlation_start'],
         "table_defs": [table_defs_config.comm_correlation],
+        "required_fields": [
+            'convergence_type',
+            'correlation_start',
+        ],
+        "field_type_map": {
+            'correlation_start': 'timestamp',
+            'correlation_stop': 'timestamp',
+        },
         "xor_fields": [
             ('vb_correlated_cc_code', 'user_correlated_cc_code'),
-        ]
+        ],
     },
     "cover_methods": {
+        "table_defs": [table_defs_config.cover_method,
+                       table_defs_config.cover_index],
         "required_fields": [
             'user_cm_code',
             'cover_type',
             'cover_code',
             'cover_percent',
         ],
-        "table_defs": [table_defs_config.cover_method,
-                       table_defs_config.cover_index],
+        "field_type_map": {
+            'cover_percent': 'numeric',
+            'lower_limit': 'numeric',
+            'upper_limit': 'numeric',
+        },
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code', 'optional'),
         ]
@@ -169,19 +438,30 @@ config = {
 
 
 def validate(df, file_name, endpoint_name=None):
-    '''
-    Runs validation checks on the provided dataframe based on the file name and the corresponding configuration in the config dictionary. If the file name is not found in the config, it returns a successful validation result. For "plot_observations", it runs a specialized validation function. For other files, it checks for required fields and XOR field pairs as defined in the config.
+    """Run basic up-front validation on user-supplied data
+
+    Runs validation checks on the provided dataframe based on the file name and
+    the corresponding configuration in the config dictionary. If the file name
+    is not found in the config, it returns a successful validation result. For
+    "plot_observations", it runs a specialized validation function. For other
+    files, it checks for required fields, checks designated field types, and
+    validates the presence of XOR field pairs as defined in the config.
+
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
-        file_name (str): The name of the file being validated, which determines the validation rules to apply.
-        endpoint_name(str): we have a few files where there are different required
-        fields based on which endpoint the request comes from. Example: Taxon 
-        interpetations require different fields if they are uploaded through the 
-        plot observation endpoint vs the taxon interpretation endpoint. This parameter allows us to specify which one and set the required fields 
-        accordingly.  
+        file_name (str): The name of the file being validated, which determines
+            the validation rules to apply.
+        endpoint_name (str): we have a few files where there are different
+            required fields based on which endpoint the request comes from.
+            Example: Taxon interpetations require different fields if they are
+            uploaded through the plot observation endpoint vs the taxon
+            interpretation endpoint. This parameter allows us to specify which
+            one and set the required fields accordingly.
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     print("validating " + file_name)
     if file_name not in config:
         return {
@@ -191,39 +471,36 @@ def validate(df, file_name, endpoint_name=None):
 
     if file_name == "plot_observations":
         return validate_plot_observations(df)
-    required_fields = config[file_name]['required_fields']
-    table_defs = config[file_name]['table_defs']
-    xor_fields = config[file_name].get('xor_fields')
-    print('file name is ' + file_name)
-    if endpoint_name and endpoint_name == 'taxon-interpretations' and file_name == 'taxon_interpretations':
-        print("using taxon reinterpretation config for validation of taxon interpretations because endpoint is taxon-interpretations")
-        required_fields = config['taxon_reinterpretations']['required_fields']
-        table_defs = config['taxon_reinterpretations']['table_defs']
-        xor_fields = config['taxon_reinterpretations'].get('xor_fields')
-    if endpoint_name and endpoint_name == "community-classifications" and file_name == "community_classifications":
-        required_fields = config['community_reclassifications']['required_fields']
-        table_defs = config['community_reclassifications']['table_defs']
-        xor_fields = config['community_reclassifications'].get('xor_fields')
-    if endpoint_name and endpoint_name == "community-classifications" and file_name == "contributors":
-        required_fields = config['community_contributors']['required_fields']
-        table_defs = config['community_contributors']['table_defs']
-        xor_fields = config['community_contributors'].get('xor_fields')
-    xor_validation = {
-        'error': "",
-        'has_error': False
+
+    # Specify the loader config table key, which is usually just the file name,
+    # except in cases where we use modified configuration for a few specific
+    # tables uploaded via specific endpoints
+    if (file_name == 'taxon_interpretations'
+            and endpoint_name == 'taxon-interpretations'):
+        table_key = 'taxon_reinterpretations'
+    elif (file_name == 'community_classifications'
+            and endpoint_name == 'community-classifications'):
+        table_key = 'community_reclassifications'
+    elif (file_name == 'contributors'
+            and endpoint_name == 'community-classifications'):
+        table_key = 'community_contributors'
+    else:
+        table_key = file_name
+    print('table key is ' + table_key)
+
+    cfg = config[table_key]
+    validation = dict()
+    validation['field'] = validate_required_and_missing_fields(
+        df, cfg.get('required_fields'), cfg.get('table_defs'), file_name)
+    validation['xor'] = validate_xor_pairs(
+        df, cfg.get('xor_fields'), file_name)
+    validation['type'] = validate_field_types(
+        df, cfg.get('field_type_map'), file_name)
+    return {
+        'has_error': any(val.get('has_error') for val in validation.values()),
+        'error': ' '.join(val['error'] for val in validation.values()
+                          if val.get('error') is not None)
     }
-    if xor_fields is not None:
-        xor_validation = validate_xor_pairs(df, xor_fields, file_name)
-    field_validation = validate_required_and_missing_fields(
-        df,
-        required_fields,
-        table_defs,
-        file_name)
-    to_return = {
-        'has_error': xor_validation.get('has_error', False) or field_validation.get('has_error', False),
-        'error': xor_validation.get('error', '') + field_validation.get('error', '')
-    }
-    return to_return
 
 
 def validate_plot_observations(df):
@@ -232,59 +509,57 @@ def validate_plot_observations(df):
     if 'vb_pl_code' not in df.columns:
         df['vb_pl_code'] = None
 
-    validation = {
-        'error': "",
-        'has_error': False
-    }
-    pl_obs_config = config['plot_observations']
+    cfg = config['plot_observations']
+
+    validation = dict()
 
     new_plots_df = df[df['user_pl_code'].notnull() & df['vb_pl_code'].isnull()]
-    old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()]
     if not new_plots_df.empty:
-        new_validation = validate_required_and_missing_fields(
-            new_plots_df,
-            pl_obs_config['new_pl_required_fields'],
-            pl_obs_config['table_defs'],
+        validation['new'] = validate_required_and_missing_fields(
+            new_plots_df, cfg['new_pl_required_fields'], cfg['table_defs'],
             "observations on new plots")
-    else:
-        new_validation = {
-            'error': "",
-            'has_error': False
-        }
-    if not old_plots_df.empty:
-        old_validation = validate_required_and_missing_fields(
-            old_plots_df,
-            pl_obs_config['old_pl_required_fields'],
-            pl_obs_config['table_defs'],
-            "observations on existing plots")
-    else:
-        old_validation = {
-            'error': "",
-            'has_error': False
-        }
-    xor_validation = validate_xor_pairs(
-        df, pl_obs_config['xor_fields'], "plot_observations")
 
-    validation['error'] += new_validation['error'] + \
-        old_validation['error'] + xor_validation['error']
-    validation['has_error'] = new_validation['has_error'] or old_validation['has_error'] or xor_validation['has_error']
-    return validation
+    old_plots_df = df[df['user_pl_code'].isnull() & df['vb_pl_code'].notnull()]
+    if not old_plots_df.empty:
+        validation['old'] = validate_required_and_missing_fields(
+            old_plots_df, cfg['old_pl_required_fields'], cfg['table_defs'],
+            "observations on existing plots")
+
+    validation['xor'] = validate_xor_pairs(
+        df, cfg.get('xor_fields'), "plot_observations")
+    validation['type'] = validate_field_types(
+        df, cfg.get('field_type_map'), 'plot_observations')
+
+    return {
+        'has_error': any(val.get('has_error') for val in validation.values()),
+        'error': ' '.join(val['error'] for val in validation.values()
+                          if val.get('error') is not None)
+    }
 
 
 def validate_xor_pairs(df, xor_pairs, file_name):
-    '''
-    Takes a list of column name pairs and verifies that each pair has only one of the two columns populated per row.
+    """Validates column pairs for which values are not allowed in both fields
+
+    Takes a list of column name pairs and verifies that each pair has only one
+    of the two columns populated per row.
+
     Parameters:
         df (pd.DataFrame): The dataframe to be validated.
-        xor_pairs (list): A list of tuples, where each tuple contains two column names that should be mutually exclusive.
-        file_name (str): The name of the file being validated (used in error messages).
+        xor_pairs (list): A list of tuples, where each tuple contains two column
+            names that should be mutually exclusive.
+        file_name (str): The name of the file being validated (used in error
+            messages).
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     to_return = {
         'has_error': False,
         'error': ""
     }
+    if xor_pairs is None:
+        return to_return
 
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair[0], xor_pair[1]
@@ -325,16 +600,26 @@ def validate_xor_pairs(df, xor_pairs, file_name):
 
 
 def validate_user_codes(df_1_name, data, user_codes, file_name):
-    '''
-    Validates that the user codes in the provided dataframe match to existing codes in the target user provided tables.
+    """Validate referential integrity across tables based on user codes
+
+    Validates that the user codes in the provided dataframe match to existing
+    codes in the target user provided tables.
+
     Parameters:
-        df_1_name (str): The name of the dataframe containing the user codes to be validated.
-        data (dict): A dictionary containing the dataframes for all user provided tables, keyed by table name.
-        user_codes (list): A list of tuples, where each tuple contains the source code column name, target code column name, and target table name to validate against.
-        file_name (str): The name of the file being validated (used in error messages).
+        df_1_name (str): The name of the dataframe containing the user codes to
+            be validated.
+        data (dict): A dictionary containing the dataframes for all user
+            provided tables, keyed by table name.
+        user_codes (list): A list of tuples, where each tuple contains the
+            source code column name, target code column name, and target table
+            name to validate against.
+        file_name (str): The name of the file being validated (used in error
+            messages).
+
     Returns:
-        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys indicating the result of the validation.
-    '''
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
+            indicating the result of the validation.
+    """
     to_return = {
         'has_error': False,
         'error': ""
@@ -428,3 +713,101 @@ def validate_contributor_record_identifier_codes(df, data):
             "or community classification tables: " + \
             ", ".join(missing_codes) + ". "
     return to_return
+
+
+def validate_field_types(df, field_type_map, file_name):
+    """Validates that provided fields are the correct type
+
+    Parameters:
+        df (pd.DataFrame): The dataframe to be validated.
+        field_type_map (dict): A mapping of column names to types, or None
+        file_name (str): The name of the file being validated (used in error
+             messages).
+    Returns:
+        dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys.
+    """
+    no_error = {
+        'has_error': False,
+        'error': ""
+    }
+    if field_type_map is None:
+        return no_error
+
+    TYPE_VALIDATORS = {
+        "boolean": is_valid_boolean,
+        "numeric": is_valid_numeric,
+        "integer": is_valid_integer,
+        "timestamp": is_valid_timestamptz,
+    }
+
+    invalid_fields = defaultdict(list)
+
+    for field, db_type in field_type_map.items():
+        if field.lower() not in df.columns:
+            continue
+        validator = TYPE_VALIDATORS.get(db_type)
+        if validator and not validator(df[field]):
+            invalid_fields[db_type].append(field)
+
+    if invalid_fields:
+        messages = []
+        for type_label, columns in invalid_fields.items():
+            col_list = ", ".join(columns)
+            messages.append(f"The following column(s) for {file_name} " +
+                            f"must be {type_label}: {col_list}.")
+        return {
+            'has_error': True,
+            'error': " ".join(messages),
+        }
+    else:
+        return no_error
+
+
+def is_valid_boolean(series: pd.Series) -> bool:
+    """Return True if all non-null values are boolean-compatible.
+
+    Accepts bool dtypes, numeric 0/1, and 'true'/'false' (case-insensitive).
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return True
+    if pd.api.types.is_numeric_dtype(series):
+        return series.dropna().isin([0, 1]).all()
+    if (pd.api.types.is_object_dtype(series)
+            or pd.api.types.is_string_dtype(series)):
+        return series.dropna().astype(str).str.lower().isin(["true", "false"]).all()
+    return False
+
+
+def is_valid_numeric(series: pd.Series) -> bool:
+    """Return True if all non-null values are numeric.
+
+    Rejects booleans rather than allowing them as 0.0/1.0.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return False
+    try:
+        pd.to_numeric(series, errors='raise')
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def is_valid_integer(series: pd.Series) -> bool:
+    """Return True if all non-null values are numeric with no fractional part.
+
+    Rejects booleans rather than allowing them as 0/1.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return False
+    try:
+        coerced = pd.to_numeric(series, errors='raise')
+        return (coerced.dropna() == coerced.dropna().astype(int)).all()
+    except (ValueError, TypeError):
+        return False
+
+
+def is_valid_timestamptz(series: pd.Series) -> bool:
+    """Return True if all non-null values can be parsed as tz-aware timestamps."""
+    coerced = pd.to_datetime(series, errors='coerce', utc=True)
+    invalid_mask = coerced.isna() & series.notna()
+    return not invalid_mask.any()
