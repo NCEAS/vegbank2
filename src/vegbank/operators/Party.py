@@ -56,14 +56,19 @@ class Party(Operator):
             """
         order_by_sql['surname'] = f"""\
             ORDER BY surname {self.direction},
+                     organizationname = '' {self.direction},
+                     organizationname {self.direction},
                      party_id {self.direction}
             """
         order_by_sql['organization_name'] = f"""\
-            ORDER BY organizationname {self.direction},
+            ORDER BY organizationname = '' {self.direction},
+                     organizationname {self.direction},
                      party_id {self.direction}
             """
+        count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
+                                                    'ASC' else 'LAST'}"
         order_by_sql['obs_count'] = f"""\
-            ORDER BY d_obscount {self.direction},
+            ORDER BY d_obscount {count_direction},
                      party_id {self.direction}
             """
 

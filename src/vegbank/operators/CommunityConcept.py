@@ -192,8 +192,10 @@ class CommunityConcept(Operator):
             ORDER BY cc.commname {self.direction},
                      cc.commconcept_id {self.direction}
             """
+        count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
+                                                    'ASC' else 'LAST'}"
         order_by_sql['obs_count'] = f"""\
-            ORDER BY COALESCE(cc.d_obscount, 0) {self.direction},
+            ORDER BY cc.d_obscount {count_direction},
                      cc.commconcept_id {self.direction}
             """
 
