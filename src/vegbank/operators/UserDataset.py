@@ -456,17 +456,21 @@ class UserDataset(Operator):
         Args:
             ezid: Authenticated EZID client instance.
             doi: Reserved DOI string to publish (e.g. ``"doi:10.5072/FK2XXXXX"``).
-            dataset: Dataset dict containing at least a ``name`` key.
+            dataset: Dataset dict containing at least a ``name`` key; ``description``
+                is included in the DataCite metadata as an Abstract when present.
             vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
             claims: Decoded JWT claims dict used to build the creator metadata.
         """
         orcid = extract_orcid(claims)
+        description = dataset.get("description", "")
+        descriptions = [{"text": description, "type": "Abstract"}] if description else None
         xml_bytes = EZIDClient.build_datacite_xml(
             doi=doi.replace("doi:", ""),
             title=f'Vegbank plot observations: "{dataset["name"]}"',
             publisher="VegBank",
             publication_year=datetime.now().year,
             creators=self._build_datacite_creators(claims, orcid),
+            descriptions=descriptions,
             alternate_identifiers=[{
                 "value": f"vegbank:{vb_ds_code}",
                 "type": "VegBank Accession Code",
