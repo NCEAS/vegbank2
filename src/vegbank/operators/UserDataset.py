@@ -103,6 +103,7 @@ class UserDataset(Operator):
             'owner_label': "py.party_id_transl",
             'owner_py_code': "'py.' || py.party_id",
             'owner_email': "usr.email_address",
+            'py_code': "'py.' || usr.party_id",
             'obs_count':  "(SELECT COUNT(*) FROM userdatasetitem dsi" +
                           " WHERE dsi.userdataset_id = ds.userdataset_id)",
         }
