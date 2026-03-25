@@ -17,6 +17,7 @@ from .UserDataset import UserDataset
 from vegbank.utilities import (
     jsonify_error_message,
     process_integer_param,
+    process_option_param,
     validate_required_and_missing_fields,
     read_parquet_file,
     UploadDataError,
@@ -53,6 +54,8 @@ class PlotObservation(Operator):
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")
+        self.status_options = ["any", "current"]
+        self.default_status = "any"
         self.default_num_taxa = 5
         self.default_num_comms = 5
 
@@ -441,6 +444,18 @@ class PlotObservation(Operator):
                      ob.observation_id {self.direction}
             """
 
+        # define standing conditions, plus any that depend on query
+        # parameters
+        always_condition = {
+            'sql': [
+                "(emb_observation < 6 OR emb_observation IS NULL)",
+            ],
+            'params': []
+        }
+        if self.request.args.get('status') == 'current':
+            always_condition['sql'].append(
+                "hasobservationsynonym IS NOT TRUE")
+
         self.query = {}
         self.query['base'] = {
             'alias': "ob",
@@ -459,12 +474,7 @@ class PlotObservation(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': [
-                        "(emb_observation < 6 OR emb_observation IS NULL)",
-                    ],
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          (ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -610,6 +620,11 @@ class PlotObservation(Operator):
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
+
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
 
         return params
 
