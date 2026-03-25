@@ -5827,6 +5827,10 @@ components:
           type: string
           description: "Email address of dataset creator/owner"
           example: "msmith@university.edu"
+        py_code:
+          type: string
+          description: "VegBank party identifier for the dataset creator/owner"
+          example: "py.1"
         obs_count:
           type: integer
           description: "Number of plot observations associated with this dataset"
