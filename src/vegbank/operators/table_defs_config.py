@@ -170,19 +170,19 @@ soiltaxon = [
 ]
 
 cover_method = [
-    'user_code',
-    'rf_code',
-    'covertype',
-    'coverestimationmethod'
+    'user_cm_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'cover_type',
+    'cover_estimation_method'
 ]
 
 cover_index = [
-    'covermethod_id',
-    'covercode',
-    'upperlimit',
-    'lowerlimit',
-    'coverpercent',
-    'indexdescription'
+    'cover_code',
+    'upper_limit',
+    'lower_limit',
+    'cover_percent',
+    'index_description'
 ]
 
 stratum_method = [
@@ -263,7 +263,7 @@ comm_interp = [
     'user_authority_rf_code',
     'interp_notes',
     'type',
-    'nomenclaturaltype'
+    'nomenclatural_type'
 ]
 
 # system added:
