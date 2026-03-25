@@ -186,18 +186,18 @@ cover_index = [
 ]
 
 stratum_method = [
-    'user_code',
-    'rf_code',
-    'stratummethodname',
-    'stratummethoddescription',
-    'stratumassignment'
+    'user_sm_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'stratum_method_name',
+    'stratum_method_description',
+    'stratum_assignment'
 ]
 
 stratum_type = [
-    'stratummethod_id',
-    'stratumindex',
-    'stratumname',
-    'stratumdescription'
+    'stratum_index',
+    'stratum_name',
+    'stratum_description'
 ]
 
 taxon_importance = [
