@@ -14,6 +14,35 @@ logger = logging.getLogger(__name__)
 
 # Fixed funding references included on every VegBank DOI record.
 # These grants funded the VegBank infrastructure and do not vary per-dataset.
+# Organizations that contributed to VegBank infrastructure and standards.
+# Included on every VegBank DOI record.
+_VEGBANK_CONTRIBUTORS: list[dict] = [
+    {
+        "name": "National Center for Ecological Analysis and Synthesis",
+        "type": "HostingInstitution",
+        "name_type": "Organizational",
+        "name_identifier": "https://ror.org/0146z4r19",
+        "name_identifier_scheme": "ROR",
+        "name_identifier_scheme_uri": "https://ror.org/",
+    },
+    {
+        "name": "Ecological Society of America",
+        "type": "Sponsor",
+        "name_type": "Organizational",
+        "name_identifier": "https://ror.org/03y54e085",
+        "name_identifier_scheme": "ROR",
+        "name_identifier_scheme_uri": "https://ror.org/",
+    },
+    {
+        "name": "NatureServe",
+        "type": "Sponsor",
+        "name_type": "Organizational",
+        "name_identifier": "https://ror.org/02rnyzs79",
+        "name_identifier_scheme": "ROR",
+        "name_identifier_scheme_uri": "https://ror.org/",
+    },
+]
+
 _VEGBANK_FUNDING_REFERENCES: list[dict] = [
     {
         "funder_name": "California Department of Fish and Wildlife",
@@ -529,6 +558,7 @@ class UserDataset(Operator):
             dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
             funding_references=_VEGBANK_FUNDING_REFERENCES,
             geo_locations=[{"box": bounding_box}] if bounding_box else None,
+            contributors=_VEGBANK_CONTRIBUTORS,
         )
         try:
             ezid.update_identifier(doi, {
