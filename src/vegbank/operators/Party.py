@@ -56,6 +56,8 @@ class Party(Operator):
             """
         order_by_sql['surname'] = f"""\
             ORDER BY surname {self.direction},
+                     organizationname = '' {self.direction},
+                     organizationname {self.direction},
                      party_id {self.direction}
             """
         order_by_sql['organization_name'] = f"""\
