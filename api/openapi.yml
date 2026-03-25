@@ -129,6 +129,7 @@ paths:
             type: string
           example: "pj.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -162,6 +163,7 @@ paths:
             type: string
           example: "py.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -195,6 +197,7 @@ paths:
             type: string
           example: "np.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -229,6 +232,7 @@ paths:
             type: string
           example: "pc.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -263,6 +267,7 @@ paths:
             type: string
           example: "cc.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -296,6 +301,7 @@ paths:
             type: string
           example: "cm.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -329,6 +335,7 @@ paths:
             type: string
           example: "sm.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -362,6 +369,7 @@ paths:
             type: string
           example: "ds.1"
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -388,6 +396,7 @@ paths:
         thereof based on a specified `search` query.
       parameters:
         - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/status_ob'
         - $ref: '#/components/parameters/detail_ob'
         - $ref: '#/components/parameters/with_nested'
         - $ref: '#/components/parameters/sort_ob'
@@ -2658,6 +2667,18 @@ components:
         minimum: 0
         default: 5
       description: Number of communities to return per plot observation, ordered by commclass_id
+    status_ob:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [any, current]
+        default: any
+      description: |
+        Status criterion for returned plot observations:
+        - `any`: Returns matching plot observations regardless of status
+        - `current`: Only returns observations that haven't been replaced by a newer observation
     status_concept:
       name: status
       in: query
