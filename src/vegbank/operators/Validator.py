@@ -433,6 +433,14 @@ config = {
         "xor_fields": [
             ('user_rf_code', 'vb_rf_code', 'optional'),
         ]
+    },
+    "stratum_methods":{
+        "required_fields": ['user_sm_code', 'stratum_method_name'],
+        "table_defs": [table_defs_config.stratum_method, 
+                       table_defs_config.stratum_type],
+        "xor_fields": [
+            ('user_rf_code', 'vb_rf_code', 'optional')
+        ]
     }
 }
 
