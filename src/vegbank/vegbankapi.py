@@ -903,7 +903,7 @@ def cover_methods(cm_code, claims=None):
 
 @main.route("/stratum-methods", defaults={'sm_code': None}, methods=['GET', 'POST'])
 @main.route("/stratum-methods/<sm_code>", methods=['GET'])
-@require_scope(SCOPE_CONTRIBUTOR, methods=['POST'])
+@require_scope(SCOPE_ADMIN, methods=['POST'])
 def stratum_methods(sm_code, claims=None):
     """
     Retrieve either an individual stratum method or a collection, or upload a
