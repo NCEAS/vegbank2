@@ -242,8 +242,9 @@ gunicorn:
   logLevel: "info"
 
 ## @section Ingress
-## Configuration for the ingress, including certifications and host name. There is no configured service section here because the ingress
-## automatically pulls the default named service for the pod via release name. The section establishing that service is above.
+## Configuration for the ingress, including certifications and host name. There is no configured
+## service section here because the ingress automatically pulls the default named service for the
+## pod via release name. The section establishing that service is above.
 ingress:
   ## @param ingress.enabled Enable ingress to allow web traffic. Ingress settings ignored if 'false'
   ##
@@ -299,66 +300,6 @@ ingress:
   ##    tlsEnabled: false
   ##
   tls: []
-
-  annotations:
-    ## @param ingress.annotations.cert-manager.io/cluster-issuer
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client-body-buffer-size See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size
-    ##
-    nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/client-max-body-size See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
-    ## Sets the maximum allowed size of the client request body. Setting to 0 disables checking of
-    ## client request body size
-    ##
-    nginx.ingress.kubernetes.io/client-max-body-size: "0"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/send-timeout See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
-    ## Sets a timeout for transmitting a response to the client. The timeout is set only between
-    ## two successive write operations, not for the transmission of the whole response. If the
-    ## client does not receive anything within this time, the connection is closed. Default is 60s,
-    ## but we set it to 3600 seconds to prevent 504 Gateway Time-out when downloading zip files of
-    ## huge datasets using bagit
-    ##
-    nginx.ingress.kubernetes.io/send-timeout: "3600"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size See docs:
-    ## https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/configmap.md#proxy-body-size
-    ## Sets the maximum allowed size of the client request body - similar to the nginx
-    ## client_max_body_size directive. Setting to 0 disables checking of client request body size
-    ##
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/proxy-read-timeout See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout
-    ## default is 60 seconds, but we set it to 3600 seconds to prevent 504 Gateway Time-out when
-    ## downloading zip files of huge datasets using bagit
-    ##
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/proxy-send-timeout See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_send_timeout
-    ## The timeout is set only between two successive write operations, not for the transmission of
-    ## the whole request. We set it to 3600 seconds to prevent 504 Gateway Time-out when
-    ## downloading zip files of huge datasets using bagit
-    ##
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/proxy-request-buffering See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_request_buffering
-    ##
-    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
-
-    ## @skip ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffering See docs:
-    ## https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
-    ## According to ingress-nginx docs, default is "off", but according to nginx docs, default is
-    ## "on", so we set it explicitly to "off", be sure
-    ##
-    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 
 ## @section Miscellaneous
 
