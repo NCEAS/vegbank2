@@ -258,7 +258,7 @@ class UserDataset(Operator):
                 'resources': {
                     'ds': [
                         {
-                            'action': 'inserted',
+                            'action': 'INSERT',
                             'user_ds_code': dataset['name'],
                             'vb_ds_code': 'ds.' + str(user_dataset_id),
                             'doi': doi,

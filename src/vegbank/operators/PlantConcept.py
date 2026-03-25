@@ -193,8 +193,10 @@ class PlantConcept(Operator):
             ORDER BY pc.plantname {self.direction},
                      pc.plantconcept_id {self.direction}
             """
+        count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
+                                                    'ASC' else 'LAST'}"
         order_by_sql['obs_count'] = f"""\
-            ORDER BY COALESCE(pc.d_obscount, 0) {self.direction},
+            ORDER BY pc.d_obscount {count_direction},
                      pc.plantconcept_id {self.direction}
             """
 
