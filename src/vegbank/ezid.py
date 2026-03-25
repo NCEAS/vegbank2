@@ -138,6 +138,8 @@ class EZIDClient:
         rights_list: list[dict] | None = None,
         funding_references: list[dict] | None = None,
         geo_locations: list[dict] | None = None,
+        contributors: list[dict] | None = None,
+        subjects: list[dict] | None = None,
     ) -> bytes:
         """Build a DataCite kernel-4 XML document.
 
@@ -167,6 +169,15 @@ class EZIDClient:
                 box (dict with west, east, south, north),
                 point (dict with longitude, latitude),
                 place (str).
+            contributors: List of contributor dicts with keys:
+                name (str), type (str, e.g. "HostingInstitution"),
+                name_type (str, optional, e.g. "Organizational"),
+                name_identifier (str, optional),
+                name_identifier_scheme (str, optional, e.g. "ROR"),
+                name_identifier_scheme_uri (str, optional).
+            subjects: List of subject dicts with keys:
+                value (str), scheme (str, optional),
+                scheme_uri (str, optional), value_uri (str, optional).
 
         Returns:
             UTF-8 encoded XML bytes.
@@ -214,6 +225,27 @@ class EZIDClient:
                     attrib["schemeURI"] = c["affiliation_scheme_uri"]
                 etree.SubElement(creator_el, f"{{{NS}}}affiliation", **attrib).text = c["affiliation"]
 
+        # contributors
+        if contributors:
+            contribs_el = etree.SubElement(root, f"{{{NS}}}contributors")
+            for c in contributors:
+                contrib_el = etree.SubElement(
+                    contribs_el,
+                    f"{{{NS}}}contributor",
+                    contributorType=c.get("type", "Other"),
+                )
+                name_attrib = {}
+                if c.get("name_type"):
+                    name_attrib["nameType"] = c["name_type"]
+                etree.SubElement(contrib_el, f"{{{NS}}}contributorName", **name_attrib).text = c.get("name", "")
+                if c.get("name_identifier"):
+                    attrib = {}
+                    if c.get("name_identifier_scheme"):
+                        attrib["nameIdentifierScheme"] = c["name_identifier_scheme"]
+                    if c.get("name_identifier_scheme_uri"):
+                        attrib["schemeURI"] = c["name_identifier_scheme_uri"]
+                    etree.SubElement(contrib_el, f"{{{NS}}}nameIdentifier", **attrib).text = c["name_identifier"]
+
         # titles
         titles_el = etree.SubElement(root, f"{{{NS}}}titles")
         etree.SubElement(titles_el, f"{{{NS}}}title").text = title
@@ -236,6 +268,19 @@ class EZIDClient:
         etree.SubElement(
             root, f"{{{NS}}}resourceType", resourceTypeGeneral=resource_type_general
         ).text = resource_type
+
+        # subjects
+        if subjects:
+            subjects_el = etree.SubElement(root, f"{{{NS}}}subjects")
+            for s in subjects:
+                attrib = {}
+                if s.get("scheme"):
+                    attrib["subjectScheme"] = s["scheme"]
+                if s.get("scheme_uri"):
+                    attrib["schemeURI"] = s["scheme_uri"]
+                if s.get("value_uri"):
+                    attrib["valueURI"] = s["value_uri"]
+                etree.SubElement(subjects_el, f"{{{NS}}}subject", **attrib).text = s.get("value", "")
 
         # dates
         if dates:
