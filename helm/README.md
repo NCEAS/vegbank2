@@ -198,7 +198,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
 | `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
 | `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
-| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1.1`                                  |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1`                                    |
 | `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
 | `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
 | `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
@@ -234,7 +234,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `startupProbe.timeoutSeconds`     | Timeout (in seconds) for each startup check                | `3`    |
 | `livenessProbe.enabled`           | Enable livenessProbe                                       | `true` |
 | `livenessProbe.httpGet.path`      | The url path to probe                                      | `/`    |
-| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `80`   |
+| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `http` |
 | `livenessProbe.periodSeconds`     | Period seconds for livenessProbe                           | `20`   |
 | `livenessProbe.timeoutSeconds`    | Timeout seconds for livenessProbe                          | `10`   |
 | `livenessProbe.successThreshold`  | Min consecutive successes for probe to be successful       | `1`    |
