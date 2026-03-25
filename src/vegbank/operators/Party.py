@@ -59,7 +59,8 @@ class Party(Operator):
                      party_id {self.direction}
             """
         order_by_sql['organization_name'] = f"""\
-            ORDER BY organizationname {self.direction},
+            ORDER BY organizationname = '' {self.direction},
+                     organizationname {self.direction},
                      party_id {self.direction}
             """
         count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
