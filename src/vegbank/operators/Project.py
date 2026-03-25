@@ -32,7 +32,6 @@ class Project(Operator):
         self.table_code = "pj"
         self.queries_package = f"{self.queries_package}.{self.name}"
         self.sort_options = ["default", "project_name", "obs_count"]
-        
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -51,10 +50,6 @@ class Project(Operator):
             'last_plot_added_date': "d_lastplotaddeddate",
         }
         from_sql = "FROM pj"
-        order_by_sql = """\
-            ORDER BY projectname,
-                     project_id
-            """
         order_by_sql = {}
         order_by_sql['default'] = f"""\
             ORDER BY project_id {self.direction}
@@ -63,8 +58,10 @@ class Project(Operator):
             ORDER BY projectname {self.direction},
                      project_id {self.direction}
             """
+        count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
+                                                    'ASC' else 'LAST'}"
         order_by_sql['obs_count'] = f"""\
-            ORDER BY d_obscount {self.direction},
+            ORDER BY d_obscount {count_direction},
                      project_id {self.direction}
             """
 
