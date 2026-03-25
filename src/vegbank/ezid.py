@@ -1,10 +1,13 @@
 """EZID client for DOI minting."""
 
+import logging
 import os
 from enum import Enum
 
 import requests as _requests
 from lxml import etree
+
+logger = logging.getLogger(__name__)
 
 
 class EZIDStatus(str, Enum):
@@ -26,6 +29,7 @@ class EZIDClient:
         EZID_PASSWORD   - EZID API password
         EZID_DOI_PREFIX - DOI prefix (e.g. doi:10.5072)
         EZID_DOI_SHOULDER - DOI shoulder for minting (e.g. FK2)
+        EZID_DEFAULT_TARGET_URL - Base URL DOIs resolve to (e.g. https://vegbank.org/cite)
     """
 
     def __init__(self):
@@ -33,6 +37,7 @@ class EZIDClient:
         self._auth = (os.environ["EZID_USERNAME"], os.environ["EZID_PASSWORD"])
         self.doi_prefix = os.environ["EZID_DOI_PREFIX"]
         self.doi_shoulder = os.environ["EZID_DOI_SHOULDER"]
+        self.default_target_url = os.environ["EZID_DEFAULT_TARGET_URL"].rstrip("/")
         self._timeout = 30
 
     @property
@@ -40,34 +45,80 @@ class EZIDClient:
         """Full shoulder path for minting (e.g. doi:10.5072/FK2)."""
         return f"{self.doi_prefix}/{self.doi_shoulder}"
 
+    @staticmethod
+    def _encode_anvl(metadata: dict[str, str]) -> str:
+        """Encode a dict as ANVL plain text (key: value lines).
+
+        Per the EZID ANVL spec, percent-signs, newlines, and carriage returns
+        in *values* must be percent-encoded so the server can parse them as a
+        single-line value.
+
+        Args:
+            metadata: Key/value pairs to encode.
+
+        Returns:
+            Newline-separated ``key: value`` string ready to POST to EZID.
+        """
+        def _escape(v: str) -> str:
+            return v.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+        return "\n".join(f"{k}: {_escape(v)}" for k, v in metadata.items())
+
     def mint(self, metadata: dict[str, str]) -> str:
-        """Mint a new identifier using the configured shoulder. Returns the minted identifier."""
+        """Mint a new identifier using the configured shoulder.
+
+        Args:
+            metadata: ANVL metadata to attach to the new identifier.
+
+        Returns:
+            The minted identifier string (e.g. ``"doi:10.5072/FK2XXXXX"``).
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
         resp = _requests.post(
             f"{self.base_url}/shoulder/{self.shoulder}",
-            data=metadata,
+            data=self._encode_anvl(metadata).encode("utf-8"),
             auth=self._auth,
             headers={"Content-Type": "text/plain; charset=UTF-8"},
             timeout=self._timeout,
         )
+        logger.debug("EZID mint response: %s", resp.text)
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
-    def mint_reserved(self, title: str) -> str:
-        """Mint a DOI with 'reserved' status."""
-        metadata = {
-            "_status": "reserved",
-        }
-        return self.mint(metadata)
+    def mint_reserved(self) -> str:
+        """Mint a DOI with ``reserved`` status.
+
+        Returns:
+            The minted DOI string (e.g. ``"doi:10.5072/FK2XXXXX"``).
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
+        return self.mint({"_status": "reserved"})
 
     def update_identifier(self, identifier: str, metadata: dict[str, str]) -> str:
-        """Update an existing identifier with new metadata."""
+        """Update an existing identifier with new metadata.
+
+        Args:
+            identifier: The full DOI string to update (e.g. ``"doi:10.5072/FK2XXXXX"``).
+            metadata: ANVL metadata fields to apply to the identifier.
+
+        Returns:
+            The identifier string echoed back by EZID on success.
+
+        Raises:
+            EZIDError: If the EZID service returns an error response.
+        """
         resp = _requests.post(
             f"{self.base_url}/id/{identifier}",
-            data=metadata,
+            data=self._encode_anvl(metadata).encode("utf-8"),
             auth=self._auth,
             headers={"Content-Type": "text/plain; charset=UTF-8"},
             timeout=self._timeout,
         )
+        logger.debug("EZID update response: %s", resp.text)
         self._check(resp)
         return resp.text.split("|")[0].replace("success:", "").strip()
 
@@ -86,6 +137,7 @@ class EZIDClient:
         version: str | None = None,
         rights_list: list[dict] | None = None,
         funding_references: list[dict] | None = None,
+        geo_locations: list[dict] | None = None,
     ) -> bytes:
         """Build a DataCite kernel-4 XML document.
 
@@ -111,6 +163,10 @@ class EZIDClient:
             funding_references: List of dicts with optional keys:
                 funder_name, funder_identifier, funder_identifier_type,
                 award_number, award_uri, award_title.
+            geo_locations: List of dicts with optional keys:
+                box (dict with west, east, south, north),
+                point (dict with longitude, latitude),
+                place (str).
 
         Returns:
             UTF-8 encoded XML bytes.
@@ -235,9 +291,37 @@ class EZIDClient:
                 if f.get("award_title"):
                     etree.SubElement(ref_el, f"{{{NS}}}awardTitle").text = f["award_title"]
 
+        # geoLocations
+        if geo_locations:
+            geo_el = etree.SubElement(root, f"{{{NS}}}geoLocations")
+            for g in geo_locations:
+                loc_el = etree.SubElement(geo_el, f"{{{NS}}}geoLocation")
+                if g.get("place"):
+                    etree.SubElement(loc_el, f"{{{NS}}}geoLocationPlace").text = g["place"]
+                if g.get("point"):
+                    pt = g["point"]
+                    pt_el = etree.SubElement(loc_el, f"{{{NS}}}geoLocationPoint")
+                    etree.SubElement(pt_el, f"{{{NS}}}pointLongitude").text = str(pt["longitude"])
+                    etree.SubElement(pt_el, f"{{{NS}}}pointLatitude").text = str(pt["latitude"])
+                if g.get("box"):
+                    b = g["box"]
+                    box_el = etree.SubElement(loc_el, f"{{{NS}}}geoLocationBox")
+                    etree.SubElement(box_el, f"{{{NS}}}westBoundLongitude").text = str(b["west"])
+                    etree.SubElement(box_el, f"{{{NS}}}eastBoundLongitude").text = str(b["east"])
+                    etree.SubElement(box_el, f"{{{NS}}}southBoundLatitude").text = str(b["south"])
+                    etree.SubElement(box_el, f"{{{NS}}}northBoundLatitude").text = str(b["north"])
+
         return etree.tostring(root, xml_declaration=True, encoding="UTF-8")
 
     @staticmethod
     def _check(resp: _requests.Response) -> None:
-        if resp.status_code != 200 or resp.text.startswith("error:"):
+        """Raise EZIDError if the response indicates a failure.
+
+        Args:
+            resp: The HTTP response from the EZID API.
+
+        Raises:
+            EZIDError: If the HTTP status is not 200/201 or the body starts with ``"error:"``.
+        """
+        if resp.status_code not in (200, 201) or resp.text.startswith("error:"):
             raise EZIDError(resp.text.strip())
