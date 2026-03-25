@@ -33,14 +33,6 @@ _VEGBANK_CONTRIBUTORS: list[dict] = [
         "name_identifier_scheme": "ROR",
         "name_identifier_scheme_uri": "https://ror.org/",
     },
-    {
-        "name": "NatureServe",
-        "type": "Sponsor",
-        "name_type": "Organizational",
-        "name_identifier": "https://ror.org/02rnyzs79",
-        "name_identifier_scheme": "ROR",
-        "name_identifier_scheme_uri": "https://ror.org/",
-    },
 ]
 
 # Fixed funding references included on every VegBank DOI record.
