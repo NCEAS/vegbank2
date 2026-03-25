@@ -14,7 +14,7 @@ from vegbank.utilities import load_sql, jsonify_error_message, validate_dataset_
 
 logger = logging.getLogger(__name__)
 
-# Organizations that contributed to VegBank infrastructure and standards.
+# Organizations that contributed to VegBank infrastructure.
 # Included on every VegBank DOI record.
 _VEGBANK_CONTRIBUTORS: list[dict] = [
     {
@@ -35,7 +35,7 @@ _VEGBANK_CONTRIBUTORS: list[dict] = [
     },
     {
         "name": "NatureServe",
-        "type": "RegistrationAuthority",
+        "type": "Sponsor",
         "name_type": "Organizational",
         "name_identifier": "https://ror.org/02rnyzs79",
         "name_identifier_scheme": "ROR",
@@ -605,7 +605,7 @@ class UserDataset(Operator):
             logger.warning("Bounding box query failed for userdataset_id=%s: %s", userdataset_id, exc)
         return None
 
-    def _query_top_taxa(self, userdataset_id: int, limit: int = 20) -> list[dict]:
+    def _query_top_taxa(self, userdataset_id: int, limit: int = 10) -> list[dict]:
         """Query the most frequently occurring taxa across all plot observations in a dataset.
 
         Uses the current interpreted scientific name without authority
@@ -616,7 +616,7 @@ class UserDataset(Operator):
 
         Args:
             userdataset_id: Primary key of the userdataset record.
-            limit: Maximum number of taxa to return (default 20).
+            limit: Maximum number of taxa to return (default 10).
 
         Returns:
             List of subject dicts compatible with ``EZIDClient.build_datacite_xml``,
