@@ -43,6 +43,20 @@ auth:
   ##
   oidcSecretName: vegbank-oidc-config
 
+  ## @param auth.roleName.admin Scope name for the admin role
+  ## @param auth.roleName.contributor Scope name for the contributor role
+  ## @param auth.roleName.user Scope name for the user role
+  ## These scope names are used for authorization decisions. Override them per environment
+  # New deployment setup: After choosing a deployment name (e.g., `dev-vegbank-dev`),
+  # contact the Keycloak admin to register a new client. Provide the deployment name, required scopes and redirect URIs. 
+  # Then update this config with the new client ID and secret.
+  ## (e.g., use "vegbank-dev:admin" in dev) so that dev and prod Keycloak realms stay separate.
+  ##
+  roleName:
+    admin: "vegbank:admin"
+    contributor: "vegbank:contributor"
+    user: "vegbank:user"
+
 ## @section Database
 ## Configuration for the PostgreSQL database used by VegBank. The username and password are
 ## stored in a kubernetes secret named 'vegbankdbcreds', which is created separately from this
