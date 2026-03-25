@@ -12,6 +12,34 @@ from vegbank.utilities import load_sql, jsonify_error_message, validate_dataset_
 
 logger = logging.getLogger(__name__)
 
+# Fixed funding references included on every VegBank DOI record.
+# These grants funded the VegBank infrastructure and do not vary per-dataset.
+_VEGBANK_FUNDING_REFERENCES: list[dict] = [
+    {
+        "funder_name": "California Department of Fish and Wildlife",
+        "funder_identifier": "https://api.crossref.org/funders/100006238",
+        "funder_identifier_type": "Crossref Funder ID",
+        "award_number": "P2384008",
+        "award_title": "VegBank Improvements",
+    },
+    {
+        "funder_name": "National Science Foundation",
+        "funder_identifier": "https://api.crossref.org/funders/100000001",
+        "funder_identifier_type": "Crossref Funder ID",
+        "award_number": "0213794",
+        "award_uri": "https://www.nsf.gov/awardsearch/show-award/?AWD_ID=0213794&HistoricalAwards=true",
+        "award_title": "An Information Infrastructure for Vegetation Science",
+    },
+    {
+        "funder_name": "National Science Foundation",
+        "funder_identifier": "https://api.crossref.org/funders/100000001",
+        "funder_identifier_type": "Crossref Funder ID",
+        "award_number": "9905838",
+        "award_uri": "https://www.nsf.gov/awardsearch/show-award/?AWD_ID=9905838&HistoricalAwards=true",
+        "award_title": "A Perfectly Archived, Continuously Updated Database System for Analysis of North American Vegetation",
+    },
+]
+
 
 class UserDataset(Operator):
     """
@@ -451,6 +479,7 @@ class UserDataset(Operator):
                 "scheme_uri": "https://spdx.org/licenses/",
             }],
             dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
+            funding_references=_VEGBANK_FUNDING_REFERENCES,
         )
         try:
             ezid.update_identifier(doi, {
