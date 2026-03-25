@@ -114,8 +114,8 @@ def plot_observations(vb_code, claims=None):
     supporting POST and GET methods. For any other HTTP method, it returns a 405
     error.
 
-    POST: Upload a series of files from the loader schema and return the new codes 
-    and counts of new records based on the types of new records created. 
+    POST: Upload a series of files from the loader schema and return the new
+    codes and counts of new records based on the types of new records created.
 
     POST Parameters:
         plot_observations (FileStorage, optional): Parquet file containing plot
@@ -125,11 +125,11 @@ def plot_observations(vb_code, claims=None):
         references (FileStorage, optional): Parquet file containing reference data.
         strata (FileStorage, optional): Parquet file containing strata
             definition data.
-        strata_cover_data (FileStorage, optional): Parquet file containing taxon 
+        strata_cover_data (FileStorage, optional): Parquet file containing taxon
             observations and taxon importances.
-        taxon_interpretations (FileStorage, optional): Parquet file containing taxon 
-            interpretation data.
-    
+        taxon_interpretations (FileStorage, optional): Parquet file containing
+            taxon interpretation data.
+
     All post parameters are optional except plot_observations.
 
     GET: If a valid plot observation code is provided (e.g., ob.1), returns the
@@ -151,6 +151,8 @@ def plot_observations(vb_code, claims=None):
 
     GET Query Parameters:
         search (str, optional): Plot observation search query.
+        status (str, optional): Status criterion for returned plot observations.
+            Can be 'any' or 'current'. Defaults to 'any'.
         detail (str, optional): Level of detail for the response.
             Can be either 'minimal' or 'full'. Defaults to 'full'.
         with_nested (str, optional): Include nested fields?
