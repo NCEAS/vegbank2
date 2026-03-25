@@ -461,14 +461,14 @@ def test_stratum_methods_get_dispatches_to_operator(test_client):
     assert mock_get_vegbank_resources.call_count == 1
 
 
-def test_stratum_methods_post_calls_upload_stratum_method_when_uploads_allowed(
+def test_stratum_methods_post_calls_upload_all_when_uploads_allowed(
     test_client,
 ):
     """Test that a post request to the stratum-methods endpoint is accepted when
     access mode allows uploads."""
     with patch.object(
         vegbankapi.StratumMethod,
-        "upload_stratum_method",
+        "upload_all",
         autospec=True,
         return_value=(
             {"uploaded": True},
