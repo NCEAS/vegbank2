@@ -47,6 +47,9 @@ auth:
   ## @param auth.roleName.contributor Scope name for the contributor role
   ## @param auth.roleName.user Scope name for the user role
   ## These scope names are used for authorization decisions. Override them per environment
+  # New deployment setup: After choosing a deployment name (e.g., `dev-vegbank-dev`),
+  # contact the Keycloak admin to register a new client. Provide the deployment name, required scopes and redirect URIs. 
+  # Then update this config with the new client ID and secret.
   ## (e.g., use "vegbank-dev:admin" in dev) so that dev and prod Keycloak realms stay separate.
   ##
   roleName:
