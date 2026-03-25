@@ -428,7 +428,9 @@ class UserDataset(Operator):
         # Publish the DOI with full DataCite metadata after the DB commit.
         if doi and ezid:
             vb_ds_code = to_return['resources']['ds'][0]['vb_ds_code']
-            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims)
+            userdataset_id = int(vb_ds_code.split('.')[1])
+            bounding_box = self._query_bounding_box(userdataset_id)
+            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims, bounding_box)
 
         return to_return
 
@@ -447,7 +449,47 @@ class UserDataset(Operator):
             logger.warning("DOI mint failed; dataset will be created without a DOI: %s", exc)
             return None, None
 
-    def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims) -> None:
+    def _query_bounding_box(self, userdataset_id: int) -> dict | None:
+        """Query the bounding box of all plots in a dataset.
+
+        Returns a dict with ``west``, ``east``, ``south``, ``north`` keys
+        (all floats), or ``None`` if no plot coordinates are available.
+
+        Args:
+            userdataset_id: Primary key of the userdataset record.
+        """
+        sql = """
+            SELECT
+                MIN(COALESCE(p.reallatitude,  p.latitude))   AS south,
+                MAX(COALESCE(p.reallatitude,  p.latitude))   AS north,
+                MIN(COALESCE(p.reallongitude, p.longitude))  AS west,
+                MAX(COALESCE(p.reallongitude, p.longitude))  AS east
+            FROM userdatasetitem dsi
+            JOIN observation ob
+                ON dsi.itemtable = 'observation'
+               AND dsi.itemrecord = ob.observation_id
+            JOIN plot p ON ob.plot_id = p.plot_id
+            WHERE dsi.userdataset_id = %s
+              AND COALESCE(p.reallatitude,  p.latitude)  IS NOT NULL
+              AND COALESCE(p.reallongitude, p.longitude) IS NOT NULL
+        """
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, (userdataset_id,))
+                    row = cur.fetchone()
+            if row and row["south"] is not None:
+                return {
+                    "west":  float(row["west"]),
+                    "east":  float(row["east"]),
+                    "south": float(row["south"]),
+                    "north": float(row["north"]),
+                }
+        except Exception as exc:
+            logger.warning("Bounding box query failed for userdataset_id=%s: %s", userdataset_id, exc)
+        return None
+
+    def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims, bounding_box: dict | None = None) -> None:
         """Publish a reserved DOI with full DataCite metadata.
 
         Must be called after the DB transaction commits so the VegBank accession
@@ -460,6 +502,8 @@ class UserDataset(Operator):
                 is included in the DataCite metadata as an Abstract when present.
             vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
             claims: Decoded JWT claims dict used to build the creator metadata.
+            bounding_box: Optional dict with ``west``, ``east``, ``south``, ``north``
+                keys (floats) representing the geographic extent of the dataset's plots.
         """
         orcid = extract_orcid(claims)
         description = dataset.get("description", "")
@@ -484,6 +528,7 @@ class UserDataset(Operator):
             }],
             dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
             funding_references=_VEGBANK_FUNDING_REFERENCES,
+            geo_locations=[{"box": bounding_box}] if bounding_box else None,
         )
         try:
             ezid.update_identifier(doi, {
