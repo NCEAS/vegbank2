@@ -34,7 +34,7 @@ resources:
     memory: 4Gi
 
 flyway:
-  dbHost: vegbankdb2-cnpg-rw
+  dbHost: vegbankdb-cnpg-rw
 
 database:
-  host: vegbankdb2-cnpg-rw
+  host: vegbankdb-cnpg-rw

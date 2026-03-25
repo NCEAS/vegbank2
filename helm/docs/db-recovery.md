@@ -14,16 +14,26 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 
 
 
-### Step 1: Edit your values overrides file (e.g. `values-cnpg.yaml`)
-
-- `init.enabled:` set to `true`
-- `init.method:` set to `recovery`
-- `backup.enabled:` set to `true` to ensure continuity of `ScheduledBackups` after recovery
-- `init.recoverFromBackup:` set to the name of the `backups.postgresql.cnpg.io` object to recover from
-- `persistence.size` and `persistence.storageClass` must match the values used by the original PVC that was backed up
+### Step 1: Create a New Cluster
 
 > [!CAUTION]
 > The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`)
+
+- Install the `cnpg` `helm` chart to create a new cluster (with a different name from the existing cluster, if there is one), in the same namespace.
+(In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`). 
+
+
+  ```sh
+  # replace <backup-name> with name of the backups.postgresql.cnpg.io object to recover from (see Tip below)
+  # replace <orig-storageclass> with the storageClass used for the original PVC
+  #
+  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg \
+            -f ./values-cnpg.yaml \
+            --set init.enabled=true \
+            --set init.method=recovery \
+            --set init.recoverFromBackup=<backup-name> \
+            --set persistence.storageClass=<orig-storageclass>
+  ```
 
 > [!TIP]
 > To see a list of backup volumeSnapshots:
@@ -35,15 +45,6 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 > vegbankdb-scheduled-backup-20260310210000   24h   vegbankdb-cnpg   volumeSnapshot   completed
 > vegbankdb-scheduled-backup-20260311210000   25m   vegbankdb-cnpg   volumeSnapshot   completed
 > ```
-
-### Step 2: Install the `cnpg` `helm` chart:
-
-Create a new cluster, with a different name from your existing cluster, in the same namespace.
-(In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`)
-
-- ```sh
-  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg -f ./values-cnpg.yaml
-  ```
 
 - Monitor progress:
 
@@ -72,7 +73,7 @@ Create a new cluster, with a different name from your existing cluster, in the s
   vegbankdb-scheduled-backup-20251208192351     2m20s  vegbankvelero-cnpg  volumeSnapshot  completed
   ```
 
-### Step 3: Update Clients to Point at the New Cluster.
+### Step 2: Update Clients to Point at the New Cluster.
 
 1. If you are running a pooler (e.g. `PGBouncer` in production):
    1. update pooler values overrides and redeploy:
@@ -106,7 +107,7 @@ Create a new cluster, with a different name from your existing cluster, in the s
       dbHost: vegbankdb-cnpg-rw    # point this to the new cluster name
     ```
 
-### Step 4: Clean Up the Old Cluster
+### Step 3: Clean Up the Old Cluster
 
 - ```sh
   $ helm uninstall vegbankolddb
