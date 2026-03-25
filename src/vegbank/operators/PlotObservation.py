@@ -79,7 +79,7 @@ class PlotObservation(Operator):
             'project_name': "pj.projectname",
             'rf_code': "'rf.' || pl.reference_id",
             'rf_label': "rf.reference_id_transl",
-            'has_observation_synonym': "ob.hasobservationsynonym",
+            'has_observation_synonym': "COALESCE(ob.hasobservationsynonym, false)",
             'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
@@ -250,7 +250,7 @@ class PlotObservation(Operator):
                                    main_columns['full'].items() if alias in [
                                        'area', 'author_obs_code', 'author_plot_code', 'country',
                                        'elevation', 'latitude', 'longitude', 'ob_code', 'pl_code',
-                                       'state_province', 'year'
+                                       'state_province', 'year', 'has_observation_synonym'
                                    ]}
         # identify minimal columns with nesting
         main_columns['minimal_nested'] = main_columns['minimal'] | {
