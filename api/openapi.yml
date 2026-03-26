@@ -3617,18 +3617,6 @@ components:
           type: string
           description: "RockType values conform to the lithic types in the FGDC Soil Geographic Data Standards, September 1997. http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF (pages 56-59)."
           example: "sandstone"
-        pl_notes_public:
-          type: boolean
-          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        pl_notes_mgt:
-          type: boolean
-          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        pl_revisions:
-          type: boolean
-          description: "TRUE indicates that revisions exist in vegPlot.Revision"
-          example: false
         previous_obs_id:
           type: string
           description: "VegBank observation identifier corresponding to the previous observation of this plot."
@@ -3751,10 +3739,6 @@ components:
           type: string
           description: "Description of the assumed successional status of the plot. This description is of necessity highly subjective."
           example: "mature"
-        number_of_taxa:
-          type: integer
-          description: "???"
-          example: 1
         basal_area:
           type: number
           format: float
@@ -3934,110 +3918,6 @@ components:
           format: float
           description: "The total cover, in percent, of all vegetation on the plot."
           example: 40
-        ob_notes_public:
-          type: boolean
-          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        ob_notes_mgt:
-          type: boolean
-          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        ob_revisions:
-          type: boolean
-          description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
-          example: false
-        interp_orig_ci_code:
-          type: string
-          description: "VegBank community interpretation code of the original interpretation"
-          example: "ci.1"
-        interp_orig_cc_code:
-          type: string
-          description: "VegBank community concept code of the original interpretation"
-          example: "cc.1"
-        interp_orig_sciname:
-          type: string
-          description: "Scientific name of the original interpreted community concept"
-          example: "Pinus ponderosa Woodland Alliance"
-        interp_orig_code:
-          type: string
-          description: "Communty code of the original interpreted community concept"
-          example: "CEGL006271"
-        interp_orig_py_code:
-          type: string
-          description: "Classification party of the original interpreted community concept"
-          example: "py.1"
-        interp_orig_partyname:
-          type: string
-          description: "Classification party name for the original interpreted community concept"
-          example: "Doe, John"
-        interp_current_ci_code:
-          type: string
-          description: "VegBank community interpretation code of the current interpretation"
-          example: "ci.1"
-        interp_current_cc_code:
-          type: string
-          description: "VegBank community concept code of the current interpretation"
-          example: "cc.1"
-        interp_current_sciname:
-          type: string
-          description: "Scientific name of the current interpreted community concept"
-          example: "Pinus ponderosa Woodland Alliance"
-        interp_current_code:
-          type: string
-          description: "VegBank community concept code of the current interpretation"
-          example: "CEGL006271"
-        interp_current_py_code:
-          type: string
-          description: "Classification party of the current interpreted community concept"
-          example: "py.123"
-        interp_current_partyname:
-          type: string
-          description: "Classification party name for the current interpreted community concept"
-          example: "Doe, John"
-        interp_bestfit_ci_code:
-          type: string
-          description: "VegBank community interpretation code of the best fit interpretation"
-          example: "ci.123"
-        interp_bestfit_cc_code:
-          type: string
-          description: "VegBank community concept code of the best fit interpretation"
-          example: "cc.123"
-        interp_bestfit_sciname:
-          type: string
-          description: "Scientific name of the best fit interpreted community concept"
-          example: "Pinus ponderosa Woodland Alliance"
-        interp_bestfit_code:
-          type: string
-          description: "VegBank community concept code of the best fit interpretation"
-          example: "CEGL006271"
-        interp_bestfit_py_code:
-          type: string
-          description: "Classification party of the best fit interpreted community concept"
-          example: "py.123"
-        interp_bestfit_partyname:
-          type: string
-          description: "Classification party name for the best fit interpreted community concept"
-          example: "Doe, John"
-        top_taxon1_name:
-          type: string
-          description: "Name of the most common observed taxon based on max cover across strata"
-          example: "Artemisia tridentata ssp. wyomingensis"
-        top_taxon2_name:
-          type: string
-          description: "Name of the second most common observed taxon based on max cover across strata"
-          example: "Juniperus osteosperma"
-        top_taxon3_name:
-          type: string
-          description: "Name of the third most common observed taxon based on max cover across strata"
-          example: "Plantae"
-        top_taxon4_name:
-          type: string
-          description: "Name of the fourth most common observed taxon based on max cover across strata"
-          example: "Gutierrezia sarothrae"
-        top_taxon5_name:
-          type: string
-          description: "Name of the fifth most common observed taxon based on max cover across strata"
-          example: "Acer rubrum"
         has_observation_synonym:
           type: boolean
           description: "Does this observation have an observation synonym record?"
@@ -5274,7 +5154,7 @@ components:
         inference_area:
           type: number
           format: float
-          description: "Area used to infer the importance values of the taxon, if not the 
+          description: "Area used to infer the importance values of the taxon, if not the
             same as plot-observation taxon_inference_area"
           example: 1000
         stratum_base:
@@ -5625,14 +5505,6 @@ components:
           type: string
           description: "Notes that the interpreter has included with the interpretation (generally, the reason for the interpretation)"
           example: "Identified from specimen"
-        notes_public:
-          type: boolean
-          description: "Have public notes pertaining to this plot been recorded in Vegbank?"
-          example: False
-        notes_mgt:
-          type: boolean
-          description: "Have non-public management notes pertaining to this plot been recorded in Vegbank?"
-          example: False
         is_orig:
           type: boolean
           description: "Is this the original interpretation?"
@@ -5681,10 +5553,6 @@ components:
           type: string
           description: "Reference label for the publication in which the interpretation was formally made, or in which the plot was used in a formal analysis"
           example: "Keeler-Wolf and Evens 2006"
-        revisions:
-          type: boolean
-          description: "Do revisions exists in Vegbank?"
-          example: False
 
     taxon_interp_minimal:
       allOf:

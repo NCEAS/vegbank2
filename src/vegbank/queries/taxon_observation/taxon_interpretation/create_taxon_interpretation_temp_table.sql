@@ -22,7 +22,5 @@ CREATE TEMPORARY TABLE taxon_interpretation_temp(
     vb_museum_py_code TEXT, -- This has no nonzero values currently
     museumaccessionnumber character varying(100),
     grouptype character varying(20),
-    notes text,
-    notespublic boolean,
-    notesmgt boolean
+    notes text
 );

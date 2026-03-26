@@ -42,7 +42,5 @@ CREATE TEMP TABLE plot_temp (
     dateentered timestamp with time zone DEFAULT now(),
     submitter_surname character varying(100),
     submitter_givenname character varying(100),
-    submitter_email character varying(100),
-    pl_notes_public boolean,
-    pl_notes_mgt boolean
+    submitter_email character varying(100)
 );
