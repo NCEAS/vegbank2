@@ -69,8 +69,6 @@ WHEN NOT MATCHED THEN
     growthform2cover,
     growthform3cover,
     totalcover,
-    notespublic,
-    notesmgt,
     hasobservationsynonym,
     emb_observation
   ) VALUES (
@@ -139,8 +137,6 @@ WHEN NOT MATCHED THEN
     growthform2cover,
     growthform3cover,
     totalcover,
-    ob_notes_public,
-    ob_notes_mgt,
     hasobservationsynonym,
     0
   )
