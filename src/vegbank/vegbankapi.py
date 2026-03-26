@@ -1208,7 +1208,7 @@ def user_datasets(ds_code, claims=None):
 
     if request.method == 'POST':
         try:
-            to_return = UserDataset(params).upload_user_dataset_from_endpoint(request)
+            to_return = UserDataset(params).upload_user_dataset_from_endpoint(request, claims=claims)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
