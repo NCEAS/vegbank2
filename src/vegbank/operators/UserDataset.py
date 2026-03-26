@@ -1,9 +1,11 @@
 import logging
 import os
 from datetime import datetime
+
 import pandas as pd
 from psycopg import connect
 from psycopg.rows import dict_row
+
 from vegbank.auth import extract_orcid
 from vegbank.ezid import EZIDClient, EZIDError
 from vegbank.operators.operator_parent_class import Operator
@@ -11,6 +13,27 @@ from vegbank.operators import table_defs_config as table_defs
 from vegbank.utilities import load_sql, jsonify_error_message, validate_dataset_json, dry_run_check
 
 logger = logging.getLogger(__name__)
+
+# Organizations that contributed to VegBank infrastructure.
+# Included on every VegBank DOI record.
+_VEGBANK_CONTRIBUTORS: list[dict] = [
+    {
+        "name": "National Center for Ecological Analysis and Synthesis",
+        "type": "HostingInstitution",
+        "name_type": "Organizational",
+        "name_identifier": "https://ror.org/0146z4r19",
+        "name_identifier_scheme": "ROR",
+        "name_identifier_scheme_uri": "https://ror.org/",
+    },
+    {
+        "name": "Ecological Society of America",
+        "type": "Sponsor",
+        "name_type": "Organizational",
+        "name_identifier": "https://ror.org/03y54e085",
+        "name_identifier_scheme": "ROR",
+        "name_identifier_scheme_uri": "https://ror.org/",
+    },
+]
 
 # Fixed funding references included on every VegBank DOI record.
 # These grants funded the VegBank infrastructure and do not vary per-dataset.
@@ -52,13 +75,11 @@ class UserDataset(Operator):
     methods.
     """
 
-
     def __init__(self, params):
         super().__init__(params)
         self.name = "user_dataset"
         self.table_code = "ds"
         self.queries_package = f"{self.queries_package}.{self.name}"
-
 
     def configure_query(self, *args, **kwargs):
         base_columns = {'*': "*"}
@@ -72,6 +93,7 @@ class UserDataset(Operator):
             'description': "ds.datasetdescription",
             'type': "ds.datasettype",
             'owner_label': "py.party_id_transl",
+            'owner_py_code': "'py.' || py.party_id",
             'owner_email': "usr.email_address",
             'py_code': "'py.' || usr.party_id",
             'obs_count':  "(SELECT COUNT(*) FROM userdatasetitem dsi" +
@@ -127,7 +149,6 @@ class UserDataset(Operator):
             'sql': from_sql,
             'params': []
         }
-
 
     def upload_user_dataset(self, dataset, conn, validate=False, claims=None, doi=None):
         """Upload a user dataset to VegBank.
@@ -221,10 +242,10 @@ class UserDataset(Operator):
             to_return = {
                 'counts': {
                     'di': {
-                        "inserted" : len(new_dataset_items['resources']['di'])
+                        "inserted": len(new_dataset_items['resources']['di'])
                     },
                     'ds': {
-                        "inserted" : 1
+                        "inserted": 1
                     }
                 },
                 'resources': {
@@ -240,7 +261,6 @@ class UserDataset(Operator):
                 }
             }
         return to_return
-
 
     def _upsert_party_and_get_usr_id(self, cur, claims) -> int | None:
         """Handle party upsert and usr_id lookup/creation from JWT claims.
@@ -268,7 +288,6 @@ class UserDataset(Operator):
         self._store_orcid_identifier(cur, party_id, orcid)
         return self._get_or_create_usr(cur, party_id, email, claims)
 
-
     @staticmethod
     def _parse_name_from_claims(claims) -> tuple[str, str]:
         """Return ``(given_name, family_name)`` parsed from JWT claims.
@@ -290,7 +309,6 @@ class UserDataset(Operator):
             given = parts[0] if parts else ""
             family = parts[1] if len(parts) > 1 else ""
         return given, family
-
 
     @staticmethod
     def _upsert_party(
@@ -339,7 +357,6 @@ class UserDataset(Operator):
         )
         return cur.fetchone()["party_id"]
 
-
     @staticmethod
     def _store_orcid_identifier(cur, party_id: int, orcid: str) -> None:
         """Record the ORCID in the identifiers table for this party (idempotent).
@@ -356,7 +373,6 @@ class UserDataset(Operator):
                ON CONFLICT (identifier_type, identifier_value) DO NOTHING""",
             (party_id, orcid),
         )
-
 
     @staticmethod
     def _get_or_create_usr(cur, party_id: int, email: str, claims) -> int:
@@ -389,7 +405,6 @@ class UserDataset(Operator):
         usr_id = cur.fetchone()["usr_id"]
         logger.info("Created usr record usr_id=%s for party_id=%s", usr_id, party_id)
         return usr_id
-
 
     def upload_user_dataset_from_endpoint(self, request, claims=None):
         """Handle an HTTP request to upload a user dataset.
@@ -429,7 +444,10 @@ class UserDataset(Operator):
         # Publish the DOI with full DataCite metadata after the DB commit.
         if doi and ezid:
             vb_ds_code = to_return['resources']['ds'][0]['vb_ds_code']
-            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims)
+            userdataset_id = int(vb_ds_code.split('.')[1])
+            bounding_box = self._query_bounding_box(userdataset_id)
+            subjects = self._query_top_taxa(userdataset_id)
+            self._publish_doi(ezid, doi, dataset, vb_ds_code, claims, bounding_box, subjects)
 
         return to_return
 
@@ -448,7 +466,16 @@ class UserDataset(Operator):
             logger.warning("DOI mint failed; dataset will be created without a DOI: %s", exc)
             return None, None
 
-    def _publish_doi(self, ezid: "EZIDClient", doi: str, dataset: dict, vb_ds_code: str, claims) -> None:
+    def _publish_doi(
+        self,
+        ezid: "EZIDClient",
+        doi: str,
+        dataset: dict,
+        vb_ds_code: str,
+        claims,
+        bounding_box: dict | None = None,
+        subjects: list[dict] | None = None,
+    ) -> None:
         """Publish a reserved DOI with full DataCite metadata.
 
         Must be called after the DB transaction commits so the VegBank accession
@@ -457,17 +484,27 @@ class UserDataset(Operator):
         Args:
             ezid: Authenticated EZID client instance.
             doi: Reserved DOI string to publish (e.g. ``"doi:10.5072/FK2XXXXX"``).
-            dataset: Dataset dict containing at least a ``name`` key.
+            dataset: Dataset dict containing at least a ``name`` key; ``description``
+                is included in the DataCite metadata as an Abstract when present.
             vb_ds_code: VegBank accession code for the dataset (e.g. ``"ds.42"``).
             claims: Decoded JWT claims dict used to build the creator metadata.
+            bounding_box: Optional dict with ``west``, ``east``, ``south``, ``north``
+                keys (floats) representing the geographic extent of the dataset's plots.
+            subjects: Optional list of subject dicts (e.g. top taxa) compatible with
+                ``EZIDClient.build_datacite_xml``.
         """
         orcid = extract_orcid(claims)
+        description = dataset.get("description", "")
+        descriptions = [{"text": description, "type": "Abstract"}] if description else None
         xml_bytes = EZIDClient.build_datacite_xml(
             doi=doi.replace("doi:", ""),
-            title=f'Vegbank plot observations: "{dataset["name"]}"',
+            title=f'Vegbank plot observations: {dataset["name"]}',
             publisher="VegBank",
             publication_year=datetime.now().year,
             creators=self._build_datacite_creators(claims, orcid),
+            descriptions=descriptions,
+            subjects=subjects or None,
+            contributors=_VEGBANK_CONTRIBUTORS,
             alternate_identifiers=[{
                 "value": f"vegbank:{vb_ds_code}",
                 "type": "VegBank Accession Code",
@@ -481,6 +518,7 @@ class UserDataset(Operator):
             }],
             dates=[{"date": datetime.now().strftime("%Y-%m-%d"), "type": "Created"}],
             funding_references=_VEGBANK_FUNDING_REFERENCES,
+            geo_locations=[{"box": bounding_box}] if bounding_box else None,
         )
         try:
             ezid.update_identifier(doi, {
@@ -519,3 +557,119 @@ class UserDataset(Operator):
             creator["name_identifier_scheme"] = "ORCID"
             creator["name_identifier_scheme_uri"] = "https://orcid.org/"
         return [creator]
+
+    def _query_bounding_box(self, userdataset_id: int) -> dict | None:
+        """Query the bounding box of all plots in a dataset.
+
+        Returns a dict with ``west``, ``east``, ``south``, ``north`` keys
+        (all floats), or ``None`` if no plot coordinates are available.
+
+        Args:
+            userdataset_id: Primary key of the userdataset record.
+        """
+        sql = """
+            SELECT
+                MIN(COALESCE(p.reallatitude,  p.latitude))   AS south,
+                MAX(COALESCE(p.reallatitude,  p.latitude))   AS north,
+                MIN(COALESCE(p.reallongitude, p.longitude))  AS west,
+                MAX(COALESCE(p.reallongitude, p.longitude))  AS east
+            FROM userdatasetitem dsi
+            JOIN observation ob
+                ON dsi.itemtable = 'observation'
+               AND dsi.itemrecord = ob.observation_id
+            JOIN plot p ON ob.plot_id = p.plot_id
+            WHERE dsi.userdataset_id = %s
+              AND COALESCE(p.reallatitude,  p.latitude)  IS NOT NULL
+              AND COALESCE(p.reallongitude, p.longitude) IS NOT NULL
+        """
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, (userdataset_id,))
+                    row = cur.fetchone()
+            if row and row["south"] is not None:
+                return {
+                    "west":  float(row["west"]),
+                    "east":  float(row["east"]),
+                    "south": float(row["south"]),
+                    "north": float(row["north"]),
+                }
+        except Exception as exc:
+            logger.warning("Bounding box query failed for userdataset_id=%s: %s", userdataset_id, exc)
+        return None
+
+    _TAXA_SUBJECT_SCHEME = "Vegbank Taxonomic Observation"
+    _TAXA_SCHEME_URI = "https://www.vegbank.org/cite"
+
+    def _query_top_taxa(self, userdataset_id: int, limit: int = 10) -> list[dict]:
+        """Query the most frequently occurring taxa across all plot observations in a dataset.
+
+        Uses the current interpreted scientific name without authority
+        (``int_currplantscinamenoauth``), falling back to the full scientific
+        name then the author-entered name.  Results are ordered by descending
+        occurrence count so the most ecologically representative taxa appear
+        first.
+
+        Each returned subject dict includes ``scheme``, ``scheme_uri``, and
+        ``value_uri`` populated from the taxon observation's ``vb_code``
+        identifier (e.g. ``to.64982``).
+
+        Args:
+            userdataset_id: Primary key of the userdataset record.
+            limit: Maximum number of taxa to return (default 10).
+
+        Returns:
+            List of subject dicts compatible with ``EZIDClient.build_datacite_xml``,
+            e.g. ``[{"value": "Quercus alba", "scheme": "Vegbank Taxonomic Observation",
+            "scheme_uri": "https://www.vegbank.org/cite",
+            "value_uri": "https://www.vegbank.org/cite/to.64982"}, ...]``.
+            Returns an empty list when no taxa are found or the query fails.
+        """
+        sql = """
+            SELECT
+                COALESCE(
+                    NULLIF(txo.int_currplantscinamenoauth, ''),
+                    NULLIF(txo.int_currplantscifull, ''),
+                    NULLIF(txo.authorplantname, '')
+                ) AS taxon_name,
+                i.identifier_value AS vb_code,
+                COUNT(*) AS occurrence_count
+            FROM userdatasetitem dsi
+            JOIN observation ob
+                ON dsi.itemtable = 'observation'
+               AND dsi.itemrecord = ob.observation_id
+            JOIN taxonobservation txo
+                ON txo.observation_id = ob.observation_id
+            LEFT JOIN identifiers i
+                ON i.vb_table_code = 'to'
+               AND i.vb_record_id = txo.taxonobservation_id
+               AND i.identifier_type = 'vb_code'
+            WHERE dsi.userdataset_id = %s
+              AND COALESCE(
+                    NULLIF(txo.int_currplantscinamenoauth, ''),
+                    NULLIF(txo.int_currplantscifull, ''),
+                    NULLIF(txo.authorplantname, '')
+                  ) IS NOT NULL
+            GROUP BY taxon_name, i.identifier_value
+            ORDER BY occurrence_count DESC
+            LIMIT %s
+        """
+        try:
+            with connect(**self.params, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, (userdataset_id, limit))
+                    rows = cur.fetchall()
+            subjects = []
+            for row in rows:
+                subject: dict = {
+                    "value": row["taxon_name"],
+                    "scheme": self._TAXA_SUBJECT_SCHEME,
+                    "scheme_uri": self._TAXA_SCHEME_URI,
+                }
+                if row["vb_code"]:
+                    subject["value_uri"] = f"{self._TAXA_SCHEME_URI}/{row['vb_code']}"
+                subjects.append(subject)
+            return subjects
+        except Exception as exc:
+            logger.warning("Top taxa query failed for userdataset_id=%s: %s", userdataset_id, exc)
+            return []
