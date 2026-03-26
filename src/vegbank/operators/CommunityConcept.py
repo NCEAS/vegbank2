@@ -469,6 +469,9 @@ class CommunityConcept(Operator):
                     data['cc'], conn, what_to_deactivate = what_to_deactivate)
                 dataset['commconcept'] = [item['vb_cc_code']
                                        for item in cc_actions['resources']['cc']]
+                dataset['commname'] = [item['vb_cn_code']
+                                            for item in cc_actions['resources']['cn']
+                                            if item['action'] == 'INSERT']
                 to_return = combine_json_return(to_return, cc_actions)
 
                 # Prep & insert any new community names
@@ -494,6 +497,9 @@ class CommunityConcept(Operator):
                             {"user_py_code": "user_usage_py_code",
                              "vb_py_code": "vb_usage_py_code"})
                     cn_actions = self.upload_community_names(data['cn'], conn)
+                    dataset['commname'] += [item['vb_cn_code']
+                                            for item in cn_actions['resources']['cun']
+                                            if item['action'] == 'INSERT']
                     to_return = combine_json_return(to_return, cn_actions)
                 else:
                     cn_actions = None
