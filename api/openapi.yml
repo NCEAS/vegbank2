@@ -3617,18 +3617,6 @@ components:
           type: string
           description: "RockType values conform to the lithic types in the FGDC Soil Geographic Data Standards, September 1997. http://www.fgdc.gov/standards/documents/standards/soils/soil997.PDF (pages 56-59)."
           example: "sandstone"
-        pl_notes_public:
-          type: boolean
-          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        pl_notes_mgt:
-          type: boolean
-          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        pl_revisions:
-          type: boolean
-          description: "TRUE indicates that revisions exist in vegPlot.Revision"
-          example: false
         previous_obs_id:
           type: string
           description: "VegBank observation identifier corresponding to the previous observation of this plot."
@@ -3934,18 +3922,6 @@ components:
           format: float
           description: "The total cover, in percent, of all vegetation on the plot."
           example: 40
-        ob_notes_public:
-          type: boolean
-          description: "TRUE indicates that public notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        ob_notes_mgt:
-          type: boolean
-          description: "TRUE indicates that nonpublic management notes pertaining to this plot exist in 'vegPlot.note'"
-          example: false
-        ob_revisions:
-          type: boolean
-          description: "TRUE indicates that revisions exist in 'vegPlot.Revision'"
-          example: false
         interp_orig_ci_code:
           type: string
           description: "VegBank community interpretation code of the original interpretation"
@@ -5625,14 +5601,6 @@ components:
           type: string
           description: "Notes that the interpreter has included with the interpretation (generally, the reason for the interpretation)"
           example: "Identified from specimen"
-        notes_public:
-          type: boolean
-          description: "Have public notes pertaining to this plot been recorded in Vegbank?"
-          example: False
-        notes_mgt:
-          type: boolean
-          description: "Have non-public management notes pertaining to this plot been recorded in Vegbank?"
-          example: False
         is_orig:
           type: boolean
           description: "Is this the original interpretation?"
@@ -5681,10 +5649,6 @@ components:
           type: string
           description: "Reference label for the publication in which the interpretation was formally made, or in which the plot was used in a formal analysis"
           example: "Keeler-Wolf and Evens 2006"
-        revisions:
-          type: boolean
-          description: "Do revisions exists in Vegbank?"
-          example: False
 
     taxon_interp_minimal:
       allOf:
