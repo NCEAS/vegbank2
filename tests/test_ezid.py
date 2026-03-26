@@ -238,6 +238,71 @@ def test_minimal_build_omits_optional_elements():
     assert root.find(f"{{{NS}}}fundingReferences") is None
 
 
+def test_subjects_with_taxa_scheme_attributes():
+    """Confirm that taxa subjects render subjectScheme, schemeURI, and valueURI attributes."""
+    xml_bytes = EZIDClient.build_datacite_xml(
+        doi="10.5072/FK2",
+        title="Taxa Subject Dataset",
+        publisher="Vegbank",
+        publication_year=2026,
+        subjects=[
+            {
+                "value": "Lichen",
+                "scheme": "Vegbank Taxonomic Observations",
+                "scheme_uri": "https://www.vegbank.org",
+                "value_uri": "https://www.vegbank.org/cite/to.64982",
+            },
+            {
+                "value": "Quercus alba",
+                "scheme": "Vegbank Taxonomic Observations",
+                "scheme_uri": "https://www.vegbank.org",
+                "value_uri": "https://www.vegbank.org/cite/to.12345",
+            },
+        ],
+    )
+    root = etree.fromstring(xml_bytes)
+    subjects = root.findall(f"{{{NS}}}subjects/{{{NS}}}subject")
+    assert len(subjects) == 2
+
+    lichen = subjects[0]
+    assert lichen.text == "Lichen"
+    assert lichen.get("subjectScheme") == "Vegbank Taxonomic Observations"
+    assert lichen.get("schemeURI") == "https://www.vegbank.org"
+    assert lichen.get("valueURI") == "https://www.vegbank.org/cite/to.64982"
+
+    quercus = subjects[1]
+    assert quercus.text == "Quercus alba"
+    assert quercus.get("valueURI") == "https://www.vegbank.org/cite/to.12345"
+
+
+def test_subject_without_value_uri_omits_attribute():
+    """Confirm that a subject dict without value_uri renders no valueURI attribute."""
+    xml_bytes = EZIDClient.build_datacite_xml(
+        doi="10.5072/FK2",
+        title="No URI Subject Dataset",
+        publisher="Vegbank",
+        publication_year=2026,
+        subjects=[{"value": "Lichen", "scheme": "Vegbank Taxonomic Observations", "scheme_uri": "https://www.vegbank.org"}],
+    )
+    root = etree.fromstring(xml_bytes)
+    subject = root.find(f"{{{NS}}}subjects/{{{NS}}}subject")
+    assert subject.text == "Lichen"
+    assert subject.get("subjectScheme") == "Vegbank Taxonomic Observations"
+    assert subject.get("valueURI") is None
+
+
+def test_minimal_build_omits_subjects():
+    """Confirm that subjects element is absent when no subjects are provided."""
+    xml_bytes = EZIDClient.build_datacite_xml(
+        doi="10.5072/FK2",
+        title="Minimal Dataset",
+        publisher="Vegbank",
+        publication_year=2026,
+    )
+    root = etree.fromstring(xml_bytes)
+    assert root.find(f"{{{NS}}}subjects") is None
+
+
 def test_multiple_creators_all_present():
     """Confirm that all creators are written when multiple creators are provided."""
     xml_bytes = EZIDClient.build_datacite_xml(
