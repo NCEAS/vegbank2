@@ -2398,6 +2398,63 @@ paths:
           $ref: "#/components/responses/UserDatasets"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+    post:
+      tags:
+        - User Datasets
+      operationId: upload-ds
+      security:
+        - oauth2:
+            - vegbank:admin
+      summary: Create a user dataset
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - data
+              properties:
+                name:
+                  type: string
+                  description: Display name for the dataset.
+                  example: "Test Dataset 001"
+                description:
+                  type: string
+                  description: Optional human-readable description of the dataset.
+                  example: "A test dataset containing 3 observations."
+                data:
+                  type: object
+                  required:
+                    - observation
+                  properties:
+                    observation:
+                      type: array
+                      items:
+                        type: string
+                      description: VegBank observation codes to include in the dataset.
+                      example:
+                        - "ob.2948"
+                        - "ob.2949"
+                        - "ob.2950"
+      responses:
+        '200':
+          description: >
+            Successful dataset creation. When `dry_run=false` (default), returns
+            a summary of what was inserted. When `dry_run=true`, the same
+            summary is nested under `dry_run_data` and the dataset is not actually
+            created in VegBank.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
 
   /overview:
     get:
