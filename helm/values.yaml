@@ -119,6 +119,23 @@ flyway:
   ##
   dbPort: 5432
 
+## @section EZID Configuration
+## Configuration for the EZID DOI service used to mint and manage DOIs.
+##
+ezid:
+  ## @param ezid.baseUrl Base URL of the EZID API
+  ##
+  baseUrl: "https://ezid.cdlib.org"
+  ## @param ezid.doiPrefix DOI prefix (e.g. doi:10.5072 for test, doi:10.xxxxx for production)
+  ##
+  doiPrefix: "doi:10.5072"
+  ## @param ezid.doiShoulder DOI shoulder for minting (e.g. FK2 for test)
+  ##
+  doiShoulder: "FK2"
+  ## @param ezid.defaultTargetUrl Default target URL for minted DOIs
+  ##  
+  defaultTargetUrl: "https://vegbank.org/cite/"
+
 ## @section VegBank API Docker Image
 ## Configuration for the docker image of the Flask API.
 image:

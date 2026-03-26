@@ -206,6 +206,15 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
 | `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
 
+### EZID Configuration
+
+| Name                    | Description                                                         | Value                       |
+| ----------------------- | ------------------------------------------------------------------- | --------------------------- |
+| `ezid.baseUrl`          | Base URL of the EZID API                                            | `https://ezid.cdlib.org`    |
+| `ezid.doiPrefix`        | DOI prefix (e.g. doi:10.5072 for test, doi:10.xxxxx for production) | `doi:10.5072`               |
+| `ezid.doiShoulder`      | DOI shoulder for minting (e.g. FK2 for test)                        | `FK2`                       |
+| `ezid.defaultTargetUrl` | Default target URL for minted DOIs                                  | `https://vegbank.org/cite/` |
+
 ### VegBank API Docker Image
 
 | Name               | Description                                                                 | Value                   |
