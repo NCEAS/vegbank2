@@ -42,8 +42,6 @@ plot = [
     'submitter_surname',
     'submitter_givenname',
     'submitter_email',
-    'pl_notes_public',
-    'pl_notes_mgt'
 ]
 
 observation = [
@@ -114,8 +112,6 @@ observation = [
     'growthform_2_cover',         
     'growthform_3_cover',         
     'total_cover',                   
-    'ob_notes_public',              
-    'ob_notes_mgt',                   
     'has_observation_synonym'
 ]
 
@@ -170,34 +166,34 @@ soiltaxon = [
 ]
 
 cover_method = [
-    'user_code',
-    'rf_code',
-    'covertype',
-    'coverestimationmethod'
+    'user_cm_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'cover_type',
+    'cover_estimation_method'
 ]
 
 cover_index = [
-    'covermethod_id',
-    'covercode',
-    'upperlimit',
-    'lowerlimit',
-    'coverpercent',
-    'indexdescription'
+    'cover_code',
+    'upper_limit',
+    'lower_limit',
+    'cover_percent',
+    'index_description'
 ]
 
 stratum_method = [
-    'user_code',
-    'rf_code',
-    'stratummethodname',
-    'stratummethoddescription',
-    'stratumassignment'
+    'user_sm_code',
+    'user_rf_code',
+    'vb_rf_code',
+    'stratum_method_name',
+    'stratum_method_description',
+    'stratum_assignment'
 ]
 
 stratum_type = [
-    'stratummethod_id',
-    'stratumindex',
-    'stratumname',
-    'stratumdescription'
+    'stratum_index',
+    'stratum_name',
+    'stratum_description'
 ]
 
 taxon_importance = [
@@ -263,7 +259,7 @@ comm_interp = [
     'user_authority_rf_code',
     'interp_notes',
     'type',
-    'nomenclaturaltype'
+    'nomenclatural_type'
 ]
 
 # system added:
@@ -446,8 +442,6 @@ taxon_interpretation = [
     'museum_accession_number',
     'group_type',
     'notes',
-    'notes_public',
-    'notes_mgt',
     'user_to_code',
 ]
 reinterpretation = [
@@ -473,8 +467,6 @@ reinterpretation = [
     'museum_accession_number',
     'group_type',
     'notes',
-    'notes_public',
-    'notes_mgt',
     'vb_to_code'
 ]
 

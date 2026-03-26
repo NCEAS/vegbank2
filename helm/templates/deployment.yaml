@@ -28,6 +28,10 @@ spec:
         configMap:
           name: {{ .Release.Name }}-db-files
           defaultMode: 0644
+      - name: {{ .Release.Name }}-vegbank-config-volume
+        configMap:
+          name: {{ .Release.Name }}-vegbank-config
+          defaultMode: 0644
       {{- if .Values.databaseRestore.enabled }}
       - name: vegbankdb-init-pgdata
         persistentVolumeClaim:
@@ -153,6 +157,9 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            - name: {{ .Release.Name }}-vegbank-config-volume
+              mountPath: "/conf/"
+              readOnly: true
           {{- if eq .Values.auth.accessMode "authenticated" }}
             - name: oidc-config
               mountPath: /etc/vegbank/oidc
@@ -164,6 +171,12 @@ spec:
           env:
             - name: VB_ACCESS_MODE
               value: {{ .Values.auth.accessMode | quote }}
+            - name: VB_SCOPE_ADMIN
+              value: {{ .Values.auth.roleName.admin | quote }}
+            - name: VB_SCOPE_CONTRIBUTOR
+              value: {{ .Values.auth.roleName.contributor | quote }}
+            - name: VB_SCOPE_USER
+              value: {{ .Values.auth.roleName.user | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -191,6 +204,11 @@ spec:
                   name: vegbank-flask-secret
                   key: secret_key
             {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-ezid-config
+            - secretRef:
+                name: {{ .Release.Name }}-vegbank-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

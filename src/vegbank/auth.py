@@ -30,8 +30,9 @@ Decorator overview
 
 import functools
 import json
-import os
 import logging
+import os
+import re
 from requests import RequestException
 
 import requests as _requests
@@ -43,7 +44,7 @@ from authlib.jose.errors import BadSignatureError, DecodeError, InvalidTokenErro
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import InvalidGrantError, InvalidClientError
 
-from flask import Blueprint, g, jsonify, request, session, url_for
+from flask import Blueprint, g, jsonify, request, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 _DEFAULT_SECRETS_PATH = "/etc/vegbank/oidc/client_secrets.json"
@@ -52,10 +53,10 @@ MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent D
 class MissingParameterError(Exception):
     """Raised when a required request parameter is missing."""
 
-# VegBank-specific scopes
-SCOPE_ADMIN = "vegbank:admin"
-SCOPE_CONTRIBUTOR = "vegbank:contributor"
-SCOPE_USER = "vegbank:user"
+# VegBank-specific scopes — configurable via environment variables set by Helm
+SCOPE_ADMIN = os.getenv("VB_SCOPE_ADMIN", "vegbank:admin")
+SCOPE_CONTRIBUTOR = os.getenv("VB_SCOPE_CONTRIBUTOR", "vegbank:contributor")
+SCOPE_USER = os.getenv("VB_SCOPE_USER", "vegbank:user")
 
 # Deployment modes
 ACCESS_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth
@@ -279,15 +280,49 @@ def _token_response(token: dict, message: str = "Token exchange successful"):
     )
 
 
+_ORCID_HTTPS_PREFIX = "https://orcid.org/"
+_ORCID_HTTP_PREFIX = "http://orcid.org/"
+
+
+def extract_orcid(claims: dict | None) -> str | None:
+    """Extract a normalised ORCID iD URI from JWT claims.
+
+    Reads the ``orcid`` claim.  The returned value is always the canonical
+    HTTPS URI form (``https://orcid.org/XXXX-XXXX-XXXX-XXXX``).
+
+    Args:
+        claims: Decoded JWT claims dict, or ``None``.
+
+    Returns:
+        Canonical ORCID URI (e.g. ``"https://orcid.org/0000-0002-1825-0097"``),
+        or ``None`` if the ``orcid`` claim is absent or malformed.
+    """
+    if not claims:
+        return None
+
+    raw = claims.get("orcid")
+
+    if not raw or not isinstance(raw, str):
+        return None
+
+    # Strip http(s)://orcid.org/ prefix, leaving just the bare ID
+    if raw.startswith(_ORCID_HTTPS_PREFIX):
+        bare = raw[len(_ORCID_HTTPS_PREFIX):]
+    elif raw.startswith(_ORCID_HTTP_PREFIX):
+        bare = raw[len(_ORCID_HTTP_PREFIX):]
+    else:
+        bare = raw
+
+    # Validate: XXXX-XXXX-XXXX-XXXX where the last character may be X (checksum digit)
+    if not re.fullmatch(r"\d{4}-\d{4}-\d{4}-\d{3}[0-9X]", bare):
+        return None
+
+    return _ORCID_HTTPS_PREFIX + bare
+
+
 def _store_user_context(claims):
-    """Store decoded token claims in request and session context."""
+    """Store decoded token claims in request context."""
     g.token_claims = claims
-    session["userinfo"] = {
-        "sub": claims.get("sub"),
-        "preferred_username": claims.get("preferred_username"),
-        "email": claims.get("email"),
-        "name": claims.get("name"),
-    }
 
 
 def _validate_and_extract_claims(required_scope=None):
@@ -460,7 +495,7 @@ def login():
         return _auth_error_response(f"Authentication is disabled in '{mode}' mode.", 403)
 
     try:
-        return oauth.vegbank_oidc.authorize_redirect(url_for("auth.authorize", _external=True))
+        return oauth.vegbank_oidc.authorize_redirect(url_for("main.auth.authorize", _external=True))
     except (OAuthError, RequestException) as exc:
         logger.warning("OIDC authorize_redirect error: %s", exc)
         return _token_error_response(exc)

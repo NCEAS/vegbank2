@@ -41,9 +41,7 @@ INSERT INTO plot_temp (
     dateentered,
     submitter_surname,
     submitter_givenname,
-    submitter_email,
-    pl_notes_public,
-    pl_notes_mgt
+    submitter_email
     )
 VALUES(
     %s, %s, %s, %s, %s, 
@@ -54,5 +52,5 @@ VALUES(
     %s, %s, %s, %s, %s,
     %s, %s, %s, %s, %s,
     %s, %s, %s, %s, %s,
-    %s, %s, %s, %s, %s
+    %s, %s, %s
 );

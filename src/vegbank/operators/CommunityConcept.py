@@ -192,8 +192,10 @@ class CommunityConcept(Operator):
             ORDER BY cc.commname {self.direction},
                      cc.commconcept_id {self.direction}
             """
+        count_direction = f"{self.direction} NULLS {'FIRST' if self.direction ==
+                                                    'ASC' else 'LAST'}"
         order_by_sql['obs_count'] = f"""\
-            ORDER BY COALESCE(cc.d_obscount, 0) {self.direction},
+            ORDER BY cc.d_obscount {count_direction},
                      cc.commconcept_id {self.direction}
             """
 
@@ -467,6 +469,9 @@ class CommunityConcept(Operator):
                     data['cc'], conn, what_to_deactivate = what_to_deactivate)
                 dataset['commconcept'] = [item['vb_cc_code']
                                        for item in cc_actions['resources']['cc']]
+                dataset['commname'] = [item['vb_cn_code']
+                                            for item in cc_actions['resources']['cn']
+                                            if item['action'] == 'INSERT']
                 to_return = combine_json_return(to_return, cc_actions)
 
                 # Prep & insert any new community names
@@ -492,6 +497,9 @@ class CommunityConcept(Operator):
                             {"user_py_code": "user_usage_py_code",
                              "vb_py_code": "vb_usage_py_code"})
                     cn_actions = self.upload_community_names(data['cn'], conn)
+                    dataset['commname'] += [item['vb_cn_code']
+                                            for item in cn_actions['resources']['cun']
+                                            if item['action'] == 'INSERT']
                     to_return = combine_json_return(to_return, cn_actions)
                 else:
                     cn_actions = None

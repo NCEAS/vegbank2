@@ -178,10 +178,13 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### API Access - Authentication and Authorization
 
-| Name                  | Description                                                         | Value                 |
-| --------------------- | ------------------------------------------------------------------- | --------------------- |
-| `auth.accessMode`     | Controls authentication & upload behavior (RW or RO) for API access | `read_only`           |
-| `auth.oidcSecretName` | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config` |
+| Name                        | Description                                                         | Value                 |
+| --------------------------- | ------------------------------------------------------------------- | --------------------- |
+| `auth.accessMode`           | Controls authentication & upload behavior (RW or RO) for API access | `read_only`           |
+| `auth.oidcSecretName`       | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config` |
+| `auth.roleName.admin`       | Scope name for the admin role                                       | `vegbank:admin`       |
+| `auth.roleName.contributor` | Scope name for the contributor role                                 | `vegbank:contributor` |
+| `auth.roleName.user`        | Scope name for the user role                                        | `vegbank:user`        |
 
 ### Database
 
@@ -198,10 +201,19 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `databaseRestore.postgresImage` | postgres image used by initContainer (*must match CNPG postgres version*)  | `postgres:17`                             |
 | `flyway.image.repository`       | docker image repository for flyway, used in initContainer                  | `flyway/flyway`                           |
 | `flyway.image.pullPolicy`       | How often should flyway image be pulled from repository?                   | `IfNotPresent`                            |
-| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1.1`                                  |
+| `flyway.image.tag`              | The tag of the flyway image to use in the initContainer                    | `12.1`                                    |
 | `flyway.dbpath`                 | The path to the directory containing the flyway migration files            | `/opt/local/flyway/db`                    |
 | `flyway.dbHost`                 | hostname for flyway's direct connection to the database (not via pooler!)  | `vegbankdb-cnpg-rw`                       |
 | `flyway.dbPort`                 | port for flyway's direct connection to the database (not via pooler!)      | `5432`                                    |
+
+### EZID Configuration
+
+| Name                    | Description                                                         | Value                       |
+| ----------------------- | ------------------------------------------------------------------- | --------------------------- |
+| `ezid.baseUrl`          | Base URL of the EZID API                                            | `https://ezid.cdlib.org`    |
+| `ezid.doiPrefix`        | DOI prefix (e.g. doi:10.5072 for test, doi:10.xxxxx for production) | `doi:10.5072`               |
+| `ezid.doiShoulder`      | DOI shoulder for minting (e.g. FK2 for test)                        | `FK2`                       |
+| `ezid.defaultTargetUrl` | Default target URL for minted DOIs                                  | `https://vegbank.org/cite/` |
 
 ### VegBank API Docker Image
 
@@ -225,7 +237,7 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | `startupProbe.timeoutSeconds`     | Timeout (in seconds) for each startup check                | `3`    |
 | `livenessProbe.enabled`           | Enable livenessProbe                                       | `true` |
 | `livenessProbe.httpGet.path`      | The url path to probe                                      | `/`    |
-| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `80`   |
+| `livenessProbe.httpGet.port`      | The named containerPort to probe                           | `http` |
 | `livenessProbe.periodSeconds`     | Period seconds for livenessProbe                           | `20`   |
 | `livenessProbe.timeoutSeconds`    | Timeout seconds for livenessProbe                          | `10`   |
 | `livenessProbe.successThreshold`  | Min consecutive successes for probe to be successful       | `1`    |
@@ -243,20 +255,28 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | Name           | Description                                    | Value       |
 | -------------- | ---------------------------------------------- | ----------- |
 | `service.type` | The type of service to create.                 | `ClusterIP` |
-| `service.port` | The port on which the service will be exposed. | `80`        |
+| `service.port` | The port on which the service will be exposed. | `8000`      |
+
+### Gunicorn Server
+
+| Name                | Description                                                             | Value  |
+| ------------------- | ----------------------------------------------------------------------- | ------ |
+| `gunicorn.workers`  | Number of worker processes for handling requests.                       | `5`    |
+| `gunicorn.timeout`  | Workers silent for more than this many seconds are killed and restarted | `2400` |
+| `gunicorn.logLevel` | Granularity of gunicorn logs (debug|info|warning|error|critical)        | `info` |
 
 ### Ingress
 
 | Name                                                 | Description                                                               | Value                    |
 | ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
 | `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false'  | `false`                  |
-| `ingress.className`                                  | The class of the ingress controller to use.                               | `nginx`                  |
+| `ingress.className`                                  | The class of the ingress controller to use.                               | `traefik`                |
 | `ingress.hostname`                                   | Simple hostname mode: ingress auto-generated if `ingress.hosts` empty     | `localhost`              |
 | `ingress.hosts`                                      | Full ingress host/path subtree (advanced mode).                           | `[]`                     |
 | `ingress.tlsEnabled`                                 | Set to 'false', to disable rendering Ingress TLS (HTTP-only).             | `true`                   |
 | `ingress.tlsSecretName`                              | Secret name used by inferred TLS when `ingress.tls` is empty.             | `ingress-nginx-tls-cert` |
+| `ingress.annotations.cert-manager.io/cluster-issuer` | cert-manager cluster issuer                                               | `letsencrypt-prod`       |
 | `ingress.tls`                                        | Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true. | `[]`                     |
-| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                           | `letsencrypt-prod`       |
 
 ### Miscellaneous
 

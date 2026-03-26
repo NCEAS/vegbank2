@@ -22,8 +22,6 @@ WHEN NOT MATCHED THEN
     museumaccessionnumber,
     grouptype,
     notes,
-    notespublic,
-    notesmgt,
     emb_taxoninterpretation
   ) VALUES (
     CAST(SUBSTRING(vb_to_code, 4) AS INT),
@@ -44,8 +42,6 @@ WHEN NOT MATCHED THEN
     museumaccessionnumber,
     grouptype,
     notes,
-    notespublic,
-    notesmgt,
     0
   )
 RETURNING merge_action(),

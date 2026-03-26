@@ -17,6 +17,7 @@ from .UserDataset import UserDataset
 from vegbank.utilities import (
     jsonify_error_message,
     process_integer_param,
+    process_option_param,
     validate_required_and_missing_fields,
     read_parquet_file,
     UploadDataError,
@@ -53,6 +54,8 @@ class PlotObservation(Operator):
         self.detail_options = ("minimal", "full", "geo")
         self.nested_options = ("true", "false")
         self.sort_options = ("default", "author_obs_code")
+        self.status_options = ["any", "current"]
+        self.default_status = "any"
         self.default_num_taxa = 5
         self.default_num_comms = 5
 
@@ -79,7 +82,7 @@ class PlotObservation(Operator):
             'project_name': "pj.projectname",
             'rf_code': "'rf.' || pl.reference_id",
             'rf_label': "rf.reference_id_transl",
-            'has_observation_synonym': "ob.hasobservationsynonym",
+            'has_observation_synonym': "COALESCE(ob.hasobservationsynonym, false)",
             'replaced_by_ob_code': "'ob.' || syn.primaryobservation_id",
             'parent_pl_code': "'pl.' || parent_id",
             'location_accuracy': "pl.locationaccuracy",
@@ -131,9 +134,6 @@ class PlotObservation(Operator):
             'rock_type': "pl.rocktype",
             'country': "pl.country",
             'state_province': "pl.stateprovince",
-            'pl_notes_public': "pl.notespublic",
-            'pl_notes_mgt': "pl.notesmgt",
-            'pl_revisions': "pl.revisions",
             'previous_ob_code': "'ob.' || ob.previousobs_id",
             'pj_code': "'pj.' || ob.project_id",
             'project_name': "pj.projectname",
@@ -168,7 +168,6 @@ class PlotObservation(Operator):
             'representativeness': "ob.representativeness",
             'stand_maturity': "ob.standmaturity",
             'successional_status': "ob.successionalstatus",
-            'number_of_taxa': "ob.numberoftaxa",
             'basal_area': "ob.basalarea",
             'hydrologic_regime': "ob.hydrologicregime",
             'soil_moisture_regime': "ob.soilmoistureregime",
@@ -207,32 +206,6 @@ class PlotObservation(Operator):
             'growthform_2_cover': "ob.growthform2cover",
             'growthform_3_cover': "ob.growthform3cover",
             'total_cover': "ob.totalcover",
-            'ob_notes_public': "ob.notespublic",
-            'ob_notes_mgt': "ob.notesmgt",
-            'ob_revisions': "ob.revisions",
-            'interp_orig_ci_code': "'ci.' || ob.interp_orig_ci_id",
-            'interp_orig_cc_code': "'cc.' || ob.interp_orig_cc_id",
-            'interp_orig_sciname': "ob.interp_orig_sciname",
-            'interp_orig_code': "ob.interp_orig_code",
-            'interp_orig_py_code': "'py.' || ob.interp_orig_party_id",
-            'interp_orig_partyname': "ob.interp_orig_partyname",
-            'interp_current_ci_code': "'ci.' || ob.interp_current_ci_id",
-            'interp_current_cc_code': "'cc.' || ob.interp_current_cc_id",
-            'interp_current_sciname': "ob.interp_current_sciname",
-            'interp_current_code': "ob.interp_current_code",
-            'interp_current_py_code': "'py.' || ob.interp_current_party_id",
-            'interp_current_partyname': "ob.interp_current_partyname",
-            'interp_bestfit_ci_code': "'ci.' || ob.interp_bestfit_ci_id",
-            'interp_bestfit_cc_code': "'cc.' || ob.interp_bestfit_cc_id",
-            'interp_bestfit_sciname': "ob.interp_bestfit_sciname",
-            'interp_bestfit_code': "ob.interp_bestfit_code",
-            'interp_bestfit_py_code': "'py.' || ob.interp_bestfit_party_id",
-            'interp_bestfit_partyname': "ob.interp_bestfit_partyname",
-            'top_taxon1_name': "ob.toptaxon1name",
-            'top_taxon2_name': "ob.toptaxon2name",
-            'top_taxon3_name': "ob.toptaxon3name",
-            'top_taxon4_name': "ob.toptaxon4name",
-            'top_taxon5_name': "ob.toptaxon5name"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
@@ -250,7 +223,7 @@ class PlotObservation(Operator):
                                    main_columns['full'].items() if alias in [
                                        'area', 'author_obs_code', 'author_plot_code', 'country',
                                        'elevation', 'latitude', 'longitude', 'ob_code', 'pl_code',
-                                       'state_province', 'year'
+                                       'state_province', 'year', 'has_observation_synonym'
                                    ]}
         # identify minimal columns with nesting
         main_columns['minimal_nested'] = main_columns['minimal'] | {
@@ -441,6 +414,18 @@ class PlotObservation(Operator):
                      ob.observation_id {self.direction}
             """
 
+        # define standing conditions, plus any that depend on query
+        # parameters
+        always_condition = {
+            'sql': [
+                "(emb_observation < 6 OR emb_observation IS NULL)",
+            ],
+            'params': []
+        }
+        if self.request.args.get('status') == 'current':
+            always_condition['sql'].append(
+                "hasobservationsynonym IS NOT TRUE")
+
         self.query = {}
         self.query['base'] = {
             'alias': "ob",
@@ -459,12 +444,7 @@ class PlotObservation(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': [
-                        "(emb_observation < 6 OR emb_observation IS NULL)",
-                    ],
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          (ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -610,6 +590,11 @@ class PlotObservation(Operator):
 
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
+
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
 
         return params
 
