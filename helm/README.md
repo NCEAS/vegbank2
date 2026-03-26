@@ -406,11 +406,11 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
    For production deployments, obtain credentials from the GPG-encrypted secrets file in our private
    NCEAS GH Enterprise security repo.
 
-   > [!NOTE]
-   > The DOI prefix and shoulder for production are documented in
-   > [NCEAS/vegbank2#305](https://github.com/NCEAS/vegbank2/issues/305). Configure them via the
-   > `ezid.doiPrefix` and `ezid.doiShoulder` parameters in your values overrides file. The defaults
-   > in `values.yaml` are the EZID test/sandbox values (`doi:10.5072` / `FK2`).
+  > [!NOTE]
+  > The DOI prefix and shoulder for production are documented in
+  > [NCEAS/vegbank2#305](https://github.com/NCEAS/vegbank2/issues/305). Configure them via the
+  > `ezid.doiPrefix` and `ezid.doiShoulder` parameters in your values overrides file. The defaults
+  > in `values.yaml` are the EZID test/sandbox values (`doi:10.5072` / `FK2`).
 
 ## Appendix 3: Initial Database Population with a Dump File
 
