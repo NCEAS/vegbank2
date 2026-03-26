@@ -1,7 +1,7 @@
 openapi: '3.0.3'
 info:
   title: VegBankAPI
-  version: '2.0.0-beta'
+  version: '2.1.0'
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -39,7 +39,7 @@ servers:
   - url: https://api.vegbank.org
     description: VegBank Production API
   - url: https://api-dev.vegbank.org
-    description: VegBank Development API
+    description: VegBank Development API (unstable)
 security: []
 
 tags:
