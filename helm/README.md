@@ -270,13 +270,13 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 | Name                                                 | Description                                                               | Value                    |
 | ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
 | `ingress.enabled`                                    | Enable ingress to allow web traffic. Ingress settings ignored if 'false'  | `false`                  |
-| `ingress.className`                                  | The class of the ingress controller to use.                               | `nginx`                  |
+| `ingress.className`                                  | The class of the ingress controller to use.                               | `traefik`                |
 | `ingress.hostname`                                   | Simple hostname mode: ingress auto-generated if `ingress.hosts` empty     | `localhost`              |
 | `ingress.hosts`                                      | Full ingress host/path subtree (advanced mode).                           | `[]`                     |
 | `ingress.tlsEnabled`                                 | Set to 'false', to disable rendering Ingress TLS (HTTP-only).             | `true`                   |
 | `ingress.tlsSecretName`                              | Secret name used by inferred TLS when `ingress.tls` is empty.             | `ingress-nginx-tls-cert` |
+| `ingress.annotations.cert-manager.io/cluster-issuer` | cert-manager cluster issuer                                               | `letsencrypt-prod`       |
 | `ingress.tls`                                        | Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true. | `[]`                     |
-| `ingress.annotations.cert-manager.io/cluster-issuer` |                                                                           | `letsencrypt-prod`       |
 
 ### Miscellaneous
 
