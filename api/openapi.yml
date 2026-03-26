@@ -419,24 +419,95 @@ paths:
         - oauth2:
             - vegbank:contributor
       summary: Upload plot observations
-      x-status: "beta"
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
+              type: object
+              required:
+                - plot_observations
+              properties:
+                plot_observations:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new plot observations (required).
+                projects:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new projects (optional).
+                parties:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new parties (optional).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
+                soils:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing details about observed soils (optional).
+                disturbances:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing details about observed disturbances
+                    (optional).
+                community_classifications:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing community classifications of
+                    observed plots (optional).
+                strata:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing details about strata defined for
+                    plot observations (optional).
+                strata_cover_data:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing details about plant cover as
+                    observed in different strata of a plot (optional).
+                stem_data:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing details about counts and/or other
+                    details about stems observed on a plot (optional).
+                taxon_interpretations:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing taxon interpretations of plants
+                    observed on a plot (optional).
+                contributors:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing party contributions to the plot
+                    observations, projects, and/or community classifications
+                    (optional).
       responses:
         '200':
-          description: "completed"
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
+                $ref: "#/components/schemas/UploadResult"
         '403':
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
@@ -607,7 +678,7 @@ paths:
           $ref: "#/components/responses/CommunityConcepts"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
+    post:
       tags:
         - Community concepts
       operationId: upload-cc
@@ -615,24 +686,69 @@ paths:
         - oauth2:
             - vegbank:contributor
       summary: Upload community concepts
-      x-status: "planned"
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
+        - name: deactivation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [none, by_party]
+            default: none
+          description: |
+            Which existing concepts to deactivate in VegBank by setting their status stop date to now:
+            - `none`: Don't dactivate any concepts
+            - `by_party`: Deactivate all concepts associated with any party
+              linked to concepts in the uploaded data
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
+              type: object
+              required:
+                - community_concepts
+              properties:
+                community_concepts:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing community concepts as community
+                    names associated with references, along with with status
+                    details and taxonomic parents (required).
+                community_names:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing community name usages associated
+                    with specific classification systems for new community
+                    concepts (optional).
+                community_correlations:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file defining correlations between community
+                    concepts (optional).
+                parties:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new parties (optional).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
       responses:
         '200':
-          description: "completed"
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
+                $ref: "#/components/schemas/UploadResult"
         '403':
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
@@ -736,6 +852,61 @@ paths:
           $ref: "#/components/responses/CommunityClassifications"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+    post:
+      tags:
+        - Community classifications
+      operationId: upload-cl
+      security:
+        - oauth2:
+            - vegbank:contributor
+      summary: Upload community classifications
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - community_classifications
+              properties:
+                community_classifications:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing community classifications of
+                    existing observed plots (required).
+                parties:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new parties (optional).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
+                contributors:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing party contributions to the
+                    community classifications (optional).
+      responses:
+        '200':
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
 
   /community-interpretations/{ci_code}:
     get:
@@ -1026,7 +1197,7 @@ paths:
           $ref: "#/components/responses/PlantConcepts"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
+    post:
       tags:
         - Plant concepts
       operationId: upload-pc
@@ -1034,24 +1205,69 @@ paths:
         - oauth2:
             - vegbank:contributor
       summary: Upload plant concepts
-      x-status: "planned"
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
+        - name: deactivation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [none, by_party]
+            default: none
+          description: |
+            Which existing concepts to deactivate in VegBank by setting their status stop date to now:
+            - `none`: Don't dactivate any concepts
+            - `by_party`: Deactivate all concepts associated with any party linked to concepts in the uploaded data
+            - `by_party_below_order`: Like `by_party`, but only for concepts at Family level and below
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
+              type: object
+              required:
+                - plant_concepts
+              properties:
+                plant_concepts:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing plant concepts as plant names
+                    associated with references, along with with status details
+                    and taxonomic parents (required).
+                plant_names:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing plant name usages associated with
+                    specific classification systems for new plant concepts
+                    (optional).
+                plant_correlations:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file defining correlations between plant concepts
+                    (optional).
+                parties:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new parties (optional).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
       responses:
         '200':
-          description: "planned"
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
+                $ref: "#/components/schemas/UploadResult"
         '403':
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
@@ -1630,6 +1846,55 @@ paths:
           $ref: "#/components/responses/TaxonInterpretations"
         '400':
           $ref: "#/components/responses/InvalidParameters"
+    post:
+      tags:
+        - Taxon interpretations
+      operationId: upload-ti
+      security:
+        - oauth2:
+            - vegbank:contributor
+      summary: Upload taxon interpretations
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - taxon_interpretations
+              properties:
+                taxon_interpretations:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing taxon interpretations of plants
+                    observed within existing plot observations (required).
+                parties:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new parties (optional).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
+      responses:
+        '200':
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        '403':
+          $ref: "#/components/responses/UploadsNotAllowed"
+        '500':
+          $ref: "#/components/responses/InvalidDataUpload"
 
   /cover-methods/{cm_code}:
     get:
@@ -1672,7 +1937,7 @@ paths:
           $ref: "#/components/responses/CoverMethods"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
+    post:
       tags:
         - Cover methods
       operationId: upload-cm
@@ -1680,24 +1945,38 @@ paths:
         - oauth2:
             - vegbank:admin
       summary: Upload cover methods
-      x-status: "beta"
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
+              type: object
+              required:
+                - cover_methods
+              properties:
+                cover_methods:
+                  type: string
+                  format: binary
+                  description: >
+                   Parquet file containing cover methods and their associated
+                   component cover indexes (required).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
       responses:
         '200':
-          description: "completed"
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
+                $ref: "#/components/schemas/UploadResult"
         '403':
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
@@ -1750,26 +2029,40 @@ paths:
       operationId: upload-sm
       security:
         - oauth2:
-            - vegbank:contributor
+            - vegbank:admin
       summary: Upload stratum methods
-      x-status: "beta"
+      parameters:
+        - $ref: '#/components/parameters/dry_run'
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
+              type: object
+              required:
+                - stratum_methods
+              properties:
+                stratum_methods:
+                  type: string
+                  format: binary
+                  description: >
+                   Parquet file containing stratum methods and their associated
+                   component stratum types (required).
+                references:
+                  type: string
+                  format: binary
+                  description: >
+                    Parquet file containing new references (optional).
       responses:
         '200':
-          description: "completed"
+          description: >
+            Upload accepted. When `dry_run=false` (default), returns an upload summary.
+            When `dry_run=true`, the same summary is nested under `dry_run_data` and
+            the data is not actually inserted into VegBank.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
+                $ref: "#/components/schemas/UploadResult"
         '403':
           $ref: "#/components/responses/UploadsNotAllowed"
         '500':
@@ -1898,36 +2191,6 @@ paths:
           $ref: "#/components/responses/Parties"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
-      tags:
-        - Parties
-      operationId: upload-py
-      security:
-        - oauth2:
-            - vegbank:admin
-      summary: Upload parties
-      x-status: "beta"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
-      responses:
-        '200':
-          description: "planned"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
-        '403':
-          $ref: "#/components/responses/UploadsNotAllowed"
-        '500':
-          $ref: "#/components/responses/InvalidDataUpload"
 
   /roles/{ar_code}:
     get:
@@ -1969,36 +2232,6 @@ paths:
           $ref: "#/components/responses/Roles"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
-      tags:
-        - Parties
-      operationId: upload-ar
-      security:
-        - oauth2:
-            - vegbank:admin
-      summary: Upload roles
-      x-status: "planned"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
-      responses:
-        '200':
-          description: "planned"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
-        '403':
-          $ref: "#/components/responses/UploadsNotAllowed"
-        '500':
-          $ref: "#/components/responses/InvalidDataUpload"
 
   /projects/{pj_code}:
     get:
@@ -2042,36 +2275,6 @@ paths:
           $ref: "#/components/responses/Projects"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
-      tags:
-        - Projects
-      operationId: upload-pj
-      security:
-        - oauth2:
-            - vegbank:contributor
-      summary: Upload projects
-      x-status: "planned"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
-      responses:
-        '200':
-          description: "completed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
-        '403':
-          $ref: "#/components/responses/UploadsNotAllowed"
-        '500':
-          $ref: "#/components/responses/InvalidDataUpload"
 
   /references/{rf_code}:
     get:
@@ -2114,36 +2317,6 @@ paths:
           $ref: "#/components/responses/References"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
-      tags:
-        - References
-      operationId: upload-rf
-      security:
-        - oauth2:
-            - vegbank:contributor
-      summary: Upload references
-      x-status: "planned"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
-      responses:
-        '200':
-          description: "completed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
-        '403':
-          $ref: "#/components/responses/UploadsNotAllowed"
-        '500':
-          $ref: "#/components/responses/InvalidDataUpload"
 
   /named-places/{np_code}:
     get:
@@ -2225,37 +2398,6 @@ paths:
           $ref: "#/components/responses/UserDatasets"
         '400':
           $ref: "#/components/responses/InvalidParameters"
-    post: #TODO
-      tags:
-        - User Datasets
-      operationId: upload-ds
-      security:
-        - oauth2:
-            - vegbank:user
-      summary: Upload a new user-defined dataset, which defines a bundle
-        of one or more plot observations
-      x-status: "planned"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/tbd"
-      responses:
-        '200':
-          description: "completed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                  description: counts and vb_codes of newly created records
-        '403':
-          $ref: "#/components/responses/UploadsNotAllowed"
-        '500':
-          $ref: "#/components/responses/InvalidDataUpload"
 
   /overview:
     get:
@@ -2693,6 +2835,16 @@ components:
         - `current`: Only returns concepts that don't have (past) status stop dates
         - `accepted`: Only returns concepts that have an accepted status
         - `current_accepted`: Only returns concepts that are both current and accepted
+    dry_run:
+      name: dry_run
+      in: query
+      required: false
+      schema:
+       type: boolean
+       default: false
+      description: >
+       If true, validates and previews the upload without persisting any data.
+       The response will be wrapped in a `dry_run_data` envelope.
 
   securitySchemes:
     oauth2:
@@ -5860,48 +6012,66 @@ components:
     user_dataset:
       $ref: '#/components/schemas/UserDataset'
 
-    #Placeholder for upload schemas
-    tbd:
+    UploadSummary:
       type: object
-
-    disturbance_obs:
-      type: object
+      description: >
+        Counts of inserted records per entity type, plus the uploaded and
+        VegBank-assigned identifiers for each record. Entity type keys (e.g.
+        `pl`, `ob`, `rf`, `ds`) vary depending on what was uploaded. `ds`
+        always appears and represents the internal dataset record created to
+        log the upload.
       properties:
-        disturbance_type:
-          type: string
-        disturbance_intensity:
-          type: string
-        disturbance_comment:
-          type: string
+        counts:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              inserted:
+                type: integer
+          example:
+            xx:
+              inserted: 1
+            yy:
+              inserted: 2
+            ds:
+              inserted: 1
+        resources:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
+              properties:
+                action:
+                  type: string
+                user_xx_code:
+                  type: string
+                vb_xx_code:
+                  type: string
+          example:
+            xx:
+              - action: INSERT
+                user_xx_code: "my_xx_code"
+                vb_xx_code: "xx.123"
+            yy:
+              - action: INSERT
+                user_yy_code: "my_yy_code_1"
+                vb_yy_code: "yy.123"
+            ds:
+              - action: INSERT
+                user_ds_code: "upload_dataset_20260325110254"
+                vb_ds_code: "ds.123"
 
-    soil_taxon:
-      type: object
-      properties:
-        soil_name:
-          type: string
-        soil_level:
-          type: string
-        accession_code:
-          type: string
-
-    reference_party:
-      type: object
-      properties:
-        type:
-          type: string
-        position_name:
-          type: string
-        salutation:
-          type: string
-        given_name:
-          type: string
-        surname:
-          type: string
-        suffix:
-          type: string
-        organization_name:
-          type: string
-        current_name:
-          type: string
-        accession_code:
-          type: string
+    UploadResult:
+      oneOf:
+        - $ref: "#/components/schemas/UploadSummary"
+        - type: object
+          title: DryRunSummary
+          description: Returned when `dry_run=true`. Transaction is rolled back.
+          properties:
+            dry_run_data:
+              $ref: "#/components/schemas/UploadSummary"
+            message:
+              type: string
+              example: "dry run, transaction was rolled back"
