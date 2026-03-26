@@ -21,15 +21,21 @@ See detailed information in the [helm README file](../README.md) for each step, 
 
 1. Create Secrets
 
-    Follow the steps in the Helm README to create the necessary secrets for the CNPG cluster, Flask and OpenID Connect (OIDC).
+    Follow the steps in the Helm README to create the necessary secrets for the CNPG cluster, Flask, OpenID Connect (OIDC), and the EZID API Credentials.
+
     - The production credentials for CNPG can be found in a GPG-encrypted YAML file in the GHE `Security` repo. Decrypt, then use:
 
       ```shell
-      kubectl create -f helm/admin/vegbank-cnpg-secret.yaml
+      kubectl create -f vegbank-cnpg-secret.yaml
       ```
 
    - The production KeyCloak client secret credentials can be found in a GPG-encrypted JSON file in the GHE `Security` repo. Decrypt, then follow the steps in the Helm README
    - The Flask Session-Signing Secret creation is exactly as described in the Helm README. It does NOT need to be stored in the GHE repo; it should be regenerated if needed.
+   - The production EZID API credentials can be found in a GPG-encrypted YAML file in the GHE `Security` repo. Decrypt, then use:
+
+      ```shell
+      kubectl create -f vegbank-api-secrets.yaml
+      ```
 
 2. Deploy CNPG Cluster
 
