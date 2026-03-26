@@ -44,37 +44,104 @@ security: []
 
 tags:
 - name: Plot observations
-  description: Operations related to plot observations
+  description: |
+    Operations related to plot observations. A plot observation is a recording
+    of the physical, biological, and other environmental attributes (and more)
+    of a defined plot at some time and in some place, along with other
+    supporting contextual information. In VegBank, each plot observation is
+    typically linked to details about the plants (taxon observations) that were
+    observed in the plot and interpreted to some plant concept, and it is
+    typically classified to a specific community concept.
 - name: Community concepts
-  description: Operations related to community concepts
+  description: |
+    Operations related to community concepts. A community concept is the
+    assertion of a specific community type through the combination of a name and
+    an associated reference, augmented by status details, any alternative names,
+    and optional relationships (correlations) with other community concepts.
 - name: Community classifications
-  description: Operations related to community classifications
+  description: |
+    Operations related to community classifications. A community classification
+    is an activity wherein one or more contributors make one or more community
+    interpretations, each of which corresponds to the assignment of a community
+    concept to a plot observation.
 - name: Community interpretations
-  description: Operations related to community interpretations
+  description: |
+    Operations related to community interpretations. A community interpretation
+    is the specific act of assigning a community concept to a plot observation,
+    perhaps with some asserted fit and confidence level, along with other
+    information. Each community interpretation is done in the context of a
+    specific community classification, and technically a classification activity
+    can yield multiple interpretations (although this is rare in practice).
 - name: Plant concepts
-  description: Operations related to plant concepts
+  description: |
+    Operations related to plant concepts. A plant concept is the assertion of a
+    specific plant taxon through the combination of a name and an associated
+    reference, augmented by status details, any alternative names, and optional
+    relationships (correlations) with other plant concepts.
 - name: Taxon observations
-  description: Operations related to taxon observations
+  description: |
+    Operations related to taxon observations. A taxon observation is a record of
+    a particular plant taxon in the context of a particular plot observation.
+    Each taxon observation may have additional quantitative details (see Taxon
+    importances) and/or may be interpreted to one or more plant concepts (see
+    Taxon interpretations).
 - name: Strata
-  description: Operations related to defined strata
+  description: |
+    Operations related to strata. A stratum is well-defined partition of a
+    plot in the context of a specific plot observation, following a
+    particular protocol (see Stratum methods). Each taxon importance
+    record may be attached to a specific stratum.
 - name: Stem counts
-  description: Operations related to stem counts
+  description: |
+    Operations related to stem counts. A stem count record stores information
+    about the abundance of individual plants (typically tree stems) of a
+    specific size, linked to a Taxon importance record for a given Taxon
+    observation.
 - name: Taxon importances
-  description: Operations related to taxon importances
+  description: |
+    Operations related to taxon importances. A taxon importance record
+    quantifies a taxon observation by recording plant cover, basal area,
+    and/or biomass, either within a specific stratum (see Strata) or for
+    the plot observation as a whole.
 - name: Taxon interpretations
-  description: Operations related to taxon interpretations
+  description: |
+    Operations related to taxon interpretations. A taxon interpretation
+    is the specific act of assigning a plant concept to a taxon observation
+    belonging to a plot observation, perhaps with some asserted fit and
+    confidence level, along with other information such as the party who made
+    the interpretation.
 - name: Cover methods
-  description: Operations related to cover methods
+  description: |
+    Operations related to cover methods. A cover method is a particular protocol
+    for recording the percent cover occupied by a plant taxon observed in a
+    plot, often by specifying and defining one or more ordered categorical cover
+    classes (i.e., cover indexes).
 - name: Stratum methods
-  description: Operations related to stratum methods
+  description: |
+    Operations related to stratum methods. A stratum method forms a sampling
+    protocol by defining one or more strata, each of which is a logical
+    subspace of a plot, often (but not always) associated with a vertical
+    partitioning of space aligned with a plant growth forms.
 - name: Parties
-  description: Operations related to parties
+  description: |
+    Operations related to parties. A party is a person or organization connected
+    in some way to resources stored in VegBank, such as contributing to data
+    collection or the interpretation of a plot.
 - name: Projects
-  description: Operations related to projects
+  description: |
+    Operations related to projects. A project is a named activity established to
+    collect vegetation plot data. Every plot observation belongs to exactly one
+    project.
 - name: References
-  description: Operations related to references
+  description: |
+    Operations related to references. A reference is a specific information
+    source (e.g., publication, book, website, etc) cited with respect to some resource
+    or activity in VegBank.
 - name: Named Places
-  description: Operations related to named places
+  description: |
+    Operations related to named places. A named place is a specific geographic
+    location or feature stored in VegBank. Although not currently used for new
+    data, older plots in VegBank can be associated with one or more named places.
 - name: User Datasets
   description: |
     Operations related to VegBank datasets. A dataset is an arbitrary
@@ -83,7 +150,8 @@ tags:
     VegBank with a stable identifier that can be used for citing and
     sharing this defined collection.
 - name: Overview
-  description: VegBank summary stats
+  description: |
+    Operations related to the retrieval of basic VegBank summary statistics.
 
 paths:
   /plot-observations/{ob_code}:
