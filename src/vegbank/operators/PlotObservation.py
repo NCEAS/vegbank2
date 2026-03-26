@@ -168,7 +168,6 @@ class PlotObservation(Operator):
             'representativeness': "ob.representativeness",
             'stand_maturity': "ob.standmaturity",
             'successional_status': "ob.successionalstatus",
-            'number_of_taxa': "ob.numberoftaxa",
             'basal_area': "ob.basalarea",
             'hydrologic_regime': "ob.hydrologicregime",
             'soil_moisture_regime': "ob.soilmoistureregime",

@@ -3739,10 +3739,6 @@ components:
           type: string
           description: "Description of the assumed successional status of the plot. This description is of necessity highly subjective."
           example: "mature"
-        number_of_taxa:
-          type: integer
-          description: "???"
-          example: 1
         basal_area:
           type: number
           format: float
