@@ -3990,26 +3990,6 @@ components:
           type: string
           description: "Classification party name for the best fit interpreted community concept"
           example: "Doe, John"
-        top_taxon1_name:
-          type: string
-          description: "Name of the most common observed taxon based on max cover across strata"
-          example: "Artemisia tridentata ssp. wyomingensis"
-        top_taxon2_name:
-          type: string
-          description: "Name of the second most common observed taxon based on max cover across strata"
-          example: "Juniperus osteosperma"
-        top_taxon3_name:
-          type: string
-          description: "Name of the third most common observed taxon based on max cover across strata"
-          example: "Plantae"
-        top_taxon4_name:
-          type: string
-          description: "Name of the fourth most common observed taxon based on max cover across strata"
-          example: "Gutierrezia sarothrae"
-        top_taxon5_name:
-          type: string
-          description: "Name of the fifth most common observed taxon based on max cover across strata"
-          example: "Acer rubrum"
         has_observation_synonym:
           type: boolean
           description: "Does this observation have an observation synonym record?"
@@ -5246,7 +5226,7 @@ components:
         inference_area:
           type: number
           format: float
-          description: "Area used to infer the importance values of the taxon, if not the 
+          description: "Area used to infer the importance values of the taxon, if not the
             same as plot-observation taxon_inference_area"
           example: 1000
         stratum_base:

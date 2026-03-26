@@ -224,11 +224,6 @@ class PlotObservation(Operator):
             'interp_bestfit_code': "ob.interp_bestfit_code",
             'interp_bestfit_py_code': "'py.' || ob.interp_bestfit_party_id",
             'interp_bestfit_partyname': "ob.interp_bestfit_partyname",
-            'top_taxon1_name': "ob.toptaxon1name",
-            'top_taxon2_name': "ob.toptaxon2name",
-            'top_taxon3_name': "ob.toptaxon3name",
-            'top_taxon4_name': "ob.toptaxon4name",
-            'top_taxon5_name': "ob.toptaxon5name"
         }
         # identify full columns with nesting
         main_columns['full_nested'] = main_columns['full'] | {
