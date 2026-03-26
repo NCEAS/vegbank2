@@ -46,8 +46,6 @@ WHEN NOT MATCHED THEN
     submitter_surname,
     submitter_givenname,
     submitter_email,
-    notespublic,
-    notesmgt,
     emb_plot
   ) VALUES (
     authorplotcode,
@@ -92,8 +90,6 @@ WHEN NOT MATCHED THEN
     submitter_surname,
     submitter_givenname,
     submitter_email,
-    pl_notes_public,
-    pl_notes_mgt,
     0
   )
 RETURNING merge_action(),

@@ -470,6 +470,9 @@ class PlantConcept(Operator):
                     data['pc'], conn, what_to_deactivate = what_to_deactivate)
                 dataset['plantconcept'] = [item['vb_pc_code']
                                             for item in pc_actions['resources']['pc']]
+                dataset['plantname'] = [item['vb_pn_code']
+                                            for item in pc_actions['resources']['pn']
+                                            if item['action'] == 'INSERT']
                 to_return = combine_json_return(to_return, pc_actions)
 
                 # Prep & insert any new plant names
@@ -496,8 +499,9 @@ class PlantConcept(Operator):
                             {"user_py_code": "user_usage_py_code",
                              "vb_py_code": "vb_usage_py_code"})
                     pn_actions = self.upload_plant_names(data['pn'], conn)
-                    dataset['plantname'] = [item['vb_pn_code']
-                                            for item in pn_actions['resources']['pun']]
+                    dataset['plantname'] += [item['vb_pn_code']
+                                            for item in pn_actions['resources']['pun']
+                                            if item['action'] == 'INSERT']
                     to_return = combine_json_return(to_return, pn_actions)
                 else:
                     pn_actions = None

@@ -23,12 +23,10 @@ INSERT INTO taxon_interpretation_temp
     museumaccessionnumber,
     grouptype,
     notes,
-    notespublic,
-    notesmgt,
     user_to_code,
     vb_to_code
 )
 VALUES
 (
-    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
 );

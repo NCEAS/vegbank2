@@ -2,7 +2,7 @@
 {{- $fullName := include "vegbank.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- $inferredHostname := .Values.ingress.hostname | default "" -}}
-{{- $tlsSecretName := .Values.ingress.tlsSecretName | default "ingress-nginx-tls-cert" -}}
+{{- $tlsSecretName := .Values.ingress.tlsSecretName | default "ingress-tls-cert" -}}
 {{- $tlsEnabled := true -}}
 {{- if hasKey .Values.ingress "tlsEnabled" -}}
 {{- $tlsEnabled = .Values.ingress.tlsEnabled -}}

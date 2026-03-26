@@ -68,9 +68,6 @@ class TaxonInterpretation(Operator):
             'collection_number': "txi.collectionnumber",
             'group_type': "txi.grouptype",
             'notes': "txi.notes",
-            'notes_public': "txi.notespublic",
-            'notes_mgt': "txi.notesmgt",
-            'revisions': "txi.revisions",
             'is_orig': "txi.originalinterpretation",
             'is_curr': "txi.currentinterpretation",
         }
@@ -80,7 +77,7 @@ class TaxonInterpretation(Operator):
                 'ti_code', 'to_code', 'pc_code', 'interpretation_date',
                 'interpretation_type', 'py_code', 'rf_code', 'taxon_fit',
                 'taxon_confidence', 'collection_number', 'group_type', 'notes',
-                'notes_public', 'notes_mgt', 'is_orig', 'is_curr'
+                'is_orig', 'is_curr'
             ]}
         from_sql = {}
         from_sql['minimal'] = """\

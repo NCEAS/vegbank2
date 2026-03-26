@@ -66,7 +66,5 @@ CREATE TEMP TABLE observation_temp(
     growthform2cover double precision,
     growthform3cover double precision,
     totalcover double precision,
-    ob_notes_public boolean,
-    ob_notes_mgt boolean,
     hasobservationsynonym boolean 
 )
