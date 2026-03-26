@@ -390,6 +390,28 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
           --from-file=client_secrets.json=path/to/my-client-secrets.json
       ```
 
+3. **EZID API Credentials for DOI Minting**
+
+   The EZID username and password are required for minting DOIs and are consumed by the application
+   via the `EZID_USERNAME` and `EZID_PASSWORD` environment variables. They are stored in the K8s
+   secret defined in [`helm/admin/secret.yaml`](./admin/secret.yaml). Edit that file to add your
+   credentials, then apply it to your cluster:
+
+   ```shell
+   RELEASE_NAME=vegbankapi envsubst < helm/admin/secret.yaml | kubectl apply -n <mynamespace> -f -
+   ```
+
+   For development and test deployments, credentials can be found in the
+   [devteam documentation](https://devdocs.nceas.ucsb.edu/docs/packaging/dois/#ezid-apitest-credentials).
+   For production deployments, obtain credentials from the GPG-encrypted secrets file in our private
+   NCEAS GH Enterprise security repo.
+
+   > [!NOTE]
+   > The DOI prefix and shoulder for production are documented in
+   > [NCEAS/vegbank2#305](https://github.com/NCEAS/vegbank2/issues/305). Configure them via the
+   > `ezid.doiPrefix` and `ezid.doiShoulder` parameters in your values overrides file. The defaults
+   > in `values.yaml` are the EZID test/sandbox values (`doi:10.5072` / `FK2`).
+
 ## Appendix 3: Initial Database Population with a Dump File
 
 > [!NOTE]
