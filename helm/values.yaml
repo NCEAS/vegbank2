@@ -251,7 +251,7 @@ ingress:
   enabled: false
   ## @param ingress.className The class of the ingress controller to use.
   ##
-  className: nginx
+  className: traefik
   ## @param ingress.hostname Simple hostname mode: ingress auto-generated if `ingress.hosts` empty
   ## The chart uses this hostname and infers a default path (Prefix "/") and TLS block if
   ## `ingress.hosts` and `ingress.tls` are empty. If `ingress.hosts` or `ingress.tls` are not
@@ -282,7 +282,13 @@ ingress:
   tlsEnabled: true
   ## @param ingress.tlsSecretName Secret name used by inferred TLS when `ingress.tls` is empty.
   ##
-  tlsSecretName: ingress-nginx-tls-cert
+  tlsSecretName: ingress-nginx-tls-cert  # leave as-is until LetsEncrypt HTTP-01 working in traefik
+
+  annotations:
+    ## @param ingress.annotations.cert-manager.io/cluster-issuer cert-manager cluster issuer
+    ## to use for provisioning certificates
+    ##
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 
   ## @param ingress.tls Full TLS subtree (advanced mode). Ignored unless ingress.enabled is true.
   ## If provided (non-empty), this takes precedence over inferred TLS from `ingress.hostname`.
