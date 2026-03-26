@@ -255,6 +255,9 @@ gunicorn:
   ##
   logLevel: "info"
 
+  ## @param gunicorn.limitRequestFieldSize The maximum size of HTTP request header fields in bytes. Default is 8KB, but this is upped to 16kb to match the limit set at the auth stage.
+  limitRequestFieldSize: 16384   
+
 ## @section Ingress
 ## Configuration for the ingress, including certifications and host name. There is no configured
 ## service section here because the ingress automatically pulls the default named service for the
