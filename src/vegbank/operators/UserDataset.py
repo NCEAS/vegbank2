@@ -598,6 +598,9 @@ class UserDataset(Operator):
             logger.warning("Bounding box query failed for userdataset_id=%s: %s", userdataset_id, exc)
         return None
 
+    _TAXA_SUBJECT_SCHEME = "Vegbank Taxonomic Observation"
+    _TAXA_SCHEME_URI = "https://www.vegbank.org/cite"
+
     def _query_top_taxa(self, userdataset_id: int, limit: int = 10) -> list[dict]:
         """Query the most frequently occurring taxa across all plot observations in a dataset.
 
@@ -607,14 +610,20 @@ class UserDataset(Operator):
         occurrence count so the most ecologically representative taxa appear
         first.
 
+        Each returned subject dict includes ``scheme``, ``scheme_uri``, and
+        ``value_uri`` populated from the taxon observation's ``vb_code``
+        identifier (e.g. ``to.64982``).
+
         Args:
             userdataset_id: Primary key of the userdataset record.
             limit: Maximum number of taxa to return (default 10).
 
         Returns:
             List of subject dicts compatible with ``EZIDClient.build_datacite_xml``,
-            e.g. ``[{"value": "Quercus alba"}, ...]``.  Returns an empty list
-            when no taxa are found or the query fails.
+            e.g. ``[{"value": "Quercus alba", "scheme": "Vegbank Taxonomic Observation",
+            "scheme_uri": "https://www.vegbank.org/cite",
+            "value_uri": "https://www.vegbank.org/cite/to.64982"}, ...]``.
+            Returns an empty list when no taxa are found or the query fails.
         """
         sql = """
             SELECT
@@ -623,6 +632,7 @@ class UserDataset(Operator):
                     NULLIF(txo.int_currplantscifull, ''),
                     NULLIF(txo.authorplantname, '')
                 ) AS taxon_name,
+                i.identifier_value AS vb_code,
                 COUNT(*) AS occurrence_count
             FROM userdatasetitem dsi
             JOIN observation ob
@@ -630,13 +640,17 @@ class UserDataset(Operator):
                AND dsi.itemrecord = ob.observation_id
             JOIN taxonobservation txo
                 ON txo.observation_id = ob.observation_id
+            LEFT JOIN identifiers i
+                ON i.vb_table_code = 'to'
+               AND i.vb_record_id = txo.taxonobservation_id
+               AND i.identifier_type = 'vb_code'
             WHERE dsi.userdataset_id = %s
               AND COALESCE(
                     NULLIF(txo.int_currplantscinamenoauth, ''),
                     NULLIF(txo.int_currplantscifull, ''),
                     NULLIF(txo.authorplantname, '')
                   ) IS NOT NULL
-            GROUP BY 1
+            GROUP BY taxon_name, i.identifier_value
             ORDER BY occurrence_count DESC
             LIMIT %s
         """
@@ -645,7 +659,17 @@ class UserDataset(Operator):
                 with conn.cursor() as cur:
                     cur.execute(sql, (userdataset_id, limit))
                     rows = cur.fetchall()
-            return [{"value": row["taxon_name"]} for row in rows]
+            subjects = []
+            for row in rows:
+                subject: dict = {
+                    "value": row["taxon_name"],
+                    "scheme": self._TAXA_SUBJECT_SCHEME,
+                    "scheme_uri": self._TAXA_SCHEME_URI,
+                }
+                if row["vb_code"]:
+                    subject["value_uri"] = f"{self._TAXA_SCHEME_URI}/{row['vb_code']}"
+                subjects.append(subject)
+            return subjects
         except Exception as exc:
             logger.warning("Top taxa query failed for userdataset_id=%s: %s", userdataset_id, exc)
             return []
