@@ -42,8 +42,6 @@ plot = [
     'submitter_surname',
     'submitter_givenname',
     'submitter_email',
-    'pl_notes_public',
-    'pl_notes_mgt'
 ]
 
 observation = [
@@ -114,8 +112,6 @@ observation = [
     'growthform_2_cover',         
     'growthform_3_cover',         
     'total_cover',                   
-    'ob_notes_public',              
-    'ob_notes_mgt',                   
     'has_observation_synonym'
 ]
 
@@ -446,8 +442,6 @@ taxon_interpretation = [
     'museum_accession_number',
     'group_type',
     'notes',
-    'notes_public',
-    'notes_mgt',
     'user_to_code',
 ]
 reinterpretation = [
@@ -473,8 +467,6 @@ reinterpretation = [
     'museum_accession_number',
     'group_type',
     'notes',
-    'notes_public',
-    'notes_mgt',
     'vb_to_code'
 ]
 

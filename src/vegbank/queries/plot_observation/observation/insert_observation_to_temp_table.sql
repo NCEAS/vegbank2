@@ -66,8 +66,6 @@ INSERT INTO observation_temp(
     growthform2cover,
     growthform3cover,
     totalcover,
-    ob_notes_public,
-    ob_notes_mgt,
     hasobservationsynonym
 )
 VALUES(
@@ -77,5 +75,5 @@ VALUES(
     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+    %s,%s,%s,%s,%s,%s,%s,%s
 );
