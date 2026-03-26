@@ -314,7 +314,7 @@ ingress:
   ##  tls:
   ##    - hosts:
   ##        - vegbank.org
-  ##      secretName: ingress-nginx-tls-cert
+  ##      secretName: ingress-tls-cert
   ##
   ## To disable TLS altogether (i.e. use http only), set:
   ##    tlsEnabled: false
