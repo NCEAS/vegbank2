@@ -401,8 +401,7 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
    RELEASE_NAME=vegbankapi envsubst < helm/admin/secret.yaml | kubectl apply -n <mynamespace> -f -
    ```
 
-   For development and test deployments, credentials can be found in the
-   [devteam documentation](https://devdocs.nceas.ucsb.edu/docs/packaging/dois/#ezid-apitest-credentials).
+   For development and test deployments, credentials can be found on our private NCEAS dev team documentation site.
    For production deployments, obtain credentials from the GPG-encrypted secrets file in our private
    NCEAS GH Enterprise security repo.
 
