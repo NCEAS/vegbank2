@@ -53,10 +53,10 @@ MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent D
 class MissingParameterError(Exception):
     """Raised when a required request parameter is missing."""
 
-# VegBank-specific scopes
-SCOPE_ADMIN = "vegbank:admin"
-SCOPE_CONTRIBUTOR = "vegbank:contributor"
-SCOPE_USER = "vegbank:user"
+# VegBank-specific scopes — configurable via environment variables set by Helm
+SCOPE_ADMIN = os.getenv("VB_SCOPE_ADMIN", "vegbank:admin")
+SCOPE_CONTRIBUTOR = os.getenv("VB_SCOPE_CONTRIBUTOR", "vegbank:contributor")
+SCOPE_USER = os.getenv("VB_SCOPE_USER", "vegbank:user")
 
 # Deployment modes
 ACCESS_MODE_READ_ONLY = "read_only"       # Read-only mode: no uploads, no auth

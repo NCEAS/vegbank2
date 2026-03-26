@@ -680,7 +680,7 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
                 f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has failed with error: " +
                 to_return['error'])
 
-    if file_name is 'contributors':
+    if file_name == 'contributors':
         record_identifier_validation = validate_contributor_record_identifier_codes(
             data[df_1_name], data)
         to_return['has_error'] = to_return['has_error'] or record_identifier_validation['has_error']
