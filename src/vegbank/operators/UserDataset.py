@@ -498,7 +498,7 @@ class UserDataset(Operator):
         descriptions = [{"text": description, "type": "Abstract"}] if description else None
         xml_bytes = EZIDClient.build_datacite_xml(
             doi=doi.replace("doi:", ""),
-            title=f'Vegbank plot observations: "{dataset["name"]}"',
+            title=f'Vegbank plot observations: {dataset["name"]}',
             publisher="VegBank",
             publication_year=datetime.now().year,
             creators=self._build_datacite_creators(claims, orcid),
