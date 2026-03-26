@@ -171,6 +171,12 @@ spec:
           env:
             - name: VB_ACCESS_MODE
               value: {{ .Values.auth.accessMode | quote }}
+            - name: VB_SCOPE_ADMIN
+              value: {{ .Values.auth.roleName.admin | quote }}
+            - name: VB_SCOPE_CONTRIBUTOR
+              value: {{ .Values.auth.roleName.contributor | quote }}
+            - name: VB_SCOPE_USER
+              value: {{ .Values.auth.roleName.user | quote }}
             - name: VB_DB_PASS
               valueFrom:
                 secretKeyRef:

@@ -50,11 +50,25 @@ class PlotObservationBundle(Operator):
         self.max_limit = self.default_limit
         self.record_limit = 1000000
         self.sort_options = ("default", "author_obs_code")
+        self.status_options = ["any", "current"]
+        self.default_status = "any"
         self.bundle_options = ("csv", )
         self.default_bundle = "csv"
         self.temp_table = "bundle"
 
     def configure_query(self, *args, **kwargs):
+        # define standing conditions, plus any that depend on query
+        # parameters
+        always_condition = {
+            'sql': [
+                "(emb_observation < 6 OR emb_observation IS NULL)",
+            ],
+            'params': []
+        }
+        if self.query_params.get('status') == 'current':
+            always_condition['sql'].append(
+                "hasobservationsynonym IS NOT TRUE")
+
         self.query = {}
         self.query['base'] = {
             'alias': "ob",
@@ -76,12 +90,7 @@ class PlotObservationBundle(Operator):
                 'params': []
             },
             'conditions': {
-                'always': {
-                    'sql': [
-                        "(emb_observation < 6 OR emb_observation IS NULL)",
-                    ],
-                    'params': []
-                },
+                'always': always_condition,
                 'search': {
                     'sql': """\
                          ob.search_vector @@ WEBSEARCH_TO_TSQUERY('simple', %s)
@@ -213,6 +222,11 @@ class PlotObservationBundle(Operator):
         # capture search parameter, if it exists
         params['search'] = request_args.get('search')
 
+        # add param for limiting by status
+        params['status'] = process_option_param('status',
+            request_args.get('status', self.default_status),
+            self.status_options)
+
         # enforce maximum plot observation count
         params['limit'] = min(params['limit'], self.max_limit)
 
@@ -255,6 +269,7 @@ class PlotObservationBundle(Operator):
             params = self.validate_query_params(request.args)
         except QueryParameterError as e:
             return jsonify_error_message(e.message), e.status_code
+        self.query_params = params
 
         # Get the table code associated with the current query scope, which may
         # be different from the table code associated with the target resource
@@ -309,6 +324,7 @@ class PlotObservationBundle(Operator):
                 'limit': params.get('limit', 0),
                 'offset': params.get('offset', 0),
                 'sort': f"{params.get('sort', 'None')} {params.get('direction')}",
+                'status': f"{params.get('status')}",
             }
         with pg_dbapi.connect(uri) as conn:
             with conn.cursor() as cur:
