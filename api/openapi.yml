@@ -1,7 +1,7 @@
 openapi: '3.0.3'
 info:
   title: VegBankAPI
-  version: '2.1.0'
+  version: '2.1.1'
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
