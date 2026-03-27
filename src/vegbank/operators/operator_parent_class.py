@@ -704,7 +704,13 @@ class Operator:
             duplicated_codes = table_df.loc[duplicate_user_codes, join_field_name].tolist()
             raise ValueError(f"The following user codes are duplicated in the upload data for table {insert_table_name}: {duplicated_codes}")
 
-        table_inputs = list(table_df.itertuples(index=False, name=None))
+        try:
+            table_inputs = list(table_df.itertuples(index=False, name=None))
+        except UnicodeDecodeError as e:
+            raise ValueError(
+                f"Uninterpretable text encountered in {insert_table_name} - "
+                "ensure your file is saved with UTF-8 encoding before uploading."
+            )
         with conn.cursor() as cur:
             sql_file_temp_table = os.path.join(
                 f"{insert_table_name}/create_{insert_table_name}_temp_table.sql"
