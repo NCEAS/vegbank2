@@ -120,12 +120,20 @@ def init_oauth(app) -> bool:
         app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     oauth.init_app(app)
+
+    # Base OIDC scopes come from the secrets file; VegBank scopes come from
+    # env vars (set by Helm values). Merge and deduplicate to build the final
+    # scope string.
+    base_scopes = secrets.get("scope_request", "").split()
+    vb_scopes = [SCOPE_ADMIN, SCOPE_CONTRIBUTOR, SCOPE_USER]
+    scope_request = " ".join(dict.fromkeys(base_scopes + vb_scopes))
+
     oauth.register(
         name="vegbank_oidc",
         client_id=secrets.get("client_id"),
         client_secret=secrets.get("client_secret"),
         server_metadata_url=secrets.get("server_metadata_url"),
-        client_kwargs={"scope": secrets.get("scope_request", "openid email profile vegbank:admin vegbank:contributor vegbank:user")},
+        client_kwargs={"scope": scope_request},
     )
 
     logger.info("OAuth client initialised.")
