@@ -191,7 +191,7 @@ The `client_secrets.json` file is required for communication with the OIDC provi
 }
 ```
 
-The `server_metadata_url` tells the system where to find OIDC keys, token endpoints, and other config. Scopes are **not** read from this file — they are controlled exclusively via environment variables (see above).
+The `server_metadata_url` tells the system where to find OIDC keys, token endpoints, and other config.
 
 
 ### Protecting Endpoints
