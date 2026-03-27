@@ -10,7 +10,7 @@
 
 ## Citation and Overview
 
-> *Jim Regetz, Robert Shelton, Darian Gill, Matthew B. Jones, Dou Mok, Matthew Brooke, Rushiraj Nenuji, Jeanette Clark, Maggie Klope, Michael T. Lee, Robert K. Peet*. 2026. **VegBank: the open-access vegetation plot database and API of the Ecological Society of America’s Panel on Vegetation Classification**. Version 2.1.0. VegBank. [doi:10.82902/J1WC7G](https://doi.org/10.82902/J1WC7G).
+> *Jim Regetz, Robert Shelton, Darian Gill, Matthew B. Jones, Dou Mok, Matthew Brooke, Rushiraj Nenuji, Jeanette Clark, Maggie Klope, Michael T. Lee, Robert K. Peet*. 2026. **VegBank: the open-access vegetation plot database and API of the Ecological Society of America’s Panel on Vegetation Classification**. Version 2.1.1. VegBank. [doi:10.82902/J1WC7G](https://doi.org/10.82902/J1WC7G).
 
 The [VegBank](http://vegbank.org) data system provides a community managed data portal for
 vegetation plot data, with special emphasis on supporting the U.S. National Vegetation
