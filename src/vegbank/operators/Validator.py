@@ -1,9 +1,11 @@
 from collections import defaultdict
+import logging
 import numpy as np
 import pandas as pd
 from vegbank.operators import table_defs_config
 from vegbank.utilities import validate_required_and_missing_fields
 
+logger = logging.getLogger(__name__)
 # Defines the required fields and table defs for each file that vegbank uploads
 config = {
     "projects": {
@@ -462,7 +464,7 @@ def validate(df, file_name, endpoint_name=None):
         dict: A dictionary containing 'has_error' (bool) and 'error' (str) keys
             indicating the result of the validation.
     """
-    print("validating " + file_name)
+    logger.debug("validating " + file_name)
     if file_name not in config:
         return {
             "has_error": False,
@@ -486,7 +488,7 @@ def validate(df, file_name, endpoint_name=None):
         table_key = 'community_contributors'
     else:
         table_key = file_name
-    print('table key is ' + table_key)
+    logger.debug('table key is ' + table_key)
 
     cfg = config[table_key]
     validation = dict()
@@ -564,11 +566,10 @@ def validate_xor_pairs(df, xor_pairs, file_name):
     for xor_pair in xor_pairs:
         col1, col2 = xor_pair[0], xor_pair[1]
         required = False if len(xor_pair) > 2 and xor_pair[2] == 'optional' else True
-        print(f"validating xor pair {col1} and {col2} in {file_name} with required set to {required}")
+        logger.debug(f"validating xor pair {col1} and {col2} in {file_name} with required set to {required}")
         xor_err_msg = f"Rows in {file_name} must have either {col1} or {col2}, but not both. "
         if col1 not in df.columns and col2 not in df.columns:
             if required:
-                print(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing")
                 to_return['has_error'] = True
                 to_return['error'] += xor_err_msg
                 continue
@@ -585,15 +586,6 @@ def validate_xor_pairs(df, xor_pairs, file_name):
                     continue
         elif ((not df[((df[col1].notnull()) & (df[col2].notnull()))].empty) or
             (not df[((df[col1].isnull()) & (df[col2].isnull()))].empty and required)):
-            print(
-                "xor validation failed for " +
-                col1 +
-                " and " +
-                col2 +
-                " in " +
-                file_name)
-            print(df[((df[col1].notnull()) & (df[col2].isnull()))
-                  | ((df[col1].isnull()) & (df[col2].notnull()))])
             to_return['has_error'] = True
             to_return['error'] += xor_err_msg
     return to_return
@@ -628,13 +620,11 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
         return to_return
 
     df_1 = data[df_1_name]
-    print("read in data for " + df_1_name + " to validate user codes: ")
-    print(df_1.columns)
     for source_code, target_code, target_table in user_codes:
-        print(
+        logger.debug(
             f"validating {source_code} from {df_1_name} against {target_code}  in {target_table}")
         if source_code not in df_1.columns or df_1[source_code].isnull().all():
-            print(
+            logger.debug(
                 f"{source_code} is not present in {file_name}, skipping user code validation for {source_code}")
         elif data[target_table] is None:
             to_return['has_error'] = True
@@ -652,9 +642,8 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
                 missing_codes.discard(None)
 
                 if len(missing_codes) > 0:
-                    print(
-                        f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed")
-                    print(missing_codes)
+                    logger.debug(
+                        f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table}  has failed. missing codes are: " + ", ".join(missing_codes))
                     to_return['has_error'] = True
                     to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(
                         missing_codes) + ". "
