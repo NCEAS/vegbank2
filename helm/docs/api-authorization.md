@@ -172,18 +172,22 @@ FLASK_SECRET_KEY=your-secret-key
 
 # OIDC/Keycloak configuration
 OIDC_CLIENT_SECRETS_FILE=/path/to/client_secrets.json
+
+# Standard OIDC scopes to request during login (default: "openid email profile")
+# VegBank role scopes (VB_SCOPE_ADMIN/CONTRIBUTOR/USER) are always appended automatically.
+# Set via the auth.oidcDefaultScopes Helm value.
+VB_OIDC_DEFAULT_SCOPES=openid email profile
 ```
 
 #### Client Secrets File format
 
-The `client_secrets.json` file is required for communication with the OIDC provider. 
+The `client_secrets.json` file is required for communication with the OIDC provider.
 
 ```json
 {
   "client_id": "vegbank-api-client",
   "client_secret": "your-client-secret-from-keycloak",
-  "server_metadata_url": "https://auth.vegbank.org/auth/realms/vegbank/.well-known/openid-configuration",
-  "scope_request": "openid email profile vegbank:admin vegbank:contributor vegbank:user"
+  "server_metadata_url": "https://auth.vegbank.org/auth/realms/vegbank/.well-known/openid-configuration"
 }
 ```
 

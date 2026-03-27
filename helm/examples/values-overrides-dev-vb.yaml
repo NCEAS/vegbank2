@@ -8,6 +8,14 @@
 ##
 auth:
   accessMode: "authenticated"
+  ## @param auth.roleName.admin Scope name for the admin role
+  ## @param auth.roleName.contributor Scope name for the contributor role
+  ## @param auth.roleName.user Scope name for the user role
+  ##
+  roleName:
+    admin: "vegbank-dev:admin"
+    contributor: "vegbank-dev:contributor"
+    user: "vegbank-dev:user"
 
 replicaCount: 2
 

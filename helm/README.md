@@ -178,13 +178,14 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### API Access - Authentication and Authorization
 
-| Name                        | Description                                                         | Value                 |
-| --------------------------- | ------------------------------------------------------------------- | --------------------- |
-| `auth.accessMode`           | Controls authentication & upload behavior (RW or RO) for API access | `read_only`           |
-| `auth.oidcSecretName`       | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config` |
-| `auth.roleName.admin`       | Scope name for the admin role                                       | `vegbank:admin`       |
-| `auth.roleName.contributor` | Scope name for the contributor role                                 | `vegbank:contributor` |
-| `auth.roleName.user`        | Scope name for the user role                                        | `vegbank:user`        |
+| Name                        | Description                                                         | Value                  |
+| --------------------------- | ------------------------------------------------------------------- | ---------------------- |
+| `auth.accessMode`           | Controls authentication & upload behavior (RW or RO) for API access | `read_only`            |
+| `auth.oidcSecretName`       | Name of the Kubernetes secret containing client_secrets.json        | `vegbank-oidc-config`  |
+| `auth.oidcDefaultScopes`    | Space-separated standard OIDC scopes requested during login.        | `openid email profile` |
+| `auth.roleName.admin`       | Scope name for the admin role                                       | `vegbank:admin`        |
+| `auth.roleName.contributor` | Scope name for the contributor role                                 | `vegbank:contributor`  |
+| `auth.roleName.user`        | Scope name for the user role                                        | `vegbank:user`         |
 
 ### Database
 
@@ -259,11 +260,12 @@ If you are testing new schema updates, add them to `helm/db/migrations` with the
 
 ### Gunicorn Server
 
-| Name                | Description                                                             | Value  |
-| ------------------- | ----------------------------------------------------------------------- | ------ |
-| `gunicorn.workers`  | Number of worker processes for handling requests.                       | `5`    |
-| `gunicorn.timeout`  | Workers silent for more than this many seconds are killed and restarted | `2400` |
-| `gunicorn.logLevel` | Granularity of gunicorn logs (debug|info|warning|error|critical)        | `info` |
+| Name                             | Description                                                                                                                                  | Value   |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `gunicorn.workers`               | Number of worker processes for handling requests.                                                                                            | `5`     |
+| `gunicorn.timeout`               | Workers silent for more than this many seconds are killed and restarted                                                                      | `2400`  |
+| `gunicorn.logLevel`              | Granularity of gunicorn logs (debug|info|warning|error|critical)                                                                             | `info`  |
+| `gunicorn.limitRequestFieldSize` | The maximum size of HTTP request header fields in bytes. Default is 8KB, but this is upped to 16kb to match the limit set at the auth stage. | `16384` |
 
 ### Ingress
 
