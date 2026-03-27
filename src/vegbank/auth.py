@@ -53,6 +53,9 @@ MAX_TOKEN_LEN = 16_384  # Token length limit in characters (~16 KB) to prevent D
 class MissingParameterError(Exception):
     """Raised when a required request parameter is missing."""
 
+# Standard OIDC scopes — overridable via environment variable
+DEFAULT_SCOPES = os.getenv("VB_OIDC_DEFAULT_SCOPES", "openid email profile")
+
 # VegBank-specific scopes — configurable via environment variables set by Helm
 SCOPE_ADMIN = os.getenv("VB_SCOPE_ADMIN", "vegbank:admin")
 SCOPE_CONTRIBUTOR = os.getenv("VB_SCOPE_CONTRIBUTOR", "vegbank:contributor")
@@ -121,10 +124,9 @@ def init_oauth(app) -> bool:
 
     oauth.init_app(app)
 
-    # Base OIDC scopes come from the secrets file; VegBank scopes come from
-    # env vars (set by Helm values). Merge and deduplicate to build the final
-    # scope string.
-    base_scopes = secrets.get("scope_request", "").split()
+    # Build scope string from: standard OIDC defaults (VB_OIDC_DEFAULT_SCOPES) +
+    # VegBank-specific scopes (set by Helm values). Deduplicate while preserving order.
+    base_scopes = DEFAULT_SCOPES.split()
     vb_scopes = [SCOPE_ADMIN, SCOPE_CONTRIBUTOR, SCOPE_USER]
     scope_request = " ".join(dict.fromkeys(base_scopes + vb_scopes))
 

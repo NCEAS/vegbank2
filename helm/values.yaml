@@ -43,6 +43,12 @@ auth:
   ##
   oidcSecretName: vegbank-oidc-config
 
+  ## @param auth.oidcDefaultScopes Space-separated standard OIDC scopes requested during login.
+  ## Override this if your OIDC provider requires a different set of base scopes.
+  ## VegBank role scopes (admin/contributor/user below) are always appended automatically.
+  ##
+  oidcDefaultScopes: "openid email profile"
+
   ## @param auth.roleName.admin Scope name for the admin role
   ## @param auth.roleName.contributor Scope name for the contributor role
   ## @param auth.roleName.user Scope name for the user role

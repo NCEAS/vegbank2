@@ -171,6 +171,8 @@ spec:
           env:
             - name: VB_ACCESS_MODE
               value: {{ .Values.auth.accessMode | quote }}
+            - name: VB_OIDC_DEFAULT_SCOPES
+              value: {{ .Values.auth.oidcDefaultScopes | quote }}
             - name: VB_SCOPE_ADMIN
               value: {{ .Values.auth.roleName.admin | quote }}
             - name: VB_SCOPE_CONTRIBUTOR
