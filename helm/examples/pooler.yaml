@@ -1,0 +1,24 @@
+## Optional PGBouncer connection pooler for vegbank dev clusters.
+## See https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md
+##
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: vegbank-pooler-rw
+spec:
+  cluster:
+    name: vegbankdb-cnpg   # This should match the CNPG cluster name
+  instances: 1
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    parameters:
+      ## Max client connections from the app to each pgbouncer instance - so 3 instances, each with
+      ## 100 connections => 300 total connections to postgres.
+      ##
+      max_client_conn: "10"
+      ## Max connections from each pgbouncer instance to postgres - so 3 instances, each with
+      ## 30 connections => 90 total connections to postgres. If postgres has max_connections set
+      ## to 100, this leaves 10 headroom for maintenance and superusers.
+      ##
+      default_pool_size: "5"
