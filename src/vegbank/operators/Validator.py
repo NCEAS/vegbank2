@@ -648,16 +648,16 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
                     to_return['error'] += f"The following {source_code} values in {file_name} do not exist: " + ", ".join(
                         missing_codes) + ". "
             else:
-                print(
+                logger.debug(
                     "no data for " +
                     target_table +
                     ", skipping check of " +
                     source_code)
         if to_return['has_error'] is False:
-            print(
+            logger.debug(
                 f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has passed")
         else:
-            print(
+            logger.debug(
                 f"validation of {source_code} from {df_1_name} against {target_code}  in {target_table} has failed with error: " +
                 to_return['error'])
 
@@ -689,7 +689,7 @@ def validate_contributor_record_identifier_codes(df, data):
         set_list.append(set(data['pj']['user_pj_code'].astype(str)))
     if data.get('pl') is not None and 'user_ob_code' in data['pl'].columns:
         set_list.append(set(data['pl']['user_ob_code'].astype(str)))
-    print(set_list)
+
     missing_codes = set(df['record_identifier'].astype(str))
     for s in set_list:
         missing_codes = missing_codes - s

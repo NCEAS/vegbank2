@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import traceback
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
 from vegbank.operators import Validator
@@ -33,6 +34,7 @@ from psycopg import connect
 from psycopg.rows import dict_row
 
 
+logger = logging.getLogger(__name__)
 class PlotObservation(Operator):
     """
     Defines operations related to the exchange of plot observation data with
@@ -45,7 +47,7 @@ class PlotObservation(Operator):
     Inherits from the Operator parent class to utilize common default values and
     methods.
     """
-
+    
     def __init__(self, params):
         super().__init__(params)
         self.name = "plot_observation"
@@ -58,7 +60,7 @@ class PlotObservation(Operator):
         self.default_status = "any"
         self.default_num_taxa = 5
         self.default_num_comms = 5
-
+        
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
         nesting = False
@@ -633,7 +635,6 @@ class PlotObservation(Operator):
         new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
-            print("found some new plots")
             new_validation = validate_required_and_missing_fields(
                 new_plots_df,
                 new_pl_required_fields,
@@ -1052,9 +1053,8 @@ class PlotObservation(Operator):
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn)
-                print(ds)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {end - start} seconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']

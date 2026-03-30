@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime
+import logging
 from psycopg import connect
 from psycopg.rows import dict_row
 from flask import jsonify
@@ -21,7 +22,7 @@ from vegbank.utilities import (
 )
 
 
-
+logger = logging.getLogger(__name__)
 class TaxonInterpretation(Operator):
     """
     Defines operations related to the exchange of taxon interpretation data with
@@ -238,7 +239,6 @@ class TaxonInterpretation(Operator):
                 if data[name] is not None:
                     data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
                     endpoint_name = None
-                    print(name)
                     if name == 'ti':
                         endpoint_name = 'taxon-interpretations'
                     file_validation = Validator.validate(data[name], config['file_name'], endpoint_name)
@@ -323,9 +323,8 @@ class TaxonInterpretation(Operator):
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn)
-                print(ds)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {end - start} seconds")
 
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']

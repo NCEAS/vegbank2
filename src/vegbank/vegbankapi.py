@@ -432,7 +432,7 @@ def taxon_interpretations(vb_code, claims=None):
         try:
             return taxon_interpretation_operator.upload_all(request)
         except Exception as e:
-            print(traceback.format_exc())
+            logger.debug(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
     elif request.method == 'GET':
@@ -1210,7 +1210,7 @@ def user_datasets(ds_code, claims=None):
         try:
             to_return = UserDataset(params).upload_user_dataset_from_endpoint(request, claims=claims)
         except Exception as e:
-            print(traceback.format_exc())
+            logger.debug(traceback.format_exc())
             return jsonify_error_message(
                 f"An error occurred during upload: {str(e)}"), 500
         return jsonify(to_return)
@@ -1283,7 +1283,7 @@ def identifiers(identifier_value):
                 return jsonify(row), 200
         # pylint: disable=W0718
         except Exception as e:
-            print(traceback.format_exc())
+            logger.debug(traceback.format_exc())
             return (
                 jsonify_error_message(
                     f"Unexpected error during identifier search: {str(e)}"

@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import logging
 import traceback
 from flask import jsonify, send_file
 from psycopg import ClientCursor
@@ -23,7 +24,7 @@ from vegbank.utilities import (
     QueryParameterError,
 )
 
-
+logger = logging.getLogger(__name__)
 table_code_lookup = {
     'community-classifications': 'cl',
     'community-concepts': 'cc',
@@ -690,7 +691,7 @@ class Operator:
                     - resources: pairs of user and vb codes for the new records
                     - counts: number of new records created
         """
-        print(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
+        logger.info(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
 
         df.columns = df.columns.str.lower()
         table_df = df[df.columns.intersection(insert_table_def)]

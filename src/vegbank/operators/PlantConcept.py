@@ -4,6 +4,7 @@ import numpy as np
 import time
 import traceback
 from datetime import datetime
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config, Validator
 from .Party import Party
@@ -23,7 +24,7 @@ from psycopg.rows import dict_row
 from psycopg import connect
 from flask import jsonify
 
-
+logger = logging.getLogger(__name__)
 class PlantConcept(Operator):
     """
     Defines operations related to the exchange of plant concept data with
@@ -548,9 +549,8 @@ class PlantConcept(Operator):
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn)
-                print(ds)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {end - start} seconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']
@@ -920,7 +920,7 @@ class PlantConcept(Operator):
                     }
                 }
         """
-        print("Applying stop dates to old concepts...")
+        logger.info("Applying stop dates to old concepts...")
         if what_to_deactivate == 'by_party':
             sql_deactivate_status = """
                 UPDATE plantstatus
