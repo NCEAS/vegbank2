@@ -12,29 +12,27 @@ The preferred method to recreate the `vegbank` `cnpg` cluster is by recovering f
 
 To deploy a `cnpg` cluster by recovering from a `Backup` object that was created by a `cnpg ScheduledBackup`:
 
-
-
 ### Step 1: Create a New Cluster
 
 > [!CAUTION]
-> The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`)
+> The new cluster you are creating must be on the same file system as the backup snapshot you're restoring from. For example, you can't spin up an SSD-backed cluster (`csi-cephfs-ssd-sc`) from a snapshot that was made on HDD (`csi-cephfs-sc`) (although you can switch from non-ephemeral to ephemeral, within the same file system, e.g. `csi-cephfs-sc` to `csi-cephfs-sc-ephemeral`).
 
 - Install the `cnpg` `helm` chart to create a new cluster (with a different name from the existing cluster, if there is one), in the same namespace.
-(In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbankdb`). 
+(In this example, the existing cluster was called `vegbankolddb`, and the new cluster is called `vegbanknewdb`). 
 
-
+  In the following command...
+  - replace `<values-overrides>`...
+    - For **dev** contexts, use `./helm/admin/values-cnpg.yaml`
+    - For **prod**, see NCEAS GHE 'k8s-cluster-config' private repo
+  - replace `<backup-name>` with name of the `backups.postgresql.cnpg.io object` to recover from (see Tip below)
+  - replace `<orig-storageclass>` with the `storageClass` used for the original PVC
   ```sh
-  # replace <values-overrides-file>: for dev contexts: ./helm/admin/values-cnpg.yaml. For prod, see
-  #         private NCEAS GH Enterprise security repo
-  # replace <backup-name> with name of the backups.postgresql.cnpg.io object to recover from (see Tip below)
-  # replace <orig-storageclass> with the storageClass used for the original PVC
-  #
-  $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg \
-            -f <values-overrides-file> \
-            --set init.enabled=true \
-            --set init.method=recovery \
-            --set init.recoverFromBackup=<backup-name> \
-            --set persistence.storageClass=<orig-storageclass>
+  $ helm install vegbanknewdb oci://ghcr.io/dataoneorg/charts/cnpg \
+        -f <values-overrides> \
+        --set init.enabled=true \
+        --set init.method=recovery \
+        --set init.recoverFromBackup=<backup-name> \
+        --set persistence.storageClass=<orig-storageclass>
   ```
 
 > [!TIP]
@@ -42,78 +40,85 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 >
 > ```sh
 > $ kubectl get backups
-> NAME                                        AGE   CLUSTER          METHOD           PHASE
-> vegbankdb-scheduled-backup-20260309231714   46h   vegbankdb-cnpg   volumeSnapshot   completed
-> vegbankdb-scheduled-backup-20260310210000   24h   vegbankdb-cnpg   volumeSnapshot   completed
-> vegbankdb-scheduled-backup-20260311210000   25m   vegbankdb-cnpg   volumeSnapshot   completed
+> NAME                                          AGE   CLUSTER             METHOD           PHASE
+> vegbanknewdb-scheduled-backup-20260309231714  46h   vegbanknewdb-cnpg   volumeSnapshot   completed
+> vegbanknewdb-scheduled-backup-20260310210000  24h   vegbanknewdb-cnpg   volumeSnapshot   completed
+> vegbanknewdb-scheduled-backup-20260311210000  25m   vegbanknewdb-cnpg   volumeSnapshot   completed
 > ```
-
-- Monitor progress:
-
-  ```sh
-  $ kubectl get pods --watch
-  NAME                                           READY   STATUS    RESTARTS      AGE
-  vegbankapi-54b85649c6-2pwcm                    1/1     Running   0             4d19h
-  vegbankolddb-cnpg-1                            1/1     Running   2             52d
-  vegbankolddb-cnpg-2                            1/1     Running   1 (16d ago)   52d
-  vegbankolddb-cnpg-3                            1/1     Running   1 (16d ago)   52d
-  vegbankdb-cnpg-1-snapshot-recovery-pqsl9       0/1     Pending   0             2s
-  ## This ^ is the pod that is responsible for recovering the database from the backup/snapshot.
-  ```
 
 > [!IMPORTANT]
 > It can take up to 10 minutes for the first CNPG pod to be ready, then some additional time for the data to be replicated and the other pods started.
 >
 > Until then, it is common to see `FailedScheduling` events when you `kubectl describe` the recovery pod, because the cluster is trying to schedule the pods before the recovery process is complete.
-
-- Finally, confirm that `ScheduledBackups` are being run once again:
-
-  ```sh
-  $ kubectl get backup -n dev-vegbank
-  ...
-  vegbankolddb-scheduled-backup-20251207210000  22h    vegbankdb-cnpg      volumeSnapshot  completed
-  vegbankdb-scheduled-backup-20251208192351     2m20s  vegbankvelero-cnpg  volumeSnapshot  completed
-  ```
+>
+> To monitor progress:
+>
+> ```sh
+> $ kubectl get pods --watch
+> NAME                                           READY   STATUS    RESTARTS      AGE
+> vegbankapi-54b85649c6-2pwcm                    1/1     Running   0             4d19h
+> vegbankolddb-cnpg-1                            1/1     Running   2             52d
+> vegbankolddb-cnpg-2                            1/1     Running   1 (16d ago)   52d
+> vegbankolddb-cnpg-3                            1/1     Running   1 (16d ago)   52d
+> vegbanknewdb-cnpg-1-snapshot-recovery-pqsl9    0/1     Pending   0             2s
+> ## This ^ is the pod that is responsible for recovering the database from the backup/snapshot.
+> ```
 
 ### Step 2: Update Clients to Point at the New Cluster.
 
-1. If you are running a pooler (e.g. `PGBouncer` in production):
-   1. update pooler values overrides and redeploy:
-      ```yaml
+- **If you are NOT running a pooler** (e.g. dev systems), update api values overrides and redeploy:
 
-      ## 'pooler--prod-vegbank-cnpg.yaml' in NCEAS GHE 'k8s-cluster0--config' private repo
-      ##
-      spec:
-        cluster:
-          name: vegbankdb-cnpg    # point this to the new cluster name
-      ```
-   2. update api values overrides and redeploy:
-      ```yaml
-      ## 'values-prod-cluster-vegbank.yaml' in NCEAS GHE 'k8s-cluster0--config' private repo
-      ##
-      database:
-        host: vegbankdb-pooler-rw    # should NOT need to change
-
-      flyway:
-        dbHost: vegbankdb-cnpg-rw    # point this to the new cluster name
-      ```
-
-2. If you are NOT running a pooler (e.g. dev systems), update api values overrides and redeploy:
     ```yaml
     ## e.g. 'values-overrides-dev-vb.yaml'
     ##
     database:
-      host: vegbankdb-cnpg-rw      # point this to the new cluster name
+      host: vegbanknewdb-cnpg-rw      # use the NEW CLUSTER NAME
 
     flyway:
-      dbHost: vegbankdb-cnpg-rw    # point this to the new cluster name
+      dbHost: vegbanknewdb-cnpg-rw    # use the NEW CLUSTER NAME
     ```
+  
+- **If you ARE running a pooler** (e.g. `PGBouncer` in production):
 
-### Step 3: Clean Up the Old Cluster
+  1. Deploy a pooler (with a different name from the existing pooler, if there is one)
+      
+     ```yaml
+     ## 'pooler--prod-vegbank-cnpg.yaml' in NCEAS GHE 'k8s-cluster-config' private repo
+     ##
+     metadata:
+       name: vegbanknewdb-pooler-rw   # use a different name from existing pooler!
+     spec:
+       cluster:
+         name: vegbanknewdb-cnpg      # use the NEW CLUSTER NAME
+        
+     ## Deploy directly using:
+     ##     $ kubectl create -f pooler--prod-vegbank-cnpg.yaml
+     ```
 
-- ```sh
-  $ helm uninstall vegbankolddb
-  ```
+   2. update corresponding api values overrides and redeploy:
+  
+      ```yaml
+      ## 'values-prod-cluster-vegbank.yaml' in NCEAS GHE 'k8s-cluster-config' private repo
+      ##
+      database:
+        host: vegbanknewdb-pooler-rw    # use the NEW POOLER NAME (see 1, above)
+
+      flyway:
+        dbHost: vegbanknewdb-cnpg-rw    # use the NEW CLUSTER NAME
+      ```
+
+### Step 3: Clean Up
+
+- Uninstall the Old Pooler (if applicable)
+
+   ```sh
+   $ kubectl delete pooler vegbankolddb-pooler-rw
+   ```
+
+-  Uninstall the Old Cluster
+   ```sh
+   $ helm uninstall vegbankolddb
+   ```
 
 > [!WARNING]
 > When you uninstall the old cluster, CNPG will also delete all the scheduled `Backup` objects! However, the data itself is not lost - a k8s administrator can still see the `volumesnapshots` that these backups were based on, using:
@@ -128,7 +133,7 @@ If you delete a cluster, all its scheduled backups (`backups.postgresql.cnpg.io`
 
 1. Create the dummy backup object
 
-   Save the following yaml to a file named `dummy-backup.yaml`. Use a cluster name that does not currently exist in the namespace (e.g. `dummy-nonexistent-cluster`), so the CNPG Operator doesn't immediately try to take a real snapshot:
+   Save the following YAML to a file named `dummy-backup.yaml`. Use a cluster name that does not currently exist in the namespace (e.g. `dummy-nonexistent-cluster`), so the CNPG Operator doesn't immediately try to take a real snapshot:
 
    ```yaml
    apiVersion: postgresql.cnpg.io/v1
@@ -149,7 +154,7 @@ If you delete a cluster, all its scheduled backups (`backups.postgresql.cnpg.io`
 
 2. Inject the state via a Status Patch
 
-   This forces the Kubernetes API to accept the status block, linking your existing snapshot to this backup. (Including this in the original yaml doesn't work). Don't forget to substitute `YOUR_EXISTING_SNAPSHOT_NAME`:
+   This forces the Kubernetes API to accept the status block, linking your existing snapshot to this backup. (Including this in the original YAML doesn't work). Don't forget to substitute `YOUR_EXISTING_SNAPSHOT_NAME`:
 
    ```shell
    kubectl patch backup forged-snapshot-backup \
@@ -250,7 +255,7 @@ If no `ScheduledBackups` are available after a disaster occurs, it is still poss
     ```
 
 > [!TIP]
-> The password can be obtained from the k8s secret (e.g. `vegbankdbcreds`):
+> The password can be obtained from the k8s secret (e.g. `vegbanknewdbcreds`):
 > use:
 >   `kubectl get secret vegbankdbcreds -o yaml`
 > ...then decode with:
