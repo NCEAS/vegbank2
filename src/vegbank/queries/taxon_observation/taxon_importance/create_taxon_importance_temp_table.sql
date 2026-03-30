@@ -8,4 +8,4 @@ CREATE TEMPORARY TABLE taxon_importance_temp(
     basalarea double precision,
     biomass double precision,
     inferencearea double precision
-);
+) ON COMMIT DROP;

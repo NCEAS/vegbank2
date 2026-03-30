@@ -7,4 +7,4 @@ CREATE TEMPORARY TABLE observation_contributor_temp
         record_identifier TEXT NOT NULL,
         vb_record_identifier TEXT, 
         vb_py_code TEXT
-    );
+    ) ON COMMIT DROP;

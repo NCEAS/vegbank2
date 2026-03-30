@@ -4,4 +4,4 @@ CREATE TEMPORARY TABLE stratum_type_temp (
     stratumname TEXT,
     stratumdescription text,
     vb_sm_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

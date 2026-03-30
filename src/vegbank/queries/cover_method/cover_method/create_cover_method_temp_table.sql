@@ -4,4 +4,4 @@ CREATE TEMPORARY TABLE cover_method_temp(
     vb_rf_code TEXT,
     covertype character varying(30) NOT NULL,
     coverestimationmethod character varying(80)
-);
+) ON COMMIT DROP;

@@ -7,4 +7,4 @@ CREATE TEMPORARY TABLE party_temp(
     email character varying(120),
     orcid TEXT,
     ror TEXT
-);
+) ON COMMIT DROP;

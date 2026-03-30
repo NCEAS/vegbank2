@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE comm_concept_temp(
     commname TEXT,
     commdescription TEXT,
     vb_cn_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

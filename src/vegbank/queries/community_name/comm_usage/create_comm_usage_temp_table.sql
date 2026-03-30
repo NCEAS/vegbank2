@@ -13,4 +13,4 @@ CREATE TEMPORARY TABLE comm_usage_temp(
     vb_cs_code TEXT NOT NULL,
     vb_cn_code TEXT NOT NULL,
     user_cu_code TEXT NOT NULL
-);
+) ON COMMIT DROP;
