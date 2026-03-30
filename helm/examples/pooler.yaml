@@ -1,6 +1,9 @@
 ## Optional PGBouncer connection pooler for vegbank dev clusters.
 ## See https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md
 ##
+## Install using:
+##   kubectl apply -f pooler.yaml
+##
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
