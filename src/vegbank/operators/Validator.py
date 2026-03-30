@@ -488,7 +488,7 @@ def validate(df, file_name, endpoint_name=None):
         table_key = 'community_contributors'
     else:
         table_key = file_name
-    logger.debug('table key is ' + table_key)
+    logger.debug('table key for validation is ' + table_key)
 
     cfg = config[table_key]
     validation = dict()
@@ -622,7 +622,7 @@ def validate_user_codes(df_1_name, data, user_codes, file_name):
     df_1 = data[df_1_name]
     for source_code, target_code, target_table in user_codes:
         logger.debug(
-            f"validating {source_code} from {df_1_name} against {target_code}  in {target_table}")
+            f"validating user code {source_code} from {df_1_name} against {target_code}  in {target_table}")
         if source_code not in df_1.columns or df_1[source_code].isnull().all():
             logger.debug(
                 f"{source_code} is not present in {file_name}, skipping user code validation for {source_code}")

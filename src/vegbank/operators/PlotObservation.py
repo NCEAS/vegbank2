@@ -815,9 +815,11 @@ class PlotObservation(Operator):
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
 
             except UploadDataError as e:
+                logger.exception(f"Error processing {config['file_name']} upload: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
         
         if validation['has_error']:
+            logger.exception(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         
         try:
@@ -1064,7 +1066,7 @@ class PlotObservation(Operator):
             conn.close()
             return jsonify(to_return)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(f"Error during upload: {str(e)}")
             return jsonify_error_message(str(e)), 500
 
     def upload_soil(self, df, conn):

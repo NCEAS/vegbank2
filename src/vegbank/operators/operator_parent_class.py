@@ -1,6 +1,7 @@
 import os
 import io
 import re
+import time
 import textwrap
 import psycopg
 import pandas as pd
@@ -711,20 +712,29 @@ class Operator:
                 f"{insert_table_name}/create_{insert_table_name}_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_table)
+            exe_start = time.time()
             cur.execute(sql)
+            exe_stop = time.time()
+            logger.debug(f"Executed temp table creation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
 
             sql_file_temp_insert = os.path.join(
                 f"{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_insert)
+            exe_start = time.time()
             cur.executemany(sql, table_inputs)
+            exe_stop = time.time()
+            logger.debug(f"Executed temp table insert for {insert_table_name} SQL in {exe_stop - exe_start:.2f} seconds.")
 
             if validate:
                 sql_file_validate = os.path.join(
                     f"{insert_table_name}/validate_{insert_table_name}.sql"
                 )
                 sql = load_sql(self.queries_package, sql_file_validate)
+                exe_start = time.time()
                 cur.execute(sql)
+                exe_stop = time.time()
+                logger.debug(f"Executed temp table validation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
                 validation_results = cur.fetchall()
                 while cur.nextset():
                     next_validation = cur.fetchall()
@@ -740,7 +750,10 @@ class Operator:
 
             sql_file_insert = os.path.join(f'{insert_table_name}/insert_{insert_table_name}.sql')
             sql = load_sql(self.queries_package, sql_file_insert)
+            exe_start = time.time()
             cur.execute(sql)
+            exe_stop = time.time()
+            logger.debug(f"Executed main insert SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
             id_pairs = cur.fetchall()
             id_pairs_df = pd.DataFrame(id_pairs)
 
@@ -758,7 +771,10 @@ class Operator:
 
             if create_codes:
                 sql = load_sql(self.queries_root, 'create_codes.sql')
+                exe_start = time.time()
                 cur.executemany(sql, code_inputs, returning=True)
+                exe_stop = time.time()
+                logger.debug(f"Executed code creation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
 
             vb_field_name = f'vb_{insert_table_code}_code'
             to_return = {}

@@ -563,6 +563,7 @@ class CommunityConcept(Operator):
                     })
             conn.close()
         except Exception as e:
+            logger.exception(f"Error during upload: {str(e)}")
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
