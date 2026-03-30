@@ -24,11 +24,13 @@ To deploy a `cnpg` cluster by recovering from a `Backup` object that was created
 
 
   ```sh
+  # replace <values-overrides-file>: for dev contexts: ./helm/admin/values-cnpg.yaml. For prod, see
+  #         private NCEAS GH Enterprise security repo
   # replace <backup-name> with name of the backups.postgresql.cnpg.io object to recover from (see Tip below)
   # replace <orig-storageclass> with the storageClass used for the original PVC
   #
   $ helm install vegbankdb oci://ghcr.io/dataoneorg/charts/cnpg \
-            -f ./values-cnpg.yaml \
+            -f <values-overrides-file> \
             --set init.enabled=true \
             --set init.method=recovery \
             --set init.recoverFromBackup=<backup-name> \
