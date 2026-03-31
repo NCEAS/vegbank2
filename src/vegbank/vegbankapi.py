@@ -188,7 +188,7 @@ def plot_observations(vb_code, claims=None):
     """
     plot_observation_operator = PlotObservation(params)
     if request.method == 'POST':
-        return PlotObservation(params).upload_all(request)
+        return PlotObservation(params).upload_all(request, claims=claims)
     elif request.method == 'GET':
         if request.args.get('bundle') is not None:
             return PlotObservationBundle(params).get_vegbank_resources(request, vb_code)
@@ -430,7 +430,7 @@ def taxon_interpretations(vb_code, claims=None):
         to_return = None
         
         try:
-            return taxon_interpretation_operator.upload_all(request)
+            return taxon_interpretation_operator.upload_all(request, claims=claims)
         except Exception as e:
             print(traceback.format_exc())
             return jsonify_error_message(
@@ -492,7 +492,7 @@ def community_classifications(vb_code, claims=None):
     """
     community_classification_operator = CommunityClassification(params)
     if request.method == 'POST':
-        return community_classification_operator.upload_all(request)
+        return community_classification_operator.upload_all(request, claims=claims)
     elif request.method == 'GET':
         return community_classification_operator.get_vegbank_resources(request,
                                                                        vb_code)
@@ -644,7 +644,7 @@ def community_concepts(vb_code, claims=None):
     """
     community_concept_operator = CommunityConcept(params)
     if request.method == 'POST':
-        return community_concept_operator.upload_all(request)
+        return community_concept_operator.upload_all(request, claims=claims)
     elif request.method == 'GET':
         return community_concept_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -736,7 +736,7 @@ def plant_concepts(vb_code, claims=None):
     """
     plant_concept_operator = PlantConcept(params)
     if request.method == 'POST':
-        return plant_concept_operator.upload_all(request)
+        return plant_concept_operator.upload_all(request, claims=claims)
     elif request.method == 'GET':
         return plant_concept_operator.get_vegbank_resources(request, vb_code)
     else:
@@ -896,7 +896,7 @@ def cover_methods(cm_code, claims=None):
     """
     cover_method_operator = CoverMethod(params)
     if request.method == 'POST':
-        return cover_method_operator.upload_all(request)
+        return cover_method_operator.upload_all(request, claims=claims)
     elif request.method == 'GET':
         return cover_method_operator.get_vegbank_resources(request, cm_code)
     else:
@@ -946,7 +946,7 @@ def stratum_methods(sm_code, claims=None):
     """
     stratum_method_operator = StratumMethod(params)
     if request.method == 'POST':
-        return stratum_method_operator.upload_all(request)
+        return stratum_method_operator.upload_all(request, claims=claims)
     elif request.method == 'GET':
         return stratum_method_operator.get_vegbank_resources(request, sm_code)
     else:

@@ -169,7 +169,7 @@ class CoverMethod(Operator):
 
         return to_return
 
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         '''
         Handles the upload of cover method data, including associated reference data if provided, and cover index data. Validates the uploaded data, uploads it to the database, and creates a new user dataset with the uploaded data. Expects a multipart/form-data request with parquet files for cover methods and optionally references. The cover method file must include user codes for both cover methods and cover indices. If reference data is provided, it will be uploaded first and the generated vb_rf_codes will be merged into the cover method data before uploading cover methods and cover indices.
         
@@ -249,7 +249,7 @@ class CoverMethod(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
+                    dataset_input, conn, claims=claims)
                 print(ds)
                 end = time.time()
                 print(f"Time to upload dataset: {end - start} seconds")
