@@ -692,7 +692,7 @@ class PlotObservation(Operator):
 
         return to_return
 
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         """
         Orchestrate the insertion of client-provided Plot Observation data into
         VegBank, starting with the Flask request containing the uploaded data
@@ -1054,7 +1054,7 @@ class PlotObservation(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
+                    dataset_input, conn, claims=claims)
                 end = time.time()
                 logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}

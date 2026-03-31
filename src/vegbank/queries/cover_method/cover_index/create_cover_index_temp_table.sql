@@ -6,4 +6,4 @@ CREATE TEMPORARY TABLE cover_index_temp (
     lowerlimit double precision,
     coverpercent double precision NOT NULL,
     indexdescription text
-);
+) ON COMMIT DROP;

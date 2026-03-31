@@ -67,4 +67,4 @@ CREATE TEMP TABLE observation_temp(
     growthform3cover double precision,
     totalcover double precision,
     hasobservationsynonym boolean 
-)
+) ON COMMIT DROP;

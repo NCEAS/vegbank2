@@ -13,4 +13,4 @@ CREATE TEMPORARY TABLE plant_usage_temp(
     vb_ps_code TEXT NOT NULL,
     vb_pn_code TEXT NOT NULL,
     user_pu_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

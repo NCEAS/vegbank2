@@ -8,4 +8,4 @@ CREATE TEMPORARY TABLE stem_count_temp(
     stemheight double precision,
     stemheightaccuracy double precision,
     stemtaxonarea double precision
-);
+) ON COMMIT DROP;

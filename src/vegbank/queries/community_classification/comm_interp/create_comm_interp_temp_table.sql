@@ -10,4 +10,4 @@ CREATE TEMPORARY TABLE comm_interp_temp(
     nomenclaturaltype BOOLEAN,
     user_ci_code TEXT NOT NULL,
     vb_cl_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

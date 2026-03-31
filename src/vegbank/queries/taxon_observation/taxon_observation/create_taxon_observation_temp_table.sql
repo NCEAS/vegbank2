@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE taxon_observation_temp(
     authorplantname character varying(255) NOT NULL,
     vb_rf_code TEXT,
     taxoninferencearea double precision
-);
+) ON COMMIT DROP;

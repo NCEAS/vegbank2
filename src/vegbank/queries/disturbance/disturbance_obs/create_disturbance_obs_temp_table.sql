@@ -9,4 +9,4 @@ CREATE TEMPORARY TABLE disturbance_obs_temp(
     disturbancecomment TEXT,
     -- api-augmented fields:
     vb_ob_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

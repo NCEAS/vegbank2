@@ -11,4 +11,4 @@ CREATE TEMPORARY TABLE comm_class_temp(
     user_rf_code TEXT,
     classnotes TEXT,
     vb_ob_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

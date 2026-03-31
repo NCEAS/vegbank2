@@ -170,7 +170,7 @@ class StratumMethod(Operator):
 
         return to_return
     
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         '''
         Handles the upload of stratum method data, including associated 
         reference data if provided, and stratum type data. Validates the 
@@ -268,7 +268,7 @@ class StratumMethod(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
+                    dataset_input, conn, claims=claims)
                 end = time.time()
                 logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}

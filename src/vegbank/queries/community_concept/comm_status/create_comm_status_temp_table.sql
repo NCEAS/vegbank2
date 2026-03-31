@@ -13,4 +13,4 @@ CREATE TEMPORARY TABLE comm_status_temp(
     user_py_code TEXT,
     user_cs_code TEXT NOT NULL,
     vb_cc_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

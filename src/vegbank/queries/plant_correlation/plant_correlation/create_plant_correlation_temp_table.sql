@@ -9,4 +9,4 @@ CREATE TEMPORARY TABLE plant_correlation_temp(
     -- api-augmented fields:
     vb_pc_code TEXT NOT NULL,
     user_px_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

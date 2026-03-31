@@ -4,4 +4,4 @@ CREATE TEMP TABLE project_temp (
     projectdescription text,
     startdate timestamp with time zone,
     stopdate timestamp with time zone
-);
+) ON COMMIT DROP;
