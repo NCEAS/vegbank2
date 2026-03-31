@@ -173,7 +173,7 @@ class TaxonInterpretation(Operator):
             'params': []
         }
     
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         """
         Orchestrate the insertion of client-provided Taxon Interpretation data into
         VegBank, starting with the Flask request containing the uploaded data
@@ -322,7 +322,7 @@ class TaxonInterpretation(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
+                    dataset_input, conn, claims=claims)
                 print(ds)
                 end = time.time()
                 print(f"Time to upload dataset: {end - start} seconds")
