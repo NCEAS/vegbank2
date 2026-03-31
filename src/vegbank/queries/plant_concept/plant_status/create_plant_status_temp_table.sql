@@ -13,4 +13,4 @@ CREATE TEMPORARY TABLE plant_status_temp(
     user_py_code TEXT,
     user_ps_code TEXT NOT NULL,
     vb_pc_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

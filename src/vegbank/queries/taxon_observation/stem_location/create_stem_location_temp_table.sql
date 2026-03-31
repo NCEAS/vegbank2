@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE stem_location_temp(
     stemxposition double precision,
     stemyposition double precision,
     stemhealth character varying(50)
-);
+) ON COMMIT DROP;

@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE user_dataset_item_temp (
     itemdatabase TEXT NOT NULL, 
     itemtable TEXT NOT NULL,
     itemrecord INTEGER NOT NULL
-);
+) ON COMMIT DROP;

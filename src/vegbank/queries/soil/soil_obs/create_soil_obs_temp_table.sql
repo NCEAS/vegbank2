@@ -18,4 +18,4 @@ CREATE TEMPORARY TABLE soil_obs_temp(
     soildescription TEXT,
     -- api-augmented fields:
     vb_ob_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE plant_concept_temp(
     plantname TEXT,
     plantdescription TEXT,
     vb_pn_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

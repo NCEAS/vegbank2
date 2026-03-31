@@ -4,4 +4,4 @@ CREATE TEMPORARY TABLE reference_temp(
     shortname character varying(250),
     fulltext TEXT,
     url TEXT
-);
+) ON COMMIT DROP;

@@ -5,4 +5,4 @@ CREATE TEMPORARY TABLE stratum_method_temp(
     stratummethodname TEXT NOT NULL,
     stratummethoddescription TEXT,
     stratumassignment TEXT
-);
+) ON COMMIT DROP;
