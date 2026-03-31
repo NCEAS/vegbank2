@@ -572,24 +572,26 @@ def validate_xor_pairs(df, xor_pairs, file_name):
             if required:
                 to_return['has_error'] = True
                 to_return['error'] += xor_err_msg
+                logger.debug(f"xor validation failed for {col1} and {col2} in {file_name} because both columns are missing and the pair is required")
                 continue
         elif (col1 in df.columns and col2 not in df.columns) | (col1 not in df.columns and col2 in df.columns):
             if col1 in df.columns:
                 if df[col1].isnull().any() and required:
                     to_return['has_error'] = True
                     to_return['error'] += xor_err_msg
+                    logger.debug(f"xor validation failed for {col1} and {col2} in {file_name} because {col1} is missing values and the pair is required")
                     continue
             if col2 in df.columns:
                 if df[col2].isnull().any() and required:
                     to_return['has_error'] = True
                     to_return['error'] += xor_err_msg
+                    logger.debug(f"xor validation failed for {col1} and {col2} in {file_name} because {col2} is missing values and the pair is required")
                     continue
         elif ((not df[((df[col1].notnull()) & (df[col2].notnull()))].empty) or
             (not df[((df[col1].isnull()) & (df[col2].isnull()))].empty and required)):
             to_return['has_error'] = True
             to_return['error'] += xor_err_msg
-    if to_return['has_error'] is True:
-        logger.debug(f"validation of xor pair {col1} and {col2} in {file_name} has failed")
+            logger.debug(f"xor validation failed for {col1} and {col2} in {file_name} because there are rows where both columns are populated or both columns are null when the pair is required")
     return to_return
 
 
