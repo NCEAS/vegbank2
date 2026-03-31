@@ -512,7 +512,7 @@ class CommunityClassification(Operator):
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn)
                 end = time.time()
-                logger.debug(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']

@@ -717,7 +717,7 @@ class Operator:
             exe_start = time.time()
             cur.execute(sql)
             exe_stop = time.time()
-            logger.debug(f"Executed temp table creation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
+            logger.debug(f"Executed temp table creation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             sql_file_temp_insert = os.path.join(
                 f"{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql"
@@ -726,7 +726,7 @@ class Operator:
             exe_start = time.time()
             cur.executemany(sql, table_inputs)
             exe_stop = time.time()
-            logger.debug(f"Executed temp table insert for {insert_table_name} SQL in {exe_stop - exe_start:.2f} seconds.")
+            logger.debug(f"Executed temp table insert for {insert_table_name} SQL in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             if validate:
                 sql_file_validate = os.path.join(
@@ -736,7 +736,7 @@ class Operator:
                 exe_start = time.time()
                 cur.execute(sql)
                 exe_stop = time.time()
-                logger.debug(f"Executed temp table validation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
+                logger.debug(f"Executed temp table validation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
                 validation_results = cur.fetchall()
                 while cur.nextset():
                     next_validation = cur.fetchall()
@@ -755,7 +755,7 @@ class Operator:
             exe_start = time.time()
             cur.execute(sql)
             exe_stop = time.time()
-            logger.debug(f"Executed main insert SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
+            logger.debug(f"Executed main insert SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
             id_pairs = cur.fetchall()
             id_pairs_df = pd.DataFrame(id_pairs)
 
@@ -776,7 +776,7 @@ class Operator:
                 exe_start = time.time()
                 cur.executemany(sql, code_inputs, returning=True)
                 exe_stop = time.time()
-                logger.debug(f"Executed code creation SQL for {insert_table_name} in {exe_stop - exe_start:.2f} seconds.")
+                logger.debug(f"Executed code creation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             vb_field_name = f'vb_{insert_table_code}_code'
             to_return = {}
