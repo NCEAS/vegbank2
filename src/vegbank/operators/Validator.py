@@ -588,6 +588,8 @@ def validate_xor_pairs(df, xor_pairs, file_name):
             (not df[((df[col1].isnull()) & (df[col2].isnull()))].empty and required)):
             to_return['has_error'] = True
             to_return['error'] += xor_err_msg
+    if to_return['has_error'] is True:
+        logger.debug(f"validation of xor pair {col1} and {col2} in {file_name} has failed")
     return to_return
 
 

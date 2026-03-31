@@ -38,7 +38,6 @@ class CommunityConcept(Operator):
     Inherits from the Operator parent class to utilize common default values and
     methods.
     """
-    
     def __init__(self, params):
         super().__init__(params)
         self.name = "community_concept"
