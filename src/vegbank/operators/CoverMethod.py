@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 import time
 import traceback
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from .Reference import Reference
 from .UserDataset import UserDataset
@@ -20,7 +21,7 @@ from flask import jsonify
 from psycopg import connect
 from psycopg.rows import dict_row
 
-
+logger = logging.getLogger(__name__)
 class CoverMethod(Operator):
     """
     Defines operations related to the exchange of cover method data with
@@ -35,7 +36,6 @@ class CoverMethod(Operator):
     Inherits from the Operator parent class to utilize common default values and
     methods.
     """
-
     def __init__(self, params):
         super().__init__(params)
         self.name = "cover_method"
@@ -211,16 +211,17 @@ class CoverMethod(Operator):
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             
             except UploadDataError as e:
+                logger.exception(f"Error reading uploaded file for {name}: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
 
         if validation['has_error']:
+            logger.error(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         
         try:
             with connect(**self.params, row_factory=dict_row) as conn:
                 with conn.cursor() as cur:
                     if data['rf'] is not None:
-                        print("references are found")
                         rfs = Reference(self.params).upload_references(
                             data['rf'], conn)
                         dataset['reference'] = [item['vb_rf_code']
@@ -250,9 +251,8 @@ class CoverMethod(Operator):
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn, claims=claims)
-                print(ds)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']
@@ -261,5 +261,5 @@ class CoverMethod(Operator):
             conn.close()
             return jsonify(to_return)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(f"Error during cover method upload: {str(e)}")
             return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500

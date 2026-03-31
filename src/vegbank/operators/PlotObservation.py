@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import traceback
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
 from vegbank.operators import Validator
@@ -33,6 +34,7 @@ from psycopg import connect
 from psycopg.rows import dict_row
 
 
+logger = logging.getLogger(__name__)
 class PlotObservation(Operator):
     """
     Defines operations related to the exchange of plot observation data with
@@ -45,7 +47,7 @@ class PlotObservation(Operator):
     Inherits from the Operator parent class to utilize common default values and
     methods.
     """
-
+    
     def __init__(self, params):
         super().__init__(params)
         self.name = "plot_observation"
@@ -58,7 +60,7 @@ class PlotObservation(Operator):
         self.default_status = "any"
         self.default_num_taxa = 5
         self.default_num_comms = 5
-
+        
     def configure_query(self, *args, **kwargs):
         query_type = self.detail
         nesting = False
@@ -633,7 +635,6 @@ class PlotObservation(Operator):
         new_pl_required_fields = ['author_plot_code', 'confidentiality_status', 'user_ob_code', 'author_obs_code', 'vb_pj_code']
         old_pl_required_fields = ['vb_pl_code', 'user_ob_code', 'author_obs_code' ,'vb_pj_code']
         if not new_plots_df.empty:
-            print("found some new plots")
             new_validation = validate_required_and_missing_fields(
                 new_plots_df,
                 new_pl_required_fields,
@@ -814,9 +815,11 @@ class PlotObservation(Operator):
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
 
             except UploadDataError as e:
+                logger.exception(f"Error processing {config['file_name']} upload: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
         
         if validation['has_error']:
+            logger.exception(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         
         try:
@@ -1052,9 +1055,8 @@ class PlotObservation(Operator):
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
                     dataset_input, conn, claims=claims)
-                print(ds)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']
@@ -1064,7 +1066,7 @@ class PlotObservation(Operator):
             conn.close()
             return jsonify(to_return)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(f"Error during upload: {str(e)}")
             return jsonify_error_message(str(e)), 500
 
     def upload_soil(self, df, conn):

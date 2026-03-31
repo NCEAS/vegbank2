@@ -2,6 +2,7 @@ import io
 from datetime import datetime, timezone
 from types import SimpleNamespace
 import zipfile
+import logging
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.csv as csv
@@ -27,7 +28,7 @@ from vegbank.utilities import (
     QueryParameterError,
 )
 
-
+logger = logging.getLogger(__name__)
 class PlotObservationBundle(Operator):
     """
     Defines operations related to the exchange of plot observation data with
@@ -268,6 +269,7 @@ class PlotObservationBundle(Operator):
         try:
             params = self.validate_query_params(request.args)
         except QueryParameterError as e:
+            logger.exception("Invalid query parameters: %s", e.message)
             return jsonify_error_message(e.message), e.status_code
         self.query_params = params
 
@@ -300,6 +302,7 @@ class PlotObservationBundle(Operator):
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
+                logger.exception(f"Invalid vb_code {vb_code}")
                 return jsonify_error_message(e.message), e.status_code
             params['vb_id'] = vb_id
             by = table_code

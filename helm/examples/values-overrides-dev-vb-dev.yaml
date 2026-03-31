@@ -46,3 +46,7 @@ flyway:
 
 database:
   host: vegbank-pooler-rw
+
+gunicorn:
+  logLevel: "debug"
+
