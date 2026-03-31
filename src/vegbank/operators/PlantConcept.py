@@ -419,9 +419,11 @@ class PlantConcept(Operator):
                     validation['error'] += file_validation.get('error') + user_code_validation.get('error')
                     validation['has_error'] = validation['has_error'] or file_validation['has_error'] or user_code_validation['has_error']
             except UploadDataError as e:
+                logger.exception(f"Error reading uploaded file for {name}: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
 
         if validation['has_error']:
+            logger.error(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
@@ -567,7 +569,7 @@ class PlantConcept(Operator):
                     })
             conn.close()
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(f"Error during plant concept upload: {e}")
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)

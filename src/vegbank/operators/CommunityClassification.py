@@ -424,9 +424,11 @@ class CommunityClassification(Operator):
                     validation['error'] += file_validation['error'] + user_code_validation['error']
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
+                logger.exception(f"Error reading {config['file_name']} data: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
 
         if validation['has_error']:
+            logger.error(f"Data validation error: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
 
         # Run the upload pipeline!
@@ -526,6 +528,7 @@ class CommunityClassification(Operator):
                     })
             conn.close()
         except Exception as e:
+            logger.exception(f"Error during community classification upload: {str(e)}")
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)

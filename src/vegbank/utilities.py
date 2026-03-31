@@ -197,7 +197,7 @@ def read_parquet_file(request, file_name='file', required=False):
         raise UploadDataError(
             f"Failed to read {file_name}: {e}"
         )
-    logger.debug(f"{file_name} dataframe loaded with {len(df)} records.")
+    logger.info(f"{file_name} dataframe loaded with {len(df)} records.")
     return df
 
 def merge_vb_codes(inserted_codes, df, mapping):
@@ -231,7 +231,7 @@ def merge_vb_codes(inserted_codes, df, mapping):
     codes_df = pd.DataFrame(inserted_codes).rename(columns=mapping)
     user_col, vb_col = list(mapping.values())
     if user_col not in df.columns:
-        logger.debug(f"No '{user_col}' column found in df -- skipping merge.")
+        logger.info(f"No '{user_col}' column found in df -- skipping merge.")
         return df
     df[user_col] = df[user_col].astype(str)
     df = df.merge(codes_df[[user_col, vb_col]], on=user_col, how='left')
@@ -457,7 +457,7 @@ def update_obs_counts(conn, table, list_of_ids, batch_size=50000):
         for chunk in batch_of_ids(list_of_ids, batch_size):
             cur.execute(sql_returning_counts, (chunk,))
             count += cur.fetchone().get('count', 0)
-    logger.debug(f'Updating d_obscount for {count} {table} record(s)')
+    logger.info(f'Updating d_obscount for {count} {table} record(s)')
 
 def update_last_obs_date(conn, table, list_of_ids, batch_size=50000):
     """
@@ -503,7 +503,7 @@ def update_last_obs_date(conn, table, list_of_ids, batch_size=50000):
         for chunk in batch_of_ids(list_of_ids, batch_size):
             cur.execute(sql_returning_counts, (chunk,))
             count += cur.fetchone().get('count', 0)
-    logger.debug(f'Updating d_lastplotaddeddate for {count} {table} record(s)')
+    logger.info(f'Updating d_lastplotaddeddate for {count} {table} record(s)')
 
 def update_interpreted_observations(conn, table, list_of_ids, batch_size=50000):
     """
@@ -597,7 +597,7 @@ def update_interpreted_observations(conn, table, list_of_ids, batch_size=50000):
         for chunk in batch_of_ids(list_of_ids, batch_size):
             cur.execute(sql_returning_counts, (chunk, ))
             count += cur.fetchone().get('count', 0)
-    logger.debug(f'Updating orig and curr interpretations for {count} {table} record(s)')
+    logger.info(f'Updating orig and curr interpretations for {count} {table} record(s)')
 
 def update_search_vector(conn, table, list_of_ids, batch_size=50000):
     """

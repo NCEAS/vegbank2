@@ -212,9 +212,11 @@ class CoverMethod(Operator):
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             
             except UploadDataError as e:
+                logger.exception(f"Error reading uploaded file for {name}: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
 
         if validation['has_error']:
+            logger.error(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         
         try:
@@ -260,5 +262,5 @@ class CoverMethod(Operator):
             conn.close()
             return jsonify(to_return)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(f"Error during cover method upload: {str(e)}")
             return jsonify_error_message(f"An error occurred during upload: {str(e)}"), 500

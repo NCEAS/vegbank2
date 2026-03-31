@@ -414,6 +414,7 @@ class Operator:
             self.order_by = params['sort']
             self.direction = params['direction']
         except QueryParameterError as e:
+            logger.exception(f"Query parameter error: {str(e)}")
             return jsonify_error_message(e.message), e.status_code
 
         # Get the table code associated with the current query scope, which may
@@ -447,6 +448,7 @@ class Operator:
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
+                logger.exception(f"Query parameter error: {str(e)}")
                 return jsonify_error_message(e.message), e.status_code
             params['vb_id'] = vb_id
             by = table_code
