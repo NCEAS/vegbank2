@@ -48,23 +48,5 @@ database:
   host: vegbank-pooler-rw
 
 gunicorn:
-  ## @param gunicorn.workers Number of worker processes for handling requests.
-  ## More workers can handle more requests simultaneously, but note that they also require more cpu
-  ## and memory - so be sure to adjust the 'resources:' section accordingly.
-  ## A common recommendation for workers is (2 x num_cores) + 1. A default setting of 5 workers is
-  ## reasonable, which would require at least 2 cpu cores (2 x 2 + 1). Scaling would ideally be done
-  ## by increasing the number of replicas (pods) rather than increasing the number of workers, but
-  ## this can be adjusted based on the needs and resources of your environment.
-  ##
-  workers: 5
-  ## @param gunicorn.timeout Workers silent for more than this many seconds are killed and restarted
-  ## We override the default 30 seconds, since it's too short for some of VegBank's longer-running
-  ## API calls
-  ##
-  timeout: 2400
-  ## @param gunicorn.logLevel Granularity of gunicorn logs (debug|info|warning|error|critical)
-  ##
   logLevel: "debug"
 
-  ## @param gunicorn.limitRequestFieldSize The maximum size of HTTP request header fields in bytes. Default is 8KB, but this is upped to 16kb to match the limit set at the auth stage.
-  limitRequestFieldSize: 16384 
