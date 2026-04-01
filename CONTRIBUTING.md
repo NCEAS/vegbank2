@@ -117,7 +117,7 @@ the full set of tests on a clean checkout of the `develop` branch.
 2. After testing is completed, and version numbers and DOI/citation have been updated, the `develop` branch is then merged to main.
 3. From `main`, the new release is then built and published as a Docker image (see the [Docker README for details](./docker/README.md)), and the Helm chart is packaged and published to the GitHub Container Registry (see the [Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart)). The helm chart should then be deployed on the dev cluster, to make sure it works as expected.
 4. Then the `main` branch is tagged with:
-   1. the new version number (e.g. `v2.0.1`) and
+   1. the new version number (e.g. `2.0.1`) and
    2. the Helm chart version (which may differ from the application code version) with a `chart-` prefix.
    For example, if the application code version is `2.0.1` and the chart version is `1.0.1`, then the chart should be tagged with `chart-1.0.1`.
 5. Finally, the app and chart releases are added to GH `Releases` page and announced as appropriate to users and contributors

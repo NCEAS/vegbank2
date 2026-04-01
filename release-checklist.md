@@ -20,7 +20,7 @@ When testing is complete on the develop branch, create a new issue containing th
       git rev-parse --short HEAD
 
       # tag the api code release
-      git tag vx.x.x <commit-sha>
+      git tag x.x.x <commit-sha>
 
       # tag the helm chart release
       git tag chart-x.x.x <commit-sha>
