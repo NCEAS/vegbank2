@@ -1,12 +1,14 @@
 import os
 import io
 import re
+import time
 import textwrap
 import psycopg
 import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import logging
 import traceback
 from flask import jsonify, send_file
 from psycopg import ClientCursor
@@ -23,7 +25,7 @@ from vegbank.utilities import (
     QueryParameterError,
 )
 
-
+logger = logging.getLogger(__name__)
 table_code_lookup = {
     'community-classifications': 'cl',
     'community-concepts': 'cc',
@@ -412,6 +414,7 @@ class Operator:
             self.order_by = params['sort']
             self.direction = params['direction']
         except QueryParameterError as e:
+            logger.exception(f"Query parameter error: {str(e)}")
             return jsonify_error_message(e.message), e.status_code
 
         # Get the table code associated with the current query scope, which may
@@ -445,6 +448,7 @@ class Operator:
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
+                logger.exception(f"Query parameter error: {str(e)}")
                 return jsonify_error_message(e.message), e.status_code
             params['vb_id'] = vb_id
             by = table_code
@@ -690,7 +694,7 @@ class Operator:
                     - resources: pairs of user and vb codes for the new records
                     - counts: number of new records created
         """
-        print(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
+        logger.info(f"Uploading {insert_table_name} dataframe with {len(df)} records.")
 
         df.columns = df.columns.str.lower()
         table_df = df[df.columns.intersection(insert_table_def)]
@@ -704,26 +708,41 @@ class Operator:
             duplicated_codes = table_df.loc[duplicate_user_codes, join_field_name].tolist()
             raise ValueError(f"The following user codes are duplicated in the upload data for table {insert_table_name}: {duplicated_codes}")
 
-        table_inputs = list(table_df.itertuples(index=False, name=None))
+        try:
+            table_inputs = list(table_df.itertuples(index=False, name=None))
+        except UnicodeDecodeError as e:
+            raise ValueError(
+                f"Uninterpretable text encountered in {insert_table_name} - "
+                "ensure your file is saved with UTF-8 encoding before uploading."
+            )
         with conn.cursor() as cur:
             sql_file_temp_table = os.path.join(
                 f"{insert_table_name}/create_{insert_table_name}_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_table)
+            exe_start = time.time()
             cur.execute(sql)
+            exe_stop = time.time()
+            logger.debug(f"Executed temp table creation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             sql_file_temp_insert = os.path.join(
                 f"{insert_table_name}/insert_{insert_table_name}_to_temp_table.sql"
             )
             sql = load_sql(self.queries_package, sql_file_temp_insert)
+            exe_start = time.time()
             cur.executemany(sql, table_inputs)
+            exe_stop = time.time()
+            logger.debug(f"Executed temp table insert for {insert_table_name} SQL in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             if validate:
                 sql_file_validate = os.path.join(
                     f"{insert_table_name}/validate_{insert_table_name}.sql"
                 )
                 sql = load_sql(self.queries_package, sql_file_validate)
+                exe_start = time.time()
                 cur.execute(sql)
+                exe_stop = time.time()
+                logger.debug(f"Executed temp table validation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
                 validation_results = cur.fetchall()
                 while cur.nextset():
                     next_validation = cur.fetchall()
@@ -739,7 +758,10 @@ class Operator:
 
             sql_file_insert = os.path.join(f'{insert_table_name}/insert_{insert_table_name}.sql')
             sql = load_sql(self.queries_package, sql_file_insert)
+            exe_start = time.time()
             cur.execute(sql)
+            exe_stop = time.time()
+            logger.debug(f"Executed main insert SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
             id_pairs = cur.fetchall()
             id_pairs_df = pd.DataFrame(id_pairs)
 
@@ -757,7 +779,10 @@ class Operator:
 
             if create_codes:
                 sql = load_sql(self.queries_root, 'create_codes.sql')
+                exe_start = time.time()
                 cur.executemany(sql, code_inputs, returning=True)
+                exe_stop = time.time()
+                logger.debug(f"Executed code creation SQL for {insert_table_name} in {int((exe_stop - exe_start) * 1000)} milliseconds.")
 
             vb_field_name = f'vb_{insert_table_code}_code'
             to_return = {}

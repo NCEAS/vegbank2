@@ -23,4 +23,4 @@ CREATE TEMPORARY TABLE taxon_interpretation_temp(
     museumaccessionnumber character varying(100),
     grouptype character varying(20),
     notes text
-);
+) ON COMMIT DROP;

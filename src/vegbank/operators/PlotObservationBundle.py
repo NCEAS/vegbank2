@@ -2,6 +2,7 @@ import io
 from datetime import datetime, timezone
 from types import SimpleNamespace
 import zipfile
+import logging
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.csv as csv
@@ -27,7 +28,7 @@ from vegbank.utilities import (
     QueryParameterError,
 )
 
-
+logger = logging.getLogger(__name__)
 class PlotObservationBundle(Operator):
     """
     Defines operations related to the exchange of plot observation data with
@@ -268,6 +269,7 @@ class PlotObservationBundle(Operator):
         try:
             params = self.validate_query_params(request.args)
         except QueryParameterError as e:
+            logger.exception("Invalid query parameters: %s", e.message)
             return jsonify_error_message(e.message), e.status_code
         self.query_params = params
 
@@ -300,6 +302,7 @@ class PlotObservationBundle(Operator):
             try:
                 vb_id = self.extract_id_from_vb_code(vb_code, table_code)
             except QueryParameterError as e:
+                logger.exception(f"Invalid vb_code {vb_code}")
                 return jsonify_error_message(e.message), e.status_code
             params['vb_id'] = vb_id
             by = table_code
@@ -573,10 +576,22 @@ class PlotObservationBundle(Operator):
             "",
             "Citation",
             "-" * 8,
-            "Peet, R.K., M.T. Lee, M.D. Jennings, D. Faber-Langendoen (eds). 2013.",
-            "VegBank: The vegetation plot archive of the Ecological Society of America.",
-            f"http://vegbank.org, searched on {timestamp.strftime('%Y-%m-%d')}",
+            "VegBank (2026): Plot observations from VegBank, the vegetation plot archive",
+            "of the Ecological Society of America. Downloaded from https://vegbank.org",
+            f"on {timestamp.strftime('%Y-%m-%d')}. Dataset. https://doi.org/10.82902/J1CC7T",
             ""
+        ])
+
+        readme_parts.extend([
+            "Note that this is a citation to all data in VegBank. If you'd like a more",
+            "precise citation to the exact set of the plot observations you downloaded,",
+            "you can use the VegBank API to create a Dataset. See the create_dataset()",
+            "function in the vegbankr R package, which allows you to create a citable",
+            "Dataset by passing a name for your collection, an informative description,",
+            "and the list of observations IDs (i.e., ob_code values) extracted from the",
+            "plot_observations.csv file. Upon creation of your Dataset, the API will",
+            "return a DOI that you can use as a persistent citation.",
+            "",
         ])
 
         return "\n".join(readme_parts)

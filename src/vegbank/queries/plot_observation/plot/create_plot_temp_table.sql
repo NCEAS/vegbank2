@@ -43,4 +43,4 @@ CREATE TEMP TABLE plot_temp (
     submitter_surname character varying(100),
     submitter_givenname character varying(100),
     submitter_email character varying(100)
-);
+) ON COMMIT DROP;

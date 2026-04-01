@@ -424,6 +424,7 @@ class UserDataset(Operator):
             or a ``(JSON error response, status code)`` tuple on failure.
         """
         if not request.is_json:
+            logger.error("Invalid user dataset upload request: Content-Type is not application/json")
             return jsonify_error_message("Request body must be JSON."), 400
 
         dataset = request.get_json()

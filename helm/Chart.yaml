@@ -4,7 +4,7 @@ description: |
   Helm chart for Kubernetes Deployment of the VegBank API Server
   (https://github.com/NCEAS/vegbank2)
 
-sources: 
+sources:
 - https://github.com/NCEAS/vegbank2
 
 icon: https://github.com/NCEAS/vegbank2/blob/main/assets/vegbank-logo.png
@@ -22,10 +22,10 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.1.1"
+version: "1.1.2"
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "2.1.1"
+appVersion: "2.1.2"

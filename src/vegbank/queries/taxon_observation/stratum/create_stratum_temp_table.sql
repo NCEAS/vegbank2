@@ -6,4 +6,4 @@ CREATE TEMPORARY TABLE stratum_temp(
     stratumheight double precision,
     stratumbase double precision,
     stratumcover double precision
-);
+) ON COMMIT DROP;

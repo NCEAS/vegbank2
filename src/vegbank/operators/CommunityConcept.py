@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config, Validator
 from .Party import Party
@@ -22,7 +23,7 @@ from psycopg.rows import dict_row
 from psycopg import connect
 from flask import jsonify
 
-
+logger = logging.getLogger(__name__)
 class CommunityConcept(Operator):
     """
     Defines operations related to the exchange of community concept data with
@@ -37,7 +38,6 @@ class CommunityConcept(Operator):
     Inherits from the Operator parent class to utilize common default values and
     methods.
     """
-
     def __init__(self, params):
         super().__init__(params)
         self.name = "community_concept"
@@ -333,7 +333,7 @@ class CommunityConcept(Operator):
 
         return params
 
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         """
         Orchestrate the insertion of client-provided Community Concept data into
         VegBank, starting with the Flask request containing the uploaded data
@@ -418,8 +418,10 @@ class CommunityConcept(Operator):
                     validation['error'] += file_validation['error'] + user_code_validation['error']
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
+                logger.exception(f"Error reading uploaded file for {name}: {str(e)}")
                 return jsonify_error_message(e.message), e.status_code
         if validation['has_error']:
+            logger.error(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
@@ -544,10 +546,9 @@ class CommunityConcept(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
-                print(ds)
+                    dataset_input, conn, claims=claims)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
                 to_return['resources']['ds'] = ds['resources']['ds']
@@ -563,6 +564,7 @@ class CommunityConcept(Operator):
                     })
             conn.close()
         except Exception as e:
+            logger.exception(f"Error during community concept upload: {str(e)}")
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)
@@ -915,7 +917,7 @@ class CommunityConcept(Operator):
                     }
                 }
         """
-        print("Applying stop dates to old concepts...")
+        logger.info("Applying stop dates to old concepts...")
         if what_to_deactivate == 'by_party':
             sql_deactivate_status = """
                 UPDATE commstatus

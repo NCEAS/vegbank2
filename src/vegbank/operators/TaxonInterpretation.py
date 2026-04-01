@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime
+import logging
 from psycopg import connect
 from psycopg.rows import dict_row
 from flask import jsonify
@@ -21,7 +22,7 @@ from vegbank.utilities import (
 )
 
 
-
+logger = logging.getLogger(__name__)
 class TaxonInterpretation(Operator):
     """
     Defines operations related to the exchange of taxon interpretation data with
@@ -173,7 +174,7 @@ class TaxonInterpretation(Operator):
             'params': []
         }
     
-    def upload_all(self, request):
+    def upload_all(self, request, claims=None):
         """
         Orchestrate the insertion of client-provided Taxon Interpretation data into
         VegBank, starting with the Flask request containing the uploaded data
@@ -238,7 +239,6 @@ class TaxonInterpretation(Operator):
                 if data[name] is not None:
                     data[name].replace({pd.NaT: None, np.nan: None}, inplace=True)
                     endpoint_name = None
-                    print(name)
                     if name == 'ti':
                         endpoint_name = 'taxon-interpretations'
                     file_validation = Validator.validate(data[name], config['file_name'], endpoint_name)
@@ -246,8 +246,10 @@ class TaxonInterpretation(Operator):
                     validation['error'] += file_validation['error'] + user_code_validation['error']
                     validation['has_error'] = file_validation['has_error'] or user_code_validation['has_error'] or validation['has_error']
             except UploadDataError as e:
+                logger.exception(f"Error reading uploaded file for {name}: {e.message}")
                 return jsonify_error_message(e.message), e.status_code
         if validation['has_error']:
+            logger.error(f"Validation errors in uploaded data: {validation['error']}")
             return jsonify_error_message(validation['error']), 400
         # Run the upload pipeline!
         try:
@@ -322,10 +324,9 @@ class TaxonInterpretation(Operator):
                 }
                 start = time.time()
                 ds = UserDataset(self.params).upload_user_dataset(
-                    dataset_input, conn)
-                print(ds)
+                    dataset_input, conn, claims=claims)
                 end = time.time()
-                print(f"Time to upload dataset: {end - start} seconds")
+                logger.debug(f"Time to upload dataset: {int((end - start) * 1000)} milliseconds")
 
                 to_return['counts']['ds'] = {}
                 to_return['counts']['ds'] = ds['counts']['ds']
@@ -342,6 +343,7 @@ class TaxonInterpretation(Operator):
                     })
             conn.close()
         except Exception as e:
+            logger.exception(f"An error occurred during taxon interpretation upload: {str(e)}")
             return jsonify_error_message(
                 f"an error occurred here during upload: {str(e)}"), 500
         return jsonify(to_return)

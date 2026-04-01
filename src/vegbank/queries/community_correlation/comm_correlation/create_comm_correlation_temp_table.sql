@@ -9,4 +9,4 @@ CREATE TEMPORARY TABLE comm_correlation_temp(
     -- api-augmented fields:
     vb_cc_code TEXT NOT NULL,
     user_cx_code TEXT NOT NULL
-);
+) ON COMMIT DROP;

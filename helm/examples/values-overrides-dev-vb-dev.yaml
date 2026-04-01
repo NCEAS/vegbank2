@@ -17,7 +17,7 @@ auth:
     contributor: "vegbank-dev:contributor"
     user: "vegbank-dev:user"
 
-replicaCount: 1
+replicaCount: 2
 
 image:
   ## Set image pull policy to 'Always' for development to ensure latest image is used
@@ -45,4 +45,8 @@ flyway:
   dbHost: vegbankdb2-cnpg-rw
 
 database:
-  host: vegbankdb2-cnpg-rw
+  host: vegbank-pooler-rw
+
+gunicorn:
+  logLevel: "debug"
+

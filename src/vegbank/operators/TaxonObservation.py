@@ -2,6 +2,7 @@ import os
 import traceback
 import pandas as pd
 import numpy as np
+import logging
 from vegbank.operators.operator_parent_class import Operator
 from vegbank.operators import table_defs_config
 from flask import jsonify
@@ -15,6 +16,7 @@ from vegbank.utilities import (
 )
 
 
+logger = logging.getLogger(__name__)
 class TaxonObservation(Operator):
     """
     Defines operations related to the exchange of taxon observation data with
@@ -346,7 +348,6 @@ class TaxonObservation(Operator):
         # index for the insert to the temp table ordering. 
         if reinterpret: 
             taxon_interpretation_defs.insert(len(taxon_interpretation_defs) - 1, 'user_to_code') 
-        print(taxon_interpretation_defs)
         df['interpretation_date'] = pd.Timestamp.now()
 
         df['user_ti_code'] = df['user_ti_code'].astype(str) # Ensure user_ti_codes are strings for consistent merging
