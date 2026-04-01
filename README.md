@@ -79,22 +79,20 @@ commits can be run, for example, for the Mac with:
 We are using `uv` as our python environment and dependency manager. To get started locally, follow these instructions below:
 
 ```sh
-# Step 1: Set your `VIRTUAL_ENV` path (if not already set)
-$ export VIRTUAL_ENV=/data/venv
-
-# Step 2: Install `uv` (if not already installed)
+# Step 1: Install `uv` (if not already installed)
 $ python -m pip install uv --root-user-action ignore
 
-# Step 3: Navigate to your project root
+# Step 2: Navigate to your project root
 $ cd /path/to/vegbank2
 
-# Step 4: Create/reuse the venv and activate it
-$ uv venv --allow-existing ${VIRTUAL_ENV}
-$ source ${VIRTUAL_ENV}/bin/activate
+# Step 3: Create a project-local virtual environment
+$ uv venv .venv
 
-# Step 5: Install all dependencies into the venv
+# Step 4: Activate the virtual environment
+$ source .venv/bin/activate
+
+# Step 5: Install project dependencies
 $ uv sync --active
-
 ```
 
 ### Adding project dependencies
