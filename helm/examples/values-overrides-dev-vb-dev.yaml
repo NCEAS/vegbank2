@@ -17,7 +17,7 @@ auth:
     contributor: "vegbank-dev:contributor"
     user: "vegbank-dev:user"
 
-replicaCount: 2
+replicaCount: 1
 
 image:
   ## Set image pull policy to 'Always' for development to ensure latest image is used
@@ -49,4 +49,3 @@ database:
 
 gunicorn:
   logLevel: "debug"
-
