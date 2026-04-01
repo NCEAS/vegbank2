@@ -576,10 +576,22 @@ class PlotObservationBundle(Operator):
             "",
             "Citation",
             "-" * 8,
-            "Peet, R.K., M.T. Lee, M.D. Jennings, D. Faber-Langendoen (eds). 2013.",
-            "VegBank: The vegetation plot archive of the Ecological Society of America.",
-            f"http://vegbank.org, searched on {timestamp.strftime('%Y-%m-%d')}",
+            "VegBank (2026): Plot observations from VegBank, the vegetation plot archive",
+            "of the Ecological Society of America. Downloaded from https://vegbank.org",
+            f"on {timestamp.strftime('%Y-%m-%d')}. Dataset. https://doi.org/10.82902/J1CC7T",
             ""
+        ])
+
+        readme_parts.extend([
+            "Note that this is a citation to all data in VegBank. If you'd like a more",
+            "precise citation to the exact set of the plot observations you downloaded,",
+            "you can use the VegBank API to create a Dataset. See the create_dataset()",
+            "function in the vegbankr R package, which allows you to create a citable",
+            "Dataset by passing a name for your collection, an informative description,",
+            "and the list of observations IDs (i.e., ob_code values) extracted from the",
+            "plot_observations.csv file. Upon creation of your Dataset, the API will",
+            "return a DOI that you can use as a persistent citation.",
+            "",
         ])
 
         return "\n".join(readme_parts)
