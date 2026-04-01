@@ -76,25 +76,41 @@ commits can be run, for example, for the Mac with:
 
 ### Installing `vegbank` locally
 
-We are using `uv` as our python environment and dependency manager. To get started locally, follow these instructions below:
+We are using `uv` as our python environment and dependency manager. To get started locally:
 
-```sh
-# Step 1: Set your `VIRTUAL_ENV` path (if not already set)
-$ export VIRTUAL_ENV=/data/venv
+#### One-time setup
 
-# Step 2: Install `uv` (if not already installed)
-$ python -m pip install uv --root-user-action ignore
+1. Provision a local database - see [database/INSTALL.md](./database/INSTALL.md) for instructions on setting up a local postgres instance with the vegbank database and user.
+2. Set the following environment variables in the shell where you will start the application. You can do this manually, or in your `.bashrc` or `.zshrc` file, etc:
+   - `VB_DB_NAME`: database name (typically `vegbank`)
+   - `VB_DB_USER`: the user that owns the db (typically also `vegbank`)
+   - `VB_DB_PORT`: your psql port (typically `5432`)
+   - `VB_DB_PASS`: password for your db user
+   - `VB_ACCESS_MODE`: access mode. Set to `open` (or "read_only", if you don't need to do uploads)
+   (`VB_DB_HOST` is not needed for local development)
+3. Install `uv` (if not already installed)
 
-# Step 3: Navigate to your project root
+   ```shell
+   $ python -m pip install uv --root-user-action ignore
+   ```
+
+#### Update and Run the Application
+
+```shell
+# Navigate to your project root
 $ cd /path/to/vegbank2
 
-# Step 4: Create/reuse the venv and activate it
-$ uv venv --allow-existing ${VIRTUAL_ENV}
-$ source ${VIRTUAL_ENV}/bin/activate
+# Create a project-local virtual environment
+$ uv venv .venv
 
-# Step 5: Install all dependencies into the venv
+# Activate the virtual environment
+$ source .venv/bin/activate
+
+# Install project dependencies
 $ uv sync --active
 
+# Run the application
+uv run flask --app src/vegbank/app.py run
 ```
 
 ### Adding project dependencies
@@ -107,9 +123,6 @@ To add a dependency to this project, you will need to update `pyproject.toml` wi
 
 ```py
 # pyproject.toml
-
-...
-
 dependencies = [
     "psycopg>=3.3.2",
     "flask>=3.1.2",
@@ -141,7 +154,7 @@ The vegbank Helm chart can be used to deploy the `vegbank` service on a Kubernet
 
 ## Release Process
 
-See the [Contributing Guide](./CONTRIBUTING.md) for details on the release process
+See the [Release Checklist](./release-checklist.md) and the [Contributing Guide](./CONTRIBUTING.md#-release-process) for details on the release process
 
 ## Current Contributors
 
@@ -185,7 +198,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## Acknowledegments
+## Acknowledgments
 
 Work on this package was supported by:
 
