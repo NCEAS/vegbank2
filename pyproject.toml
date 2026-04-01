@@ -1,6 +1,6 @@
 [project]
 name = "vegbank"
-version = "2.1.1"
+version = "2.1.2"
 description = "VegBank database and data access service"
 authors = [
     { name = "Robert Shelton", email = "shelton@nceas.ucsb.edu" },
