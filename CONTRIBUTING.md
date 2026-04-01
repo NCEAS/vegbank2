@@ -45,21 +45,21 @@ In short:
 
 ## 🚀 Development Workflow
 
-Development is managed through the git repository at https://github.com/NCEAS/vegbank2.  The repository is organized into several branches, each with a specific purpose.  
+Development is managed through the git repository at https://github.com/NCEAS/vegbank2.  The repository is organized into several branches, each with a specific purpose.
 
 **main**. The `main` branch represents the stable branch that is constantly maintained with the current release.  It should generally be safe to install and use the `main` branch the same way as binary releases. The version number in all configuration files and the README on the `main` branch follows [semantic versioning](https://semver.org/) and should always be set to the current stable release, for example `2.8.5`.
 
 **develop**. Development takes place on a single branch for integrated development and testing of the set of features
 targeting the next release. Commits should only be pushed to this branch once they are ready to be deployed to
 production immediately after being pushed. This keeps the `develop` branch in a state of readiness for the next release.
-Any unreleased code changes on the `develop` branch represent changes that have been tested and staged for the next 
-release. 
+Any unreleased code changes on the `develop` branch represent changes that have been tested and staged for the next
+release.
 The tip of the `develop` branch always represents the set of features that are awaiting the next release. The develop
 branch represents the opportunity to integrate changes from multiple features for integrated testing before release.
 
 Version numbers on the `develop` branch represent either the planned next release number (e.g., `2.9.0`), or the planned next release number with a `beta` designator or release candidate `rc` designator appended as appropriate.  For example, `2.8.6-beta1` or `2.9.0-rc1`.
 
-**feature**. To isolate development on a specific set of capabilities, especially if it may be disruptive to other 
+**feature**. To isolate development on a specific set of capabilities, especially if it may be disruptive to other
 developers working on the `develop` branch, feature branches should be created.
 
 Feature branches are named as `feature-` + `{issue}` +  `-{short-description}`, with `{issue}` being the GitHub issue number related to that new feature. e.g. `feature-23-refactor-storage`.
@@ -73,11 +73,11 @@ been tested and are awaiting release.  Thus, each `feature-*` branch can be test
 ### Development flow overview
 
 ```mermaid
-%%{init: {  'theme': 'base', 
+%%{init: {  'theme': 'base',
             'gitGraph': {
                 'rotateCommitLabel': false,
                 'showCommitLabel': false
-            },            
+            },
             'themeVariables': {
               'commitLabelColor': '#ffffffff',
               'commitLabelBackground': '#000000'
@@ -106,16 +106,21 @@ gitGraph
 
 ## 🔀 Release process
 
+> [!IMPORTANT]
+> Use the detailed [Release Checklist Template](./release-checklist.md) to create a GH `task` Issue for each release.
+
+In general, the release process follows these steps:
+
 1. Our release process starts with integration testing in a `develop` branch. Once all
 changes that are desired in a release are merged into the `develop` branch, we run
 the full set of tests on a clean checkout of the `develop` branch.
-2. After testing, the `develop` branch is merged to main, and the `main` branch is tagged with
-the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will 
-reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to 
-start work on the next release.
-3. The release is tagged on GitHub, and the metadata for the reserved DOI is added and published with the correct softwareheritage url. Finally, the release is added to the GitHub `Releases` page
-4. The new release is then built and published as a Docker image (see the [Docker README for details](./docker/README.md)), and the Helm chart is packaged and published to the GitHub Container Registry (see the [Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart)). The Helm chart release should also be tagged, using the chart version (which may differ from the application code version) with a `chart-` prefix. For example, if the application code version is `2.0.1` and the chart version is `1.0.1`, then the chart should be tagged with `chart-1.0.1`.
-5. An email announcement is sent out to users and contributors.
+2. After testing is completed, and version numbers and DOI/citation have been updated, the `develop` branch is then merged to main.
+3. From `main`, the new release is then built and published as a Docker image (see the [Docker README for details](./docker/README.md)), and the Helm chart is packaged and published to the GitHub Container Registry (see the [Helm README](./helm/README.md#packaging-and-publishing-the-helm-chart)). The helm chart should then be deployed on the dev cluster, to make sure it works as expected.
+4. Then the `main` branch is tagged with:
+   1. the new version number (e.g. `v2.0.1`) and
+   2. the Helm chart version (which may differ from the application code version) with a `chart-` prefix.
+   For example, if the application code version is `2.0.1` and the chart version is `1.0.1`, then the chart should be tagged with `chart-1.0.1`.
+5. Finally, the app and chart releases are added to GH `Releases` page and announced as appropriate to users and contributors
 6. Availability:
    - Releases can be downloaded from the [GitHub releases page](https://github.com/NCEAS/vegbank2/releases).
    - Versioned Docker images are available from [the VegBank GHCR image repo](https://github.com/NCEAS/vegbank2/pkgs/container/vegbank), and can be downloaded using:

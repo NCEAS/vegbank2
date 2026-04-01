@@ -141,7 +141,7 @@ The vegbank Helm chart can be used to deploy the `vegbank` service on a Kubernet
 
 ## Release Process
 
-See the [Contributing Guide](./CONTRIBUTING.md) for details on the release process
+See the [Release Checklist](./release-checklist.md) and the [Contributing Guide](./CONTRIBUTING.md#-release-process) for details on the release process
 
 ## Current Contributors
 

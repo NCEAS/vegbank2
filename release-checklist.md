@@ -1,4 +1,4 @@
-# Vegbank Release Checklist
+# Vegbank Release Checklist Template
 
 When testing is complete on the develop branch, create a new issue containing the following checklist. Then, follow the steps to prepare and publish the release.
     
