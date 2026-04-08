@@ -42,19 +42,19 @@ wheels = [
 
 [[package]]
 name = "adbc-driver-postgresql"
-version = "1.10.0"
+version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adbc-driver-manager" },
     { name = "importlib-resources" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/14/15/bb1d0458fb79bec75d6392d695f3dd58e3100789e6605a69e2b0e30ba1b5/adbc_driver_postgresql-1.10.0.tar.gz", hash = "sha256:4687d41180a31f6e6081dfb85cbe4b1611498d6b5c462f34ed3b7e68d20ed90d", size = 20747, upload-time = "2026-01-09T07:13:47.118Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/10/2962c25035887cd03af3b348eac3302493936f45048c220021a802d07f12/adbc_driver_postgresql-1.11.0.tar.gz", hash = "sha256:f5688b8648ac7a86d8b89340231bb3686ac5df56ee95d1ca0b875dad5d52b48a", size = 32328, upload-time = "2026-04-07T00:17:29.232Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/f8/7105475d6749f709223e363dca59cf751593cbdd815acc5939e7236367f4/adbc_driver_postgresql-1.10.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:e59af997b2be409b27a1feee89f702cd7f528c2c4ae0696b41e25f46fda2db27", size = 2991224, upload-time = "2026-01-09T07:12:57.311Z" },
-    { url = "https://files.pythonhosted.org/packages/44/72/5ce2a53b6d4d2bb533d3250d6f3a32e6171a82f74c712583c04bf9dabf15/adbc_driver_postgresql-1.10.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:4fa0f647498687d937646be234b5eeb464ddff503e0233351a127703fd8783ec", size = 3271094, upload-time = "2026-01-09T07:13:00.273Z" },
-    { url = "https://files.pythonhosted.org/packages/3e/87/a997e82262f58ccc5340898f623dec8b8b80d40db48ab7b7575efd92bb6e/adbc_driver_postgresql-1.10.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:e9a0f0097b33574eff87fccbf17713b8c5c0d9f6fed9c081e074989b8b4ad5cc", size = 3757195, upload-time = "2026-01-09T07:13:02.267Z" },
-    { url = "https://files.pythonhosted.org/packages/76/f7/2ca5bd4d8d4edcd8721adeba20690806cf6186d9a3de217b2c5f44530c3c/adbc_driver_postgresql-1.10.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:a2efec61f5ba966e503081b7f058516745e95e0d965bfd9ecfcae2f6d2d4a178", size = 3431159, upload-time = "2026-01-09T07:13:04.281Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/a8/17129f60d0de09947f12dbeb25a107bef7cc265ea4f5fd5d88ed02ba58ce/adbc_driver_postgresql-1.10.0-py3-none-win_amd64.whl", hash = "sha256:81c285c08cf28faae36791f5c790a16b1d87cdee9037af874e4dcf747c21a8e2", size = 3020799, upload-time = "2026-01-09T07:13:06.104Z" },
+    { url = "https://files.pythonhosted.org/packages/79/c7/c90e2faea8f2eac9bbdf89ab3c6bad78e4d0361043cc59b63a37da143a55/adbc_driver_postgresql-1.11.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:c54e3119998c845d895ff548c2181c73313e9a52616c61a8cd918d8b4d5279ea", size = 3046985, upload-time = "2026-04-07T00:16:44.233Z" },
+    { url = "https://files.pythonhosted.org/packages/93/63/eb2ea42f7451a898e11847a0b949baa06cbe212a4de09e4c62e1bf9af448/adbc_driver_postgresql-1.11.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:9678d10d7597f775efd59f74cadd0c63fc40671ee52b65e289019ae8b5a2adf0", size = 3337180, upload-time = "2026-04-07T00:16:47.015Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/32/63e4b41f0e4cb36a61ed62edd151ea71c4cc555b2dd554a068812c8dae52/adbc_driver_postgresql-1.11.0-py3-none-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:03cca73acc3840c9751305cef86aa5a9971fe2374a7aabaf1704b3582b351518", size = 3800773, upload-time = "2026-04-07T00:16:48.977Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/f8/93c681d2ccd5b0e70db58998b0f61a7bf52ccf6b9e199d5055c49ef37959/adbc_driver_postgresql-1.11.0-py3-none-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c5904ed3da009fe1361ddf6d5c1a61c8963a6d1dfeda0e96bd4445e028f37216", size = 3489464, upload-time = "2026-04-07T00:16:51.305Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/47/dd2322a40537ee9e22aa9937c70614ca29e9259d1b8b17441b92fbb49d5c/adbc_driver_postgresql-1.11.0-py3-none-win_amd64.whl", hash = "sha256:95c13b3203615b816a258db91c375785750cb82395b985f16c0dc6af88b932e3", size = 3067900, upload-time = "2026-04-07T00:16:53.08Z" },
 ]
 
 [[package]]
@@ -742,7 +742,7 @@ wheels = [
 
 [[package]]
 name = "pytest"
-version = "9.0.2"
+version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -751,9 +751,9 @@ dependencies = [
     { name = "pluggy" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/db/7ef3487e0fb0049ddb5ce41d3a49c235bf9ad299b6a25d5780a89f19230f/pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11", size = 1568901, upload-time = "2025-12-06T21:30:51.014Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/0d/549bd94f1a0a402dc8cf64563a117c0f3765662e2e668477624baeec44d5/pytest-9.0.3.tar.gz", hash = "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c", size = 1572165, upload-time = "2026-04-07T17:16:18.027Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/ab/b3226f0bd7cdcf710fbede2b3548584366da3b19b5021e74f5bde2a8fa3f/pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b", size = 374801, upload-time = "2025-12-06T21:30:49.154Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/24/a372aaf5c9b7208e7112038812994107bc65a84cd00e0354a88c2c77a617/pytest-9.0.3-py3-none-any.whl", hash = "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9", size = 375249, upload-time = "2026-04-07T17:16:16.13Z" },
 ]
 
 [[package]]
