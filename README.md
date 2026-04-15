@@ -156,6 +156,10 @@ The vegbank Helm chart can be used to deploy the `vegbank` service on a Kubernet
 
 See the [Release Checklist](./release-checklist.md) and the [Contributing Guide](./CONTRIBUTING.md#-release-process) for details on the release process
 
+## Archived Data
+
+The original VegBank database was shut down in March 2026, to be replaced by the current Kubernetes version. A PostgreSQL database dump from that postgres v10 DB has been archived on the NCEAS archive server (`archive.nceas.ucsb.edu`) under `/backups/archive/services-archive/vegbank.nceas.ucsb.edu_postgres_dump_2026-04-14` (See Nick Outin, Thomas Hetmank, or Matt Jones for access)
+
 ## Current Contributors
 
 - Jim Regetz (regetz@nceas.ucsb.edu): [ORCID: 0009-0008-2666-6229](https://orcid.org/0009-0008-2666-6229)
