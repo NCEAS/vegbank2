@@ -415,30 +415,29 @@ Before deploying the VegBank API helm chart, first deploy a PostgreSQL database,
 
 ## Appendix 3: Initial Database Population with a Dump File
 
-> [!NOTE]
-> A data-only (DML) `pg_dump` from the original VegBank database was used to bootstrap the production deployment. This process is documented in the [./docs/prod-deployment.md](./docs/prod-deployment.md) file
+If you only need a "clean" installation with an empty database, this step can be skipped.
 
-- If you only need a "clean" installation with an empty database, this step can be skipped.
+If you wish to pre-populate with data from an existing source database, you have 2 options:
+1. Restore from a backup snapshot of the original database (if available). This process is documented in the [Database Recovery from Backups (./docs/db-recovery.md)](./docs/db-recovery.md)
+2. Create a new `pg_dump` file from the original database
+   - you will need to manually create a `pg_dump` file from the source, which contains both the data (DML) and the schema definition (DDL). Then this dump file must be made accessible to the helm chart via a PVC/PV. You can either:
+     - create a PV that points to a mounted ceph volume; see YAML files in [helm/admin](./admin): `pv--vegbankdb-init-cephfs.yaml`, `pv--vegbankdb-init-cephfs-dev.yaml`, `pvc--vegbankdb-init.yaml`, and `pvc--vegbankdb-init-dev.yaml`, for example (but note that PV creation requires k8s admin access), or
+     - use an auto-provisioned PV and create a simple pod that mounts it, so you can then copy the dump file to it using `kubectl cp` (does not require admin access).
+   - Override the following values in `values.yaml` to enable the restore process and specify the dump file to use:
 
-- If you wish to pre-populate with data from an existing database, you will need a `pg_dump` file that contains both the data (DML) and the schema definition (DDL). Such files are available for development purposes on the `knbvm (knbvm.nceas.ucsb.edu)` VM, under `/mnt/ceph/repos/vegbank/`, and can be accessed via PV+PVC mounts in both `vegbank-dev` and `vegbank` namespaces; e.g:
-
-    ```sh
-    $ kc get pvc -n vegbank-dev
-    NAME                    STATUS   VOLUME                        CAPACITY   ACCESS MODES   AGE
-    vegbankdb-init-pgdata   Bound    cephfs-vegbankdb-init-pgdata  100Gi      RWO            182d
-
-    # Admin access is needed for additional PV creation
-    ```
-
-- Override the following values in `values.yaml` to enable the restore process and specify the dump file to use:
-
-  ```yaml
-  databaseRestore:
-    enabled: true                   # (default is 'false')
-    pvc: "vegbankdb-init-pgdata"    # must match name of PVC containing dump file (see above)
-    filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"   # path to dump file from PVC mount-point
-    postgresImage: postgres:17      # must match cnpg major version - see below
-  ```
+     ```yaml
+     databaseRestore:
+       enabled: true
+       ## name of PVC containing dump file:
+       pvc: "vegbankdb-init-pgdata"
+       ## path to dump file from PVC mount-point:
+       filepath: "vegbank_full_fc_v1.9_pg16_20250924.dump"
+       ## must match cnpg major version - see below
+       postgresImage: postgres:17
+     ```
 
 > [!IMPORTANT]
 > The restore process will fail unless the major version of the postgres image defined in `databaseRestore.postgresImage` matches the `cnpg` major version.
+
+> [!NOTE]
+> A data-only (DML) PostgreSQL database dump from the original VegBank database was used to bootstrap the production deployment. This process is documented in the [./docs/prod-deployment.md](./docs/prod-deployment.md) file. That `pg_dump` file has been archived on the NCEAS archive server (`archive.nceas.ucsb.edu`) under `/backups/archive/services-archive/vegbank.nceas.ucsb.edu_postgres_dump_2026-04-14` (See Nick Outin, Thomas Hetmank, or Matt Jones for access)
