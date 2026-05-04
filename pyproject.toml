@@ -12,21 +12,21 @@ license = { text = "Apache-2.0" }
 requires-python = ">=3.13"
 
 dependencies = [
-    "psycopg>=3.3.2",
+    "psycopg>=3.3.4",
     "flask>=3.1.2",
     "pandas>=3.0.0",
-    "pyarrow>=23.0.0",
+    "pyarrow>=24.0.0",
     "numpy>=2.4.2",
-    "authlib>=1.6.8",
+    "authlib>=1.7.0",
     "requests>=2.32.5",
-    "adbc-driver-postgresql>=1.10.0",
+    "adbc-driver-postgresql>=1.11.0",
     "gunicorn>=25.1.0",
-    "lxml>=6.0.2",
+    "lxml>=6.1.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.3",
+    "pytest>=9.0.3",
     "pylint>=3.2.7",
     "black>=24.8.0",
 ]
